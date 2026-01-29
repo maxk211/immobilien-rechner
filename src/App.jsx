@@ -1132,19 +1132,39 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-blue-800 mb-2">Aktueller Marktwert</h3>
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="number"
-                  value={params.geschaetzterWert || ''}
-                  onChange={(e) => updateParams({...params, geschaetzterWert: parseFloat(e.target.value) || 0})}
-                  className="w-40 px-3 py-2 text-xl font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                  placeholder="z.B. 350000"
-                />
-                <span className="text-xl font-bold text-blue-600">€</span>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Gesamtwert</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={params.geschaetzterWert || ''}
+                      onChange={(e) => updateParams({...params, geschaetzterWert: parseFloat(e.target.value) || 0})}
+                      className="w-full px-3 py-2 text-lg font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                      placeholder="350000"
+                    />
+                    <span className="text-lg font-bold text-blue-600">€</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Preis pro m²</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={immobilie.wohnflaeche > 0 && aktuellerWert > 0 ? Math.round(aktuellerWert / immobilie.wohnflaeche) : ''}
+                      onChange={(e) => {
+                        const qmPreis = parseFloat(e.target.value) || 0;
+                        const neuerWert = Math.round(qmPreis * (immobilie.wohnflaeche || 1));
+                        updateParams({...params, geschaetzterWert: neuerWert});
+                      }}
+                      className="w-full px-3 py-2 text-lg font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                      placeholder="4000"
+                    />
+                    <span className="text-sm font-bold text-blue-600">€/m²</span>
+                  </div>
+                </div>
               </div>
-              {immobilie.wohnflaeche > 0 && aktuellerWert > 0 && (
-                <div className="text-sm text-blue-600 mb-2">{formatCurrency(aktuellerWert / immobilie.wohnflaeche)}/m²</div>
-              )}
+              <div className="text-xs text-gray-500 mb-2">Wohnfläche: {immobilie.wohnflaeche} m²</div>
               <a
                 href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
                 target="_blank"
@@ -1153,7 +1173,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               >
                 <span>🔍</span> Preis bei Homeday recherchieren
               </a>
-              <p className="text-xs text-gray-500 mt-2">Recherchiere den aktuellen Marktwert und trage ihn oben ein.</p>
+              <p className="text-xs text-gray-500 mt-2">Recherchiere den aktuellen Marktwert bei Homeday.</p>
             </div>
 
             {wertsteigerungSeitKauf && (
