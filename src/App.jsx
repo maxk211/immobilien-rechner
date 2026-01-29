@@ -1001,21 +1001,32 @@ const PortfolioOverview = ({ portfolio }) => {
 };
 
 // Immobilien-Detail Komponente
-const ImmobilienDetail = ({ immobilie, onClose, onUpdate }) => {
+const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const [params, setParams] = useState({
     kaufpreis: immobilie.kaufpreis,
     eigenkapital: immobilie.eigenkapital,
-    zinssatz: 4.0,
-    tilgung: 2.0,
-    laufzeit: 25,
+    zinssatz: immobilie.zinssatz ?? 4.0,
+    tilgung: immobilie.tilgung ?? 2.0,
+    laufzeit: immobilie.laufzeit ?? 25,
     kaltmiete: immobilie.kaltmiete,
-    nebenkosten: 200,
-    instandhaltung: 100,
-    verwaltung: 30,
-    wertsteigerung: 2.0,
-    mietsteigerung: 1.5,
-    kaufnebenkosten: 10
+    nebenkosten: immobilie.nebenkosten ?? 200,
+    instandhaltung: immobilie.instandhaltung ?? 100,
+    verwaltung: immobilie.verwaltung ?? 30,
+    wertsteigerung: immobilie.wertsteigerung ?? 2.0,
+    mietsteigerung: immobilie.mietsteigerung ?? 1.5,
+    kaufnebenkosten: immobilie.kaufnebenkosten ?? 10
   });
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const updateParams = (newParams) => {
+    setParams(newParams);
+    setHasChanges(true);
+  };
+
+  const handleSave = () => {
+    onSave({ ...immobilie, ...params });
+    setHasChanges(false);
+  };
 
   const ergebnis = useMemo(() => berechneRendite(params), [params]);
   const schaetzung = schaetzeImmobilienwert(immobilie);
@@ -1032,7 +1043,17 @@ const ImmobilienDetail = ({ immobilie, onClose, onUpdate }) => {
               <h2 className="text-2xl font-bold text-gray-800">{immobilie.name}</h2>
               <p className="text-gray-600">{immobilie.plz} {immobilie.adresse}</p>
             </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl">&times;</button>
+            <div className="flex items-center gap-3">
+              {hasChanges && (
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                >
+                  Speichern
+                </button>
+              )}
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl">&times;</button>
+            </div>
           </div>
         </div>
 
@@ -1071,26 +1092,26 @@ const ImmobilienDetail = ({ immobilie, onClose, onUpdate }) => {
             <div className="lg:col-span-1 space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-3">Finanzierung</h3>
-                <InputSliderCombo label="Kaufpreis" value={params.kaufpreis} onChange={(v) => setParams({...params, kaufpreis: v})} min={50000} max={2000000} step={10000} unit="€" />
-                <InputSliderCombo label="Eigenkapital" value={params.eigenkapital} onChange={(v) => setParams({...params, eigenkapital: v})} min={0} max={params.kaufpreis} step={5000} unit="€" />
-                <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => setParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
-                <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => setParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
-                <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => setParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
-                <InputSliderCombo label="Kaufnebenkosten" value={params.kaufnebenkosten} onChange={(v) => setParams({...params, kaufnebenkosten: v})} min={5} max={15} step={0.5} unit="%" />
+                <InputSliderCombo label="Kaufpreis" value={params.kaufpreis} onChange={(v) => updateParams({...params, kaufpreis: v})} min={50000} max={2000000} step={10000} unit="€" />
+                <InputSliderCombo label="Eigenkapital" value={params.eigenkapital} onChange={(v) => updateParams({...params, eigenkapital: v})} min={0} max={params.kaufpreis} step={5000} unit="€" />
+                <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => updateParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
+                <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => updateParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
+                <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => updateParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
+                <InputSliderCombo label="Kaufnebenkosten" value={params.kaufnebenkosten} onChange={(v) => updateParams({...params, kaufnebenkosten: v})} min={5} max={15} step={0.5} unit="%" />
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-3">Einnahmen & Kosten</h3>
-                <InputSliderCombo label="Kaltmiete" value={params.kaltmiete} onChange={(v) => setParams({...params, kaltmiete: v})} min={200} max={5000} step={50} unit="€" />
-                <InputSliderCombo label="Nebenkosten" value={params.nebenkosten} onChange={(v) => setParams({...params, nebenkosten: v})} min={0} max={500} step={10} unit="€" />
-                <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => setParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
-                <InputSliderCombo label="Verwaltung" value={params.verwaltung} onChange={(v) => setParams({...params, verwaltung: v})} min={0} max={200} step={5} unit="€" />
+                <InputSliderCombo label="Kaltmiete" value={params.kaltmiete} onChange={(v) => updateParams({...params, kaltmiete: v})} min={200} max={5000} step={50} unit="€" />
+                <InputSliderCombo label="Nebenkosten" value={params.nebenkosten} onChange={(v) => updateParams({...params, nebenkosten: v})} min={0} max={500} step={10} unit="€" />
+                <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => updateParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
+                <InputSliderCombo label="Verwaltung" value={params.verwaltung} onChange={(v) => updateParams({...params, verwaltung: v})} min={0} max={200} step={5} unit="€" />
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-3">Prognose</h3>
-                <InputSliderCombo label="Wertsteigerung p.a." value={params.wertsteigerung} onChange={(v) => setParams({...params, wertsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
-                <InputSliderCombo label="Mietsteigerung p.a." value={params.mietsteigerung} onChange={(v) => setParams({...params, mietsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
+                <InputSliderCombo label="Wertsteigerung p.a." value={params.wertsteigerung} onChange={(v) => updateParams({...params, wertsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
+                <InputSliderCombo label="Mietsteigerung p.a." value={params.mietsteigerung} onChange={(v) => updateParams({...params, mietsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
               </div>
             </div>
 
@@ -1285,9 +1306,9 @@ function App() {
         <ImmobilienDetail
           immobilie={selectedImmobilie}
           onClose={() => setSelectedImmobilie(null)}
-          onUpdate={(data) => {
+          onSave={(data) => {
             setPortfolio(prev => prev.map(i => i.id === selectedImmobilie.id ? { ...data, id: i.id } : i));
-            setSelectedImmobilie(null);
+            setSelectedImmobilie(data);
           }}
         />
       )}
