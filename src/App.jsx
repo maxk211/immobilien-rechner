@@ -454,6 +454,49 @@ const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
   };
 };
 
+// Restschuld berechnen basierend auf Kaufdatum und Finanzierung
+const berechneRestschuld = (immobilie) => {
+  if (!immobilie.kaufdatum || !immobilie.kaufpreis) return null;
+
+  const kaufdatum = new Date(immobilie.kaufdatum);
+  const heute = new Date();
+  const monateSeitKauf = Math.floor((heute - kaufdatum) / (1000 * 60 * 60 * 24 * 30.44));
+
+  if (monateSeitKauf <= 0) return null;
+
+  // Finanzierungsparameter mit Defaults
+  const zinssatz = immobilie.zinssatz ?? 4.0;
+  const tilgung = immobilie.tilgung ?? 2.0;
+  const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
+  const eigenkapital = immobilie.eigenkapital ?? immobilie.kaufpreis * 0.2;
+
+  // Fremdkapital berechnen
+  const kaufnebenkostenAbsolut = immobilie.kaufpreis * (kaufnebenkosten / 100);
+  const gesamtkosten = immobilie.kaufpreis + kaufnebenkostenAbsolut;
+  const anfangsFremdkapital = Math.max(0, gesamtkosten - eigenkapital);
+
+  if (anfangsFremdkapital <= 0) return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
+
+  // Monatliche Annuität berechnen (Zins + Tilgung)
+  const monatszins = zinssatz / 100 / 12;
+  const laufzeit = immobilie.laufzeit ?? 25;
+  const annuitaet = anfangsFremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) / (Math.pow(1 + monatszins, laufzeit * 12) - 1);
+
+  // Restschuld iterativ berechnen
+  let restschuld = anfangsFremdkapital;
+  for (let monat = 0; monat < monateSeitKauf && restschuld > 0; monat++) {
+    const monatsZinsen = restschuld * monatszins;
+    const monatsTilgung = Math.min(annuitaet - monatsZinsen, restschuld);
+    restschuld = Math.max(0, restschuld - monatsTilgung);
+  }
+
+  return {
+    restschuld: Math.round(restschuld),
+    anfangsFremdkapital: Math.round(anfangsFremdkapital),
+    getilgt: Math.round(anfangsFremdkapital - restschuld)
+  };
+};
+
 // InputSliderCombo Komponente
 const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }) => {
   const [localValue, setLocalValue] = useState(value.toString());
@@ -808,20 +851,28 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
             </div>
 
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2 text-blue-800">Geschätzter Marktwert</h3>
-              <div className="text-3xl font-bold text-blue-600">{formatCurrency(schaetzung.wert)}</div>
-              <div className="text-sm text-blue-600 mt-1">
-                {formatCurrency(schaetzung.preisProQm)}/m² • Genauigkeit: {schaetzung.genauigkeit}
+              <h3 className="text-lg font-semibold mb-2 text-blue-800">Aktueller Marktwert</h3>
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Geschätzter Wert (€)</label>
+                <input
+                  type="number"
+                  value={formData.geschaetzterWert || ''}
+                  onChange={(e) => handleChange('geschaetzterWert', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="z.B. 350000"
+                />
               </div>
-              <div className="text-xs text-blue-500 mt-1">
-                Spanne: {formatCurrency(schaetzung.konfidenzMin)} - {formatCurrency(schaetzung.konfidenzMax)}
-              </div>
-              <button
-                onClick={() => handleChange('kaufpreis', schaetzung.wert)}
-                className="mt-2 text-sm text-blue-700 hover:text-blue-900 underline"
+              <a
+                href={`https://www.homeday.de/de/preisatlas/${formData.plz ? '?search=' + formData.plz : ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
               >
-                Als Kaufpreis übernehmen
-              </button>
+                <span>🔍</span> Preis bei Homeday recherchieren
+              </a>
+              <p className="text-xs text-blue-600 mt-2">
+                Recherchiere den aktuellen Marktwert und trage ihn oben ein.
+              </p>
             </div>
 
             <div>
@@ -882,8 +933,9 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
 
 // Immobilien-Karte Komponente
 const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
-  const schaetzung = schaetzeImmobilienwert(immobilie);
-  const wertsteigerung = berechneWertsteigerungSeitKauf(immobilie, schaetzung.wert);
+  const aktuellerWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
+  const wertsteigerung = berechneWertsteigerungSeitKauf(immobilie, aktuellerWert);
+  const restschuldInfo = berechneRestschuld(immobilie);
 
   return (
     <div
@@ -918,10 +970,27 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
             <div className="font-semibold">{formatCurrency(immobilie.kaufpreis)}</div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-gray-500">Geschätzter Wert</div>
-            <div className="font-semibold text-blue-600">{formatCurrency(schaetzung.wert)}</div>
+            <div className="text-xs text-gray-500">Aktueller Wert</div>
+            <div className="font-semibold text-blue-600">{formatCurrency(aktuellerWert)}</div>
           </div>
         </div>
+
+        {restschuldInfo && restschuldInfo.anfangsFremdkapital > 0 && (
+          <div className="mt-2 p-2 bg-orange-50 rounded text-sm border border-orange-100">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Restschuld:</span>
+              <span className="text-orange-700 font-semibold">{formatCurrency(restschuldInfo.restschuld)}</span>
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-gray-400">Bereits getilgt:</span>
+              <span className="text-green-600">{formatCurrency(restschuldInfo.getilgt)}</span>
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-gray-400">Netto-Eigenkapital:</span>
+              <span className="text-blue-600 font-medium">{formatCurrency(aktuellerWert - restschuldInfo.restschuld)}</span>
+            </div>
+          </div>
+        )}
 
         {wertsteigerung && (
           <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
@@ -955,7 +1024,7 @@ const PortfolioOverview = ({ portfolio }) => {
 
     portfolio.forEach(immo => {
       gesamtKaufpreis += immo.kaufpreis;
-      gesamtWert += schaetzeImmobilienwert(immo).wert;
+      gesamtWert += immo.geschaetzterWert || immo.kaufpreis;
       gesamtMiete += immo.kaltmiete * 12;
       gesamtFlaeche += immo.wohnflaeche;
     });
@@ -1029,8 +1098,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   };
 
   const ergebnis = useMemo(() => berechneRendite(params), [params]);
-  const schaetzung = schaetzeImmobilienwert(immobilie);
-  const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(immobilie, schaetzung.wert);
+  const aktuellerWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
+  const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(immobilie, aktuellerWert);
 
   const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -1062,11 +1131,18 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-blue-800 mb-2">Aktueller Marktwert</h3>
-              <div className="text-3xl font-bold text-blue-600">{formatCurrency(schaetzung.wert)}</div>
-              <div className="text-sm text-blue-600">{formatCurrency(schaetzung.preisProQm)}/m²</div>
-              <div className="text-xs text-blue-500 mt-1">
-                Genauigkeit: {schaetzung.genauigkeit} | Spanne: {formatCurrency(schaetzung.konfidenzMin)} - {formatCurrency(schaetzung.konfidenzMax)}
-              </div>
+              <div className="text-3xl font-bold text-blue-600">{formatCurrency(aktuellerWert)}</div>
+              {immobilie.wohnflaeche > 0 && (
+                <div className="text-sm text-blue-600">{formatCurrency(aktuellerWert / immobilie.wohnflaeche)}/m²</div>
+              )}
+              <a
+                href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-2 text-sm text-blue-700 hover:text-blue-900 underline"
+              >
+                🔍 Bei Homeday prüfen
+              </a>
             </div>
 
             {wertsteigerungSeitKauf && (
