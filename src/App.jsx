@@ -1069,6 +1069,206 @@ const PortfolioOverview = ({ portfolio }) => {
   );
 };
 
+// Kaufnebenkosten-Manager Komponente
+const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
+  const [modus, setModus] = useState(params.kaufnebenkostenModus || 'prozent'); // 'prozent' oder 'manuell'
+
+  // Manuelle Positionen mit Standardwerten basierend auf Bundesland
+  const [positionen, setPositionen] = useState(params.kaufnebenkostenPositionen || {
+    grunderwerbsteuer: kaufpreis * 0.035, // 3,5% - 6,5% je nach Bundesland
+    notar: kaufpreis * 0.015, // ca. 1,5%
+    grundbuch: kaufpreis * 0.005, // ca. 0,5%
+    makler: kaufpreis * 0.0357, // 3,57% (inkl. MwSt)
+    sonstige: 0
+  });
+
+  const bundeslaender = {
+    'bayern': { name: 'Bayern', grunderwerbsteuer: 3.5 },
+    'baden-wuerttemberg': { name: 'Baden-Württemberg', grunderwerbsteuer: 5.0 },
+    'berlin': { name: 'Berlin', grunderwerbsteuer: 6.0 },
+    'brandenburg': { name: 'Brandenburg', grunderwerbsteuer: 6.5 },
+    'bremen': { name: 'Bremen', grunderwerbsteuer: 5.0 },
+    'hamburg': { name: 'Hamburg', grunderwerbsteuer: 5.5 },
+    'hessen': { name: 'Hessen', grunderwerbsteuer: 6.0 },
+    'mecklenburg': { name: 'Mecklenburg-Vorpommern', grunderwerbsteuer: 6.0 },
+    'niedersachsen': { name: 'Niedersachsen', grunderwerbsteuer: 5.0 },
+    'nrw': { name: 'Nordrhein-Westfalen', grunderwerbsteuer: 6.5 },
+    'rheinland-pfalz': { name: 'Rheinland-Pfalz', grunderwerbsteuer: 5.0 },
+    'saarland': { name: 'Saarland', grunderwerbsteuer: 6.5 },
+    'sachsen': { name: 'Sachsen', grunderwerbsteuer: 5.5 },
+    'sachsen-anhalt': { name: 'Sachsen-Anhalt', grunderwerbsteuer: 5.0 },
+    'schleswig-holstein': { name: 'Schleswig-Holstein', grunderwerbsteuer: 6.5 },
+    'thueringen': { name: 'Thüringen', grunderwerbsteuer: 5.0 }
+  };
+
+  const [bundesland, setBundesland] = useState(params.bundesland || 'bayern');
+
+  const gesamtManuell = Object.values(positionen).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+  const gesamtProzent = kaufpreis > 0 ? (gesamtManuell / kaufpreis) * 100 : 0;
+
+  const handlePositionChange = (key, value) => {
+    const neuePositionen = { ...positionen, [key]: parseFloat(value) || 0 };
+    setPositionen(neuePositionen);
+    const neuesGesamt = Object.values(neuePositionen).reduce((sum, val) => sum + val, 0);
+    const neuerProzentsatz = kaufpreis > 0 ? (neuesGesamt / kaufpreis) * 100 : 0;
+    updateParams({
+      ...params,
+      kaufnebenkosten: neuerProzentsatz,
+      kaufnebenkostenModus: 'manuell',
+      kaufnebenkostenPositionen: neuePositionen
+    });
+  };
+
+  const handleBundeslandChange = (bl) => {
+    setBundesland(bl);
+    const neueGrunderwerbsteuer = kaufpreis * (bundeslaender[bl].grunderwerbsteuer / 100);
+    const neuePositionen = { ...positionen, grunderwerbsteuer: neueGrunderwerbsteuer };
+    setPositionen(neuePositionen);
+    const neuesGesamt = Object.values(neuePositionen).reduce((sum, val) => sum + val, 0);
+    const neuerProzentsatz = kaufpreis > 0 ? (neuesGesamt / kaufpreis) * 100 : 0;
+    updateParams({
+      ...params,
+      kaufnebenkosten: neuerProzentsatz,
+      bundesland: bl,
+      kaufnebenkostenPositionen: neuePositionen
+    });
+  };
+
+  const handleModusChange = (neuerModus) => {
+    setModus(neuerModus);
+    updateParams({ ...params, kaufnebenkostenModus: neuerModus });
+  };
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-semibold text-gray-700">Kaufnebenkosten</h3>
+        <div className="flex bg-gray-200 rounded-lg p-1">
+          <button
+            onClick={() => handleModusChange('prozent')}
+            className={`px-2 py-1 text-xs rounded-md transition-colors ${modus === 'prozent' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+          >
+            Pauschal %
+          </button>
+          <button
+            onClick={() => handleModusChange('manuell')}
+            className={`px-2 py-1 text-xs rounded-md transition-colors ${modus === 'manuell' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+          >
+            Aufgeschlüsselt
+          </button>
+        </div>
+      </div>
+
+      {modus === 'prozent' ? (
+        <div>
+          <InputSliderCombo
+            label="Kaufnebenkosten gesamt"
+            value={params.kaufnebenkosten}
+            onChange={(v) => updateParams({...params, kaufnebenkosten: v})}
+            min={5}
+            max={15}
+            step={0.5}
+            unit="%"
+          />
+          <div className="text-sm text-gray-600 mt-2">
+            = {formatCurrency(kaufpreis * (params.kaufnebenkosten / 100))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="mb-3">
+            <label className="block text-xs text-gray-600 mb-1">Bundesland (für Grunderwerbsteuer)</label>
+            <select
+              value={bundesland}
+              onChange={(e) => handleBundeslandChange(e.target.value)}
+              className="w-full px-2 py-1 border rounded text-sm"
+            >
+              {Object.entries(bundeslaender).map(([key, val]) => (
+                <option key={key} value={key}>{val.name} ({val.grunderwerbsteuer}%)</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-600">Grunderwerbsteuer ({bundeslaender[bundesland].grunderwerbsteuer}%)</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={Math.round(positionen.grunderwerbsteuer)}
+                  onChange={(e) => handlePositionChange('grunderwerbsteuer', e.target.value)}
+                  className="w-24 px-2 py-1 border rounded text-sm text-right"
+                />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-600">Notar (ca. 1,5%)</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={Math.round(positionen.notar)}
+                  onChange={(e) => handlePositionChange('notar', e.target.value)}
+                  className="w-24 px-2 py-1 border rounded text-sm text-right"
+                />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-600">Grundbuch (ca. 0,5%)</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={Math.round(positionen.grundbuch)}
+                  onChange={(e) => handlePositionChange('grundbuch', e.target.value)}
+                  className="w-24 px-2 py-1 border rounded text-sm text-right"
+                />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-600">Makler (ca. 3,57%)</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={Math.round(positionen.makler)}
+                  onChange={(e) => handlePositionChange('makler', e.target.value)}
+                  className="w-24 px-2 py-1 border rounded text-sm text-right"
+                />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-600">Sonstige</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={Math.round(positionen.sonstige)}
+                  onChange={(e) => handlePositionChange('sonstige', e.target.value)}
+                  className="w-24 px-2 py-1 border rounded text-sm text-right"
+                />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 pt-3 border-t flex justify-between items-center">
+            <span className="font-semibold text-gray-700">Gesamt</span>
+            <div className="text-right">
+              <div className="font-bold text-lg">{formatCurrency(gesamtManuell)}</div>
+              <div className="text-xs text-gray-500">{gesamtProzent.toFixed(2)}% vom Kaufpreis</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Miet- und Kostenmanager Komponente
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
@@ -1917,8 +2117,13 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => updateParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
                 <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => updateParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
                 <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => updateParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
-                <InputSliderCombo label="Kaufnebenkosten" value={params.kaufnebenkosten} onChange={(v) => updateParams({...params, kaufnebenkosten: v})} min={5} max={15} step={0.5} unit="%" />
               </div>
+
+              <KaufnebenkostenManager
+                params={params}
+                updateParams={updateParams}
+                kaufpreis={params.kaufpreis}
+              />
 
               <MietKostenManager
                 params={params}
