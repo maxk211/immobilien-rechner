@@ -1292,6 +1292,429 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
   );
 };
 
+// Cashflow-Übersicht Komponente
+const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] }) => {
+  const [ansicht, setAnsicht] = useState('monat'); // 'monat' oder 'jahr'
+
+  const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
+  const aktuellesJahr = new Date().getFullYear();
+
+  // Berechne Cashflow-Daten pro Jahr
+  const cashflowDaten = useMemo(() => {
+    const daten = [];
+    let kumulierterCashflow = 0;
+
+    for (let jahr = kaufjahr; jahr <= aktuellesJahr + 5; jahr++) {
+      const jahreIndex = jahr - kaufjahr;
+      const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
+
+      const jahresMiete = params.kaltmiete * 12 * mieteFaktor;
+      const jahresKosten = (params.nebenkosten + params.instandhaltung + params.verwaltung) * 12;
+      const jahresKreditrate = ergebnis.monatlicheRate * 12;
+
+      // Investitionen für dieses Jahr
+      const jahresInvestitionen = investitionen
+        .filter(inv => new Date(inv.datum).getFullYear() === jahr)
+        .reduce((sum, inv) => sum + inv.betrag, 0);
+
+      const jahresCashflow = jahresMiete - jahresKosten - jahresKreditrate - jahresInvestitionen;
+      kumulierterCashflow += jahresCashflow;
+
+      daten.push({
+        jahr,
+        einnahmen: Math.round(jahresMiete),
+        kosten: Math.round(jahresKosten),
+        kreditrate: Math.round(jahresKreditrate),
+        investitionen: Math.round(jahresInvestitionen),
+        cashflow: Math.round(jahresCashflow),
+        kumuliert: Math.round(kumulierterCashflow)
+      });
+    }
+    return daten;
+  }, [params, ergebnis, kaufjahr, investitionen]);
+
+  const monatsDaten = {
+    einnahmen: params.kaltmiete,
+    nebenkosten: params.nebenkosten,
+    instandhaltung: params.instandhaltung,
+    verwaltung: params.verwaltung,
+    kreditrate: ergebnis.monatlicheRate,
+    cashflow: ergebnis.cashflowMonatlich
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-gray-800">💰 Cashflow-Übersicht</h3>
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setAnsicht('monat')}
+            className={`px-3 py-1 text-xs rounded-md ${ansicht === 'monat' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+          >
+            Monatlich
+          </button>
+          <button
+            onClick={() => setAnsicht('jahr')}
+            className={`px-3 py-1 text-xs rounded-md ${ansicht === 'jahr' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+          >
+            Jährlich
+          </button>
+        </div>
+      </div>
+
+      {ansicht === 'monat' ? (
+        <div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center py-2 border-b">
+              <span className="text-green-600">+ Mieteinnahmen</span>
+              <span className="font-semibold text-green-600">{formatCurrency(monatsDaten.einnahmen)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1 text-sm">
+              <span className="text-red-500">- Nebenkosten</span>
+              <span className="text-red-500">{formatCurrency(monatsDaten.nebenkosten)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1 text-sm">
+              <span className="text-red-500">- Instandhaltung</span>
+              <span className="text-red-500">{formatCurrency(monatsDaten.instandhaltung)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1 text-sm">
+              <span className="text-red-500">- Verwaltung</span>
+              <span className="text-red-500">{formatCurrency(monatsDaten.verwaltung)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b">
+              <span className="text-red-600">- Kreditrate</span>
+              <span className="font-semibold text-red-600">{formatCurrency(monatsDaten.kreditrate)}</span>
+            </div>
+            <div className={`flex justify-between items-center py-2 px-3 rounded-lg ${monatsDaten.cashflow >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+              <span className="font-semibold">= Cashflow/Monat</span>
+              <span className={`text-xl font-bold ${monatsDaten.cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {monatsDaten.cashflow >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflow)}
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-gray-500">
+            Jährlicher Cashflow: {formatCurrency(monatsDaten.cashflow * 12)}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="text-left p-2">Jahr</th>
+                  <th className="text-right p-2 text-green-600">Einnahmen</th>
+                  <th className="text-right p-2 text-red-500">Kosten</th>
+                  <th className="text-right p-2 text-red-600">Kredit</th>
+                  <th className="text-right p-2 text-orange-500">Invest.</th>
+                  <th className="text-right p-2 font-semibold">Cashflow</th>
+                  <th className="text-right p-2 text-blue-600">Kumuliert</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashflowDaten.map(d => (
+                  <tr key={d.jahr} className={d.jahr === aktuellesJahr ? 'bg-blue-50' : ''}>
+                    <td className="p-2 font-semibold">{d.jahr}</td>
+                    <td className="p-2 text-right text-green-600">{formatCurrency(d.einnahmen)}</td>
+                    <td className="p-2 text-right text-red-500">{formatCurrency(d.kosten)}</td>
+                    <td className="p-2 text-right text-red-600">{formatCurrency(d.kreditrate)}</td>
+                    <td className="p-2 text-right text-orange-500">{d.investitionen > 0 ? formatCurrency(d.investitionen) : '-'}</td>
+                    <td className={`p-2 text-right font-semibold ${d.cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {d.cashflow >= 0 ? '+' : ''}{formatCurrency(d.cashflow)}
+                    </td>
+                    <td className={`p-2 text-right ${d.kumuliert >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {formatCurrency(d.kumuliert)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Steuerberechnung Komponente
+const Steuerberechnung = ({ params, ergebnis, immobilie }) => {
+  const [steuersatz, setSteuersatz] = useState(immobilie.steuersatz || 42);
+  const [showDetails, setShowDetails] = useState(false);
+
+  // AfA Berechnung (Abschreibung)
+  // Gebäudeanteil ca. 80% des Kaufpreises, 2% AfA linear über 50 Jahre
+  const gebaeudeAnteil = params.kaufpreis * 0.8;
+  const jahresAfa = gebaeudeAnteil * 0.02;
+
+  // Zinsanteil der Kreditrate (im ersten Jahr)
+  const fremdkapital = params.kaufpreis + (params.kaufpreis * params.kaufnebenkosten / 100) - params.eigenkapital;
+  const jahresZinsen = fremdkapital * (params.zinssatz / 100);
+
+  // Werbungskosten
+  const jahresNebenkosten = (params.nebenkosten + params.instandhaltung + params.verwaltung) * 12;
+
+  // Zu versteuernde Mieteinnahmen
+  const jahresMiete = params.kaltmiete * 12;
+
+  // Absetzbare Kosten
+  const absetzbareKosten = jahresAfa + jahresZinsen + jahresNebenkosten;
+
+  // Zu versteuernder Gewinn/Verlust
+  const zuVersteuern = jahresMiete - absetzbareKosten;
+
+  // Steuerersparnis/Steuerlast
+  const steuerEffekt = zuVersteuern * (steuersatz / 100);
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-gray-800">📋 Steuerberechnung</h3>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          {showDetails ? 'Weniger' : 'Details'}
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm text-gray-600 mb-1">Persönlicher Steuersatz</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min="0"
+            max="45"
+            value={steuersatz}
+            onChange={(e) => setSteuersatz(parseInt(e.target.value))}
+            className="flex-1"
+          />
+          <span className="w-12 text-right font-semibold">{steuersatz}%</span>
+        </div>
+      </div>
+
+      {showDetails && (
+        <div className="space-y-2 mb-4 text-sm border-t pt-3">
+          <div className="flex justify-between">
+            <span className="text-green-600">+ Mieteinnahmen</span>
+            <span className="text-green-600">{formatCurrency(jahresMiete)}</span>
+          </div>
+          <div className="flex justify-between text-gray-600">
+            <span>- AfA (2% von {formatCurrency(gebaeudeAnteil)})</span>
+            <span>{formatCurrency(jahresAfa)}</span>
+          </div>
+          <div className="flex justify-between text-gray-600">
+            <span>- Schuldzinsen</span>
+            <span>{formatCurrency(jahresZinsen)}</span>
+          </div>
+          <div className="flex justify-between text-gray-600">
+            <span>- Werbungskosten</span>
+            <span>{formatCurrency(jahresNebenkosten)}</span>
+          </div>
+          <div className="flex justify-between font-semibold border-t pt-2">
+            <span>= Zu versteuern</span>
+            <span className={zuVersteuern >= 0 ? 'text-gray-800' : 'text-green-600'}>
+              {formatCurrency(zuVersteuern)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className={`p-3 rounded-lg ${steuerEffekt > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">{steuerEffekt > 0 ? 'Steuerlast' : 'Steuerersparnis'}/Jahr</span>
+          <span className={`text-xl font-bold ${steuerEffekt > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            {steuerEffekt > 0 ? '-' : '+'}{formatCurrency(Math.abs(steuerEffekt))}
+          </span>
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          {steuerEffekt > 0
+            ? `Sie zahlen ca. ${formatCurrency(steuerEffekt / 12)}/Monat Steuern auf die Mieteinnahmen`
+            : `Sie sparen ca. ${formatCurrency(Math.abs(steuerEffekt) / 12)}/Monat durch Verlustverrechnung`
+          }
+        </div>
+      </div>
+
+      <div className="mt-3 p-2 bg-yellow-50 rounded text-xs text-yellow-800">
+        ⚠️ Vereinfachte Berechnung. Konsultieren Sie einen Steuerberater für genaue Werte.
+      </div>
+    </div>
+  );
+};
+
+// Reparaturen & Investitionen Komponente
+const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
+  const [investitionen, setInvestitionen] = useState(immobilie.investitionen || []);
+  const [showForm, setShowForm] = useState(false);
+  const [neueInvestition, setNeueInvestition] = useState({
+    datum: new Date().toISOString().split('T')[0],
+    beschreibung: '',
+    betrag: '',
+    kategorie: 'reparatur'
+  });
+
+  const kategorien = {
+    'reparatur': { label: 'Reparatur', color: 'orange', icon: '🔧' },
+    'modernisierung': { label: 'Modernisierung', color: 'blue', icon: '🏠' },
+    'instandhaltung': { label: 'Instandhaltung', color: 'gray', icon: '🔨' },
+    'ausstattung': { label: 'Ausstattung', color: 'purple', icon: '🛋️' },
+    'energie': { label: 'Energetisch', color: 'green', icon: '🌱' }
+  };
+
+  const handleAdd = () => {
+    if (!neueInvestition.beschreibung || !neueInvestition.betrag) return;
+
+    const updated = [...investitionen, {
+      id: Date.now(),
+      ...neueInvestition,
+      betrag: parseFloat(neueInvestition.betrag)
+    }];
+    setInvestitionen(updated);
+    onUpdate({ ...immobilie, investitionen: updated });
+    setNeueInvestition({
+      datum: new Date().toISOString().split('T')[0],
+      beschreibung: '',
+      betrag: '',
+      kategorie: 'reparatur'
+    });
+    setShowForm(false);
+  };
+
+  const handleDelete = (id) => {
+    const updated = investitionen.filter(i => i.id !== id);
+    setInvestitionen(updated);
+    onUpdate({ ...immobilie, investitionen: updated });
+  };
+
+  const gesamtNachKategorie = useMemo(() => {
+    const summen = {};
+    investitionen.forEach(inv => {
+      summen[inv.kategorie] = (summen[inv.kategorie] || 0) + inv.betrag;
+    });
+    return summen;
+  }, [investitionen]);
+
+  const gesamtInvestitionen = investitionen.reduce((sum, inv) => sum + inv.betrag, 0);
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-gray-800">🔧 Reparaturen & Investitionen</h3>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+        >
+          + Hinzufügen
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Datum</label>
+              <input
+                type="date"
+                value={neueInvestition.datum}
+                onChange={(e) => setNeueInvestition({...neueInvestition, datum: e.target.value})}
+                className="w-full px-2 py-1 border rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Kategorie</label>
+              <select
+                value={neueInvestition.kategorie}
+                onChange={(e) => setNeueInvestition({...neueInvestition, kategorie: e.target.value})}
+                className="w-full px-2 py-1 border rounded text-sm"
+              >
+                {Object.entries(kategorien).map(([key, val]) => (
+                  <option key={key} value={key}>{val.icon} {val.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="block text-xs text-gray-600 mb-1">Beschreibung</label>
+            <input
+              type="text"
+              value={neueInvestition.beschreibung}
+              onChange={(e) => setNeueInvestition({...neueInvestition, beschreibung: e.target.value})}
+              placeholder="z.B. Neue Heizung, Dachsanierung..."
+              className="w-full px-2 py-1 border rounded text-sm"
+            />
+          </div>
+          <div className="mb-3">
+            <label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
+            <input
+              type="number"
+              value={neueInvestition.betrag}
+              onChange={(e) => setNeueInvestition({...neueInvestition, betrag: e.target.value})}
+              placeholder="z.B. 5000"
+              className="w-full px-2 py-1 border rounded text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+              Speichern
+            </button>
+            <button onClick={() => setShowForm(false)} className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400">
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Zusammenfassung */}
+      {investitionen.length > 0 && (
+        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold">Gesamt investiert:</span>
+            <span className="text-lg font-bold text-orange-600">{formatCurrency(gesamtInvestitionen)}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(gesamtNachKategorie).map(([kat, summe]) => (
+              <span key={kat} className={`text-xs px-2 py-1 rounded bg-${kategorien[kat].color}-100 text-${kategorien[kat].color}-700`}>
+                {kategorien[kat].icon} {formatCurrency(summe)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Liste */}
+      <div className="max-h-48 overflow-y-auto">
+        {investitionen.length === 0 ? (
+          <div className="text-center text-gray-400 py-4 text-sm">
+            Noch keine Reparaturen oder Investitionen erfasst
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {investitionen.sort((a, b) => new Date(b.datum) - new Date(a.datum)).map(inv => (
+              <div key={inv.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div className="flex items-center gap-2">
+                  <span>{kategorien[inv.kategorie]?.icon}</span>
+                  <div>
+                    <div className="text-sm font-medium">{inv.beschreibung}</div>
+                    <div className="text-xs text-gray-500">{new Date(inv.datum).toLocaleDateString('de-DE')}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-orange-600">{formatCurrency(inv.betrag)}</span>
+                  <button
+                    onClick={() => handleDelete(inv.id)}
+                    className="text-red-400 hover:text-red-600 text-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Immobilien-Detail Komponente
 const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
@@ -1312,10 +1735,13 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     kaufnebenkosten: immobilie.kaufnebenkosten ?? 10,
     geschaetzterWert: initialWert,
     mietModus: immobilie.mietModus || 'automatisch',
-    mietHistorie: immobilie.mietHistorie || {}
+    mietHistorie: immobilie.mietHistorie || {},
+    steuersatz: immobilie.steuersatz || 42,
+    investitionen: immobilie.investitionen || []
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
+  const [activeTab, setActiveTab] = useState('uebersicht'); // 'uebersicht', 'cashflow', 'steuern', 'investitionen'
 
   const updateParams = (newParams) => {
     setParams(newParams);
@@ -1487,73 +1913,103 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 </div>
               </div>
 
-              {/* Cashflow */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Monatlicher Cashflow</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-gray-500">Mieteinnahmen</div>
-                    <div className="text-lg font-semibold text-green-600">+{formatCurrency(params.kaltmiete)}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500">Kreditrate</div>
-                    <div className="text-lg font-semibold text-red-600">-{formatCurrency(ergebnis.monatlicheRate)}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500">Nebenkosten & Verwaltung</div>
-                    <div className="text-lg font-semibold text-red-600">-{formatCurrency(params.nebenkosten + params.instandhaltung + params.verwaltung)}</div>
-                  </div>
-                  <div className={`p-3 rounded ${ergebnis.cashflowMonatlich >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                    <div className="text-sm text-gray-500">Cashflow/Monat</div>
-                    <div className={`text-xl font-bold ${ergebnis.cashflowMonatlich >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                      {ergebnis.cashflowMonatlich >= 0 ? '+' : ''}{formatCurrency(ergebnis.cashflowMonatlich)}
-                    </div>
-                  </div>
-                </div>
+              {/* Tab-Navigation */}
+              <div className="border-b border-gray-200">
+                <nav className="flex space-x-4">
+                  {[
+                    { id: 'uebersicht', label: '📊 Übersicht', },
+                    { id: 'cashflow', label: '💰 Cashflow' },
+                    { id: 'steuern', label: '📋 Steuern' },
+                    { id: 'investitionen', label: '🔧 Investitionen' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`py-2 px-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === tab.id
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
               </div>
 
-              {/* Vermögensentwicklung Chart */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Vermögensentwicklung</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={ergebnis.entwicklung}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="jahr" />
-                    <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => formatCurrency(v)} />
-                    <Legend />
-                    <Area type="monotone" dataKey="immobilienwert" name="Immobilienwert" stroke="#2563eb" fill="#93c5fd" />
-                    <Area type="monotone" dataKey="eigenkapital" name="Eigenkapital" stroke="#10b981" fill="#6ee7b7" />
-                    <Area type="monotone" dataKey="restschuld" name="Restschuld" stroke="#ef4444" fill="#fca5a5" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {/* Tab-Inhalte */}
+              {activeTab === 'uebersicht' && (
+                <>
+                  {/* Vermögensentwicklung Chart */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-700 mb-3">Vermögensentwicklung</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <AreaChart data={ergebnis.entwicklung}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="jahr" />
+                        <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                        <Tooltip formatter={(v) => formatCurrency(v)} />
+                        <Legend />
+                        <Area type="monotone" dataKey="immobilienwert" name="Immobilienwert" stroke="#2563eb" fill="#93c5fd" />
+                        <Area type="monotone" dataKey="eigenkapital" name="Eigenkapital" stroke="#10b981" fill="#6ee7b7" />
+                        <Area type="monotone" dataKey="restschuld" name="Restschuld" stroke="#ef4444" fill="#fca5a5" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
 
-              {/* Leverage-Effekt Visualisierung */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Leverage-Effekt Visualisierung</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={[
-                    { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
-                    { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
-                    { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
-                    <Tooltip formatter={(v) => `${v.toFixed(2)}%`} />
-                    <Bar dataKey="wert" name="Rendite">
-                      {[
+                  {/* Leverage-Effekt Visualisierung */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-700 mb-3">Leverage-Effekt Visualisierung</h3>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={[
                         { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
                         { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
                         { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
+                        <Tooltip formatter={(v) => `${v.toFixed(2)}%`} />
+                        <Bar dataKey="wert" name="Rendite">
+                          {[
+                            { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
+                            { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
+                            { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'cashflow' && (
+                <CashflowUebersicht
+                  params={params}
+                  ergebnis={ergebnis}
+                  immobilie={immobilie}
+                  investitionen={params.investitionen}
+                />
+              )}
+
+              {activeTab === 'steuern' && (
+                <Steuerberechnung
+                  params={params}
+                  ergebnis={ergebnis}
+                  immobilie={immobilie}
+                />
+              )}
+
+              {activeTab === 'investitionen' && (
+                <ReparaturenInvestitionen
+                  immobilie={{...immobilie, investitionen: params.investitionen}}
+                  onUpdate={(updated) => {
+                    updateParams({...params, investitionen: updated.investitionen});
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
