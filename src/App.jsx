@@ -1437,14 +1437,15 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
 };
 
 // Steuerberechnung Komponente
-const Steuerberechnung = ({ params, ergebnis, immobilie }) => {
+const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
   const [steuersatz, setSteuersatz] = useState(immobilie.steuersatz || 42);
+  const [gebaeudeAnteilProzent, setGebaeudeAnteilProzent] = useState(immobilie.gebaeudeAnteilProzent || 80);
+  const [afaSatz, setAfaSatz] = useState(immobilie.afaSatz || 2.0);
   const [showDetails, setShowDetails] = useState(false);
 
   // AfA Berechnung (Abschreibung)
-  // Gebäudeanteil ca. 80% des Kaufpreises, 2% AfA linear über 50 Jahre
-  const gebaeudeAnteil = params.kaufpreis * 0.8;
-  const jahresAfa = gebaeudeAnteil * 0.02;
+  const gebaeudeAnteil = params.kaufpreis * (gebaeudeAnteilProzent / 100);
+  const jahresAfa = gebaeudeAnteil * (afaSatz / 100);
 
   // Zinsanteil der Kreditrate (im ersten Jahr)
   const fremdkapital = params.kaufpreis + (params.kaufpreis * params.kaufnebenkosten / 100) - params.eigenkapital;
@@ -1464,6 +1465,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie }) => {
 
   // Steuerersparnis/Steuerlast
   const steuerEffekt = zuVersteuern * (steuersatz / 100);
+
+  // AfA-Jahre berechnen
+  const afaJahre = afaSatz > 0 ? Math.round(100 / afaSatz) : 0;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -1492,6 +1496,47 @@ const Steuerberechnung = ({ params, ergebnis, immobilie }) => {
         </div>
       </div>
 
+      {/* AfA Einstellungen */}
+      <div className="bg-gray-50 p-3 rounded-lg mb-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">AfA-Einstellungen</h4>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Gebäudeanteil</label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={gebaeudeAnteilProzent}
+                onChange={(e) => setGebaeudeAnteilProzent(parseFloat(e.target.value) || 0)}
+                className="w-16 px-2 py-1 border rounded text-sm text-right"
+              />
+              <span className="text-sm text-gray-600">%</span>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">= {formatCurrency(gebaeudeAnteil)}</div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">AfA-Satz</label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.5"
+                value={afaSatz}
+                onChange={(e) => setAfaSatz(parseFloat(e.target.value) || 0)}
+                className="w-16 px-2 py-1 border rounded text-sm text-right"
+              />
+              <span className="text-sm text-gray-600">%</span>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">{afaJahre} Jahre linear</div>
+          </div>
+        </div>
+        <div className="text-xs text-gray-500 mt-2 p-2 bg-blue-50 rounded">
+          💡 Standard: 2% für Gebäude ab 1925 (50 Jahre), 2,5% für Gebäude vor 1925 (40 Jahre)
+        </div>
+      </div>
+
       {showDetails && (
         <div className="space-y-2 mb-4 text-sm border-t pt-3">
           <div className="flex justify-between">
@@ -1499,7 +1544,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie }) => {
             <span className="text-green-600">{formatCurrency(jahresMiete)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
-            <span>- AfA (2% von {formatCurrency(gebaeudeAnteil)})</span>
+            <span>- AfA ({afaSatz}% von {formatCurrency(gebaeudeAnteil)})</span>
             <span>{formatCurrency(jahresAfa)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
