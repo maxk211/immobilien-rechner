@@ -1069,6 +1069,229 @@ const PortfolioOverview = ({ portfolio }) => {
   );
 };
 
+// Miet- und Kostenmanager Komponente
+const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges }) => {
+  const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
+  const [ansicht, setAnsicht] = useState('jahr'); // 'jahr' oder 'monat'
+  const [mietHistorie, setMietHistorie] = useState(immobilie.mietHistorie || {});
+
+  const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
+  const aktuellesJahr = new Date().getFullYear();
+  const jahre = [];
+  for (let j = kaufjahr; j <= aktuellesJahr + 5; j++) {
+    jahre.push(j);
+  }
+
+  const monate = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
+  const getWertFuerZeitraum = (jahr, monat = null, feld) => {
+    const key = monat !== null ? `${jahr}-${monat}` : `${jahr}`;
+    if (mietHistorie[key] && mietHistorie[key][feld] !== undefined) {
+      return mietHistorie[key][feld];
+    }
+    // Fallback auf params oder berechne mit Steigerung
+    const jahreVergangen = jahr - kaufjahr;
+    const basisWert = params[feld] || 0;
+    if (modus === 'automatisch' && feld === 'kaltmiete') {
+      return Math.round(basisWert * Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreVergangen));
+    }
+    return basisWert;
+  };
+
+  const setWertFuerZeitraum = (jahr, monat, feld, wert) => {
+    const key = monat !== null ? `${jahr}-${monat}` : `${jahr}`;
+    const neueHistorie = {
+      ...mietHistorie,
+      [key]: {
+        ...(mietHistorie[key] || {}),
+        [feld]: parseFloat(wert) || 0
+      }
+    };
+    setMietHistorie(neueHistorie);
+    updateParams({ ...params, mietHistorie: neueHistorie, mietModus: modus });
+  };
+
+  const handleModusChange = (neuerModus) => {
+    setModus(neuerModus);
+    updateParams({ ...params, mietModus: neuerModus });
+  };
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-semibold text-gray-700">Einnahmen & Kosten</h3>
+        <div className="flex bg-gray-200 rounded-lg p-1">
+          <button
+            onClick={() => handleModusChange('automatisch')}
+            className={`px-3 py-1 text-xs rounded-md transition-colors ${modus === 'automatisch' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+          >
+            Automatisch
+          </button>
+          <button
+            onClick={() => handleModusChange('manuell')}
+            className={`px-3 py-1 text-xs rounded-md transition-colors ${modus === 'manuell' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+          >
+            Manuell
+          </button>
+        </div>
+      </div>
+
+      {modus === 'automatisch' ? (
+        <div>
+          <p className="text-xs text-gray-500 mb-3">Basiswerte mit jährlicher Steigerung</p>
+          <InputSliderCombo label="Kaltmiete (Basis)" value={params.kaltmiete} onChange={(v) => updateParams({...params, kaltmiete: v})} min={200} max={5000} step={50} unit="€" />
+          <InputSliderCombo label="Mietsteigerung p.a." value={params.mietsteigerung} onChange={(v) => updateParams({...params, mietsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
+          <div className="border-t pt-3 mt-3">
+            <InputSliderCombo label="Nebenkosten" value={params.nebenkosten} onChange={(v) => updateParams({...params, nebenkosten: v})} min={0} max={500} step={10} unit="€" />
+            <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => updateParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
+            <InputSliderCombo label="Verwaltung" value={params.verwaltung} onChange={(v) => updateParams({...params, verwaltung: v})} min={0} max={200} step={5} unit="€" />
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-xs text-gray-500">Manuelle Eingabe pro Zeitraum</p>
+            <div className="flex bg-gray-200 rounded-lg p-1">
+              <button
+                onClick={() => setAnsicht('jahr')}
+                className={`px-2 py-1 text-xs rounded-md transition-colors ${ansicht === 'jahr' ? 'bg-white shadow text-blue-600' : 'text-gray-600'}`}
+              >
+                Jahre
+              </button>
+              <button
+                onClick={() => setAnsicht('monat')}
+                className={`px-2 py-1 text-xs rounded-md transition-colors ${ansicht === 'monat' ? 'bg-white shadow text-blue-600' : 'text-gray-600'}`}
+              >
+                Monate
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-64 overflow-y-auto">
+            {ansicht === 'jahr' ? (
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-gray-100">
+                  <tr>
+                    <th className="text-left p-1">Jahr</th>
+                    <th className="text-right p-1">Miete</th>
+                    <th className="text-right p-1">NK</th>
+                    <th className="text-right p-1">Inst.</th>
+                    <th className="text-right p-1">Verw.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jahre.map(jahr => (
+                    <tr key={jahr} className={jahr === aktuellesJahr ? 'bg-blue-50' : ''}>
+                      <td className="p-1 font-semibold">{jahr}</td>
+                      <td className="p-1">
+                        <input
+                          type="number"
+                          value={getWertFuerZeitraum(jahr, null, 'kaltmiete')}
+                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'kaltmiete', e.target.value)}
+                          className="w-16 px-1 py-0.5 border rounded text-right"
+                        />
+                      </td>
+                      <td className="p-1">
+                        <input
+                          type="number"
+                          value={getWertFuerZeitraum(jahr, null, 'nebenkosten')}
+                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'nebenkosten', e.target.value)}
+                          className="w-14 px-1 py-0.5 border rounded text-right"
+                        />
+                      </td>
+                      <td className="p-1">
+                        <input
+                          type="number"
+                          value={getWertFuerZeitraum(jahr, null, 'instandhaltung')}
+                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'instandhaltung', e.target.value)}
+                          className="w-14 px-1 py-0.5 border rounded text-right"
+                        />
+                      </td>
+                      <td className="p-1">
+                        <input
+                          type="number"
+                          value={getWertFuerZeitraum(jahr, null, 'verwaltung')}
+                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'verwaltung', e.target.value)}
+                          className="w-14 px-1 py-0.5 border rounded text-right"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div>
+                <select
+                  className="w-full mb-2 p-1 border rounded text-sm"
+                  onChange={(e) => document.getElementById(`monat-${e.target.value}`)?.scrollIntoView()}
+                >
+                  {jahre.map(j => <option key={j} value={j}>{j}</option>)}
+                </select>
+                {jahre.map(jahr => (
+                  <div key={jahr} id={`monat-${jahr}`} className="mb-4">
+                    <div className="font-semibold text-sm bg-gray-200 p-1 rounded mb-1">{jahr}</div>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr>
+                          <th className="text-left p-1">Mon</th>
+                          <th className="text-right p-1">Miete</th>
+                          <th className="text-right p-1">NK</th>
+                          <th className="text-right p-1">Inst.</th>
+                          <th className="text-right p-1">Verw.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {monate.map((monat, idx) => (
+                          <tr key={`${jahr}-${idx}`}>
+                            <td className="p-1">{monat}</td>
+                            <td className="p-1">
+                              <input
+                                type="number"
+                                value={getWertFuerZeitraum(jahr, idx, 'kaltmiete')}
+                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'kaltmiete', e.target.value)}
+                                className="w-16 px-1 py-0.5 border rounded text-right"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <input
+                                type="number"
+                                value={getWertFuerZeitraum(jahr, idx, 'nebenkosten')}
+                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'nebenkosten', e.target.value)}
+                                className="w-14 px-1 py-0.5 border rounded text-right"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <input
+                                type="number"
+                                value={getWertFuerZeitraum(jahr, idx, 'instandhaltung')}
+                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'instandhaltung', e.target.value)}
+                                className="w-14 px-1 py-0.5 border rounded text-right"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <input
+                                type="number"
+                                value={getWertFuerZeitraum(jahr, idx, 'verwaltung')}
+                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'verwaltung', e.target.value)}
+                                className="w-14 px-1 py-0.5 border rounded text-right"
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 mt-2">Alle Werte in € pro Monat</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Immobilien-Detail Komponente
 const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
@@ -1087,7 +1310,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     wertsteigerung: immobilie.wertsteigerung ?? 2.0,
     mietsteigerung: immobilie.mietsteigerung ?? 1.5,
     kaufnebenkosten: immobilie.kaufnebenkosten ?? 10,
-    geschaetzterWert: initialWert
+    geschaetzterWert: initialWert,
+    mietModus: immobilie.mietModus || 'automatisch',
+    mietHistorie: immobilie.mietHistorie || {}
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -1224,18 +1449,17 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 <InputSliderCombo label="Kaufnebenkosten" value={params.kaufnebenkosten} onChange={(v) => updateParams({...params, kaufnebenkosten: v})} min={5} max={15} step={0.5} unit="%" />
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Einnahmen & Kosten</h3>
-                <InputSliderCombo label="Kaltmiete" value={params.kaltmiete} onChange={(v) => updateParams({...params, kaltmiete: v})} min={200} max={5000} step={50} unit="€" />
-                <InputSliderCombo label="Nebenkosten" value={params.nebenkosten} onChange={(v) => updateParams({...params, nebenkosten: v})} min={0} max={500} step={10} unit="€" />
-                <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => updateParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
-                <InputSliderCombo label="Verwaltung" value={params.verwaltung} onChange={(v) => updateParams({...params, verwaltung: v})} min={0} max={200} step={5} unit="€" />
-              </div>
+              <MietKostenManager
+                params={params}
+                updateParams={updateParams}
+                immobilie={immobilie}
+                hasChanges={hasChanges}
+                setHasChanges={setHasChanges}
+              />
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-3">Prognose</h3>
                 <InputSliderCombo label="Wertsteigerung p.a." value={params.wertsteigerung} onChange={(v) => updateParams({...params, wertsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
-                <InputSliderCombo label="Mietsteigerung p.a." value={params.mietsteigerung} onChange={(v) => updateParams({...params, mietsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
               </div>
             </div>
 
