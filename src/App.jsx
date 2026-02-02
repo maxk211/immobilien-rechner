@@ -468,17 +468,21 @@ const berechneRestschuld = (immobilie) => {
   const zinssatz = immobilie.zinssatz ?? 4.0;
   const tilgung = immobilie.tilgung ?? 2.0;
   const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
-  const eigenkapital = immobilie.eigenkapital ?? immobilie.kaufpreis * 0.2;
   const finanzierungsbetrag = immobilie.finanzierungsbetrag;
 
   // Fremdkapital berechnen
   const kaufnebenkostenAbsolut = immobilie.kaufpreis * (kaufnebenkosten / 100);
   const gesamtinvestition = immobilie.kaufpreis + kaufnebenkostenAbsolut;
 
+  // Eigenkapital aus neuer Aufteilung oder legacy
+  const gesamtEK = (immobilie.ekFuerNebenkosten !== undefined && immobilie.ekFuerKaufpreis !== undefined)
+    ? (immobilie.ekFuerNebenkosten || 0) + (immobilie.ekFuerKaufpreis || 0)
+    : (immobilie.eigenkapital ?? immobilie.kaufpreis * 0.2);
+
   // Finanzierungsbetrag: Entweder manuell eingegeben oder berechnet
   const anfangsFremdkapital = finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
     ? finanzierungsbetrag
-    : Math.max(0, gesamtinvestition - eigenkapital);
+    : Math.max(0, gesamtinvestition - gesamtEK);
 
   if (anfangsFremdkapital <= 0) return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
 
@@ -571,22 +575,28 @@ const formatPercent = (value) => new Intl.NumberFormat('de-DE', { style: 'percen
 // Rendite-Berechnung
 const berechneRendite = (params) => {
   const {
-    kaufpreis, eigenkapital, zinssatz, tilgung, laufzeit,
+    kaufpreis, zinssatz, tilgung, laufzeit,
     kaltmiete, nebenkosten, instandhaltung, verwaltung,
     wertsteigerung, mietsteigerung, kaufnebenkosten,
-    finanzierungsbetrag, kaufdatum
+    finanzierungsbetrag, kaufdatum,
+    ekFuerNebenkosten, ekFuerKaufpreis, eigenkapital
   } = params;
 
   // Kaufjahr für Chart-Darstellung
   const kaufjahr = kaufdatum ? new Date(kaufdatum).getFullYear() : new Date().getFullYear();
 
   const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
-  const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut; // Gesamtinvestition in das Objekt
+  const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
 
-  // Finanzierungsbetrag: Entweder manuell eingegeben oder berechnet (Gesamtinvestition - Eigenkapital)
+  // Eigenkapital berechnen aus neuer Aufteilung (falls vorhanden) oder legacy
+  const gesamtEK = (ekFuerNebenkosten !== undefined && ekFuerKaufpreis !== undefined)
+    ? (ekFuerNebenkosten || 0) + (ekFuerKaufpreis || 0)
+    : (eigenkapital || 0);
+
+  // Finanzierungsbetrag: Entweder manuell eingegeben oder berechnet
   const fremdkapital = finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
     ? finanzierungsbetrag
-    : Math.max(0, gesamtinvestition - eigenkapital);
+    : Math.max(0, gesamtinvestition - gesamtEK);
 
   const jahresmieteKalt = kaltmiete * 12;
   const jahresnebenkosten = nebenkosten * 12; // Wird vom Mieter getragen, nicht in Nettorendite
@@ -603,9 +613,9 @@ const berechneRendite = (params) => {
   const jahresannuitaet = annuitaet * 12;
 
   const cashflowVorSteuern = nettoEinnahmen - jahresannuitaet;
-  const cashOnCash = eigenkapital > 0 ? (cashflowVorSteuern / eigenkapital) * 100 : 0;
+  const cashOnCash = gesamtEK > 0 ? (cashflowVorSteuern / gesamtEK) * 100 : 0;
 
-  const eigenkapitalRendite = eigenkapital > 0 ? ((nettoEinnahmen + (kaufpreis * wertsteigerung / 100)) / eigenkapital) * 100 : 0;
+  const eigenkapitalRendite = gesamtEK > 0 ? ((nettoEinnahmen + (kaufpreis * wertsteigerung / 100)) / gesamtEK) * 100 : 0;
 
   const leverageEffekt = eigenkapitalRendite - nettorendite;
 
@@ -2458,10 +2468,18 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
 
+  // Berechne initiale EK-Werte basierend auf altem eigenkapital
+  const initKaufnebenkosten = immobilie.kaufpreis * ((immobilie.kaufnebenkosten ?? 10) / 100);
+  const initEkFuerNebenkosten = immobilie.ekFuerNebenkosten ?? initKaufnebenkosten; // Default: Nebenkosten mit EK
+  const initEkFuerKaufpreis = immobilie.ekFuerKaufpreis ?? (immobilie.eigenkapital ? Math.max(0, immobilie.eigenkapital - initKaufnebenkosten) : 0);
+
   const [params, setParams] = useState({
     kaufpreis: immobilie.kaufpreis,
-    kaufdatum: immobilie.kaufdatum || '', // Kaufdatum bearbeitbar
-    eigenkapital: immobilie.eigenkapital,
+    kaufdatum: immobilie.kaufdatum || '',
+    // Neue EK-Aufteilung
+    ekFuerNebenkosten: initEkFuerNebenkosten,
+    ekFuerKaufpreis: initEkFuerKaufpreis,
+    eigenkapital: immobilie.eigenkapital, // Legacy, wird aus ekFuerNebenkosten + ekFuerKaufpreis berechnet
     zinssatz: immobilie.zinssatz ?? 4.0,
     tilgung: immobilie.tilgung ?? 2.0,
     laufzeit: immobilie.laufzeit ?? 25,
@@ -2510,7 +2528,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   };
 
   const handleSave = () => {
-    onSave({ ...immobilie, ...params });
+    // Berechne legacy eigenkapital aus neuer Aufteilung für Abwärtskompatibilität
+    const gesamtEK = (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0);
+    onSave({ ...immobilie, ...params, eigenkapital: gesamtEK });
     setHasChanges(false);
   };
 
@@ -2711,82 +2731,197 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             </div>
           )}
 
-          {activeTab === 'finanzierung' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Kaufpreis & Finanzierung */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-4">Kaufpreis & Eigenkapital</h3>
+          {activeTab === 'finanzierung' && (() => {
+            const kaufnebenkostenAbsolut = params.kaufpreis * (params.kaufnebenkosten / 100);
+            const gesamtinvestition = params.kaufpreis + kaufnebenkostenAbsolut;
+            const ekFuerNebenkosten = params.ekFuerNebenkosten ?? kaufnebenkostenAbsolut; // Default: Nebenkosten komplett mit EK
+            const ekFuerKaufpreis = params.ekFuerKaufpreis ?? 0;
+            const gesamtEK = ekFuerNebenkosten + ekFuerKaufpreis;
+            const berechneterKredit = gesamtinvestition - gesamtEK;
 
-                {/* Kaufdatum */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kaufdatum</label>
-                  <input
-                    type="date"
-                    value={params.kaufdatum || ''}
-                    onChange={(e) => updateParams({...params, kaufdatum: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+            return (
+            <div className="space-y-6">
+              {/* Gesamtübersicht */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-200">
+                <h3 className="font-bold text-lg text-blue-800 mb-4">Gesamtinvestition</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="text-sm text-gray-500">Kaufpreis</div>
+                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(params.kaufpreis)}</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="text-sm text-gray-500">+ Nebenkosten ({params.kaufnebenkosten}%)</div>
+                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(kaufnebenkostenAbsolut)}</div>
+                  </div>
+                  <div className="bg-blue-600 p-4 rounded-lg shadow-sm text-white">
+                    <div className="text-sm text-blue-100">= Gesamtinvestition</div>
+                    <div className="text-2xl font-bold">{formatCurrency(gesamtinvestition)}</div>
+                  </div>
                 </div>
-
-                <InputSliderCombo label="Kaufpreis" value={params.kaufpreis} onChange={(v) => updateParams({...params, kaufpreis: v})} min={50000} max={2000000} step={10000} unit="€" />
-                <InputSliderCombo label="Eigenkapital" value={params.eigenkapital} onChange={(v) => updateParams({...params, eigenkapital: v})} min={0} max={params.kaufpreis} step={5000} unit="€" />
-                <div className="text-xs text-gray-500 mb-4 px-1">
-                  = {params.kaufpreis > 0 ? ((params.eigenkapital / params.kaufpreis) * 100).toFixed(1) : 0}% vom Kaufpreis
-                </div>
-
-                <KaufnebenkostenManager
-                  params={params}
-                  updateParams={updateParams}
-                  kaufpreis={params.kaufpreis}
-                />
               </div>
 
-              {/* Kredit */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-4">Kreditkonditionen</h3>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Finanzierungsbetrag (Kredit)</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={params.finanzierungsbetrag !== null ? params.finanzierungsbetrag : ''}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                        updateParams({...params, finanzierungsbetrag: val});
-                      }}
-                      placeholder={`Auto: ${formatCurrency((params.kaufpreis + params.kaufpreis * (params.kaufnebenkosten / 100)) - params.eigenkapital)}`}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-gray-500">€</span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Linke Spalte: Kaufpreis & Nebenkosten */}
+                <div className="space-y-4">
+                  {/* Kaufdatum & Kaufpreis */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-700 mb-4">Kaufdetails</h4>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kaufdatum</label>
+                      <input
+                        type="date"
+                        value={params.kaufdatum || ''}
+                        onChange={(e) => updateParams({...params, kaufdatum: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <InputSliderCombo label="Kaufpreis" value={params.kaufpreis} onChange={(v) => updateParams({...params, kaufpreis: v})} min={50000} max={2000000} step={10000} unit="€" />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Leer lassen für automatische Berechnung (Gesamtinvestition - Eigenkapital)
-                  </p>
+
+                  {/* Kaufnebenkosten */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <KaufnebenkostenManager
+                      params={params}
+                      updateParams={updateParams}
+                      kaufpreis={params.kaufpreis}
+                    />
+                  </div>
                 </div>
 
-                <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => updateParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
-                <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => updateParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
-                <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => updateParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
+                {/* Rechte Spalte: Eigenkapital & Finanzierung */}
+                <div className="space-y-4">
+                  {/* Eigenkapital Aufteilung */}
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="font-semibold text-green-800 mb-4">💰 Eigenkapitaleinsatz</h4>
 
-                {/* Zusammenfassung */}
-                <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Finanzierungsbetrag:</span>
-                    <span className="font-bold text-blue-600">{formatCurrency(ergebnis.fremdkapital)}</span>
+                    {/* EK für Nebenkosten */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-sm font-medium text-gray-700">EK für Kaufnebenkosten</label>
+                        <span className="text-xs text-gray-500">max. {formatCurrency(kaufnebenkostenAbsolut)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min={0}
+                          max={kaufnebenkostenAbsolut}
+                          step={1000}
+                          value={ekFuerNebenkosten}
+                          onChange={(e) => updateParams({...params, ekFuerNebenkosten: parseFloat(e.target.value)})}
+                          className="flex-1"
+                        />
+                        <input
+                          type="number"
+                          value={Math.round(ekFuerNebenkosten)}
+                          onChange={(e) => updateParams({...params, ekFuerNebenkosten: Math.min(kaufnebenkostenAbsolut, parseFloat(e.target.value) || 0)})}
+                          className="w-28 px-2 py-1 border rounded text-right text-sm"
+                        />
+                        <span className="text-sm text-gray-500">€</span>
+                      </div>
+                      {ekFuerNebenkosten >= kaufnebenkostenAbsolut ? (
+                        <p className="text-xs text-green-600 mt-1">✓ Nebenkosten komplett mit EK bezahlt</p>
+                      ) : ekFuerNebenkosten > 0 ? (
+                        <p className="text-xs text-yellow-600 mt-1">⚠ {formatCurrency(kaufnebenkostenAbsolut - ekFuerNebenkosten)} Nebenkosten werden mitfinanziert</p>
+                      ) : (
+                        <p className="text-xs text-orange-600 mt-1">⚠ Nebenkosten komplett mitfinanziert (100%-Finanzierung)</p>
+                      )}
+                    </div>
+
+                    {/* EK für Kaufpreis */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-sm font-medium text-gray-700">EK für Kaufpreis</label>
+                        <span className="text-xs text-gray-500">max. {formatCurrency(params.kaufpreis)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min={0}
+                          max={params.kaufpreis}
+                          step={5000}
+                          value={ekFuerKaufpreis}
+                          onChange={(e) => updateParams({...params, ekFuerKaufpreis: parseFloat(e.target.value)})}
+                          className="flex-1"
+                        />
+                        <input
+                          type="number"
+                          value={Math.round(ekFuerKaufpreis)}
+                          onChange={(e) => updateParams({...params, ekFuerKaufpreis: Math.min(params.kaufpreis, parseFloat(e.target.value) || 0)})}
+                          className="w-28 px-2 py-1 border rounded text-right text-sm"
+                        />
+                        <span className="text-sm text-gray-500">€</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        = {params.kaufpreis > 0 ? ((ekFuerKaufpreis / params.kaufpreis) * 100).toFixed(1) : 0}% vom Kaufpreis
+                      </p>
+                    </div>
+
+                    {/* Gesamt EK */}
+                    <div className="pt-3 border-t border-green-200">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-green-800">Gesamt Eigenkapital</span>
+                        <span className="text-xl font-bold text-green-700">{formatCurrency(gesamtEK)}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        = {gesamtinvestition > 0 ? ((gesamtEK / gesamtinvestition) * 100).toFixed(1) : 0}% der Gesamtinvestition
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Monatliche Rate:</span>
-                    <span className="font-bold">{formatCurrency(ergebnis.monatlicheRate)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Jährliche Rate:</span>
-                    <span className="font-medium">{formatCurrency(ergebnis.monatlicheRate * 12)}</span>
+
+                  {/* Kreditkonditionen */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-700 mb-4">🏦 Kreditkonditionen</h4>
+
+                    <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-blue-700">Berechneter Kreditbetrag</span>
+                        <span className="text-lg font-bold text-blue-700">{formatCurrency(berechneterKredit)}</span>
+                      </div>
+                      <p className="text-xs text-blue-600 mt-1">Gesamtinvestition - Eigenkapital</p>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Oder: Kreditbetrag manuell eingeben</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={params.finanzierungsbetrag !== null ? params.finanzierungsbetrag : ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                            updateParams({...params, finanzierungsbetrag: val});
+                          }}
+                          placeholder="Automatisch berechnet"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-gray-500">€</span>
+                      </div>
+                    </div>
+
+                    <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => updateParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
+                    <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => updateParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
+                    <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => updateParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
+
+                    {/* Zusammenfassung */}
+                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Effektiver Kredit:</span>
+                        <span className="font-bold text-blue-600">{formatCurrency(ergebnis.fremdkapital)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Monatliche Rate:</span>
+                        <span className="font-bold">{formatCurrency(ergebnis.monatlicheRate)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Jährliche Rate:</span>
+                        <span className="font-medium">{formatCurrency(ergebnis.monatlicheRate * 12)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'mieteinnahmen' && (
             <MieteinnahmenTracker
