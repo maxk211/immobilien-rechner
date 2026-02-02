@@ -469,11 +469,16 @@ const berechneRestschuld = (immobilie) => {
   const tilgung = immobilie.tilgung ?? 2.0;
   const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
   const eigenkapital = immobilie.eigenkapital ?? immobilie.kaufpreis * 0.2;
+  const nebenkostenMitfinanzieren = immobilie.nebenkostenMitfinanzieren ?? false;
 
   // Fremdkapital berechnen
   const kaufnebenkostenAbsolut = immobilie.kaufpreis * (kaufnebenkosten / 100);
   const gesamtkosten = immobilie.kaufpreis + kaufnebenkostenAbsolut;
-  const anfangsFremdkapital = Math.max(0, gesamtkosten - eigenkapital);
+
+  // Wenn Nebenkosten mitfinanziert werden: Eigenkapital bezieht sich nur auf Kaufpreis
+  const anfangsFremdkapital = nebenkostenMitfinanzieren
+    ? Math.max(0, immobilie.kaufpreis - eigenkapital) + kaufnebenkostenAbsolut
+    : Math.max(0, gesamtkosten - eigenkapital);
 
   if (anfangsFremdkapital <= 0) return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
 
@@ -568,12 +573,19 @@ const berechneRendite = (params) => {
   const {
     kaufpreis, eigenkapital, zinssatz, tilgung, laufzeit,
     kaltmiete, nebenkosten, instandhaltung, verwaltung,
-    wertsteigerung, mietsteigerung, kaufnebenkosten
+    wertsteigerung, mietsteigerung, kaufnebenkosten,
+    nebenkostenMitfinanzieren
   } = params;
 
   const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
   const gesamtkosten = kaufpreis + kaufnebenkostenAbsolut;
-  const fremdkapital = gesamtkosten - eigenkapital;
+
+  // Wenn Nebenkosten mitfinanziert werden: Eigenkapital bezieht sich nur auf Kaufpreis
+  // Fremdkapital = Kaufpreis - Eigenkapital + Kaufnebenkosten
+  // Wenn nicht: Altes Verhalten (Eigenkapital von Gesamtkosten abziehen)
+  const fremdkapital = nebenkostenMitfinanzieren
+    ? Math.max(0, kaufpreis - eigenkapital) + kaufnebenkostenAbsolut
+    : Math.max(0, gesamtkosten - eigenkapital);
 
   const jahresmieteKalt = kaltmiete * 12;
   const jahresnebenkosten = nebenkosten * 12; // Wird vom Mieter getragen, nicht in Nettorendite
@@ -1073,6 +1085,7 @@ const PortfolioOverview = ({ portfolio }) => {
 // Kaufnebenkosten-Manager Komponente
 const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
   const [modus, setModus] = useState(params.kaufnebenkostenModus || 'prozent'); // 'prozent' oder 'manuell'
+  const [nebenkostenMitfinanzieren, setNebenkostenMitfinanzieren] = useState(params.nebenkostenMitfinanzieren || false);
 
   // Manuelle Positionen mit Standardwerten basierend auf Bundesland
   const [positionen, setPositionen] = useState(params.kaufnebenkostenPositionen || {
@@ -1138,6 +1151,11 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
   const handleModusChange = (neuerModus) => {
     setModus(neuerModus);
     updateParams({ ...params, kaufnebenkostenModus: neuerModus });
+  };
+
+  const handleNebenkostenMitfinanzierenChange = (mitfinanzieren) => {
+    setNebenkostenMitfinanzieren(mitfinanzieren);
+    updateParams({ ...params, nebenkostenMitfinanzieren: mitfinanzieren });
   };
 
   return (
@@ -1266,6 +1284,41 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
           </div>
         </div>
       )}
+
+      {/* Option: Nebenkosten mitfinanzieren */}
+      <div className="mt-4 pt-4 border-t">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={nebenkostenMitfinanzieren}
+            onChange={(e) => handleNebenkostenMitfinanzierenChange(e.target.checked)}
+            className="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+          />
+          <div>
+            <span className="text-sm font-medium text-gray-700">Nebenkosten mitfinanzieren</span>
+            <p className="text-xs text-gray-500 mt-1">
+              Wenn aktiviert, werden die Kaufnebenkosten zum Kreditbetrag hinzugerechnet.
+              Das Eigenkapital bezieht sich dann nur auf den Kaufpreis (nicht auf die Nebenkosten).
+            </p>
+          </div>
+        </label>
+        {nebenkostenMitfinanzieren && (
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+            <div className="flex justify-between text-gray-600">
+              <span>Kaufpreis:</span>
+              <span>{formatCurrency(kaufpreis)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>+ Nebenkosten:</span>
+              <span>{formatCurrency(modus === 'prozent' ? kaufpreis * (params.kaufnebenkosten / 100) : gesamtManuell)}</span>
+            </div>
+            <div className="flex justify-between font-semibold text-blue-700 pt-2 border-t border-blue-200 mt-2">
+              <span>Finanzierungsbetrag:</span>
+              <span>{formatCurrency(kaufpreis + (modus === 'prozent' ? kaufpreis * (params.kaufnebenkosten / 100) : gesamtManuell))}</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -2208,6 +2261,10 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     wertsteigerung: immobilie.wertsteigerung ?? 2.0,
     mietsteigerung: immobilie.mietsteigerung ?? 1.5,
     kaufnebenkosten: immobilie.kaufnebenkosten ?? 10,
+    kaufnebenkostenModus: immobilie.kaufnebenkostenModus || 'prozent',
+    kaufnebenkostenPositionen: immobilie.kaufnebenkostenPositionen || null,
+    bundesland: immobilie.bundesland || 'bayern',
+    nebenkostenMitfinanzieren: immobilie.nebenkostenMitfinanzieren ?? false,
     geschaetzterWert: initialWert,
     mietModus: immobilie.mietModus || 'automatisch',
     mietHistorie: immobilie.mietHistorie || {},
@@ -2344,9 +2401,27 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 <h3 className="font-semibold text-gray-700 mb-3">Finanzierung</h3>
                 <InputSliderCombo label="Kaufpreis" value={params.kaufpreis} onChange={(v) => updateParams({...params, kaufpreis: v})} min={50000} max={2000000} step={10000} unit="€" />
                 <InputSliderCombo label="Eigenkapital" value={params.eigenkapital} onChange={(v) => updateParams({...params, eigenkapital: v})} min={0} max={params.kaufpreis} step={5000} unit="€" />
+                <div className="text-xs text-gray-500 mb-2 px-1">
+                  = {params.kaufpreis > 0 ? ((params.eigenkapital / params.kaufpreis) * 100).toFixed(1) : 0}% vom Kaufpreis
+                  {params.nebenkostenMitfinanzieren && (
+                    <span className="ml-1 text-blue-600">(Nebenkosten werden separat finanziert)</span>
+                  )}
+                </div>
                 <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => updateParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
                 <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => updateParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
                 <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => updateParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
+
+                {/* Zusammenfassung Finanzierung */}
+                <div className="mt-3 pt-3 border-t border-gray-200 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Fremdkapital:</span>
+                    <span className="font-medium">{formatCurrency(ergebnis.fremdkapital)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Monatliche Rate:</span>
+                    <span className="font-medium">{formatCurrency(ergebnis.monatlicheRate)}</span>
+                  </div>
+                </div>
               </div>
 
               <KaufnebenkostenManager
