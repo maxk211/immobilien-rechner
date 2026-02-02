@@ -1645,9 +1645,50 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
   const [showDetails, setShowDetails] = useState(false);
 
   // Fahrtkosten
+  const [fahrtkostenModus, setFahrtkostenModus] = useState(immobilie.fahrtkostenModus || 'pauschal');
   const [fahrtenProMonat, setFahrtenProMonat] = useState(immobilie.fahrtenProMonat || 0);
   const [entfernungKm, setEntfernungKm] = useState(immobilie.entfernungKm || 0);
-  const [kmPauschale, setKmPauschale] = useState(immobilie.kmPauschale || 0.30); // 0,30 €/km
+  const [kmPauschale, setKmPauschale] = useState(immobilie.kmPauschale || 0.30);
+  const [fahrtenListe, setFahrtenListe] = useState(immobilie.fahrtenListe || []);
+  const [showFahrtForm, setShowFahrtForm] = useState(false);
+  const [neueFahrt, setNeueFahrt] = useState({
+    datum: new Date().toISOString().split('T')[0],
+    grund: '',
+    km: entfernungKm || 0
+  });
+
+  const fahrtGruende = [
+    'Wohnungsbesichtigung',
+    'Mieterkontakt',
+    'Reparatur/Handwerker',
+    'Zählerablesung',
+    'Übergabe/Abnahme',
+    'Kontrolle',
+    'Sonstiges'
+  ];
+
+  const handleAddFahrt = () => {
+    if (!neueFahrt.datum || !neueFahrt.km) return;
+    const updated = [...fahrtenListe, { ...neueFahrt, id: Date.now() }];
+    setFahrtenListe(updated);
+    if (onUpdateParams) {
+      onUpdateParams({ ...params, fahrtenListe: updated });
+    }
+    setNeueFahrt({
+      datum: new Date().toISOString().split('T')[0],
+      grund: '',
+      km: entfernungKm || 0
+    });
+    setShowFahrtForm(false);
+  };
+
+  const handleDeleteFahrt = (id) => {
+    const updated = fahrtenListe.filter(f => f.id !== id);
+    setFahrtenListe(updated);
+    if (onUpdateParams) {
+      onUpdateParams({ ...params, fahrtenListe: updated });
+    }
+  };
 
   // AfA Berechnung (Abschreibung)
   const gebaeudeAnteil = params.kaufpreis * (gebaeudeAnteilProzent / 100);
@@ -1660,8 +1701,15 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
   // Werbungskosten (nur Instandhaltung und Verwaltung, Nebenkosten trägt der Mieter)
   const jahresWerbungskosten = (params.instandhaltung + params.verwaltung) * 12;
 
-  // Fahrtkosten berechnen (Hin- und Rückfahrt)
-  const jahresFahrtkosten = fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale;
+  // Fahrtkosten berechnen
+  const jahresFahrtkostenPauschal = fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale;
+
+  // Manuelle Fahrten: Summe aller km * 2 (Hin+Rück) * Pauschale für aktuelles Jahr
+  const aktuellesJahr = new Date().getFullYear();
+  const fahrtenAktuellesJahr = fahrtenListe.filter(f => new Date(f.datum).getFullYear() === aktuellesJahr);
+  const jahresFahrtkostenManuell = fahrtenAktuellesJahr.reduce((sum, f) => sum + (f.km * 2 * kmPauschale), 0);
+
+  const jahresFahrtkosten = fahrtkostenModus === 'pauschal' ? jahresFahrtkostenPauschal : jahresFahrtkostenManuell;
 
   // Zu versteuernde Mieteinnahmen
   const jahresMiete = params.kaltmiete * 12;
@@ -1748,22 +1796,28 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
 
       {/* Fahrtkosten */}
       <div className="bg-gray-50 p-3 rounded-lg mb-4">
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">🚗 Fahrtkosten</h4>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Fahrten/Monat</label>
-            <input
-              type="number"
-              min="0"
-              max="30"
-              value={fahrtenProMonat}
-              onChange={(e) => setFahrtenProMonat(parseFloat(e.target.value) || 0)}
-              className="w-full px-2 py-1 border rounded text-sm text-right"
-              placeholder="z.B. 2"
-            />
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="text-sm font-semibold text-gray-700">🚗 Fahrtkosten</h4>
+          <div className="flex bg-gray-200 rounded-lg p-1">
+            <button
+              onClick={() => setFahrtkostenModus('pauschal')}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${fahrtkostenModus === 'pauschal' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+            >
+              Pauschal
+            </button>
+            <button
+              onClick={() => setFahrtkostenModus('manuell')}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${fahrtkostenModus === 'manuell' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
+            >
+              Einzeln
+            </button>
           </div>
+        </div>
+
+        {/* Gemeinsame Einstellung: km-Pauschale und Entfernung */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Entfernung</label>
+            <label className="block text-xs text-gray-600 mb-1">Entfernung (einfach)</label>
             <div className="flex items-center gap-1">
               <input
                 type="number"
@@ -1777,21 +1831,132 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">€/km</label>
-            <input
-              type="number"
-              min="0"
-              max="1"
-              step="0.01"
-              value={kmPauschale}
-              onChange={(e) => setKmPauschale(parseFloat(e.target.value) || 0)}
-              className="w-full px-2 py-1 border rounded text-sm text-right"
-            />
+            <label className="block text-xs text-gray-600 mb-1">km-Pauschale</label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.01"
+                value={kmPauschale}
+                onChange={(e) => setKmPauschale(parseFloat(e.target.value) || 0)}
+                className="w-full px-2 py-1 border rounded text-sm text-right"
+              />
+              <span className="text-xs text-gray-500">€</span>
+            </div>
           </div>
         </div>
-        {jahresFahrtkosten > 0 && (
-          <div className="mt-2 text-xs text-gray-600">
-            = {fahrtenProMonat} × 12 × {entfernungKm} km × 2 (Hin+Rück) × {kmPauschale.toFixed(2)} € = <span className="font-semibold">{formatCurrency(jahresFahrtkosten)}/Jahr</span>
+
+        {fahrtkostenModus === 'pauschal' ? (
+          <div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Fahrten pro Monat</label>
+              <input
+                type="number"
+                min="0"
+                max="30"
+                value={fahrtenProMonat}
+                onChange={(e) => setFahrtenProMonat(parseFloat(e.target.value) || 0)}
+                className="w-24 px-2 py-1 border rounded text-sm text-right"
+                placeholder="z.B. 2"
+              />
+            </div>
+            {jahresFahrtkostenPauschal > 0 && (
+              <div className="mt-2 text-xs text-gray-600">
+                = {fahrtenProMonat} × 12 × {entfernungKm} km × 2 × {kmPauschale.toFixed(2)} € = <span className="font-semibold">{formatCurrency(jahresFahrtkostenPauschal)}/Jahr</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-gray-500">Fahrten einzeln erfassen</span>
+              <button
+                onClick={() => setShowFahrtForm(!showFahrtForm)}
+                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+              >
+                + Fahrt
+              </button>
+            </div>
+
+            {showFahrtForm && (
+              <div className="bg-white p-2 rounded border mb-2">
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Datum</label>
+                    <input
+                      type="date"
+                      value={neueFahrt.datum}
+                      onChange={(e) => setNeueFahrt({...neueFahrt, datum: e.target.value})}
+                      className="w-full px-2 py-1 border rounded text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">km (einfach)</label>
+                    <input
+                      type="number"
+                      value={neueFahrt.km}
+                      onChange={(e) => setNeueFahrt({...neueFahrt, km: parseFloat(e.target.value) || 0})}
+                      className="w-full px-2 py-1 border rounded text-xs text-right"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Grund</label>
+                    <select
+                      value={neueFahrt.grund}
+                      onChange={(e) => setNeueFahrt({...neueFahrt, grund: e.target.value})}
+                      className="w-full px-2 py-1 border rounded text-xs"
+                    >
+                      <option value="">Auswählen...</option>
+                      {fahrtGruende.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleAddFahrt} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                    Speichern
+                  </button>
+                  <button onClick={() => setShowFahrtForm(false)} className="px-2 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400">
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Liste der Fahrten */}
+            <div className="max-h-32 overflow-y-auto">
+              {fahrtenAktuellesJahr.length === 0 ? (
+                <div className="text-xs text-gray-400 text-center py-2">Keine Fahrten in {aktuellesJahr} erfasst</div>
+              ) : (
+                <div className="space-y-1">
+                  {fahrtenAktuellesJahr.sort((a, b) => new Date(b.datum) - new Date(a.datum)).map(fahrt => (
+                    <div key={fahrt.id} className="flex justify-between items-center text-xs bg-white p-1.5 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">{new Date(fahrt.datum).toLocaleDateString('de-DE')}</span>
+                        <span className="text-gray-700">{fahrt.grund || 'Ohne Grund'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{fahrt.km} km</span>
+                        <span className="text-gray-400">({formatCurrency(fahrt.km * 2 * kmPauschale)})</span>
+                        <button
+                          onClick={() => handleDeleteFahrt(fahrt.id)}
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {fahrtenAktuellesJahr.length > 0 && (
+              <div className="mt-2 pt-2 border-t flex justify-between text-xs">
+                <span className="text-gray-600">{fahrtenAktuellesJahr.length} Fahrten in {aktuellesJahr}</span>
+                <span className="font-semibold">{formatCurrency(jahresFahrtkostenManuell)}/Jahr</span>
+              </div>
+            )}
           </div>
         )}
       </div>
