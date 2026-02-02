@@ -576,12 +576,13 @@ const berechneRendite = (params) => {
   const fremdkapital = gesamtkosten - eigenkapital;
 
   const jahresmieteKalt = kaltmiete * 12;
-  const jahresnebenkosten = nebenkosten * 12;
+  const jahresnebenkosten = nebenkosten * 12; // Wird vom Mieter getragen, nicht in Nettorendite
   const jahresinstandhaltung = instandhaltung * 12;
   const jahresverwaltung = verwaltung * 12;
 
   const bruttorendite = (jahresmieteKalt / kaufpreis) * 100;
-  const nettoEinnahmen = jahresmieteKalt - jahresnebenkosten - jahresinstandhaltung - jahresverwaltung;
+  // Nettorendite: Nur Instandhaltung und Verwaltung abziehen (Nebenkosten trägt der Mieter)
+  const nettoEinnahmen = jahresmieteKalt - jahresinstandhaltung - jahresverwaltung;
   const nettorendite = (nettoEinnahmen / kaufpreis) * 100;
 
   const monatszins = zinssatz / 100 / 12;
@@ -613,7 +614,7 @@ const berechneRendite = (params) => {
       restschuld: Math.round(restschuld),
       eigenkapital: Math.round(aktuellerWert - restschuld),
       jahresmiete: Math.round(aktuelleMiete * 12),
-      cashflow: Math.round((aktuelleMiete * 12) - jahresnebenkosten - jahresinstandhaltung - jahresverwaltung - jahresannuitaet)
+      cashflow: Math.round((aktuelleMiete * 12) - jahresinstandhaltung - jahresverwaltung - jahresannuitaet)
     });
 
     aktuellerWert *= (1 + wertsteigerung / 100);
@@ -1643,6 +1644,11 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
   const [afaSatz, setAfaSatz] = useState(immobilie.afaSatz || 2.0);
   const [showDetails, setShowDetails] = useState(false);
 
+  // Fahrtkosten
+  const [fahrtenProMonat, setFahrtenProMonat] = useState(immobilie.fahrtenProMonat || 0);
+  const [entfernungKm, setEntfernungKm] = useState(immobilie.entfernungKm || 0);
+  const [kmPauschale, setKmPauschale] = useState(immobilie.kmPauschale || 0.30); // 0,30 €/km
+
   // AfA Berechnung (Abschreibung)
   const gebaeudeAnteil = params.kaufpreis * (gebaeudeAnteilProzent / 100);
   const jahresAfa = gebaeudeAnteil * (afaSatz / 100);
@@ -1651,14 +1657,17 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
   const fremdkapital = params.kaufpreis + (params.kaufpreis * params.kaufnebenkosten / 100) - params.eigenkapital;
   const jahresZinsen = fremdkapital * (params.zinssatz / 100);
 
-  // Werbungskosten
-  const jahresNebenkosten = (params.nebenkosten + params.instandhaltung + params.verwaltung) * 12;
+  // Werbungskosten (nur Instandhaltung und Verwaltung, Nebenkosten trägt der Mieter)
+  const jahresWerbungskosten = (params.instandhaltung + params.verwaltung) * 12;
+
+  // Fahrtkosten berechnen (Hin- und Rückfahrt)
+  const jahresFahrtkosten = fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale;
 
   // Zu versteuernde Mieteinnahmen
   const jahresMiete = params.kaltmiete * 12;
 
   // Absetzbare Kosten
-  const absetzbareKosten = jahresAfa + jahresZinsen + jahresNebenkosten;
+  const absetzbareKosten = jahresAfa + jahresZinsen + jahresWerbungskosten + jahresFahrtkosten;
 
   // Zu versteuernder Gewinn/Verlust
   const zuVersteuern = jahresMiete - absetzbareKosten;
@@ -1737,6 +1746,56 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
         </div>
       </div>
 
+      {/* Fahrtkosten */}
+      <div className="bg-gray-50 p-3 rounded-lg mb-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">🚗 Fahrtkosten</h4>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Fahrten/Monat</label>
+            <input
+              type="number"
+              min="0"
+              max="30"
+              value={fahrtenProMonat}
+              onChange={(e) => setFahrtenProMonat(parseFloat(e.target.value) || 0)}
+              className="w-full px-2 py-1 border rounded text-sm text-right"
+              placeholder="z.B. 2"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Entfernung</label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                value={entfernungKm}
+                onChange={(e) => setEntfernungKm(parseFloat(e.target.value) || 0)}
+                className="w-full px-2 py-1 border rounded text-sm text-right"
+                placeholder="km"
+              />
+              <span className="text-xs text-gray-500">km</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">€/km</label>
+            <input
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value={kmPauschale}
+              onChange={(e) => setKmPauschale(parseFloat(e.target.value) || 0)}
+              className="w-full px-2 py-1 border rounded text-sm text-right"
+            />
+          </div>
+        </div>
+        {jahresFahrtkosten > 0 && (
+          <div className="mt-2 text-xs text-gray-600">
+            = {fahrtenProMonat} × 12 × {entfernungKm} km × 2 (Hin+Rück) × {kmPauschale.toFixed(2)} € = <span className="font-semibold">{formatCurrency(jahresFahrtkosten)}/Jahr</span>
+          </div>
+        )}
+      </div>
+
       {showDetails && (
         <div className="space-y-2 mb-4 text-sm border-t pt-3">
           <div className="flex justify-between">
@@ -1752,9 +1811,15 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
             <span>{formatCurrency(jahresZinsen)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
-            <span>- Werbungskosten</span>
-            <span>{formatCurrency(jahresNebenkosten)}</span>
+            <span>- Werbungskosten (Inst. + Verw.)</span>
+            <span>{formatCurrency(jahresWerbungskosten)}</span>
           </div>
+          {jahresFahrtkosten > 0 && (
+            <div className="flex justify-between text-gray-600">
+              <span>- Fahrtkosten</span>
+              <span>{formatCurrency(jahresFahrtkosten)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-semibold border-t pt-2">
             <span>= Zu versteuern</span>
             <span className={zuVersteuern >= 0 ? 'text-gray-800' : 'text-green-600'}>
