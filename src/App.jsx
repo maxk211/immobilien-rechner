@@ -469,16 +469,16 @@ const berechneRestschuld = (immobilie) => {
   const tilgung = immobilie.tilgung ?? 2.0;
   const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
   const eigenkapital = immobilie.eigenkapital ?? immobilie.kaufpreis * 0.2;
-  const nebenkostenMitfinanzieren = immobilie.nebenkostenMitfinanzieren ?? false;
+  const finanzierungsbetrag = immobilie.finanzierungsbetrag;
 
   // Fremdkapital berechnen
   const kaufnebenkostenAbsolut = immobilie.kaufpreis * (kaufnebenkosten / 100);
-  const gesamtkosten = immobilie.kaufpreis + kaufnebenkostenAbsolut;
+  const gesamtinvestition = immobilie.kaufpreis + kaufnebenkostenAbsolut;
 
-  // Wenn Nebenkosten mitfinanziert werden: Eigenkapital bezieht sich nur auf Kaufpreis
-  const anfangsFremdkapital = nebenkostenMitfinanzieren
-    ? Math.max(0, immobilie.kaufpreis - eigenkapital) + kaufnebenkostenAbsolut
-    : Math.max(0, gesamtkosten - eigenkapital);
+  // Finanzierungsbetrag: Entweder manuell eingegeben oder berechnet
+  const anfangsFremdkapital = finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
+    ? finanzierungsbetrag
+    : Math.max(0, gesamtinvestition - eigenkapital);
 
   if (anfangsFremdkapital <= 0) return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
 
@@ -574,18 +574,16 @@ const berechneRendite = (params) => {
     kaufpreis, eigenkapital, zinssatz, tilgung, laufzeit,
     kaltmiete, nebenkosten, instandhaltung, verwaltung,
     wertsteigerung, mietsteigerung, kaufnebenkosten,
-    nebenkostenMitfinanzieren
+    finanzierungsbetrag
   } = params;
 
   const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
-  const gesamtkosten = kaufpreis + kaufnebenkostenAbsolut;
+  const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut; // Gesamtinvestition in das Objekt
 
-  // Wenn Nebenkosten mitfinanziert werden: Eigenkapital bezieht sich nur auf Kaufpreis
-  // Fremdkapital = Kaufpreis - Eigenkapital + Kaufnebenkosten
-  // Wenn nicht: Altes Verhalten (Eigenkapital von Gesamtkosten abziehen)
-  const fremdkapital = nebenkostenMitfinanzieren
-    ? Math.max(0, kaufpreis - eigenkapital) + kaufnebenkostenAbsolut
-    : Math.max(0, gesamtkosten - eigenkapital);
+  // Finanzierungsbetrag: Entweder manuell eingegeben oder berechnet (Gesamtinvestition - Eigenkapital)
+  const fremdkapital = finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
+    ? finanzierungsbetrag
+    : Math.max(0, gesamtinvestition - eigenkapital);
 
   const jahresmieteKalt = kaltmiete * 12;
   const jahresnebenkosten = nebenkosten * 12; // Wird vom Mieter getragen, nicht in Nettorendite
@@ -1085,14 +1083,13 @@ const PortfolioOverview = ({ portfolio }) => {
 // Kaufnebenkosten-Manager Komponente
 const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
   const [modus, setModus] = useState(params.kaufnebenkostenModus || 'prozent'); // 'prozent' oder 'manuell'
-  const [nebenkostenMitfinanzieren, setNebenkostenMitfinanzieren] = useState(params.nebenkostenMitfinanzieren || false);
 
   // Manuelle Positionen mit Standardwerten basierend auf Bundesland
   const [positionen, setPositionen] = useState(params.kaufnebenkostenPositionen || {
-    grunderwerbsteuer: kaufpreis * 0.035, // 3,5% - 6,5% je nach Bundesland
-    notar: kaufpreis * 0.015, // ca. 1,5%
-    grundbuch: kaufpreis * 0.005, // ca. 0,5%
-    makler: kaufpreis * 0.0357, // 3,57% (inkl. MwSt)
+    grunderwerbsteuer: kaufpreis * 0.035,
+    notar: kaufpreis * 0.015,
+    grundbuch: kaufpreis * 0.005,
+    makler: kaufpreis * 0.0357,
     sonstige: 0
   });
 
@@ -1117,8 +1114,10 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
 
   const [bundesland, setBundesland] = useState(params.bundesland || 'bayern');
 
-  const gesamtManuell = Object.values(positionen).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-  const gesamtProzent = kaufpreis > 0 ? (gesamtManuell / kaufpreis) * 100 : 0;
+  const kaufnebenkostenAbsolut = modus === 'prozent'
+    ? kaufpreis * (params.kaufnebenkosten / 100)
+    : Object.values(positionen).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+  const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
 
   const handlePositionChange = (key, value) => {
     const neuePositionen = { ...positionen, [key]: parseFloat(value) || 0 };
@@ -1153,15 +1152,10 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
     updateParams({ ...params, kaufnebenkostenModus: neuerModus });
   };
 
-  const handleNebenkostenMitfinanzierenChange = (mitfinanzieren) => {
-    setNebenkostenMitfinanzieren(mitfinanzieren);
-    updateParams({ ...params, nebenkostenMitfinanzieren: mitfinanzieren });
-  };
-
   return (
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-semibold text-gray-700">Kaufnebenkosten</h3>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h4 className="font-medium text-gray-700">Kaufnebenkosten</h4>
         <div className="flex bg-gray-200 rounded-lg p-1">
           <button
             onClick={() => handleModusChange('prozent')}
@@ -1209,115 +1203,49 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-600">Grunderwerbsteuer ({bundeslaender[bundesland].grunderwerbsteuer}%)</label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  value={Math.round(positionen.grunderwerbsteuer)}
-                  onChange={(e) => handlePositionChange('grunderwerbsteuer', e.target.value)}
-                  className="w-24 px-2 py-1 border rounded text-sm text-right"
-                />
-                <span className="text-xs text-gray-500">€</span>
+            {[
+              { key: 'grunderwerbsteuer', label: `Grunderwerbsteuer (${bundeslaender[bundesland].grunderwerbsteuer}%)` },
+              { key: 'notar', label: 'Notar (ca. 1,5%)' },
+              { key: 'grundbuch', label: 'Grundbuch (ca. 0,5%)' },
+              { key: 'makler', label: 'Makler (ca. 3,57%)' },
+              { key: 'sonstige', label: 'Sonstige' }
+            ].map(({ key, label }) => (
+              <div key={key} className="flex justify-between items-center">
+                <label className="text-sm text-gray-600">{label}</label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={Math.round(positionen[key] || 0)}
+                    onChange={(e) => handlePositionChange(key, e.target.value)}
+                    className="w-24 px-2 py-1 border rounded text-sm text-right"
+                  />
+                  <span className="text-xs text-gray-500">€</span>
+                </div>
               </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-600">Notar (ca. 1,5%)</label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  value={Math.round(positionen.notar)}
-                  onChange={(e) => handlePositionChange('notar', e.target.value)}
-                  className="w-24 px-2 py-1 border rounded text-sm text-right"
-                />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-600">Grundbuch (ca. 0,5%)</label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  value={Math.round(positionen.grundbuch)}
-                  onChange={(e) => handlePositionChange('grundbuch', e.target.value)}
-                  className="w-24 px-2 py-1 border rounded text-sm text-right"
-                />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-600">Makler (ca. 3,57%)</label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  value={Math.round(positionen.makler)}
-                  onChange={(e) => handlePositionChange('makler', e.target.value)}
-                  className="w-24 px-2 py-1 border rounded text-sm text-right"
-                />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-600">Sonstige</label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  value={Math.round(positionen.sonstige)}
-                  onChange={(e) => handlePositionChange('sonstige', e.target.value)}
-                  className="w-24 px-2 py-1 border rounded text-sm text-right"
-                />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
-            </div>
+            ))}
           </div>
 
           <div className="mt-3 pt-3 border-t flex justify-between items-center">
-            <span className="font-semibold text-gray-700">Gesamt</span>
-            <div className="text-right">
-              <div className="font-bold text-lg">{formatCurrency(gesamtManuell)}</div>
-              <div className="text-xs text-gray-500">{gesamtProzent.toFixed(2)}% vom Kaufpreis</div>
-            </div>
+            <span className="font-medium text-gray-700">Nebenkosten gesamt</span>
+            <span className="font-bold">{formatCurrency(kaufnebenkostenAbsolut)}</span>
           </div>
         </div>
       )}
 
-      {/* Option: Nebenkosten mitfinanzieren */}
-      <div className="mt-4 pt-4 border-t">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={nebenkostenMitfinanzieren}
-            onChange={(e) => handleNebenkostenMitfinanzierenChange(e.target.checked)}
-            className="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-          />
-          <div>
-            <span className="text-sm font-medium text-gray-700">Nebenkosten mitfinanzieren</span>
-            <p className="text-xs text-gray-500 mt-1">
-              Wenn aktiviert, werden die Kaufnebenkosten zum Kreditbetrag hinzugerechnet.
-              Das Eigenkapital bezieht sich dann nur auf den Kaufpreis (nicht auf die Nebenkosten).
-            </p>
-          </div>
-        </label>
-        {nebenkostenMitfinanzieren && (
-          <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
-            <div className="flex justify-between text-gray-600">
-              <span>Kaufpreis:</span>
-              <span>{formatCurrency(kaufpreis)}</span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>+ Nebenkosten:</span>
-              <span>{formatCurrency(modus === 'prozent' ? kaufpreis * (params.kaufnebenkosten / 100) : gesamtManuell)}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-blue-700 pt-2 border-t border-blue-200 mt-2">
-              <span>Finanzierungsbetrag:</span>
-              <span>{formatCurrency(kaufpreis + (modus === 'prozent' ? kaufpreis * (params.kaufnebenkosten / 100) : gesamtManuell))}</span>
-            </div>
-          </div>
-        )}
+      {/* Gesamtinvestition Anzeige */}
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Kaufpreis:</span>
+          <span>{formatCurrency(kaufpreis)}</span>
+        </div>
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>+ Nebenkosten:</span>
+          <span>{formatCurrency(kaufnebenkostenAbsolut)}</span>
+        </div>
+        <div className="flex justify-between font-bold text-blue-700 pt-2 border-t border-blue-200 mt-2">
+          <span>Gesamtinvestition:</span>
+          <span>{formatCurrency(gesamtinvestition)}</span>
+        </div>
       </div>
     </div>
   );
@@ -2243,6 +2171,284 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
   );
 };
 
+// Mieteinnahmen-Tracker Komponente
+const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
+  const [mietEingaenge, setMietEingaenge] = useState(params.mietEingaenge || []);
+  const [neuerEingang, setNeuerEingang] = useState({
+    datum: new Date().toISOString().split('T')[0],
+    betrag: params.kaltmiete || 0,
+    typ: 'kaltmiete',
+    notiz: ''
+  });
+  const [filterJahr, setFilterJahr] = useState(new Date().getFullYear());
+  const [filterMonat, setFilterMonat] = useState(null); // null = alle Monate
+
+  const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
+  const aktuellesJahr = new Date().getFullYear();
+  const jahre = [];
+  for (let j = kaufjahr; j <= aktuellesJahr + 1; j++) {
+    jahre.push(j);
+  }
+
+  const monate = [
+    { nr: 1, name: 'Januar' }, { nr: 2, name: 'Februar' }, { nr: 3, name: 'März' },
+    { nr: 4, name: 'April' }, { nr: 5, name: 'Mai' }, { nr: 6, name: 'Juni' },
+    { nr: 7, name: 'Juli' }, { nr: 8, name: 'August' }, { nr: 9, name: 'September' },
+    { nr: 10, name: 'Oktober' }, { nr: 11, name: 'November' }, { nr: 12, name: 'Dezember' }
+  ];
+
+  const handleAddEingang = () => {
+    if (!neuerEingang.datum || !neuerEingang.betrag) return;
+
+    const neueEingaenge = [...mietEingaenge, { ...neuerEingang, id: Date.now() }];
+    setMietEingaenge(neueEingaenge);
+    updateParams({ ...params, mietEingaenge: neueEingaenge });
+
+    // Reset für nächsten Eintrag
+    setNeuerEingang({
+      datum: new Date().toISOString().split('T')[0],
+      betrag: params.kaltmiete || 0,
+      typ: 'kaltmiete',
+      notiz: ''
+    });
+  };
+
+  const handleDeleteEingang = (id) => {
+    const neueEingaenge = mietEingaenge.filter(e => e.id !== id);
+    setMietEingaenge(neueEingaenge);
+    updateParams({ ...params, mietEingaenge: neueEingaenge });
+  };
+
+  // Gefilterte Eingänge
+  const gefilterteEingaenge = mietEingaenge.filter(e => {
+    const datum = new Date(e.datum);
+    if (datum.getFullYear() !== filterJahr) return false;
+    if (filterMonat !== null && (datum.getMonth() + 1) !== filterMonat) return false;
+    return true;
+  }).sort((a, b) => new Date(b.datum) - new Date(a.datum));
+
+  // Summen berechnen
+  const summeGefiltert = gefilterteEingaenge.reduce((sum, e) => sum + (parseFloat(e.betrag) || 0), 0);
+
+  // Erwartete Miete pro Monat
+  const erwarteteMonatsmiete = params.kaltmiete || 0;
+
+  // Monatsübersicht für aktuelles Jahr
+  const monatsUebersicht = monate.map(m => {
+    const monatEingaenge = mietEingaenge.filter(e => {
+      const datum = new Date(e.datum);
+      return datum.getFullYear() === filterJahr && (datum.getMonth() + 1) === m.nr;
+    });
+    const summe = monatEingaenge.reduce((sum, e) => sum + (parseFloat(e.betrag) || 0), 0);
+    const erwartet = erwarteteMonatsmiete;
+    const differenz = summe - erwartet;
+    const status = summe === 0 ? 'offen' : (summe >= erwartet ? 'bezahlt' : 'teilweise');
+
+    // Prüfen ob Zahlung verspätet war (nach dem 5. des Monats)
+    const verspaetet = monatEingaenge.some(e => {
+      const datum = new Date(e.datum);
+      return datum.getDate() > 5;
+    });
+
+    return { ...m, summe, erwartet, differenz, status, verspaetet, eingaenge: monatEingaenge };
+  });
+
+  // Offene Forderungen
+  const aktuellerMonat = new Date().getMonth() + 1;
+  const offeneForderungen = monatsUebersicht.filter(m =>
+    m.nr <= aktuellerMonat && m.status !== 'bezahlt' && filterJahr === new Date().getFullYear()
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Neuen Eingang hinzufügen */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-gray-700 mb-4">Mieteingang erfassen</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Eingangsdatum</label>
+            <input
+              type="date"
+              value={neuerEingang.datum}
+              onChange={(e) => setNeuerEingang({...neuerEingang, datum: e.target.value})}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
+            <input
+              type="number"
+              value={neuerEingang.betrag}
+              onChange={(e) => setNeuerEingang({...neuerEingang, betrag: parseFloat(e.target.value) || 0})}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Typ</label>
+            <select
+              value={neuerEingang.typ}
+              onChange={(e) => setNeuerEingang({...neuerEingang, typ: e.target.value})}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            >
+              <option value="kaltmiete">Kaltmiete</option>
+              <option value="nebenkosten">Nebenkosten</option>
+              <option value="nachzahlung">Nachzahlung</option>
+              <option value="kaution">Kaution</option>
+              <option value="sonstige">Sonstige</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Notiz (optional)</label>
+            <input
+              type="text"
+              value={neuerEingang.notiz}
+              onChange={(e) => setNeuerEingang({...neuerEingang, notiz: e.target.value})}
+              placeholder="z.B. Mieter Name"
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleAddEingang}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+            >
+              + Hinzufügen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Offene Forderungen Warnung */}
+      {offeneForderungen.length > 0 && (
+        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+          <h4 className="font-semibold text-red-700 mb-2">⚠️ Offene Forderungen</h4>
+          <div className="space-y-1">
+            {offeneForderungen.map(m => (
+              <div key={m.nr} className="flex justify-between text-sm text-red-600">
+                <span>{m.name} {filterJahr}:</span>
+                <span className="font-medium">
+                  {m.status === 'offen' ? 'Nicht bezahlt' : `Offen: ${formatCurrency(Math.abs(m.differenz))}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Jahres- und Monatsfilter */}
+      <div className="flex gap-4 items-center">
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Jahr</label>
+          <select
+            value={filterJahr}
+            onChange={(e) => setFilterJahr(parseInt(e.target.value))}
+            className="px-3 py-2 border rounded-lg text-sm"
+          >
+            {jahre.map(j => (
+              <option key={j} value={j}>{j}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Monat</label>
+          <select
+            value={filterMonat || ''}
+            onChange={(e) => setFilterMonat(e.target.value ? parseInt(e.target.value) : null)}
+            className="px-3 py-2 border rounded-lg text-sm"
+          >
+            <option value="">Alle Monate</option>
+            {monate.map(m => (
+              <option key={m.nr} value={m.nr}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="ml-auto text-right">
+          <div className="text-xs text-gray-600">Summe {filterMonat ? monate.find(m => m.nr === filterMonat)?.name : 'Jahr'}</div>
+          <div className="text-xl font-bold text-green-600">{formatCurrency(summeGefiltert)}</div>
+        </div>
+      </div>
+
+      {/* Monatsübersicht Grid */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-gray-700 mb-4">Monatsübersicht {filterJahr}</h3>
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          {monatsUebersicht.map(m => (
+            <div
+              key={m.nr}
+              onClick={() => setFilterMonat(filterMonat === m.nr ? null : m.nr)}
+              className={`p-3 rounded-lg cursor-pointer transition-all ${
+                filterMonat === m.nr ? 'ring-2 ring-blue-500' : ''
+              } ${
+                m.status === 'bezahlt' ? 'bg-green-100 hover:bg-green-200' :
+                m.status === 'teilweise' ? 'bg-yellow-100 hover:bg-yellow-200' :
+                m.nr <= aktuellerMonat ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-100 hover:bg-gray-200'
+              }`}
+            >
+              <div className="text-xs font-medium text-gray-600">{m.name.substring(0, 3)}</div>
+              <div className={`text-sm font-bold ${
+                m.status === 'bezahlt' ? 'text-green-700' :
+                m.status === 'teilweise' ? 'text-yellow-700' :
+                m.nr <= aktuellerMonat ? 'text-red-700' : 'text-gray-500'
+              }`}>
+                {formatCurrency(m.summe)}
+              </div>
+              {m.verspaetet && m.status === 'bezahlt' && (
+                <div className="text-xs text-orange-600">⏰ verspätet</div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex gap-4 text-xs text-gray-500">
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> Bezahlt</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-yellow-100 rounded"></span> Teilweise</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> Offen</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-100 rounded"></span> Zukunft</span>
+        </div>
+      </div>
+
+      {/* Detailliste */}
+      <div className="bg-white border rounded-lg overflow-hidden">
+        <div className="bg-gray-100 px-4 py-2 font-semibold text-gray-700 text-sm">
+          Eingänge {filterMonat ? monate.find(m => m.nr === filterMonat)?.name : ''} {filterJahr} ({gefilterteEingaenge.length})
+        </div>
+        {gefilterteEingaenge.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            Keine Mieteinnahmen für diesen Zeitraum erfasst.
+          </div>
+        ) : (
+          <div className="divide-y">
+            {gefilterteEingaenge.map(e => (
+              <div key={e.id} className="px-4 py-3 flex justify-between items-center hover:bg-gray-50">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <div className="font-medium">{new Date(e.datum).toLocaleDateString('de-DE')}</div>
+                    <div className="text-xs text-gray-500">
+                      {e.typ === 'kaltmiete' ? 'Kaltmiete' :
+                       e.typ === 'nebenkosten' ? 'Nebenkosten' :
+                       e.typ === 'nachzahlung' ? 'Nachzahlung' :
+                       e.typ === 'kaution' ? 'Kaution' : 'Sonstige'}
+                      {e.notiz && ` - ${e.notiz}`}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-lg font-bold text-green-600">{formatCurrency(e.betrag)}</div>
+                  <button
+                    onClick={() => handleDeleteEingang(e.id)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Immobilien-Detail Komponente
 const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
@@ -2264,16 +2470,17 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     kaufnebenkostenModus: immobilie.kaufnebenkostenModus || 'prozent',
     kaufnebenkostenPositionen: immobilie.kaufnebenkostenPositionen || null,
     bundesland: immobilie.bundesland || 'bayern',
-    nebenkostenMitfinanzieren: immobilie.nebenkostenMitfinanzieren ?? false,
+    finanzierungsbetrag: immobilie.finanzierungsbetrag ?? null, // Separat eingebbarer Kreditbetrag
     geschaetzterWert: initialWert,
     mietModus: immobilie.mietModus || 'automatisch',
     mietHistorie: immobilie.mietHistorie || {},
+    mietEingaenge: immobilie.mietEingaenge || [], // Neue Mieteinnahmen-Tracking
     steuersatz: immobilie.steuersatz || 42,
     investitionen: immobilie.investitionen || []
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
-  const [activeTab, setActiveTab] = useState('uebersicht'); // 'uebersicht', 'cashflow', 'steuern', 'investitionen'
+  const [activeTab, setActiveTab] = useState('uebersicht'); // 'uebersicht', 'finanzierung', 'mieteinnahmen', 'cashflow', 'steuern', 'investitionen'
 
   const updateParams = (newParams) => {
     setParams(newParams);
@@ -2394,42 +2601,183 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Parameter */}
-            <div className="lg:col-span-1 space-y-4">
+          {/* Renditekennzahlen */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg text-center">
+              <div className="text-sm text-blue-600">Bruttorendite</div>
+              <div className="text-2xl font-bold text-blue-800">{ergebnis.bruttorendite.toFixed(2)}%</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+              <div className="text-sm text-green-600">Nettorendite</div>
+              <div className="text-2xl font-bold text-green-800">{ergebnis.nettorendite.toFixed(2)}%</div>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-lg text-center">
+              <div className="text-sm text-purple-600">EK-Rendite</div>
+              <div className="text-2xl font-bold text-purple-800">{ergebnis.eigenkapitalRendite.toFixed(2)}%</div>
+            </div>
+            <div className={`p-4 rounded-lg text-center ${ergebnis.leverageEffekt >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+              <div className={`text-sm ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>Leverage-Effekt</div>
+              <div className={`text-2xl font-bold ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+                {ergebnis.leverageEffekt >= 0 ? '+' : ''}{ergebnis.leverageEffekt.toFixed(2)}%
+              </div>
+            </div>
+          </div>
+
+          {/* Tab-Navigation */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="flex flex-wrap gap-1">
+              {[
+                { id: 'uebersicht', label: '📊 Übersicht' },
+                { id: 'finanzierung', label: '🏦 Finanzierung' },
+                { id: 'mieteinnahmen', label: '💵 Mieteinnahmen' },
+                { id: 'cashflow', label: '💰 Cashflow' },
+                { id: 'steuern', label: '📋 Steuern' },
+                { id: 'investitionen', label: '🔧 Investitionen' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-2 px-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Tab-Inhalte */}
+          {activeTab === 'uebersicht' && (
+            <div className="space-y-6">
+              {/* Vermögensentwicklung Chart */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Finanzierung</h3>
+                <h3 className="font-semibold text-gray-700 mb-3">Vermögensentwicklung</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={ergebnis.entwicklung}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="jahr" />
+                    <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend />
+                    <Area type="monotone" dataKey="immobilienwert" name="Immobilienwert" stroke="#2563eb" fill="#93c5fd" />
+                    <Area type="monotone" dataKey="eigenkapital" name="Eigenkapital" stroke="#10b981" fill="#6ee7b7" />
+                    <Area type="monotone" dataKey="restschuld" name="Restschuld" stroke="#ef4444" fill="#fca5a5" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Leverage-Effekt Visualisierung */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-700 mb-3">Leverage-Effekt Visualisierung</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={[
+                    { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
+                    { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
+                    { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
+                    <Tooltip formatter={(v) => `${v.toFixed(2)}%`} />
+                    <Bar dataKey="wert" name="Rendite">
+                      {[
+                        { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
+                        { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
+                        { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Prognose */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-700 mb-3">Prognose</h3>
+                <InputSliderCombo label="Wertsteigerung p.a." value={params.wertsteigerung} onChange={(v) => updateParams({...params, wertsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'finanzierung' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Kaufpreis & Finanzierung */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-700 mb-4">Kaufpreis & Eigenkapital</h3>
                 <InputSliderCombo label="Kaufpreis" value={params.kaufpreis} onChange={(v) => updateParams({...params, kaufpreis: v})} min={50000} max={2000000} step={10000} unit="€" />
                 <InputSliderCombo label="Eigenkapital" value={params.eigenkapital} onChange={(v) => updateParams({...params, eigenkapital: v})} min={0} max={params.kaufpreis} step={5000} unit="€" />
-                <div className="text-xs text-gray-500 mb-2 px-1">
+                <div className="text-xs text-gray-500 mb-4 px-1">
                   = {params.kaufpreis > 0 ? ((params.eigenkapital / params.kaufpreis) * 100).toFixed(1) : 0}% vom Kaufpreis
-                  {params.nebenkostenMitfinanzieren && (
-                    <span className="ml-1 text-blue-600">(Nebenkosten werden separat finanziert)</span>
-                  )}
                 </div>
+
+                <KaufnebenkostenManager
+                  params={params}
+                  updateParams={updateParams}
+                  kaufpreis={params.kaufpreis}
+                />
+              </div>
+
+              {/* Kredit */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-700 mb-4">Kreditkonditionen</h3>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Finanzierungsbetrag (Kredit)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={params.finanzierungsbetrag !== null ? params.finanzierungsbetrag : ''}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                        updateParams({...params, finanzierungsbetrag: val});
+                      }}
+                      placeholder={`Auto: ${formatCurrency((params.kaufpreis + params.kaufpreis * (params.kaufnebenkosten / 100)) - params.eigenkapital)}`}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-500">€</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leer lassen für automatische Berechnung (Gesamtinvestition - Eigenkapital)
+                  </p>
+                </div>
+
                 <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => updateParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
                 <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => updateParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
                 <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => updateParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
 
-                {/* Zusammenfassung Finanzierung */}
-                <div className="mt-3 pt-3 border-t border-gray-200 text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Fremdkapital:</span>
-                    <span className="font-medium">{formatCurrency(ergebnis.fremdkapital)}</span>
+                {/* Zusammenfassung */}
+                <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Finanzierungsbetrag:</span>
+                    <span className="font-bold text-blue-600">{formatCurrency(ergebnis.fremdkapital)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Monatliche Rate:</span>
-                    <span className="font-medium">{formatCurrency(ergebnis.monatlicheRate)}</span>
+                    <span className="font-bold">{formatCurrency(ergebnis.monatlicheRate)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Jährliche Rate:</span>
+                    <span className="font-medium">{formatCurrency(ergebnis.monatlicheRate * 12)}</span>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
 
-              <KaufnebenkostenManager
-                params={params}
-                updateParams={updateParams}
-                kaufpreis={params.kaufpreis}
-              />
+          {activeTab === 'mieteinnahmen' && (
+            <MieteinnahmenTracker
+              params={params}
+              updateParams={updateParams}
+              immobilie={immobilie}
+            />
+          )}
 
+          {activeTab === 'cashflow' && (
+            <>
               <MietKostenManager
                 params={params}
                 updateParams={updateParams}
@@ -2437,136 +2785,31 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 hasChanges={hasChanges}
                 setHasChanges={setHasChanges}
               />
+              <CashflowUebersicht
+                params={params}
+                ergebnis={ergebnis}
+                immobilie={immobilie}
+                investitionen={params.investitionen}
+              />
+            </>
+          )}
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Prognose</h3>
-                <InputSliderCombo label="Wertsteigerung p.a." value={params.wertsteigerung} onChange={(v) => updateParams({...params, wertsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
-              </div>
-            </div>
+          {activeTab === 'steuern' && (
+            <Steuerberechnung
+              params={params}
+              ergebnis={ergebnis}
+              immobilie={immobilie}
+            />
+          )}
 
-            {/* Ergebnisse & Charts */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Renditekennzahlen */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg text-center">
-                  <div className="text-sm text-blue-600">Bruttorendite</div>
-                  <div className="text-2xl font-bold text-blue-800">{ergebnis.bruttorendite.toFixed(2)}%</div>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg text-center">
-                  <div className="text-sm text-green-600">Nettorendite</div>
-                  <div className="text-2xl font-bold text-green-800">{ergebnis.nettorendite.toFixed(2)}%</div>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg text-center">
-                  <div className="text-sm text-purple-600">EK-Rendite</div>
-                  <div className="text-2xl font-bold text-purple-800">{ergebnis.eigenkapitalRendite.toFixed(2)}%</div>
-                </div>
-                <div className={`p-4 rounded-lg text-center ${ergebnis.leverageEffekt >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                  <div className={`text-sm ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>Leverage-Effekt</div>
-                  <div className={`text-2xl font-bold ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
-                    {ergebnis.leverageEffekt >= 0 ? '+' : ''}{ergebnis.leverageEffekt.toFixed(2)}%
-                  </div>
-                </div>
-              </div>
-
-              {/* Tab-Navigation */}
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-4">
-                  {[
-                    { id: 'uebersicht', label: '📊 Übersicht', },
-                    { id: 'cashflow', label: '💰 Cashflow' },
-                    { id: 'steuern', label: '📋 Steuern' },
-                    { id: 'investitionen', label: '🔧 Investitionen' }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`py-2 px-3 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === tab.id
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-
-              {/* Tab-Inhalte */}
-              {activeTab === 'uebersicht' && (
-                <>
-                  {/* Vermögensentwicklung Chart */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-3">Vermögensentwicklung</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={ergebnis.entwicklung}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="jahr" />
-                        <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                        <Tooltip formatter={(v) => formatCurrency(v)} />
-                        <Legend />
-                        <Area type="monotone" dataKey="immobilienwert" name="Immobilienwert" stroke="#2563eb" fill="#93c5fd" />
-                        <Area type="monotone" dataKey="eigenkapital" name="Eigenkapital" stroke="#10b981" fill="#6ee7b7" />
-                        <Area type="monotone" dataKey="restschuld" name="Restschuld" stroke="#ef4444" fill="#fca5a5" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Leverage-Effekt Visualisierung */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-3">Leverage-Effekt Visualisierung</h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={[
-                        { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
-                        { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
-                        { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
-                        <Tooltip formatter={(v) => `${v.toFixed(2)}%`} />
-                        <Bar dataKey="wert" name="Rendite">
-                          {[
-                            { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
-                            { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
-                            { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
-                          ].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'cashflow' && (
-                <CashflowUebersicht
-                  params={params}
-                  ergebnis={ergebnis}
-                  immobilie={immobilie}
-                  investitionen={params.investitionen}
-                />
-              )}
-
-              {activeTab === 'steuern' && (
-                <Steuerberechnung
-                  params={params}
-                  ergebnis={ergebnis}
-                  immobilie={immobilie}
-                />
-              )}
-
-              {activeTab === 'investitionen' && (
-                <ReparaturenInvestitionen
-                  immobilie={{...immobilie, investitionen: params.investitionen}}
-                  onUpdate={(updated) => {
-                    updateParams({...params, investitionen: updated.investitionen});
-                  }}
-                />
-              )}
-            </div>
-          </div>
+          {activeTab === 'investitionen' && (
+            <ReparaturenInvestitionen
+              immobilie={{...immobilie, investitionen: params.investitionen}}
+              onUpdate={(updated) => {
+                updateParams({...params, investitionen: updated.investitionen});
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
