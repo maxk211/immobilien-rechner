@@ -574,8 +574,11 @@ const berechneRendite = (params) => {
     kaufpreis, eigenkapital, zinssatz, tilgung, laufzeit,
     kaltmiete, nebenkosten, instandhaltung, verwaltung,
     wertsteigerung, mietsteigerung, kaufnebenkosten,
-    finanzierungsbetrag
+    finanzierungsbetrag, kaufdatum
   } = params;
+
+  // Kaufjahr für Chart-Darstellung
+  const kaufjahr = kaufdatum ? new Date(kaufdatum).getFullYear() : new Date().getFullYear();
 
   const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
   const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut; // Gesamtinvestition in das Objekt
@@ -614,12 +617,13 @@ const berechneRendite = (params) => {
   let gesamtTilgung = 0;
   let gesamtZinsen = 0;
 
-  for (let jahr = 0; jahr <= laufzeit; jahr++) {
+  for (let i = 0; i <= laufzeit; i++) {
     const jahresZinsen = restschuld * (zinssatz / 100);
     const jahresTilgung = Math.min(jahresannuitaet - jahresZinsen, restschuld);
 
     entwicklung.push({
-      jahr,
+      jahr: kaufjahr + i, // Absolutes Jahr statt relativ
+      jahrRelativ: i,
       immobilienwert: Math.round(aktuellerWert),
       restschuld: Math.round(restschuld),
       eigenkapital: Math.round(aktuellerWert - restschuld),
@@ -2456,6 +2460,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
 
   const [params, setParams] = useState({
     kaufpreis: immobilie.kaufpreis,
+    kaufdatum: immobilie.kaufdatum || '', // Kaufdatum bearbeitbar
     eigenkapital: immobilie.eigenkapital,
     zinssatz: immobilie.zinssatz ?? 4.0,
     tilgung: immobilie.tilgung ?? 2.0,
@@ -2470,11 +2475,11 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     kaufnebenkostenModus: immobilie.kaufnebenkostenModus || 'prozent',
     kaufnebenkostenPositionen: immobilie.kaufnebenkostenPositionen || null,
     bundesland: immobilie.bundesland || 'bayern',
-    finanzierungsbetrag: immobilie.finanzierungsbetrag ?? null, // Separat eingebbarer Kreditbetrag
+    finanzierungsbetrag: immobilie.finanzierungsbetrag ?? null,
     geschaetzterWert: initialWert,
     mietModus: immobilie.mietModus || 'automatisch',
     mietHistorie: immobilie.mietHistorie || {},
-    mietEingaenge: immobilie.mietEingaenge || [], // Neue Mieteinnahmen-Tracking
+    mietEingaenge: immobilie.mietEingaenge || [],
     steuersatz: immobilie.steuersatz || 42,
     investitionen: immobilie.investitionen || []
   });
@@ -2511,7 +2516,10 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
 
   const ergebnis = useMemo(() => berechneRendite(params), [params]);
   const aktuellerWert = params.geschaetzterWert || immobilie.kaufpreis;
-  const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(immobilie, aktuellerWert);
+  // Verwende params.kaufdatum für Berechnungen (bearbeitbar)
+  const immobilieMitAktuellemKaufdatum = { ...immobilie, kaufdatum: params.kaufdatum };
+  const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(immobilieMitAktuellemKaufdatum, aktuellerWert);
+  const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : new Date().getFullYear();
 
   const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -2708,6 +2716,18 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               {/* Kaufpreis & Finanzierung */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-4">Kaufpreis & Eigenkapital</h3>
+
+                {/* Kaufdatum */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kaufdatum</label>
+                  <input
+                    type="date"
+                    value={params.kaufdatum || ''}
+                    onChange={(e) => updateParams({...params, kaufdatum: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
                 <InputSliderCombo label="Kaufpreis" value={params.kaufpreis} onChange={(v) => updateParams({...params, kaufpreis: v})} min={50000} max={2000000} step={10000} unit="€" />
                 <InputSliderCombo label="Eigenkapital" value={params.eigenkapital} onChange={(v) => updateParams({...params, eigenkapital: v})} min={0} max={params.kaufpreis} step={5000} unit="€" />
                 <div className="text-xs text-gray-500 mb-4 px-1">
