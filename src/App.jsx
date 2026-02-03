@@ -1634,23 +1634,23 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
 
 // Steuerberechnung Komponente
 const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
-  const [steuersatz, setSteuersatz] = useState(immobilie.steuersatz || 42);
-  const [gebaeudeAnteilProzent, setGebaeudeAnteilProzent] = useState(immobilie.gebaeudeAnteilProzent || 80);
-  const [afaSatz, setAfaSatz] = useState(immobilie.afaSatz || 2.0);
   const [showDetails, setShowDetails] = useState(false);
-
-  // Fahrtkosten
-  const [fahrtkostenModus, setFahrtkostenModus] = useState(immobilie.fahrtkostenModus || 'pauschal');
-  const [fahrtenProMonat, setFahrtenProMonat] = useState(immobilie.fahrtenProMonat || 0);
-  const [entfernungKm, setEntfernungKm] = useState(immobilie.entfernungKm || 0);
-  const [kmPauschale, setKmPauschale] = useState(immobilie.kmPauschale || 0.30);
-  const [fahrtenListe, setFahrtenListe] = useState(immobilie.fahrtenListe || []);
   const [showFahrtForm, setShowFahrtForm] = useState(false);
   const [neueFahrt, setNeueFahrt] = useState({
     datum: new Date().toISOString().split('T')[0],
     grund: '',
-    km: entfernungKm || 0
+    km: params.entfernungKm || 0
   });
+
+  // Werte aus params lesen (persistent)
+  const steuersatz = params.steuersatz || 42;
+  const gebaeudeAnteilProzent = params.gebaeudeAnteilProzent || 80;
+  const afaSatz = params.afaSatz || 2.0;
+  const fahrtkostenModus = params.fahrtkostenModus || 'pauschal';
+  const fahrtenProMonat = params.fahrtenProMonat || 0;
+  const entfernungKm = params.entfernungKm || 0;
+  const kmPauschale = params.kmPauschale || 0.30;
+  const fahrtenListe = params.fahrtenListe || [];
 
   const fahrtGruende = [
     'Wohnungsbesichtigung',
@@ -1662,13 +1662,17 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
     'Sonstiges'
   ];
 
+  // Helper zum Aktualisieren der params
+  const updateSteuerParams = (updates) => {
+    if (onUpdateParams) {
+      onUpdateParams({ ...params, ...updates });
+    }
+  };
+
   const handleAddFahrt = () => {
     if (!neueFahrt.datum || !neueFahrt.km) return;
     const updated = [...fahrtenListe, { ...neueFahrt, id: Date.now() }];
-    setFahrtenListe(updated);
-    if (onUpdateParams) {
-      onUpdateParams({ ...params, fahrtenListe: updated });
-    }
+    updateSteuerParams({ fahrtenListe: updated });
     setNeueFahrt({
       datum: new Date().toISOString().split('T')[0],
       grund: '',
@@ -1679,10 +1683,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
 
   const handleDeleteFahrt = (id) => {
     const updated = fahrtenListe.filter(f => f.id !== id);
-    setFahrtenListe(updated);
-    if (onUpdateParams) {
-      onUpdateParams({ ...params, fahrtenListe: updated });
-    }
+    updateSteuerParams({ fahrtenListe: updated });
   };
 
   // AfA Berechnung (Abschreibung)
@@ -1741,7 +1742,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
             min="0"
             max="45"
             value={steuersatz}
-            onChange={(e) => setSteuersatz(parseInt(e.target.value))}
+            onChange={(e) => updateSteuerParams({ steuersatz: parseInt(e.target.value) })}
             className="flex-1"
           />
           <span className="w-12 text-right font-semibold">{steuersatz}%</span>
@@ -1760,7 +1761,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                 min="0"
                 max="100"
                 value={gebaeudeAnteilProzent}
-                onChange={(e) => setGebaeudeAnteilProzent(parseFloat(e.target.value) || 0)}
+                onChange={(e) => updateSteuerParams({ gebaeudeAnteilProzent: parseFloat(e.target.value) || 0 })}
                 className="w-16 px-2 py-1 border rounded text-sm text-right"
               />
               <span className="text-sm text-gray-600">%</span>
@@ -1776,7 +1777,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                 max="10"
                 step="0.5"
                 value={afaSatz}
-                onChange={(e) => setAfaSatz(parseFloat(e.target.value) || 0)}
+                onChange={(e) => updateSteuerParams({ afaSatz: parseFloat(e.target.value) || 0 })}
                 className="w-16 px-2 py-1 border rounded text-sm text-right"
               />
               <span className="text-sm text-gray-600">%</span>
@@ -1795,13 +1796,13 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
           <h4 className="text-sm font-semibold text-gray-700">🚗 Fahrtkosten</h4>
           <div className="flex bg-gray-200 rounded-lg p-1">
             <button
-              onClick={() => setFahrtkostenModus('pauschal')}
+              onClick={() => updateSteuerParams({ fahrtkostenModus: 'pauschal' })}
               className={`px-2 py-1 text-xs rounded-md transition-colors ${fahrtkostenModus === 'pauschal' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
             >
               Pauschal
             </button>
             <button
-              onClick={() => setFahrtkostenModus('manuell')}
+              onClick={() => updateSteuerParams({ fahrtkostenModus: 'manuell' })}
               className={`px-2 py-1 text-xs rounded-md transition-colors ${fahrtkostenModus === 'manuell' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
             >
               Einzeln
@@ -1818,7 +1819,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                 type="number"
                 min="0"
                 value={entfernungKm}
-                onChange={(e) => setEntfernungKm(parseFloat(e.target.value) || 0)}
+                onChange={(e) => updateSteuerParams({ entfernungKm: parseFloat(e.target.value) || 0 })}
                 className="w-full px-2 py-1 border rounded text-sm text-right"
                 placeholder="km"
               />
@@ -1834,7 +1835,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                 max="1"
                 step="0.01"
                 value={kmPauschale}
-                onChange={(e) => setKmPauschale(parseFloat(e.target.value) || 0)}
+                onChange={(e) => updateSteuerParams({ kmPauschale: parseFloat(e.target.value) || 0 })}
                 className="w-full px-2 py-1 border rounded text-sm text-right"
               />
               <span className="text-xs text-gray-500">€</span>
@@ -1851,7 +1852,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                 min="0"
                 max="30"
                 value={fahrtenProMonat}
-                onChange={(e) => setFahrtenProMonat(parseFloat(e.target.value) || 0)}
+                onChange={(e) => updateSteuerParams({ fahrtenProMonat: parseFloat(e.target.value) || 0 })}
                 className="w-24 px-2 py-1 border rounded text-sm text-right"
                 placeholder="z.B. 2"
               />
@@ -2494,11 +2495,31 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     kaufnebenkostenPositionen: immobilie.kaufnebenkostenPositionen || null,
     bundesland: immobilie.bundesland || 'bayern',
     finanzierungsbetrag: immobilie.finanzierungsbetrag ?? null,
+    // Finanzierungsphasen für Anschlussfinanzierungen
+    finanzierungsphasen: immobilie.finanzierungsphasen || [
+      {
+        id: 1,
+        name: 'Erstfinanzierung',
+        zinsbindung: immobilie.laufzeit ?? 10,
+        zinssatz: immobilie.zinssatz ?? 4.0,
+        tilgung: immobilie.tilgung ?? 2.0,
+        sondertilgungJaehrlich: 0,
+        aktiv: true
+      }
+    ],
     geschaetzterWert: initialWert,
     mietModus: immobilie.mietModus || 'automatisch',
     mietHistorie: immobilie.mietHistorie || {},
     mietEingaenge: immobilie.mietEingaenge || [],
+    // Steuer-Parameter
     steuersatz: immobilie.steuersatz || 42,
+    gebaeudeAnteilProzent: immobilie.gebaeudeAnteilProzent || 80,
+    afaSatz: immobilie.afaSatz || 2.0,
+    fahrtkostenModus: immobilie.fahrtkostenModus || 'pauschal',
+    fahrtenProMonat: immobilie.fahrtenProMonat || 0,
+    entfernungKm: immobilie.entfernungKm || 0,
+    kmPauschale: immobilie.kmPauschale || 0.30,
+    fahrtenListe: immobilie.fahrtenListe || [],
     investitionen: immobilie.investitionen || []
   });
   const [hasChanges, setHasChanges] = useState(false);
@@ -2734,10 +2755,94 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
           {activeTab === 'finanzierung' && (() => {
             const kaufnebenkostenAbsolut = params.kaufpreis * (params.kaufnebenkosten / 100);
             const gesamtinvestition = params.kaufpreis + kaufnebenkostenAbsolut;
-            const ekFuerNebenkosten = params.ekFuerNebenkosten ?? kaufnebenkostenAbsolut; // Default: Nebenkosten komplett mit EK
+            const ekFuerNebenkosten = params.ekFuerNebenkosten ?? kaufnebenkostenAbsolut;
             const ekFuerKaufpreis = params.ekFuerKaufpreis ?? 0;
             const gesamtEK = ekFuerNebenkosten + ekFuerKaufpreis;
             const berechneterKredit = gesamtinvestition - gesamtEK;
+            const effektiverKredit = params.finanzierungsbetrag ?? berechneterKredit;
+
+            // Finanzierungsphasen mit Berechnungen
+            const finanzierungsphasen = params.finanzierungsphasen || [{
+              id: 1, name: 'Erstfinanzierung', zinsbindung: params.laufzeit ?? 10,
+              zinssatz: params.zinssatz ?? 4.0, tilgung: params.tilgung ?? 2.0, sondertilgungJaehrlich: 0, aktiv: true
+            }];
+
+            // Berechne Restschulden für jede Phase
+            const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : new Date().getFullYear();
+            const phasenMitBerechnung = [];
+            let aktuelleRestschuld = effektiverKredit;
+            let aktuellesStartjahr = kaufjahr;
+
+            for (let i = 0; i < finanzierungsphasen.length; i++) {
+              const phase = finanzierungsphasen[i];
+              const startKredit = aktuelleRestschuld;
+              const monatszins = phase.zinssatz / 100 / 12;
+              const laufzeitMonate = phase.zinsbindung * 12;
+
+              // Annuität berechnen
+              let annuitaet = 0;
+              if (monatszins > 0 && startKredit > 0) {
+                annuitaet = startKredit * (monatszins * Math.pow(1 + monatszins, laufzeitMonate)) /
+                           (Math.pow(1 + monatszins, laufzeitMonate) - 1);
+              }
+
+              // Restschuld am Ende der Phase
+              let restschuld = startKredit;
+              for (let monat = 0; monat < laufzeitMonate && restschuld > 0; monat++) {
+                const monatsZinsen = restschuld * monatszins;
+                const monatsTilgung = Math.min(annuitaet - monatsZinsen, restschuld);
+                restschuld = Math.max(0, restschuld - monatsTilgung);
+                // Jährliche Sondertilgung (am Jahresende)
+                if ((monat + 1) % 12 === 0 && phase.sondertilgungJaehrlich > 0) {
+                  restschuld = Math.max(0, restschuld - phase.sondertilgungJaehrlich);
+                }
+              }
+
+              phasenMitBerechnung.push({
+                ...phase,
+                startjahr: aktuellesStartjahr,
+                endjahr: aktuellesStartjahr + phase.zinsbindung,
+                startKredit: Math.round(startKredit),
+                restschuld: Math.round(restschuld),
+                monatlicheRate: Math.round(annuitaet),
+                getilgt: Math.round(startKredit - restschuld)
+              });
+
+              aktuelleRestschuld = restschuld;
+              aktuellesStartjahr = aktuellesStartjahr + phase.zinsbindung;
+            }
+
+            const addPhase = () => {
+              const letzePhase = phasenMitBerechnung[phasenMitBerechnung.length - 1];
+              const neuePhase = {
+                id: Date.now(),
+                name: `Anschlussfinanzierung ${finanzierungsphasen.length}`,
+                zinsbindung: 10,
+                zinssatz: letzePhase.zinssatz + 0.5,
+                tilgung: letzePhase.tilgung,
+                sondertilgungJaehrlich: 0,
+                aktiv: false
+              };
+              updateParams({...params, finanzierungsphasen: [...finanzierungsphasen, neuePhase]});
+            };
+
+            const updatePhase = (id, updates) => {
+              const updated = finanzierungsphasen.map(p => p.id === id ? {...p, ...updates} : p);
+              const newParams = {...params, finanzierungsphasen: updated};
+              // Wenn erste Phase geändert wird, auch globale params aktualisieren für Kompatibilität
+              if (finanzierungsphasen[0]?.id === id) {
+                if (updates.zinssatz !== undefined) newParams.zinssatz = updates.zinssatz;
+                if (updates.tilgung !== undefined) newParams.tilgung = updates.tilgung;
+                if (updates.zinsbindung !== undefined) newParams.laufzeit = updates.zinsbindung;
+              }
+              updateParams(newParams);
+            };
+
+            const deletePhase = (id) => {
+              if (finanzierungsphasen.length <= 1) return;
+              const updated = finanzierungsphasen.filter(p => p.id !== id);
+              updateParams({...params, finanzierungsphasen: updated});
+            };
 
             return (
             <div className="space-y-6">
@@ -2788,7 +2893,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                   </div>
                 </div>
 
-                {/* Rechte Spalte: Eigenkapital & Finanzierung */}
+                {/* Rechte Spalte: Eigenkapital */}
                 <div className="space-y-4">
                   {/* Eigenkapital Aufteilung */}
                   <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -2868,20 +2973,15 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                     </div>
                   </div>
 
-                  {/* Kreditkonditionen */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700 mb-4">🏦 Kreditkonditionen</h4>
-
-                    <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-blue-700">Berechneter Kreditbetrag</span>
-                        <span className="text-lg font-bold text-blue-700">{formatCurrency(berechneterKredit)}</span>
-                      </div>
-                      <p className="text-xs text-blue-600 mt-1">Gesamtinvestition - Eigenkapital</p>
+                  {/* Initialer Kreditbetrag */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-semibold text-blue-800 mb-3">🏦 Anfänglicher Kreditbetrag</h4>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600">Berechnet (Investition - EK)</span>
+                      <span className="text-lg font-bold text-blue-700">{formatCurrency(berechneterKredit)}</span>
                     </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Oder: Kreditbetrag manuell eingeben</label>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Oder manuell eingeben:</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
@@ -2890,33 +2990,203 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                             const val = e.target.value === '' ? null : parseFloat(e.target.value);
                             updateParams({...params, finanzierungsbetrag: val});
                           }}
-                          placeholder="Automatisch berechnet"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Automatisch"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                         />
                         <span className="text-gray-500">€</span>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
 
-                    <InputSliderCombo label="Zinssatz" value={params.zinssatz} onChange={(v) => updateParams({...params, zinssatz: v})} min={0.5} max={8} step={0.1} unit="%" />
-                    <InputSliderCombo label="Tilgung" value={params.tilgung} onChange={(v) => updateParams({...params, tilgung: v})} min={1} max={5} step={0.5} unit="%" />
-                    <InputSliderCombo label="Laufzeit" value={params.laufzeit} onChange={(v) => updateParams({...params, laufzeit: v})} min={5} max={35} step={1} unit="J" />
+              {/* Finanzierungsphasen */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-lg text-gray-800">📅 Finanzierungsphasen</h3>
+                  <button
+                    onClick={addPhase}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-1"
+                  >
+                    <span>+</span> Anschlussfinanzierung
+                  </button>
+                </div>
 
-                    {/* Zusammenfassung */}
-                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Effektiver Kredit:</span>
-                        <span className="font-bold text-blue-600">{formatCurrency(ergebnis.fremdkapital)}</span>
+                {/* Timeline-Visualisierung */}
+                <div className="mb-6">
+                  <div className="relative h-12 bg-gray-100 rounded-lg overflow-hidden">
+                    {phasenMitBerechnung.map((phase, idx) => {
+                      const totalJahre = phasenMitBerechnung.reduce((sum, p) => sum + p.zinsbindung, 0);
+                      const startProzent = phasenMitBerechnung.slice(0, idx).reduce((sum, p) => sum + p.zinsbindung, 0) / totalJahre * 100;
+                      const breiteProzent = phase.zinsbindung / totalJahre * 100;
+                      const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
+                      return (
+                        <div
+                          key={phase.id}
+                          className={`absolute top-0 h-full ${colors[idx % colors.length]} flex items-center justify-center text-white text-xs font-medium`}
+                          style={{ left: `${startProzent}%`, width: `${breiteProzent}%` }}
+                        >
+                          <span className="truncate px-1">{phase.startjahr}-{phase.endjahr}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>{kaufjahr}</span>
+                    <span>{phasenMitBerechnung[phasenMitBerechnung.length - 1]?.endjahr}</span>
+                  </div>
+                </div>
+
+                {/* Phasen-Karten */}
+                <div className="space-y-4">
+                  {phasenMitBerechnung.map((phase, idx) => (
+                    <div key={phase.id} className={`border rounded-lg p-4 ${idx === 0 ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${idx === 0 ? 'bg-blue-600 text-white' : 'bg-gray-500 text-white'}`}>
+                              Phase {idx + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={phase.name}
+                              onChange={(e) => updatePhase(phase.id, { name: e.target.value })}
+                              className="font-semibold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            {phase.startjahr} – {phase.endjahr} ({phase.zinsbindung} Jahre)
+                          </div>
+                        </div>
+                        {idx > 0 && (
+                          <button
+                            onClick={() => deletePhase(phase.id)}
+                            className="text-red-500 hover:text-red-700 text-sm px-2 py-1"
+                          >
+                            Entfernen
+                          </button>
+                        )}
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Monatliche Rate:</span>
-                        <span className="font-bold">{formatCurrency(ergebnis.monatlicheRate)}</span>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Zinsbindung</label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={1}
+                              max={30}
+                              value={phase.zinsbindung}
+                              onChange={(e) => updatePhase(phase.id, { zinsbindung: parseInt(e.target.value) || 1 })}
+                              className="w-16 px-2 py-1.5 border rounded text-sm text-right"
+                            />
+                            <span className="text-xs text-gray-500">Jahre</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Zinssatz</label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={15}
+                              step={0.1}
+                              value={phase.zinssatz}
+                              onChange={(e) => updatePhase(phase.id, { zinssatz: parseFloat(e.target.value) || 0 })}
+                              className="w-16 px-2 py-1.5 border rounded text-sm text-right"
+                            />
+                            <span className="text-xs text-gray-500">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Anf. Tilgung</label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={10}
+                              step={0.5}
+                              value={phase.tilgung}
+                              onChange={(e) => updatePhase(phase.id, { tilgung: parseFloat(e.target.value) || 0 })}
+                              className="w-16 px-2 py-1.5 border rounded text-sm text-right"
+                            />
+                            <span className="text-xs text-gray-500">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Sondertilgung/Jahr</label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              step={1000}
+                              value={phase.sondertilgungJaehrlich}
+                              onChange={(e) => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
+                              className="w-20 px-2 py-1.5 border rounded text-sm text-right"
+                            />
+                            <span className="text-xs text-gray-500">€</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Jährliche Rate:</span>
-                        <span className="font-medium">{formatCurrency(ergebnis.monatlicheRate * 12)}</span>
+
+                      {/* Berechnungen für diese Phase */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-gray-200">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Startbetrag</div>
+                          <div className="font-semibold text-gray-800">{formatCurrency(phase.startKredit)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Monatl. Rate</div>
+                          <div className="font-semibold text-gray-800">{formatCurrency(phase.monatlicheRate)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Getilgt in Phase</div>
+                          <div className="font-semibold text-green-600">{formatCurrency(phase.getilgt)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Restschuld {phase.endjahr}</div>
+                          <div className={`font-semibold ${phase.restschuld === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                            {phase.restschuld === 0 ? '✓ Abbezahlt' : formatCurrency(phase.restschuld)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Gesamtzusammenfassung */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg">
+                  <h4 className="font-semibold text-gray-700 mb-3">📊 Gesamtübersicht Finanzierung</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <div className="text-xs text-gray-500">Ursprünglicher Kredit</div>
+                      <div className="text-lg font-bold text-gray-800">{formatCurrency(effektiverKredit)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Gesamtlaufzeit</div>
+                      <div className="text-lg font-bold text-gray-800">
+                        {phasenMitBerechnung.reduce((sum, p) => sum + p.zinsbindung, 0)} Jahre
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Aktuelle monatl. Rate</div>
+                      <div className="text-lg font-bold text-blue-600">
+                        {formatCurrency(phasenMitBerechnung[0]?.monatlicheRate || 0)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Endgültige Restschuld</div>
+                      <div className={`text-lg font-bold ${phasenMitBerechnung[phasenMitBerechnung.length - 1]?.restschuld === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                        {formatCurrency(phasenMitBerechnung[phasenMitBerechnung.length - 1]?.restschuld || 0)}
                       </div>
                     </div>
                   </div>
+                  {phasenMitBerechnung[phasenMitBerechnung.length - 1]?.restschuld > 0 && (
+                    <p className="text-xs text-orange-600 mt-2">
+                      ⚠️ Nach {phasenMitBerechnung.reduce((sum, p) => sum + p.zinsbindung, 0)} Jahren besteht noch eine Restschuld.
+                      Fügen Sie weitere Anschlussfinanzierungen hinzu oder erhöhen Sie die Tilgung.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -2953,7 +3223,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             <Steuerberechnung
               params={params}
               ergebnis={ergebnis}
-              immobilie={immobilie}
+              immobilie={{...immobilie, ...params}}
+              onUpdateParams={updateParams}
             />
           )}
 
