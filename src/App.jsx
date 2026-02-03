@@ -675,6 +675,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     name: '',
     plz: '',
     adresse: '',
+    immobilienTyp: 'kaufimmobilie', // NEU: kaufimmobilie oder mietimmobilie
     objektart: 'eigentumswohnung',
     zustand: 'gut',
     wohnflaeche: 80,
@@ -689,7 +690,13 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     kaufpreis: 300000,
     eigenkapital: 60000,
     kaltmiete: 1000,
-    kaufdatum: ''
+    kaufdatum: '',
+    // Mietimmobilie / Arbitrage spezifische Felder
+    eigeneWarmmiete: 1500,        // Was man selbst zahlt (warm)
+    anzahlZimmerVermietet: 3,     // Anzahl Zimmer die untervermietet werden
+    untermieteProZimmer: 600,     // Warmmiete pro Zimmer von Untermietern
+    nebenkosten: 0,               // Zusätzliche Nebenkosten die nicht in Warmmiete enthalten
+    mietvertragStart: ''          // Startdatum des Mietvertrags
   });
 
   const schaetzung = useMemo(() => schaetzeImmobilienwert(formData), [formData]);
@@ -712,6 +719,39 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
 
         <div className="p-6 overflow-y-auto flex-grow">
           <div className="space-y-6">
+            {/* Immobilientyp Auswahl */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-100">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Immobilientyp</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'kaufimmobilie')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'kaufimmobilie'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-lg mb-1">🏠</div>
+                  <div className="font-semibold">Kaufimmobilie</div>
+                  <div className="text-xs text-gray-500">Eigene Immobilie vermieten</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'mietimmobilie')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'mietimmobilie'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-lg mb-1">🔄</div>
+                  <div className="font-semibold">Mietimmobilie</div>
+                  <div className="text-xs text-gray-500">Arbitrage: Anmieten & Untervermieten</div>
+                </button>
+              </div>
+            </div>
+
             <div>
               <h3 className="text-lg font-semibold mb-3 text-gray-700">Grunddaten</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -722,7 +762,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="z.B. Wohnung München"
+                    placeholder={formData.immobilienTyp === 'mietimmobilie' ? 'z.B. Mitarbeiter-WG München' : 'z.B. Wohnung München'}
                   />
                 </div>
                 <div>
@@ -746,197 +786,352 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kaufdatum</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.immobilienTyp === 'mietimmobilie' ? 'Mietvertrag seit' : 'Kaufdatum'}
+                  </label>
                   <input
                     type="date"
-                    value={formData.kaufdatum}
-                    onChange={(e) => handleChange('kaufdatum', e.target.value)}
+                    value={formData.immobilienTyp === 'mietimmobilie' ? formData.mietvertragStart : formData.kaufdatum}
+                    onChange={(e) => handleChange(formData.immobilienTyp === 'mietimmobilie' ? 'mietvertragStart' : 'kaufdatum', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-gray-700">Objektdetails</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Objektart</label>
-                  <select
-                    value={formData.objektart}
-                    onChange={(e) => handleChange('objektart', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="eigentumswohnung">Eigentumswohnung</option>
-                    <option value="einfamilienhaus">Einfamilienhaus</option>
-                    <option value="doppelhaushälfte">Doppelhaushälfte</option>
-                    <option value="reihenhaus">Reihenhaus</option>
-                    <option value="mehrfamilienhaus">Mehrfamilienhaus</option>
-                    <option value="grundstück">Grundstück</option>
-                  </select>
+            {/* Objektdetails - nur für Kaufimmobilie */}
+            {formData.immobilienTyp === 'kaufimmobilie' && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Objektdetails</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Objektart</label>
+                    <select
+                      value={formData.objektart}
+                      onChange={(e) => handleChange('objektart', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="eigentumswohnung">Eigentumswohnung</option>
+                      <option value="einfamilienhaus">Einfamilienhaus</option>
+                      <option value="doppelhaushälfte">Doppelhaushälfte</option>
+                      <option value="reihenhaus">Reihenhaus</option>
+                      <option value="mehrfamilienhaus">Mehrfamilienhaus</option>
+                      <option value="grundstück">Grundstück</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zustand</label>
+                    <select
+                      value={formData.zustand}
+                      onChange={(e) => handleChange('zustand', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="neuwertig">Neuwertig</option>
+                      <option value="sehr gut">Sehr gut</option>
+                      <option value="gut">Gut</option>
+                      <option value="normal">Normal</option>
+                      <option value="renovierungsbedürftig">Renovierungsbedürftig</option>
+                      <option value="sanierungsbedürftig">Sanierungsbedürftig</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Wohnfläche (m²)</label>
+                    <input
+                      type="number"
+                      value={formData.wohnflaeche}
+                      onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Grundstück (m²)</label>
+                    <input
+                      type="number"
+                      value={formData.grundstueck}
+                      onChange={(e) => handleChange('grundstueck', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zimmer</label>
+                    <input
+                      type="number"
+                      value={formData.zimmer}
+                      onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Baujahr</label>
+                    <input
+                      type="number"
+                      value={formData.baujahr}
+                      onChange={(e) => handleChange('baujahr', parseInt(e.target.value) || 2000)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stockwerk</label>
+                    <input
+                      type="number"
+                      value={formData.stockwerk}
+                      onChange={(e) => handleChange('stockwerk', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Energieeffizienz</label>
+                    <select
+                      value={formData.energieeffizienz}
+                      onChange={(e) => handleChange('energieeffizienz', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (
+                        <option key={e} value={e}>{e}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zustand</label>
-                  <select
-                    value={formData.zustand}
-                    onChange={(e) => handleChange('zustand', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="neuwertig">Neuwertig</option>
-                    <option value="sehr gut">Sehr gut</option>
-                    <option value="gut">Gut</option>
-                    <option value="normal">Normal</option>
-                    <option value="renovierungsbedürftig">Renovierungsbedürftig</option>
-                    <option value="sanierungsbedürftig">Sanierungsbedürftig</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Wohnfläche (m²)</label>
-                  <input
-                    type="number"
-                    value={formData.wohnflaeche}
-                    onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Grundstück (m²)</label>
-                  <input
-                    type="number"
-                    value={formData.grundstueck}
-                    onChange={(e) => handleChange('grundstueck', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zimmer</label>
-                  <input
-                    type="number"
-                    value={formData.zimmer}
-                    onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Baujahr</label>
-                  <input
-                    type="number"
-                    value={formData.baujahr}
-                    onChange={(e) => handleChange('baujahr', parseInt(e.target.value) || 2000)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stockwerk</label>
-                  <input
-                    type="number"
-                    value={formData.stockwerk}
-                    onChange={(e) => handleChange('stockwerk', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Energieeffizienz</label>
-                  <select
-                    value={formData.energieeffizienz}
-                    onChange={(e) => handleChange('energieeffizienz', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (
-                      <option key={e} value={e}>{e}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
-              <div className="flex gap-4 mt-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.balkon}
-                    onChange={(e) => handleChange('balkon', e.target.checked)}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm text-gray-700">Balkon/Terrasse</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.garage}
-                    onChange={(e) => handleChange('garage', e.target.checked)}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm text-gray-700">Garage/Stellplatz</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.keller}
-                    onChange={(e) => handleChange('keller', e.target.checked)}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm text-gray-700">Keller</span>
-                </label>
+                <div className="flex gap-4 mt-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.balkon}
+                      onChange={(e) => handleChange('balkon', e.target.checked)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Balkon/Terrasse</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.garage}
+                      onChange={(e) => handleChange('garage', e.target.checked)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Garage/Stellplatz</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.keller}
+                      onChange={(e) => handleChange('keller', e.target.checked)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Keller</span>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2 text-blue-800">Aktueller Marktwert</h3>
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Geschätzter Wert (€)</label>
-                <input
-                  type="number"
-                  value={formData.geschaetzterWert || ''}
-                  onChange={(e) => handleChange('geschaetzterWert', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="z.B. 350000"
-                />
+            {/* Objektdetails für Mietimmobilie - vereinfacht */}
+            {formData.immobilienTyp === 'mietimmobilie' && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Objektdetails</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Wohnfläche (m²)</label>
+                    <input
+                      type="number"
+                      value={formData.wohnflaeche}
+                      onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gesamtzahl Zimmer</label>
+                    <input
+                      type="number"
+                      value={formData.zimmer}
+                      onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
               </div>
-              <a
-                href={`https://www.homeday.de/de/preisatlas/${formData.plz ? '?search=' + formData.plz : ''}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-              >
-                <span>🔍</span> Preis bei Homeday recherchieren
-              </a>
-              <p className="text-xs text-blue-600 mt-2">
-                Recherchiere den aktuellen Marktwert und trage ihn oben ein.
-              </p>
-            </div>
+            )}
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-gray-700">Finanzdaten</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kaufpreis (€)</label>
+            {/* Marktwert - nur für Kaufimmobilie */}
+            {formData.immobilienTyp === 'kaufimmobilie' && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-2 text-blue-800">Aktueller Marktwert</h3>
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Geschätzter Wert (€)</label>
                   <input
                     type="number"
-                    value={formData.kaufpreis}
-                    onChange={(e) => handleChange('kaufpreis', parseFloat(e.target.value) || 0)}
+                    value={formData.geschaetzterWert || ''}
+                    onChange={(e) => handleChange('geschaetzterWert', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="z.B. 350000"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Eigenkapital (€)</label>
-                  <input
-                    type="number"
-                    value={formData.eigenkapital}
-                    onChange={(e) => handleChange('eigenkapital', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kaltmiete (€/Monat)</label>
-                  <input
-                    type="number"
-                    value={formData.kaltmiete}
-                    onChange={(e) => handleChange('kaltmiete', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                <a
+                  href={`https://www.homeday.de/de/preisatlas/${formData.plz ? '?search=' + formData.plz : ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                >
+                  <span>🔍</span> Preis bei Homeday recherchieren
+                </a>
+                <p className="text-xs text-blue-600 mt-2">
+                  Recherchiere den aktuellen Marktwert und trage ihn oben ein.
+                </p>
+              </div>
+            )}
+
+            {/* Finanzdaten für Kaufimmobilie */}
+            {formData.immobilienTyp === 'kaufimmobilie' && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Finanzdaten</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kaufpreis (€)</label>
+                    <input
+                      type="number"
+                      value={formData.kaufpreis}
+                      onChange={(e) => handleChange('kaufpreis', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Eigenkapital (€)</label>
+                    <input
+                      type="number"
+                      value={formData.eigenkapital}
+                      onChange={(e) => handleChange('eigenkapital', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kaltmiete (€/Monat)</label>
+                    <input
+                      type="number"
+                      value={formData.kaltmiete}
+                      onChange={(e) => handleChange('kaltmiete', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Arbitrage-Daten für Mietimmobilie */}
+            {formData.immobilienTyp === 'mietimmobilie' && (
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <h3 className="text-lg font-semibold mb-3 text-purple-800">🔄 Arbitrage-Kalkulation</h3>
+                <p className="text-sm text-purple-600 mb-4">
+                  Berechne deinen Cashflow aus der Untervermietung an Mitarbeiter oder Gäste (Warmmiete).
+                </p>
+
+                <div className="space-y-4">
+                  <div className="bg-white p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">💸 Deine Mietkosten</h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Eigene Warmmiete (€/Monat)</label>
+                      <input
+                        type="number"
+                        value={formData.eigeneWarmmiete}
+                        onChange={(e) => handleChange('eigeneWarmmiete', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="z.B. 1500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Die Miete, die du an den Vermieter zahlst (inkl. Nebenkosten)</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">🛏️ Untervermietung</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Vermietete Zimmer</label>
+                        <input
+                          type="number"
+                          value={formData.anzahlZimmerVermietet}
+                          onChange={(e) => handleChange('anzahlZimmerVermietet', parseInt(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          min="0"
+                          max={formData.zimmer}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Miete pro Zimmer (€)</label>
+                        <input
+                          type="number"
+                          value={formData.untermieteProZimmer}
+                          onChange={(e) => handleChange('untermieteProZimmer', parseFloat(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="z.B. 600"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Warmmiete pro Zimmer, die deine Untermieter zahlen</p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">📊 Zusätzliche Kosten</h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sonstige monatl. Kosten (€)</label>
+                      <input
+                        type="number"
+                        value={formData.nebenkosten || 0}
+                        onChange={(e) => handleChange('nebenkosten', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="z.B. 100"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">z.B. Internet, Reinigung, Instandhaltung (nicht in Warmmiete enthalten)</p>
+                    </div>
+                  </div>
+
+                  {/* Vorschau-Berechnung */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="text-sm font-semibold text-green-800 mb-3">📈 Cashflow-Vorschau</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Einnahmen ({formData.anzahlZimmerVermietet || 0} × {formatCurrency(formData.untermieteProZimmer || 0)}):</span>
+                        <span className="font-semibold text-green-600">+{formatCurrency((formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0))}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Eigene Miete:</span>
+                        <span className="font-semibold text-red-600">-{formatCurrency(formData.eigeneWarmmiete || 0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Zusätzliche Kosten:</span>
+                        <span className="font-semibold text-red-600">-{formatCurrency(formData.nebenkosten || 0)}</span>
+                      </div>
+                      <div className="border-t border-green-300 pt-2 mt-2">
+                        <div className="flex justify-between text-base">
+                          <span className="font-semibold text-gray-700">Monatlicher Cashflow:</span>
+                          {(() => {
+                            const einnahmen = (formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0);
+                            const ausgaben = (formData.eigeneWarmmiete || 0) + (formData.nebenkosten || 0);
+                            const cashflow = einnahmen - ausgaben;
+                            return (
+                              <span className={`font-bold ${cashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="flex justify-between text-sm mt-1">
+                          <span className="text-gray-500">Jährlicher Cashflow:</span>
+                          {(() => {
+                            const einnahmen = (formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0);
+                            const ausgaben = (formData.eigeneWarmmiete || 0) + (formData.nebenkosten || 0);
+                            const cashflow = (einnahmen - ausgaben) * 12;
+                            return (
+                              <span className={`font-semibold ${cashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -963,17 +1158,35 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
 
 // Immobilien-Karte Komponente
 const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
+  const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
   const aktuellerWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
-  const wertsteigerung = berechneWertsteigerungSeitKauf(immobilie, aktuellerWert);
-  const restschuldInfo = berechneRestschuld(immobilie);
+  const wertsteigerung = !isMietimmobilie ? berechneWertsteigerungSeitKauf(immobilie, aktuellerWert) : null;
+  const restschuldInfo = !isMietimmobilie ? berechneRestschuld(immobilie) : null;
+
+  // Arbitrage Cashflow berechnen
+  const arbitrageCashflow = isMietimmobilie ? (() => {
+    const einnahmen = (immobilie.anzahlZimmerVermietet || 0) * (immobilie.untermieteProZimmer || 0);
+    const ausgaben = (immobilie.eigeneWarmmiete || 0) + (immobilie.nebenkosten || 0);
+    return einnahmen - ausgaben;
+  })() : 0;
 
   return (
     <div
-      className="bg-white rounded-xl shadow-lg p-5 cursor-pointer hover:shadow-xl transition-shadow border border-gray-100"
+      className={`bg-white rounded-xl shadow-lg p-5 cursor-pointer hover:shadow-xl transition-shadow border ${isMietimmobilie ? 'border-purple-200' : 'border-gray-100'}`}
       onClick={onClick}
     >
       <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-bold text-gray-800">{immobilie.name || 'Unbenannte Immobilie'}</h3>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{isMietimmobilie ? '🔄' : '🏠'}</span>
+            <h3 className="text-lg font-bold text-gray-800">{immobilie.name || 'Unbenannte Immobilie'}</h3>
+          </div>
+          {isMietimmobilie && (
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+              Arbitrage-Modell
+            </span>
+          )}
+        </div>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="text-red-500 hover:text-red-700 text-sm"
@@ -986,60 +1199,107 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
         {immobilie.plz} {immobilie.adresse}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-        <div><span className="text-gray-500">Wohnfläche:</span> {immobilie.wohnflaeche} m²</div>
-        <div><span className="text-gray-500">Zimmer:</span> {immobilie.zimmer}</div>
-        <div><span className="text-gray-500">Baujahr:</span> {immobilie.baujahr}</div>
-        <div><span className="text-gray-500">Zustand:</span> {immobilie.zustand}</div>
-      </div>
+      {/* Für Kaufimmobilie - normale Anzeige */}
+      {!isMietimmobilie && (
+        <>
+          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+            <div><span className="text-gray-500">Wohnfläche:</span> {immobilie.wohnflaeche} m²</div>
+            <div><span className="text-gray-500">Zimmer:</span> {immobilie.zimmer}</div>
+            <div><span className="text-gray-500">Baujahr:</span> {immobilie.baujahr}</div>
+            <div><span className="text-gray-500">Zustand:</span> {immobilie.zustand}</div>
+          </div>
 
-      <div className="border-t pt-3 mt-3">
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="text-xs text-gray-500">Kaufpreis</div>
-            <div className="font-semibold">{formatCurrency(immobilie.kaufpreis)}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-gray-500">Aktueller Wert</div>
-            <div className="font-semibold text-blue-600">{formatCurrency(aktuellerWert)}</div>
-          </div>
-        </div>
+          <div className="border-t pt-3 mt-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-xs text-gray-500">Kaufpreis</div>
+                <div className="font-semibold">{formatCurrency(immobilie.kaufpreis)}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500">Aktueller Wert</div>
+                <div className="font-semibold text-blue-600">{formatCurrency(aktuellerWert)}</div>
+              </div>
+            </div>
 
-        {restschuldInfo && restschuldInfo.anfangsFremdkapital > 0 && (
-          <div className="mt-2 p-2 bg-orange-50 rounded text-sm border border-orange-100">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Restschuld:</span>
-              <span className="text-orange-700 font-semibold">{formatCurrency(restschuldInfo.restschuld)}</span>
-            </div>
-            <div className="flex justify-between text-xs mt-1">
-              <span className="text-gray-400">Bereits getilgt:</span>
-              <span className="text-green-600">{formatCurrency(restschuldInfo.getilgt)}</span>
-            </div>
-            <div className="flex justify-between text-xs mt-1">
-              <span className="text-gray-400">Netto-Eigenkapital:</span>
-              <span className="text-blue-600 font-medium">{formatCurrency(aktuellerWert - restschuldInfo.restschuld)}</span>
-            </div>
-          </div>
-        )}
+            {restschuldInfo && restschuldInfo.anfangsFremdkapital > 0 && (
+              <div className="mt-2 p-2 bg-orange-50 rounded text-sm border border-orange-100">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Restschuld:</span>
+                  <span className="text-orange-700 font-semibold">{formatCurrency(restschuldInfo.restschuld)}</span>
+                </div>
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-gray-400">Bereits getilgt:</span>
+                  <span className="text-green-600">{formatCurrency(restschuldInfo.getilgt)}</span>
+                </div>
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-gray-400">Netto-Eigenkapital:</span>
+                  <span className="text-blue-600 font-medium">{formatCurrency(aktuellerWert - restschuldInfo.restschuld)}</span>
+                </div>
+              </div>
+            )}
 
-        {wertsteigerung && (
-          <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Wertsteigerung seit Kauf:</span>
-              <span className={wertsteigerung.absoluteSteigerung >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                {wertsteigerung.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerung.absoluteSteigerung)}
-                ({wertsteigerung.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerung.prozentSteigerung.toFixed(1)}%)
-              </span>
+            {wertsteigerung && (
+              <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Wertsteigerung seit Kauf:</span>
+                  <span className={wertsteigerung.absoluteSteigerung >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                    {wertsteigerung.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerung.absoluteSteigerung)}
+                    ({wertsteigerung.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerung.prozentSteigerung.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-gray-400">Jährliche Rendite:</span>
+                  <span className={wertsteigerung.jaehrlicheRendite >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    {wertsteigerung.jaehrlicheRendite >= 0 ? '+' : ''}{wertsteigerung.jaehrlicheRendite.toFixed(2)}% p.a.
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Für Mietimmobilie - Arbitrage Anzeige */}
+      {isMietimmobilie && (
+        <>
+          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+            <div><span className="text-gray-500">Wohnfläche:</span> {immobilie.wohnflaeche} m²</div>
+            <div><span className="text-gray-500">Zimmer gesamt:</span> {immobilie.zimmer}</div>
+            <div><span className="text-gray-500">Vermietet:</span> {immobilie.anzahlZimmerVermietet} Zimmer</div>
+            <div><span className="text-gray-500">Pro Zimmer:</span> {formatCurrency(immobilie.untermieteProZimmer)}</div>
+          </div>
+
+          <div className="border-t pt-3 mt-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-xs text-gray-500">Eigene Miete</div>
+                <div className="font-semibold text-red-600">-{formatCurrency(immobilie.eigeneWarmmiete)}/m</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500">Einnahmen</div>
+                <div className="font-semibold text-green-600">
+                  +{formatCurrency((immobilie.anzahlZimmerVermietet || 0) * (immobilie.untermieteProZimmer || 0))}/m
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between text-xs mt-1">
-              <span className="text-gray-400">Jährliche Rendite:</span>
-              <span className={wertsteigerung.jaehrlicheRendite >= 0 ? 'text-green-500' : 'text-red-500'}>
-                {wertsteigerung.jaehrlicheRendite >= 0 ? '+' : ''}{wertsteigerung.jaehrlicheRendite.toFixed(2)}% p.a.
-              </span>
+
+            <div className="mt-2 p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded text-sm border border-green-200">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Monatlicher Cashflow:</span>
+                <span className={`font-bold ${arbitrageCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {arbitrageCashflow >= 0 ? '+' : ''}{formatCurrency(arbitrageCashflow)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs mt-1">
+                <span className="text-gray-400">Jährlicher Cashflow:</span>
+                <span className={`font-medium ${arbitrageCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {arbitrageCashflow >= 0 ? '+' : ''}{formatCurrency(arbitrageCashflow * 12)}
+                </span>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };
@@ -1054,54 +1314,73 @@ const PortfolioOverview = ({ portfolio }) => {
     let gesamtCashflow = 0;
     let gesamtKreditrate = 0;
     let gesamtKosten = 0;
+    let anzahlKaufimmobilien = 0;
+    let anzahlMietimmobilien = 0;
 
     portfolio.forEach(immo => {
-      gesamtKaufpreis += immo.kaufpreis;
-      gesamtWert += immo.geschaetzterWert || immo.kaufpreis;
-      gesamtMiete += immo.kaltmiete * 12;
-      gesamtFlaeche += immo.wohnflaeche;
+      const isMietimmobilie = immo.immobilienTyp === 'mietimmobilie';
+      gesamtFlaeche += immo.wohnflaeche || 0;
 
-      // Cashflow-Berechnung pro Immobilie
-      const zinssatz = immo.zinssatz ?? 4.0;
-      const tilgung = immo.tilgung ?? 2.0;
-      const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
-      const instandhaltung = immo.instandhaltung ?? 100;
-      const verwaltung = immo.verwaltung ?? 30;
-      // Zusätzliche Kosten (möblierte Vermietung)
-      const hausgeld = immo.hausgeld ?? 0;
-      const strom = immo.strom ?? 0;
-      const internet = immo.internet ?? 0;
+      if (isMietimmobilie) {
+        // Mietimmobilie (Arbitrage-Modell)
+        anzahlMietimmobilien++;
+        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0);
+        const ausgaben = (immo.eigeneWarmmiete || 0) + (immo.nebenkosten || 0);
+        const monatsCashflow = einnahmen - ausgaben;
 
-      // Fremdkapital berechnen
-      const kaufnebenkostenAbsolut = immo.kaufpreis * (kaufnebenkosten / 100);
-      const gesamtinvestition = immo.kaufpreis + kaufnebenkostenAbsolut;
-      const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
-        ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
-        : (immo.eigenkapital ?? immo.kaufpreis * 0.2);
-      const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+        gesamtMiete += einnahmen * 12; // Einnahmen aus Untervermietung
+        gesamtCashflow += monatsCashflow * 12;
+        gesamtKosten += ausgaben * 12;
+      } else {
+        // Kaufimmobilie
+        anzahlKaufimmobilien++;
+        gesamtKaufpreis += immo.kaufpreis || 0;
+        gesamtWert += immo.geschaetzterWert || immo.kaufpreis || 0;
+        gesamtMiete += (immo.kaltmiete || 0) * 12;
 
-      // Monatliche Kreditrate (Annuität)
-      const monatszins = zinssatz / 100 / 12;
-      const laufzeit = immo.laufzeit ?? 25;
-      let monatlicheRate = 0;
-      if (fremdkapital > 0 && monatszins > 0) {
-        monatlicheRate = fremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) /
-                        (Math.pow(1 + monatszins, laufzeit * 12) - 1);
+        // Cashflow-Berechnung pro Kaufimmobilie
+        const zinssatz = immo.zinssatz ?? 4.0;
+        const tilgung = immo.tilgung ?? 2.0;
+        const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
+        const instandhaltung = immo.instandhaltung ?? 100;
+        const verwaltung = immo.verwaltung ?? 30;
+        const hausgeld = immo.hausgeld ?? 0;
+        const strom = immo.strom ?? 0;
+        const internet = immo.internet ?? 0;
+
+        // Fremdkapital berechnen
+        const kaufnebenkostenAbsolut = (immo.kaufpreis || 0) * (kaufnebenkosten / 100);
+        const gesamtinvestition = (immo.kaufpreis || 0) + kaufnebenkostenAbsolut;
+        const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
+          ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
+          : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);
+        const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+
+        // Monatliche Kreditrate (Annuität)
+        const monatszins = zinssatz / 100 / 12;
+        const laufzeit = immo.laufzeit ?? 25;
+        let monatlicheRate = 0;
+        if (fremdkapital > 0 && monatszins > 0) {
+          monatlicheRate = fremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) /
+                          (Math.pow(1 + monatszins, laufzeit * 12) - 1);
+        }
+
+        // Monatliche Kosten (inkl. zusätzliche Kosten bei möblierter Vermietung)
+        const monatlicheKosten = instandhaltung + verwaltung + hausgeld + strom + internet;
+
+        // Monatlicher Cashflow
+        const monatsCashflow = (immo.kaltmiete || 0) - monatlicheRate - monatlicheKosten;
+
+        gesamtCashflow += monatsCashflow * 12;
+        gesamtKreditrate += monatlicheRate * 12;
+        gesamtKosten += monatlicheKosten * 12;
       }
-
-      // Monatliche Kosten (inkl. zusätzliche Kosten bei möblierter Vermietung)
-      const monatlicheKosten = instandhaltung + verwaltung + hausgeld + strom + internet;
-
-      // Monatlicher Cashflow
-      const monatsCashflow = immo.kaltmiete - monatlicheRate - monatlicheKosten;
-
-      gesamtCashflow += monatsCashflow * 12;
-      gesamtKreditrate += monatlicheRate * 12;
-      gesamtKosten += monatlicheKosten * 12;
     });
 
     return {
       anzahl: portfolio.length,
+      anzahlKaufimmobilien,
+      anzahlMietimmobilien,
       gesamtKaufpreis,
       gesamtWert,
       wertsteigerung: gesamtWert - gesamtKaufpreis,
@@ -1126,7 +1405,12 @@ const PortfolioOverview = ({ portfolio }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Mieteinnahmen */}
         <div className="bg-white/10 rounded-lg p-4">
-          <div className="text-blue-200 text-sm mb-2">💰 Gesamte Mieteinnahmen (Kaltmiete)</div>
+          <div className="text-blue-200 text-sm mb-2">
+            💰 Gesamte Mieteinnahmen
+            {stats.anzahlMietimmobilien > 0 && stats.anzahlKaufimmobilien > 0 && (
+              <span className="text-xs ml-1">(Kaltmiete + Untermiete)</span>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="text-2xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteMonat)}</div>
@@ -1163,9 +1447,14 @@ const PortfolioOverview = ({ portfolio }) => {
         <div>
           <div className="text-blue-200 text-sm">Immobilien</div>
           <div className="text-2xl font-bold">{stats.anzahl}</div>
+          {(stats.anzahlKaufimmobilien > 0 && stats.anzahlMietimmobilien > 0) && (
+            <div className="text-xs text-blue-300 mt-1">
+              🏠 {stats.anzahlKaufimmobilien} Kauf · 🔄 {stats.anzahlMietimmobilien} Miete
+            </div>
+          )}
         </div>
         <div>
-          <div className="text-blue-200 text-sm">Gesamtwert</div>
+          <div className="text-blue-200 text-sm">Gesamtwert (Eigentum)</div>
           <div className="text-2xl font-bold">{formatCurrency(stats.gesamtWert)}</div>
         </div>
         <div>
@@ -1177,6 +1466,9 @@ const PortfolioOverview = ({ portfolio }) => {
         <div>
           <div className="text-blue-200 text-sm">Ø Bruttorendite</div>
           <div className="text-2xl font-bold">{stats.durchschnittRendite.toFixed(2)}%</div>
+          {stats.anzahlKaufimmobilien === 0 && stats.anzahlMietimmobilien > 0 && (
+            <div className="text-xs text-blue-300 mt-1">nur Arbitrage</div>
+          )}
         </div>
       </div>
     </div>
@@ -2848,8 +3140,305 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   );
 };
 
+// Mietimmobilie-Detail Komponente (Arbitrage-Modell)
+const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
+  const [params, setParams] = useState({
+    eigeneWarmmiete: immobilie.eigeneWarmmiete || 1500,
+    anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 3,
+    untermieteProZimmer: immobilie.untermieteProZimmer || 600,
+    nebenkosten: immobilie.nebenkosten || 0,
+    wohnflaeche: immobilie.wohnflaeche || 80,
+    zimmer: immobilie.zimmer || 4,
+    mietvertragStart: immobilie.mietvertragStart || '',
+    name: immobilie.name || '',
+    plz: immobilie.plz || '',
+    adresse: immobilie.adresse || ''
+  });
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const updateParams = (newParams) => {
+    setParams(prev => ({ ...prev, ...newParams }));
+    setHasChanges(true);
+  };
+
+  const handleSave = () => {
+    onSave({ ...immobilie, ...params });
+    setHasChanges(false);
+  };
+
+  // Berechnungen
+  const einnahmen = params.anzahlZimmerVermietet * params.untermieteProZimmer;
+  const ausgaben = params.eigeneWarmmiete + params.nebenkosten;
+  const monatsCashflow = einnahmen - ausgaben;
+  const jahresCashflow = monatsCashflow * 12;
+
+  // Monate seit Mietvertragstart
+  const mietvertragStart = params.mietvertragStart ? new Date(params.mietvertragStart) : null;
+  const monateSeitStart = mietvertragStart
+    ? Math.max(0, Math.floor((new Date() - mietvertragStart) / (1000 * 60 * 60 * 24 * 30)))
+    : 0;
+  const bisherigeCashflowGesamt = monatsCashflow * monateSeitStart;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-purple-800 p-6 z-10 rounded-t-xl">
+          <div className="flex justify-between items-center text-white">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">🔄</span>
+                <h2 className="text-2xl font-bold">{params.name || 'Mietimmobilie'}</h2>
+              </div>
+              <p className="text-purple-200">{params.plz} {params.adresse}</p>
+              <span className="inline-block mt-2 text-xs px-2 py-0.5 bg-white/20 rounded-full">
+                Arbitrage-Modell
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              {hasChanges && (
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold"
+                >
+                  Speichern
+                </button>
+              )}
+              <button onClick={onClose} className="text-white hover:text-purple-200 text-3xl">&times;</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {/* Cashflow Übersicht */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className={`p-4 rounded-lg ${monatsCashflow >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+              <div className="text-sm text-gray-600 mb-1">Monatlicher Cashflow</div>
+              <div className={`text-3xl font-bold ${monatsCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}
+              </div>
+            </div>
+            <div className={`p-4 rounded-lg ${jahresCashflow >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+              <div className="text-sm text-gray-600 mb-1">Jährlicher Cashflow</div>
+              <div className={`text-3xl font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow)}
+              </div>
+            </div>
+            <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
+              <div className="text-sm text-gray-600 mb-1">Bisheriger Gewinn</div>
+              <div className="text-3xl font-bold text-purple-600">
+                {bisherigeCashflowGesamt >= 0 ? '+' : ''}{formatCurrency(bisherigeCashflowGesamt)}
+              </div>
+              <div className="text-xs text-gray-500">{monateSeitStart} Monate</div>
+            </div>
+          </div>
+
+          {/* Detailberechnungs-Anzeige */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-gray-700 mb-3">📊 Cashflow-Berechnung</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600">
+                  Einnahmen ({params.anzahlZimmerVermietet} Zimmer × {formatCurrency(params.untermieteProZimmer)})
+                </span>
+                <span className="font-semibold text-green-600">+{formatCurrency(einnahmen)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600">Eigene Warmmiete</span>
+                <span className="font-semibold text-red-600">-{formatCurrency(params.eigeneWarmmiete)}</span>
+              </div>
+              {params.nebenkosten > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                  <span className="text-gray-600">Zusätzliche Kosten</span>
+                  <span className="font-semibold text-red-600">-{formatCurrency(params.nebenkosten)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-2 font-bold text-lg">
+                <span className="text-gray-800">= Monatlicher Cashflow</span>
+                <span className={monatsCashflow >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bearbeitungsbereich */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Grunddaten */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-700 mb-4">📍 Grunddaten</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Name/Bezeichnung</label>
+                  <input
+                    type="text"
+                    value={params.name}
+                    onChange={(e) => updateParams({ name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    placeholder="z.B. Mitarbeiter-WG München"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">PLZ</label>
+                    <input
+                      type="text"
+                      value={params.plz}
+                      onChange={(e) => updateParams({ plz: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Mietvertrag seit</label>
+                    <input
+                      type="date"
+                      value={params.mietvertragStart}
+                      onChange={(e) => updateParams({ mietvertragStart: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Adresse</label>
+                  <input
+                    type="text"
+                    value={params.adresse}
+                    onChange={(e) => updateParams({ adresse: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    placeholder="Musterstraße 123"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Wohnfläche (m²)</label>
+                    <input
+                      type="number"
+                      value={params.wohnflaeche}
+                      onChange={(e) => updateParams({ wohnflaeche: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Gesamtzahl Zimmer</label>
+                    <input
+                      type="number"
+                      value={params.zimmer}
+                      onChange={(e) => updateParams({ zimmer: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Finanzdaten */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-700 mb-4">💰 Arbitrage-Kalkulation</h3>
+              <div className="space-y-4">
+                <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                  <label className="block text-sm font-medium text-red-700 mb-1">Eigene Warmmiete (€/Monat)</label>
+                  <input
+                    type="number"
+                    value={params.eigeneWarmmiete}
+                    onChange={(e) => updateParams({ eigeneWarmmiete: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 text-lg font-semibold"
+                  />
+                  <p className="text-xs text-red-600 mt-1">Die Miete, die du an den Vermieter zahlst</p>
+                </div>
+
+                <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                  <label className="block text-sm font-medium text-green-700 mb-2">Untervermietung</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Vermietete Zimmer</label>
+                      <input
+                        type="number"
+                        value={params.anzahlZimmerVermietet}
+                        onChange={(e) => updateParams({ anzahlZimmerVermietet: parseInt(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        min="0"
+                        max={params.zimmer}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Miete pro Zimmer (€)</label>
+                      <input
+                        type="number"
+                        value={params.untermieteProZimmer}
+                        onChange={(e) => updateParams({ untermieteProZimmer: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-green-600 mt-2">
+                    Einnahmen: {params.anzahlZimmerVermietet} × {formatCurrency(params.untermieteProZimmer)} = <strong>{formatCurrency(einnahmen)}</strong>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Zusätzliche monatl. Kosten (€)</label>
+                  <input
+                    type="number"
+                    value={params.nebenkosten}
+                    onChange={(e) => updateParams({ nebenkosten: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">z.B. Internet, Reinigung, Instandhaltung</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Prognose */}
+          <div className="mt-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
+            <h3 className="font-semibold text-purple-800 mb-3">📈 Prognose</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-sm text-gray-600">In 1 Jahr</div>
+                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow)}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">In 2 Jahren</div>
+                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * 2)}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">In 3 Jahren</div>
+                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * 3)}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">In 5 Jahren</div>
+                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * 5)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Immobilien-Detail Komponente
 const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
+  const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
+
+  // Für Mietimmobilien: Vereinfachte Ansicht
+  if (isMietimmobilie) {
+    return (
+      <MietimmobilieDetail
+        immobilie={immobilie}
+        onClose={onClose}
+        onSave={onSave}
+      />
+    );
+  }
+
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
 
@@ -3660,6 +4249,67 @@ function App() {
     }
   };
 
+  // Export Portfolio als JSON
+  const handleExport = () => {
+    const exportData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      portfolio: portfolio
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `immobilien-portfolio-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import Portfolio aus JSON
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importData = JSON.parse(e.target.result);
+
+        // Validierung
+        if (!importData.portfolio || !Array.isArray(importData.portfolio)) {
+          alert('Ungültiges Dateiformat. Bitte wählen Sie eine gültige Export-Datei.');
+          return;
+        }
+
+        // Frage ob ersetzen oder hinzufügen
+        const choice = confirm(
+          `${importData.portfolio.length} Immobilie(n) gefunden.\n\n` +
+          `OK = Zu bestehenden hinzufügen\n` +
+          `Abbrechen = Import abbrechen\n\n` +
+          `(Um alle zu ersetzen, löschen Sie zuerst das bestehende Portfolio)`
+        );
+
+        if (choice) {
+          // Neue IDs vergeben um Konflikte zu vermeiden
+          const importedWithNewIds = importData.portfolio.map(immo => ({
+            ...immo,
+            id: Date.now() + Math.random() * 1000,
+            importedAt: new Date().toISOString()
+          }));
+          setPortfolio(prev => [...prev, ...importedWithNewIds]);
+          alert(`${importedWithNewIds.length} Immobilie(n) erfolgreich importiert!`);
+        }
+      } catch (error) {
+        alert('Fehler beim Importieren: ' + error.message);
+      }
+    };
+    reader.readAsText(file);
+    // Reset input für erneuten Import
+    event.target.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 px-4 shadow-lg">
@@ -3674,14 +4324,34 @@ function App() {
       <main className="max-w-7xl mx-auto py-8 px-4">
         <PortfolioOverview portfolio={portfolio} />
 
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           <h2 className="text-xl font-bold text-gray-800">Meine Immobilien</h2>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-          >
-            <span>+</span> Neue Immobilie
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {/* Import/Export Buttons */}
+            {portfolio.length > 0 && (
+              <button
+                onClick={handleExport}
+                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-sm"
+              >
+                📤 Export
+              </button>
+            )}
+            <label className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-sm cursor-pointer">
+              📥 Import
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+            </label>
+            <button
+              onClick={() => setShowForm(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              <span>+</span> Neue Immobilie
+            </button>
+          </div>
         </div>
 
         {portfolio.length === 0 ? (
