@@ -1046,12 +1046,49 @@ const PortfolioOverview = ({ portfolio }) => {
     let gesamtWert = 0;
     let gesamtMiete = 0;
     let gesamtFlaeche = 0;
+    let gesamtCashflow = 0;
+    let gesamtKreditrate = 0;
+    let gesamtKosten = 0;
 
     portfolio.forEach(immo => {
       gesamtKaufpreis += immo.kaufpreis;
       gesamtWert += immo.geschaetzterWert || immo.kaufpreis;
       gesamtMiete += immo.kaltmiete * 12;
       gesamtFlaeche += immo.wohnflaeche;
+
+      // Cashflow-Berechnung pro Immobilie
+      const zinssatz = immo.zinssatz ?? 4.0;
+      const tilgung = immo.tilgung ?? 2.0;
+      const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
+      const instandhaltung = immo.instandhaltung ?? 100;
+      const verwaltung = immo.verwaltung ?? 30;
+
+      // Fremdkapital berechnen
+      const kaufnebenkostenAbsolut = immo.kaufpreis * (kaufnebenkosten / 100);
+      const gesamtinvestition = immo.kaufpreis + kaufnebenkostenAbsolut;
+      const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
+        ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
+        : (immo.eigenkapital ?? immo.kaufpreis * 0.2);
+      const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+
+      // Monatliche Kreditrate (Annuität)
+      const monatszins = zinssatz / 100 / 12;
+      const laufzeit = immo.laufzeit ?? 25;
+      let monatlicheRate = 0;
+      if (fremdkapital > 0 && monatszins > 0) {
+        monatlicheRate = fremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) /
+                        (Math.pow(1 + monatszins, laufzeit * 12) - 1);
+      }
+
+      // Monatliche Kosten (ohne Nebenkosten, da vom Mieter getragen)
+      const monatlicheKosten = instandhaltung + verwaltung;
+
+      // Monatlicher Cashflow
+      const monatsCashflow = immo.kaltmiete - monatlicheRate - monatlicheKosten;
+
+      gesamtCashflow += monatsCashflow * 12;
+      gesamtKreditrate += monatlicheRate * 12;
+      gesamtKosten += monatlicheKosten * 12;
     });
 
     return {
@@ -1061,6 +1098,10 @@ const PortfolioOverview = ({ portfolio }) => {
       wertsteigerung: gesamtWert - gesamtKaufpreis,
       gesamtMieteJahr: gesamtMiete,
       gesamtMieteMonat: gesamtMiete / 12,
+      gesamtCashflowJahr: gesamtCashflow,
+      gesamtCashflowMonat: gesamtCashflow / 12,
+      gesamtKreditrateJahr: gesamtKreditrate,
+      gesamtKostenJahr: gesamtKosten,
       gesamtFlaeche,
       durchschnittRendite: gesamtKaufpreis > 0 ? (gesamtMiete / gesamtKaufpreis) * 100 : 0
     };
@@ -1072,17 +1113,39 @@ const PortfolioOverview = ({ portfolio }) => {
     <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white mb-6">
       <h2 className="text-xl font-bold mb-4">Portfolio-Übersicht</h2>
 
-      {/* Mieteinnahmen Highlight */}
-      <div className="bg-white/10 rounded-lg p-4 mb-4">
-        <div className="text-blue-200 text-sm mb-2">💰 Gesamte Mieteinnahmen (Kaltmiete)</div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-3xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteMonat)}</div>
-            <div className="text-blue-200 text-sm">pro Monat</div>
+      {/* Mieteinnahmen & Cashflow Highlight */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Mieteinnahmen */}
+        <div className="bg-white/10 rounded-lg p-4">
+          <div className="text-blue-200 text-sm mb-2">💰 Gesamte Mieteinnahmen (Kaltmiete)</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-2xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteMonat)}</div>
+              <div className="text-blue-200 text-xs">pro Monat</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteJahr)}</div>
+              <div className="text-blue-200 text-xs">pro Jahr</div>
+            </div>
           </div>
-          <div>
-            <div className="text-3xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteJahr)}</div>
-            <div className="text-blue-200 text-sm">pro Jahr</div>
+        </div>
+
+        {/* Cashflow */}
+        <div className={`rounded-lg p-4 ${stats.gesamtCashflowMonat >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+          <div className="text-blue-200 text-sm mb-2">📊 Gesamt-Cashflow (nach Kredit & Kosten)</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className={`text-2xl font-bold ${stats.gesamtCashflowMonat >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                {stats.gesamtCashflowMonat >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowMonat)}
+              </div>
+              <div className="text-blue-200 text-xs">pro Monat</div>
+            </div>
+            <div>
+              <div className={`text-2xl font-bold ${stats.gesamtCashflowJahr >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                {stats.gesamtCashflowJahr >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowJahr)}
+              </div>
+              <div className="text-blue-200 text-xs">pro Jahr</div>
+            </div>
           </div>
         </div>
       </div>
