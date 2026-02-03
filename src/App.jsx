@@ -1625,6 +1625,31 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
     return daten;
   }, [params, ergebnis, kaufjahr, investitionen]);
 
+  // Berechne Zins- und Tilgungsanteil
+  const berechneZinsTilgung = () => {
+    const zinssatz = params.zinssatz ?? 4.0;
+    const kaufnebenkosten = params.kaufnebenkosten ?? 10;
+    const kaufnebenkostenAbsolut = params.kaufpreis * (kaufnebenkosten / 100);
+    const gesamtinvestition = params.kaufpreis + kaufnebenkostenAbsolut;
+    const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
+      ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
+      : (params.eigenkapital ?? params.kaufpreis * 0.2);
+    const fremdkapital = params.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+
+    // Aktuelle Restschuld berechnen (vereinfacht: nehme anfängliche Restschuld)
+    const restschuld = fremdkapital; // Für genauere Berechnung müsste man die tatsächliche Restschuld nehmen
+    const monatsZinsen = restschuld * (zinssatz / 100 / 12);
+    const monatsTilgung = ergebnis.monatlicheRate - monatsZinsen;
+
+    return {
+      zinsen: Math.max(0, monatsZinsen),
+      tilgung: Math.max(0, monatsTilgung),
+      gesamt: ergebnis.monatlicheRate
+    };
+  };
+
+  const kreditDetails = berechneZinsTilgung();
+
   const monatsDaten = {
     einnahmen: params.kaltmiete,
     nebenkosten: params.nebenkosten,
@@ -1634,9 +1659,12 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
     strom: params.strom || 0,
     internet: params.internet || 0,
     kreditrate: ergebnis.monatlicheRate,
+    zinsen: kreditDetails.zinsen,
+    tilgung: kreditDetails.tilgung,
     // Cashflow neu berechnen mit allen Kosten
     get gesamtKosten() { return this.nebenkosten + this.instandhaltung + this.verwaltung + this.hausgeld + this.strom + this.internet; },
-    get cashflow() { return this.einnahmen - this.gesamtKosten - this.kreditrate; }
+    get cashflowMitTilgung() { return this.einnahmen - this.gesamtKosten - this.kreditrate; },
+    get cashflowOhneTilgung() { return this.einnahmen - this.gesamtKosten - this.zinsen; }
   };
 
   return (
@@ -1696,19 +1724,68 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
                 <span className="text-red-500">{formatCurrency(monatsDaten.internet)}</span>
               </div>
             )}
-            <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-red-600">- Kreditrate</span>
-              <span className="font-semibold text-red-600">{formatCurrency(monatsDaten.kreditrate)}</span>
+            {/* Kreditrate aufgeschlüsselt */}
+            <div className="border-t border-b py-2 my-1">
+              <div className="flex justify-between items-center py-1 text-sm">
+                <span className="text-red-500">- Zinsen</span>
+                <span className="text-red-500">{formatCurrency(monatsDaten.zinsen)}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 text-sm">
+                <span className="text-blue-500">- Tilgung <span className="text-xs text-gray-400">(Vermögensaufbau)</span></span>
+                <span className="text-blue-500">{formatCurrency(monatsDaten.tilgung)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-1 text-sm border-t border-dashed">
+                <span className="text-gray-600">= Kreditrate gesamt</span>
+                <span className="font-semibold text-gray-600">{formatCurrency(monatsDaten.kreditrate)}</span>
+              </div>
             </div>
-            <div className={`flex justify-between items-center py-2 px-3 rounded-lg ${monatsDaten.cashflow >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-              <span className="font-semibold">= Cashflow/Monat</span>
-              <span className={`text-xl font-bold ${monatsDaten.cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                {monatsDaten.cashflow >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflow)}
-              </span>
+
+            {/* Cashflow-Vergleich */}
+            <div className="space-y-2 mt-3">
+              {/* Cashflow OHNE Tilgung (nur Zinsen) */}
+              <div className={`flex justify-between items-center py-2 px-3 rounded-lg ${monatsDaten.cashflowOhneTilgung >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                <div>
+                  <span className="font-semibold text-sm">Cashflow vor Tilgung</span>
+                  <span className="text-xs text-gray-500 block">Miete - Kosten - Zinsen</span>
+                </div>
+                <span className={`text-lg font-bold ${monatsDaten.cashflowOhneTilgung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {monatsDaten.cashflowOhneTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowOhneTilgung)}
+                </span>
+              </div>
+
+              {/* Cashflow MIT Tilgung */}
+              <div className={`flex justify-between items-center py-2 px-3 rounded-lg ${monatsDaten.cashflowMitTilgung >= 0 ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
+                <div>
+                  <span className="font-semibold">Cashflow nach Tilgung</span>
+                  <span className="text-xs text-gray-500 block">Miete - Kosten - Kreditrate</span>
+                </div>
+                <span className={`text-xl font-bold ${monatsDaten.cashflowMitTilgung >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {monatsDaten.cashflowMitTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowMitTilgung)}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="mt-3 text-xs text-gray-500">
-            Jährlicher Cashflow: {formatCurrency(monatsDaten.cashflow * 12)}
+
+          {/* Jahresübersicht */}
+          <div className="mt-4 pt-3 border-t grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-gray-500 text-xs">Jährlich vor Tilgung</div>
+              <div className={`font-semibold ${monatsDaten.cashflowOhneTilgung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {monatsDaten.cashflowOhneTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowOhneTilgung * 12)}
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-500 text-xs">Jährlich nach Tilgung</div>
+              <div className={`font-semibold ${monatsDaten.cashflowMitTilgung >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {monatsDaten.cashflowMitTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowMitTilgung * 12)}
+              </div>
+            </div>
+          </div>
+
+          {/* Hinweis */}
+          <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
+            💡 <strong>Vor Tilgung</strong> zeigt den tatsächlichen Geldfluss ohne Vermögensaufbau.
+            Die Tilgung ({formatCurrency(monatsDaten.tilgung)}/Monat) baut Eigenkapital auf.
           </div>
         </div>
       ) : (
