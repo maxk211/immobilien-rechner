@@ -1059,7 +1059,8 @@ const PortfolioOverview = ({ portfolio }) => {
       gesamtKaufpreis,
       gesamtWert,
       wertsteigerung: gesamtWert - gesamtKaufpreis,
-      gesamtMiete,
+      gesamtMieteJahr: gesamtMiete,
+      gesamtMieteMonat: gesamtMiete / 12,
       gesamtFlaeche,
       durchschnittRendite: gesamtKaufpreis > 0 ? (gesamtMiete / gesamtKaufpreis) * 100 : 0
     };
@@ -1070,6 +1071,22 @@ const PortfolioOverview = ({ portfolio }) => {
   return (
     <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white mb-6">
       <h2 className="text-xl font-bold mb-4">Portfolio-Übersicht</h2>
+
+      {/* Mieteinnahmen Highlight */}
+      <div className="bg-white/10 rounded-lg p-4 mb-4">
+        <div className="text-blue-200 text-sm mb-2">💰 Gesamte Mieteinnahmen (Kaltmiete)</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-3xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteMonat)}</div>
+            <div className="text-blue-200 text-sm">pro Monat</div>
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteJahr)}</div>
+            <div className="text-blue-200 text-sm">pro Jahr</div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
           <div className="text-blue-200 text-sm">Immobilien</div>
