@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // PLZ-basierte Preise pro m² für verschiedene deutsche Städte und Regionen
 const PLZ_PREISE = {
@@ -4378,6 +4381,386 @@ function App() {
     event.target.value = '';
   };
 
+  // Steuer-Export Funktion
+  const handleSteuerExport = (jahr) => {
+    if (!jahr) {
+      jahr = new Date().getFullYear();
+    }
+
+    // Nur Kaufimmobilien für Steuer-Export (Mietimmobilien haben andere Logik)
+    const kaufimmobilien = portfolio.filter(i => i.immobilienTyp !== 'mietimmobilie');
+    const mietimmobilien = portfolio.filter(i => i.immobilienTyp === 'mietimmobilie');
+
+    // Excel Workbook erstellen
+    const wb = XLSX.utils.book_new();
+
+    // ==================== ÜBERSICHT ====================
+    const uebersichtData = [
+      ['STEUERLICHE ÜBERSICHT ' + jahr],
+      ['Erstellt am:', new Date().toLocaleDateString('de-DE')],
+      [''],
+      ['ZUSAMMENFASSUNG'],
+      [''],
+      ['Position', 'Betrag (€)', 'Hinweis'],
+    ];
+
+    let gesamtEinnahmen = 0;
+    let gesamtWerbungskosten = 0;
+
+    // Berechne Summen
+    kaufimmobilien.forEach(immo => {
+      const kaltmiete = (immo.kaltmiete || 0) * 12;
+      gesamtEinnahmen += kaltmiete;
+
+      // AfA berechnen
+      const kaufpreis = immo.kaufpreis || 0;
+      const gebaeudeAnteil = (immo.gebaeudeAnteilProzent || 80) / 100;
+      const afaSatz = (immo.afaSatz || 2) / 100;
+      const afaBasis = kaufpreis * gebaeudeAnteil;
+      const afaJahr = afaBasis * afaSatz;
+      gesamtWerbungskosten += afaJahr;
+
+      // Schuldzinsen berechnen
+      const zinssatz = immo.zinssatz || 4;
+      const kaufnebenkosten = immo.kaufnebenkosten || 10;
+      const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
+      const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
+      const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
+      const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+      const schuldzinsenJahr = fremdkapital * (zinssatz / 100);
+      gesamtWerbungskosten += schuldzinsenJahr;
+
+      // Sonstige Kosten
+      const instandhaltung = (immo.instandhaltung || 0) * 12;
+      const verwaltung = (immo.verwaltung || 0) * 12;
+      const hausgeld = (immo.hausgeld || 0) * 12;
+      const strom = (immo.strom || 0) * 12;
+      const internet = (immo.internet || 0) * 12;
+      gesamtWerbungskosten += instandhaltung + verwaltung + hausgeld + strom + internet;
+
+      // Fahrtkosten
+      const fahrtenProMonat = immo.fahrtenProMonat || 0;
+      const entfernungKm = immo.entfernungKm || 0;
+      const kmPauschale = immo.kmPauschale || 0.30;
+      const fahrtkosten = fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale;
+      gesamtWerbungskosten += fahrtkosten;
+
+      // Erhaltungsaufwand aus Investitionen
+      const investitionen = immo.investitionen || [];
+      const erhaltungsaufwandJahr = investitionen
+        .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
+        .reduce((sum, inv) => sum + inv.betrag, 0);
+      gesamtWerbungskosten += erhaltungsaufwandJahr;
+    });
+
+    // Arbitrage-Einkünfte
+    let arbitrageEinnahmen = 0;
+    let arbitrageAusgaben = 0;
+    mietimmobilien.forEach(immo => {
+      const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12;
+      const miete = (immo.eigeneWarmmiete || 0) * 12;
+      const zusatzkosten = ((immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12;
+      arbitrageEinnahmen += einnahmen;
+      arbitrageAusgaben += miete + zusatzkosten;
+    });
+
+    const steuerlichesErgebnis = gesamtEinnahmen - gesamtWerbungskosten + (arbitrageEinnahmen - arbitrageAusgaben);
+
+    uebersichtData.push(
+      ['Mieteinnahmen (Kaufimmobilien)', gesamtEinnahmen.toFixed(2), 'Kaltmiete × 12 Monate'],
+      ['Werbungskosten', (-gesamtWerbungskosten).toFixed(2), 'AfA, Zinsen, Kosten'],
+      [''],
+      ['Arbitrage-Einnahmen', arbitrageEinnahmen.toFixed(2), 'Untervermietung'],
+      ['Arbitrage-Ausgaben', (-arbitrageAusgaben).toFixed(2), 'Miete + Nebenkosten'],
+      [''],
+      ['STEUERLICHES ERGEBNIS', steuerlichesErgebnis.toFixed(2), steuerlichesErgebnis < 0 ? 'Verlust' : 'Gewinn']
+    );
+
+    const wsUebersicht = XLSX.utils.aoa_to_sheet(uebersichtData);
+    wsUebersicht['!cols'] = [{ wch: 35 }, { wch: 15 }, { wch: 30 }];
+    XLSX.utils.book_append_sheet(wb, wsUebersicht, 'Übersicht');
+
+    // ==================== KAUFIMMOBILIEN DETAIL ====================
+    if (kaufimmobilien.length > 0) {
+      const detailHeader = [
+        'Immobilie', 'Adresse', 'Kaufpreis €', 'Kaltmiete/Jahr €',
+        'AfA €', 'Schuldzinsen €', 'Instandhaltung €', 'Verwaltung €',
+        'Hausgeld €', 'Strom €', 'Internet €', 'Fahrtkosten €',
+        'Erhaltungsaufwand €', 'Summe Werbungskosten €', 'Ergebnis €'
+      ];
+
+      const detailData = [detailHeader];
+
+      kaufimmobilien.forEach(immo => {
+        const kaltmieteJahr = (immo.kaltmiete || 0) * 12;
+
+        // AfA
+        const kaufpreis = immo.kaufpreis || 0;
+        const gebaeudeAnteil = (immo.gebaeudeAnteilProzent || 80) / 100;
+        const afaSatz = (immo.afaSatz || 2) / 100;
+        const afaJahr = kaufpreis * gebaeudeAnteil * afaSatz;
+
+        // Schuldzinsen
+        const zinssatz = immo.zinssatz || 4;
+        const kaufnebenkosten = immo.kaufnebenkosten || 10;
+        const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
+        const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
+        const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
+        const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+        const schuldzinsenJahr = fremdkapital * (zinssatz / 100);
+
+        // Kosten
+        const instandhaltung = (immo.instandhaltung || 0) * 12;
+        const verwaltung = (immo.verwaltung || 0) * 12;
+        const hausgeld = (immo.hausgeld || 0) * 12;
+        const strom = (immo.strom || 0) * 12;
+        const internet = (immo.internet || 0) * 12;
+
+        // Fahrtkosten
+        const fahrtenProMonat = immo.fahrtenProMonat || 0;
+        const entfernungKm = immo.entfernungKm || 0;
+        const kmPauschale = immo.kmPauschale || 0.30;
+        const fahrtkosten = fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale;
+
+        // Erhaltungsaufwand
+        const investitionen = immo.investitionen || [];
+        const erhaltungsaufwand = investitionen
+          .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
+          .reduce((sum, inv) => sum + inv.betrag, 0);
+
+        const summeWerbungskosten = afaJahr + schuldzinsenJahr + instandhaltung + verwaltung + hausgeld + strom + internet + fahrtkosten + erhaltungsaufwand;
+        const ergebnis = kaltmieteJahr - summeWerbungskosten;
+
+        detailData.push([
+          immo.name || 'Unbenannt',
+          `${immo.plz || ''} ${immo.adresse || ''}`,
+          kaufpreis.toFixed(2),
+          kaltmieteJahr.toFixed(2),
+          afaJahr.toFixed(2),
+          schuldzinsenJahr.toFixed(2),
+          instandhaltung.toFixed(2),
+          verwaltung.toFixed(2),
+          hausgeld.toFixed(2),
+          strom.toFixed(2),
+          internet.toFixed(2),
+          fahrtkosten.toFixed(2),
+          erhaltungsaufwand.toFixed(2),
+          summeWerbungskosten.toFixed(2),
+          ergebnis.toFixed(2)
+        ]);
+      });
+
+      const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
+      wsDetail['!cols'] = Array(15).fill({ wch: 14 });
+      wsDetail['!cols'][0] = { wch: 20 };
+      wsDetail['!cols'][1] = { wch: 25 };
+      XLSX.utils.book_append_sheet(wb, wsDetail, 'Kaufimmobilien');
+    }
+
+    // ==================== MIETIMMOBILIEN (ARBITRAGE) ====================
+    if (mietimmobilien.length > 0) {
+      const arbitrageHeader = [
+        'Immobilie', 'Adresse', 'Eigene Miete/Jahr €',
+        'Strom/Jahr €', 'Internet/Jahr €', 'GEZ/Jahr €',
+        'Einnahmen/Jahr €', 'Gewinn/Jahr €'
+      ];
+
+      const arbitrageData = [arbitrageHeader];
+
+      mietimmobilien.forEach(immo => {
+        const eigeneMiete = (immo.eigeneWarmmiete || 0) * 12;
+        const strom = (immo.arbitrageStrom || 0) * 12;
+        const internet = (immo.arbitrageInternet || 0) * 12;
+        const gez = (immo.arbitrageGEZ || 0) * 12;
+        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12;
+        const gewinn = einnahmen - eigeneMiete - strom - internet - gez;
+
+        arbitrageData.push([
+          immo.name || 'Unbenannt',
+          `${immo.plz || ''} ${immo.adresse || ''}`,
+          eigeneMiete.toFixed(2),
+          strom.toFixed(2),
+          internet.toFixed(2),
+          gez.toFixed(2),
+          einnahmen.toFixed(2),
+          gewinn.toFixed(2)
+        ]);
+      });
+
+      const wsArbitrage = XLSX.utils.aoa_to_sheet(arbitrageData);
+      wsArbitrage['!cols'] = Array(8).fill({ wch: 16 });
+      wsArbitrage['!cols'][0] = { wch: 20 };
+      wsArbitrage['!cols'][1] = { wch: 25 };
+      XLSX.utils.book_append_sheet(wb, wsArbitrage, 'Mietimmobilien');
+    }
+
+    // ==================== INVESTITIONEN ====================
+    const alleInvestitionen = [];
+    kaufimmobilien.forEach(immo => {
+      const investitionen = immo.investitionen || [];
+      investitionen.forEach(inv => {
+        if (new Date(inv.datum).getFullYear() === jahr) {
+          alleInvestitionen.push({
+            immobilie: immo.name || 'Unbenannt',
+            ...inv
+          });
+        }
+      });
+    });
+
+    if (alleInvestitionen.length > 0) {
+      const invHeader = ['Immobilie', 'Datum', 'Beschreibung', 'Kategorie', 'Betrag €', 'Steuerliche Behandlung'];
+      const kategorieLabels = {
+        'erhaltung': 'Erhaltungsaufwand',
+        'herstellung': 'Herstellungskosten',
+        'anschaffung': 'Anschaffungsnebenkosten',
+        'modernisierung': 'Modernisierung',
+        'nicht_relevant': 'Nicht steuerlich relevant'
+      };
+      const steuerBehandlung = {
+        'erhaltung': 'Sofort absetzbar',
+        'herstellung': 'Über AfA abschreiben',
+        'anschaffung': 'Erhöht AfA-Bemessungsgrundlage',
+        'modernisierung': 'Über AfA abschreiben',
+        'nicht_relevant': 'Keine Steuerwirkung'
+      };
+
+      const invData = [invHeader];
+      alleInvestitionen.forEach(inv => {
+        invData.push([
+          inv.immobilie,
+          new Date(inv.datum).toLocaleDateString('de-DE'),
+          inv.beschreibung || '',
+          kategorieLabels[inv.kategorie] || inv.kategorie,
+          inv.betrag.toFixed(2),
+          steuerBehandlung[inv.kategorie] || ''
+        ]);
+      });
+
+      const wsInv = XLSX.utils.aoa_to_sheet(invData);
+      wsInv['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(wb, wsInv, 'Investitionen');
+    }
+
+    // Excel speichern
+    XLSX.writeFile(wb, `Steuer-Export-${jahr}.xlsx`);
+
+    // ==================== PDF ERSTELLEN ====================
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    // Titel
+    pdf.setFontSize(20);
+    pdf.text(`Steuerliche Übersicht ${jahr}`, 105, 20, { align: 'center' });
+
+    pdf.setFontSize(10);
+    pdf.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 105, 28, { align: 'center' });
+
+    // Zusammenfassung
+    pdf.setFontSize(14);
+    pdf.text('Zusammenfassung', 14, 45);
+
+    pdf.autoTable({
+      startY: 50,
+      head: [['Position', 'Betrag', 'Hinweis']],
+      body: [
+        ['Mieteinnahmen (Kaufimmobilien)', formatCurrency(gesamtEinnahmen), 'Kaltmiete × 12 Monate'],
+        ['Werbungskosten', formatCurrency(-gesamtWerbungskosten), 'AfA, Zinsen, Kosten'],
+        ['Arbitrage-Einnahmen', formatCurrency(arbitrageEinnahmen), 'Untervermietung'],
+        ['Arbitrage-Ausgaben', formatCurrency(-arbitrageAusgaben), 'Miete + Nebenkosten'],
+        ['', '', ''],
+        ['STEUERLICHES ERGEBNIS', formatCurrency(steuerlichesErgebnis), steuerlichesErgebnis < 0 ? 'Verlust' : 'Gewinn']
+      ],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41, 128, 185] },
+      columnStyles: {
+        1: { halign: 'right' }
+      }
+    });
+
+    // Kaufimmobilien Details
+    if (kaufimmobilien.length > 0) {
+      pdf.addPage();
+      pdf.setFontSize(14);
+      pdf.text('Kaufimmobilien - Details', 14, 20);
+
+      const kaufRows = kaufimmobilien.map(immo => {
+        const kaltmieteJahr = (immo.kaltmiete || 0) * 12;
+        const kaufpreis = immo.kaufpreis || 0;
+        const afaJahr = kaufpreis * ((immo.gebaeudeAnteilProzent || 80) / 100) * ((immo.afaSatz || 2) / 100);
+        const gesamtinvestition = kaufpreis * (1 + (immo.kaufnebenkosten || 10) / 100);
+        const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
+        const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+        const schuldzinsen = fremdkapital * ((immo.zinssatz || 4) / 100);
+        const sonstigeKosten = ((immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0)) * 12;
+
+        return [
+          immo.name || 'Unbenannt',
+          formatCurrency(kaltmieteJahr),
+          formatCurrency(afaJahr),
+          formatCurrency(schuldzinsen),
+          formatCurrency(sonstigeKosten)
+        ];
+      });
+
+      pdf.autoTable({
+        startY: 25,
+        head: [['Immobilie', 'Einnahmen', 'AfA', 'Schuldzinsen', 'Sonst. Kosten']],
+        body: kaufRows,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [41, 128, 185] },
+        columnStyles: {
+          1: { halign: 'right' },
+          2: { halign: 'right' },
+          3: { halign: 'right' },
+          4: { halign: 'right' }
+        }
+      });
+    }
+
+    // Mietimmobilien Details
+    if (mietimmobilien.length > 0) {
+      const yPos = pdf.lastAutoTable ? pdf.lastAutoTable.finalY + 20 : 25;
+      if (yPos > 250) pdf.addPage();
+
+      pdf.setFontSize(14);
+      pdf.text('Mietimmobilien (Arbitrage) - Details', 14, yPos > 250 ? 20 : yPos);
+
+      const mietRows = mietimmobilien.map(immo => {
+        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12;
+        const ausgaben = ((immo.eigeneWarmmiete || 0) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12;
+        return [
+          immo.name || 'Unbenannt',
+          formatCurrency(einnahmen),
+          formatCurrency(ausgaben),
+          formatCurrency(einnahmen - ausgaben)
+        ];
+      });
+
+      pdf.autoTable({
+        startY: yPos > 250 ? 25 : yPos + 5,
+        head: [['Immobilie', 'Einnahmen', 'Ausgaben', 'Gewinn']],
+        body: mietRows,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [142, 68, 173] },
+        columnStyles: {
+          1: { halign: 'right' },
+          2: { halign: 'right' },
+          3: { halign: 'right' }
+        }
+      });
+    }
+
+    // Hinweis
+    pdf.setFontSize(8);
+    pdf.setTextColor(128);
+    const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY + 15 : 280;
+    pdf.text('Hinweis: Diese Übersicht dient als Grundlage für die Steuererklärung. Bitte prüfen Sie alle Angaben mit Ihrem Steuerberater.', 14, Math.min(finalY, 280));
+
+    pdf.save(`Steuer-Uebersicht-${jahr}.pdf`);
+
+    alert(`Steuer-Export für ${jahr} erstellt!\n\n✓ Excel-Datei: Steuer-Export-${jahr}.xlsx\n✓ PDF-Datei: Steuer-Uebersicht-${jahr}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 px-4 shadow-lg">
@@ -4397,12 +4780,37 @@ function App() {
           <div className="flex flex-wrap gap-2">
             {/* Import/Export Buttons */}
             {portfolio.length > 0 && (
-              <button
-                onClick={handleExport}
-                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-sm"
-              >
-                📤 Export
-              </button>
+              <>
+                <button
+                  onClick={handleExport}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-sm"
+                >
+                  📤 Export
+                </button>
+                <div className="relative group">
+                  <button
+                    className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 flex items-center gap-2 text-sm"
+                  >
+                    📊 Steuer-Export
+                  </button>
+                  <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <div className="py-1">
+                      {[...Array(5)].map((_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return (
+                          <button
+                            key={year}
+                            onClick={() => handleSteuerExport(year)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-green-50 text-gray-700"
+                          >
+                            Jahr {year}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
             <label className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-sm cursor-pointer">
               📥 Import
