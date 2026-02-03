@@ -577,6 +577,7 @@ const berechneRendite = (params) => {
   const {
     kaufpreis, zinssatz, tilgung, laufzeit,
     kaltmiete, nebenkosten, instandhaltung, verwaltung,
+    hausgeld = 0, strom = 0, internet = 0,
     wertsteigerung, mietsteigerung, kaufnebenkosten,
     finanzierungsbetrag, kaufdatum,
     ekFuerNebenkosten, ekFuerKaufpreis, eigenkapital
@@ -602,10 +603,14 @@ const berechneRendite = (params) => {
   const jahresnebenkosten = nebenkosten * 12; // Wird vom Mieter getragen, nicht in Nettorendite
   const jahresinstandhaltung = instandhaltung * 12;
   const jahresverwaltung = verwaltung * 12;
+  // Zusätzliche Kosten (z.B. bei möblierter Vermietung)
+  const jahresHausgeld = hausgeld * 12;
+  const jahresStrom = strom * 12;
+  const jahresInternet = internet * 12;
 
   const bruttorendite = (jahresmieteKalt / kaufpreis) * 100;
-  // Nettorendite: Nur Instandhaltung und Verwaltung abziehen (Nebenkosten trägt der Mieter)
-  const nettoEinnahmen = jahresmieteKalt - jahresinstandhaltung - jahresverwaltung;
+  // Nettorendite: Alle vom Vermieter getragenen Kosten abziehen (Nebenkosten trägt der Mieter)
+  const nettoEinnahmen = jahresmieteKalt - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet;
   const nettorendite = (nettoEinnahmen / kaufpreis) * 100;
 
   const monatszins = zinssatz / 100 / 12;
@@ -638,7 +643,7 @@ const berechneRendite = (params) => {
       restschuld: Math.round(restschuld),
       eigenkapital: Math.round(aktuellerWert - restschuld),
       jahresmiete: Math.round(aktuelleMiete * 12),
-      cashflow: Math.round((aktuelleMiete * 12) - jahresinstandhaltung - jahresverwaltung - jahresannuitaet)
+      cashflow: Math.round((aktuelleMiete * 12) - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet - jahresannuitaet)
     });
 
     aktuellerWert *= (1 + wertsteigerung / 100);
@@ -1062,6 +1067,10 @@ const PortfolioOverview = ({ portfolio }) => {
       const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
       const instandhaltung = immo.instandhaltung ?? 100;
       const verwaltung = immo.verwaltung ?? 30;
+      // Zusätzliche Kosten (möblierte Vermietung)
+      const hausgeld = immo.hausgeld ?? 0;
+      const strom = immo.strom ?? 0;
+      const internet = immo.internet ?? 0;
 
       // Fremdkapital berechnen
       const kaufnebenkostenAbsolut = immo.kaufpreis * (kaufnebenkosten / 100);
@@ -1080,8 +1089,8 @@ const PortfolioOverview = ({ portfolio }) => {
                         (Math.pow(1 + monatszins, laufzeit * 12) - 1);
       }
 
-      // Monatliche Kosten (ohne Nebenkosten, da vom Mieter getragen)
-      const monatlicheKosten = instandhaltung + verwaltung;
+      // Monatliche Kosten (inkl. zusätzliche Kosten bei möblierter Vermietung)
+      const monatlicheKosten = instandhaltung + verwaltung + hausgeld + strom + internet;
 
       // Monatlicher Cashflow
       const monatsCashflow = immo.kaltmiete - monatlicheRate - monatlicheKosten;
@@ -1422,6 +1431,13 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => updateParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
             <InputSliderCombo label="Verwaltung" value={params.verwaltung} onChange={(v) => updateParams({...params, verwaltung: v})} min={0} max={200} step={5} unit="€" />
           </div>
+          {/* Zusätzliche Kosten bei möblierter Vermietung */}
+          <div className="border-t pt-3 mt-3">
+            <p className="text-xs text-gray-500 mb-2">📦 Zusätzliche Kosten (z.B. möblierte Vermietung)</p>
+            <InputSliderCombo label="WEG / Hausgeld" value={params.hausgeld} onChange={(v) => updateParams({...params, hausgeld: v})} min={0} max={500} step={10} unit="€" info="Monatliches Hausgeld an die WEG" />
+            <InputSliderCombo label="Strom" value={params.strom} onChange={(v) => updateParams({...params, strom: v})} min={0} max={300} step={5} unit="€" info="Stromkosten (wenn vom Vermieter getragen)" />
+            <InputSliderCombo label="Internet" value={params.internet} onChange={(v) => updateParams({...params, internet: v})} min={0} max={100} step={5} unit="€" info="Internetkosten (wenn vom Vermieter getragen)" />
+          </div>
         </div>
       ) : (
         <div>
@@ -1585,7 +1601,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
       const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
 
       const jahresMiete = params.kaltmiete * 12 * mieteFaktor;
-      const jahresKosten = (params.nebenkosten + params.instandhaltung + params.verwaltung) * 12;
+      const jahresKosten = (params.nebenkosten + params.instandhaltung + params.verwaltung + (params.hausgeld || 0) + (params.strom || 0) + (params.internet || 0)) * 12;
       const jahresKreditrate = ergebnis.monatlicheRate * 12;
 
       // Investitionen für dieses Jahr
@@ -1614,8 +1630,13 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
     nebenkosten: params.nebenkosten,
     instandhaltung: params.instandhaltung,
     verwaltung: params.verwaltung,
+    hausgeld: params.hausgeld || 0,
+    strom: params.strom || 0,
+    internet: params.internet || 0,
     kreditrate: ergebnis.monatlicheRate,
-    cashflow: ergebnis.cashflowMonatlich
+    // Cashflow neu berechnen mit allen Kosten
+    get gesamtKosten() { return this.nebenkosten + this.instandhaltung + this.verwaltung + this.hausgeld + this.strom + this.internet; },
+    get cashflow() { return this.einnahmen - this.gesamtKosten - this.kreditrate; }
   };
 
   return (
@@ -1657,6 +1678,24 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
               <span className="text-red-500">- Verwaltung</span>
               <span className="text-red-500">{formatCurrency(monatsDaten.verwaltung)}</span>
             </div>
+            {monatsDaten.hausgeld > 0 && (
+              <div className="flex justify-between items-center py-1 text-sm">
+                <span className="text-red-500">- WEG / Hausgeld</span>
+                <span className="text-red-500">{formatCurrency(monatsDaten.hausgeld)}</span>
+              </div>
+            )}
+            {monatsDaten.strom > 0 && (
+              <div className="flex justify-between items-center py-1 text-sm">
+                <span className="text-red-500">- Strom</span>
+                <span className="text-red-500">{formatCurrency(monatsDaten.strom)}</span>
+              </div>
+            )}
+            {monatsDaten.internet > 0 && (
+              <div className="flex justify-between items-center py-1 text-sm">
+                <span className="text-red-500">- Internet</span>
+                <span className="text-red-500">{formatCurrency(monatsDaten.internet)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center py-2 border-b">
               <span className="text-red-600">- Kreditrate</span>
               <span className="font-semibold text-red-600">{formatCurrency(monatsDaten.kreditrate)}</span>
@@ -2568,6 +2607,10 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     nebenkosten: immobilie.nebenkosten ?? 200,
     instandhaltung: immobilie.instandhaltung ?? 100,
     verwaltung: immobilie.verwaltung ?? 30,
+    // Zusätzliche Kosten (z.B. bei möblierter Vermietung)
+    hausgeld: immobilie.hausgeld ?? 0,
+    strom: immobilie.strom ?? 0,
+    internet: immobilie.internet ?? 0,
     wertsteigerung: immobilie.wertsteigerung ?? 2.0,
     mietsteigerung: immobilie.mietsteigerung ?? 1.5,
     kaufnebenkosten: immobilie.kaufnebenkosten ?? 10,
