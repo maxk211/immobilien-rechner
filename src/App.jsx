@@ -695,7 +695,10 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     eigeneWarmmiete: 1500,        // Was man selbst zahlt (warm)
     anzahlZimmerVermietet: 3,     // Anzahl Zimmer die untervermietet werden
     untermieteProZimmer: 600,     // Warmmiete pro Zimmer von Untermietern
-    nebenkosten: 0,               // Zusätzliche Nebenkosten die nicht in Warmmiete enthalten
+    // Aufgeschlüsselte Kosten für Steuerberater
+    arbitrageStrom: 0,            // Stromkosten monatlich
+    arbitrageInternet: 0,         // Internetkosten monatlich
+    arbitrageGEZ: 18.36,          // GEZ/Rundfunkbeitrag monatlich (Standard: 18,36€)
     mietvertragStart: ''          // Startdatum des Mietvertrags
   });
 
@@ -1069,18 +1072,42 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   </div>
 
                   <div className="bg-white p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">📊 Zusätzliche Kosten</h4>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sonstige monatl. Kosten (€)</label>
-                      <input
-                        type="number"
-                        value={formData.nebenkosten || 0}
-                        onChange={(e) => handleChange('nebenkosten', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                        placeholder="z.B. 100"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">z.B. Internet, Reinigung, Instandhaltung (nicht in Warmmiete enthalten)</p>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">📊 Zusätzliche Kosten (für Steuerberater)</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">⚡ Strom (€/Mon.)</label>
+                        <input
+                          type="number"
+                          value={formData.arbitrageStrom || 0}
+                          onChange={(e) => handleChange('arbitrageStrom', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">🌐 Internet (€/Mon.)</label>
+                        <input
+                          type="number"
+                          value={formData.arbitrageInternet || 0}
+                          onChange={(e) => handleChange('arbitrageInternet', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">📺 GEZ (€/Mon.)</label>
+                        <input
+                          type="number"
+                          value={formData.arbitrageGEZ ?? 18.36}
+                          onChange={(e) => handleChange('arbitrageGEZ', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="18.36"
+                        />
+                      </div>
                     </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Summe: {formatCurrency((formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36))}/Monat
+                    </p>
                   </div>
 
                   {/* Vorschau-Berechnung */}
@@ -1096,15 +1123,16 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         <span className="font-semibold text-red-600">-{formatCurrency(formData.eigeneWarmmiete || 0)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Zusätzliche Kosten:</span>
-                        <span className="font-semibold text-red-600">-{formatCurrency(formData.nebenkosten || 0)}</span>
+                        <span className="text-gray-600">Strom / Internet / GEZ:</span>
+                        <span className="font-semibold text-red-600">-{formatCurrency((formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36))}</span>
                       </div>
                       <div className="border-t border-green-300 pt-2 mt-2">
                         <div className="flex justify-between text-base">
                           <span className="font-semibold text-gray-700">Monatlicher Cashflow:</span>
                           {(() => {
                             const einnahmen = (formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0);
-                            const ausgaben = (formData.eigeneWarmmiete || 0) + (formData.nebenkosten || 0);
+                            const zusatzkosten = (formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36);
+                            const ausgaben = (formData.eigeneWarmmiete || 0) + zusatzkosten;
                             const cashflow = einnahmen - ausgaben;
                             return (
                               <span className={`font-bold ${cashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -1117,7 +1145,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <span className="text-gray-500">Jährlicher Cashflow:</span>
                           {(() => {
                             const einnahmen = (formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0);
-                            const ausgaben = (formData.eigeneWarmmiete || 0) + (formData.nebenkosten || 0);
+                            const zusatzkosten = (formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36);
+                            const ausgaben = (formData.eigeneWarmmiete || 0) + zusatzkosten;
                             const cashflow = (einnahmen - ausgaben) * 12;
                             return (
                               <span className={`font-semibold ${cashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -1166,7 +1195,8 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   // Arbitrage Cashflow berechnen
   const arbitrageCashflow = isMietimmobilie ? (() => {
     const einnahmen = (immobilie.anzahlZimmerVermietet || 0) * (immobilie.untermieteProZimmer || 0);
-    const ausgaben = (immobilie.eigeneWarmmiete || 0) + (immobilie.nebenkosten || 0);
+    const zusatzkosten = (immobilie.arbitrageStrom || 0) + (immobilie.arbitrageInternet || 0) + (immobilie.arbitrageGEZ ?? 18.36);
+    const ausgaben = (immobilie.eigeneWarmmiete || 0) + zusatzkosten;
     return einnahmen - ausgaben;
   })() : 0;
 
@@ -1325,7 +1355,8 @@ const PortfolioOverview = ({ portfolio }) => {
         // Mietimmobilie (Arbitrage-Modell)
         anzahlMietimmobilien++;
         const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0);
-        const ausgaben = (immo.eigeneWarmmiete || 0) + (immo.nebenkosten || 0);
+        const zusatzkosten = (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36);
+        const ausgaben = (immo.eigeneWarmmiete || 0) + zusatzkosten;
         const monatsCashflow = einnahmen - ausgaben;
 
         gesamtMiete += einnahmen * 12; // Einnahmen aus Untervermietung
@@ -3146,7 +3177,10 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
     eigeneWarmmiete: immobilie.eigeneWarmmiete || 1500,
     anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 3,
     untermieteProZimmer: immobilie.untermieteProZimmer || 600,
-    nebenkosten: immobilie.nebenkosten || 0,
+    // Aufgeschlüsselte Kosten für Steuerberater
+    arbitrageStrom: immobilie.arbitrageStrom || 0,
+    arbitrageInternet: immobilie.arbitrageInternet || 0,
+    arbitrageGEZ: immobilie.arbitrageGEZ ?? 18.36,
     wohnflaeche: immobilie.wohnflaeche || 80,
     zimmer: immobilie.zimmer || 4,
     mietvertragStart: immobilie.mietvertragStart || '',
@@ -3168,7 +3202,8 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
 
   // Berechnungen
   const einnahmen = params.anzahlZimmerVermietet * params.untermieteProZimmer;
-  const ausgaben = params.eigeneWarmmiete + params.nebenkosten;
+  const zusatzkosten = (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36);
+  const ausgaben = params.eigeneWarmmiete + zusatzkosten;
   const monatsCashflow = einnahmen - ausgaben;
   const jahresCashflow = monatsCashflow * 12;
 
@@ -3246,10 +3281,15 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
                 <span className="text-gray-600">Eigene Warmmiete</span>
                 <span className="font-semibold text-red-600">-{formatCurrency(params.eigeneWarmmiete)}</span>
               </div>
-              {params.nebenkosten > 0 && (
+              {(params.arbitrageStrom > 0 || params.arbitrageInternet > 0 || params.arbitrageGEZ > 0) && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Zusätzliche Kosten</span>
-                  <span className="font-semibold text-red-600">-{formatCurrency(params.nebenkosten)}</span>
+                  <span className="text-gray-600">
+                    Strom / Internet / GEZ
+                    <span className="text-xs text-gray-400 ml-1">
+                      ({formatCurrency(params.arbitrageStrom || 0)} + {formatCurrency(params.arbitrageInternet || 0)} + {formatCurrency(params.arbitrageGEZ ?? 18.36)})
+                    </span>
+                  </span>
+                  <span className="font-semibold text-red-600">-{formatCurrency(zusatzkosten)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center py-2 font-bold text-lg">
@@ -3374,15 +3414,43 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zusätzliche monatl. Kosten (€)</label>
-                  <input
-                    type="number"
-                    value={params.nebenkosten}
-                    onChange={(e) => updateParams({ nebenkosten: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">z.B. Internet, Reinigung, Instandhaltung</p>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">📊 Zusätzliche Kosten (für Steuerberater)</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">⚡ Strom</label>
+                      <input
+                        type="number"
+                        value={params.arbitrageStrom || 0}
+                        onChange={(e) => updateParams({ arbitrageStrom: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">🌐 Internet</label>
+                      <input
+                        type="number"
+                        value={params.arbitrageInternet || 0}
+                        onChange={(e) => updateParams({ arbitrageInternet: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">📺 GEZ</label>
+                      <input
+                        type="number"
+                        value={params.arbitrageGEZ ?? 18.36}
+                        onChange={(e) => updateParams({ arbitrageGEZ: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="18.36"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Summe: <strong>{formatCurrency(zusatzkosten)}</strong>/Monat · <strong>{formatCurrency(zusatzkosten * 12)}</strong>/Jahr
+                  </p>
                 </div>
               </div>
             </div>
