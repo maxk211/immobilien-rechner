@@ -3,6 +3,8 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie } from './supabaseClient';
+import Auth from './Auth';
 
 // PLZ-basierte Preise pro m² für verschiedene deutsche Städte und Regionen
 const PLZ_PREISE = {
@@ -4292,32 +4294,92 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
 
 // Haupt-App Komponente
 function App() {
-  const [portfolio, setPortfolio] = useState(() => {
-    const saved = localStorage.getItem('immobilien-portfolio');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [portfolio, setPortfolio] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedImmobilie, setSelectedImmobilie] = useState(null);
   const [editImmobilie, setEditImmobilie] = useState(null);
+  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'error'
 
+  // Auth State überwachen
   useEffect(() => {
-    localStorage.setItem('immobilien-portfolio', JSON.stringify(portfolio));
-  }, [portfolio]);
+    // Aktuelle Session abrufen
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
 
-  const handleSave = (data) => {
-    if (editImmobilie) {
-      setPortfolio(prev => prev.map(i => i.id === editImmobilie.id ? { ...data, id: i.id } : i));
-      setEditImmobilie(null);
+    // Auth State Changes abonnieren
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Daten aus Supabase laden wenn eingeloggt
+  useEffect(() => {
+    if (session) {
+      loadPortfolioFromDB();
     } else {
-      setPortfolio(prev => [...prev, { ...data, id: Date.now() }]);
+      setPortfolio([]);
     }
-    setShowForm(false);
+  }, [session]);
+
+  // Portfolio aus Datenbank laden
+  const loadPortfolioFromDB = async () => {
+    try {
+      setSyncStatus('syncing');
+      const data = await loadImmobilien();
+      setPortfolio(data);
+      setSyncStatus('idle');
+    } catch (error) {
+      console.error('Fehler beim Laden:', error);
+      setSyncStatus('error');
+    }
   };
 
-  const handleDelete = (id) => {
-    if (confirm('Möchten Sie diese Immobilie wirklich löschen?')) {
-      setPortfolio(prev => prev.filter(i => i.id !== id));
+  const handleSave = async (data) => {
+    try {
+      setSyncStatus('syncing');
+      if (editImmobilie) {
+        // Update existierende Immobilie
+        const updated = await saveImmobilie({ ...data, id: editImmobilie.id });
+        setPortfolio(prev => prev.map(i => i.id === editImmobilie.id ? updated : i));
+        setEditImmobilie(null);
+      } else {
+        // Neue Immobilie erstellen
+        const created = await saveImmobilie(data);
+        setPortfolio(prev => [...prev, created]);
+      }
+      setShowForm(false);
+      setSyncStatus('idle');
+    } catch (error) {
+      console.error('Fehler beim Speichern:', error);
+      setSyncStatus('error');
+      alert('Fehler beim Speichern: ' + error.message);
     }
+  };
+
+  const handleDelete = async (id) => {
+    if (confirm('Möchten Sie diese Immobilie wirklich löschen?')) {
+      try {
+        setSyncStatus('syncing');
+        await deleteImmobilie(id);
+        setPortfolio(prev => prev.filter(i => i.id !== id));
+        setSyncStatus('idle');
+      } catch (error) {
+        console.error('Fehler beim Löschen:', error);
+        setSyncStatus('error');
+        alert('Fehler beim Löschen: ' + error.message);
+      }
+    }
+  };
+
+  // Logout Funktion
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   // Export Portfolio als JSON
@@ -4339,12 +4401,12 @@ function App() {
   };
 
   // Import Portfolio aus JSON
-  const handleImport = (event) => {
+  const handleImport = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const importData = JSON.parse(e.target.result);
 
@@ -4363,17 +4425,28 @@ function App() {
         );
 
         if (choice) {
-          // Neue IDs vergeben um Konflikte zu vermeiden
-          const importedWithNewIds = importData.portfolio.map(immo => ({
-            ...immo,
-            id: Date.now() + Math.random() * 1000,
-            importedAt: new Date().toISOString()
-          }));
-          setPortfolio(prev => [...prev, ...importedWithNewIds]);
-          alert(`${importedWithNewIds.length} Immobilie(n) erfolgreich importiert!`);
+          setSyncStatus('syncing');
+          let importedCount = 0;
+
+          // Jede Immobilie einzeln in die Datenbank speichern
+          for (const immo of importData.portfolio) {
+            try {
+              // ID entfernen damit eine neue erstellt wird
+              const { id, ...immoData } = immo;
+              const created = await saveImmobilie(immoData);
+              setPortfolio(prev => [...prev, created]);
+              importedCount++;
+            } catch (err) {
+              console.error('Fehler beim Importieren einer Immobilie:', err);
+            }
+          }
+
+          setSyncStatus('idle');
+          alert(`${importedCount} Immobilie(n) erfolgreich importiert!`);
         }
       } catch (error) {
         alert('Fehler beim Importieren: ' + error.message);
+        setSyncStatus('error');
       }
     };
     reader.readAsText(file);
@@ -4761,14 +4834,58 @@ function App() {
     alert(`Steuer-Export für ${jahr} erstellt!\n\n✓ Excel-Datei: Steuer-Export-${jahr}.xlsx\n✓ PDF-Datei: Steuer-Uebersicht-${jahr}.pdf`);
   };
 
+  // Loading Screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="text-6xl mb-4">🏠</div>
+          <div className="animate-spin h-8 w-8 border-4 border-white border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-4">Lade...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Login Screen wenn nicht eingeloggt
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 px-4 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            🏠 Immobilien Portfolio & Leverage Rechner
-          </h1>
-          <p className="mt-2 text-blue-100">Rendite • Cashflow • Wertentwicklung • Portfolio</p>
+        <div className="max-w-7xl mx-auto flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              🏠 Immobilien Portfolio & Leverage Rechner
+            </h1>
+            <p className="mt-2 text-blue-100">Rendite • Cashflow • Wertentwicklung • Portfolio</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Sync Status Indicator */}
+            {syncStatus === 'syncing' && (
+              <div className="flex items-center gap-2 text-blue-200 text-sm">
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                Synchronisiere...
+              </div>
+            )}
+            {syncStatus === 'error' && (
+              <div className="flex items-center gap-2 text-red-300 text-sm">
+                <span>⚠️</span> Sync-Fehler
+              </div>
+            )}
+            {/* User Info & Logout */}
+            <div className="text-right">
+              <p className="text-sm text-blue-200">{session.user.email}</p>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-blue-100 hover:text-white underline"
+              >
+                Abmelden
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -4868,9 +4985,18 @@ function App() {
         <ImmobilienDetail
           immobilie={selectedImmobilie}
           onClose={() => setSelectedImmobilie(null)}
-          onSave={(data) => {
-            setPortfolio(prev => prev.map(i => i.id === selectedImmobilie.id ? { ...data, id: i.id } : i));
-            setSelectedImmobilie(data);
+          onSave={async (data) => {
+            try {
+              setSyncStatus('syncing');
+              const updated = await saveImmobilie({ ...data, id: selectedImmobilie.id });
+              setPortfolio(prev => prev.map(i => i.id === selectedImmobilie.id ? updated : i));
+              setSelectedImmobilie(updated);
+              setSyncStatus('idle');
+            } catch (error) {
+              console.error('Fehler beim Speichern:', error);
+              setSyncStatus('error');
+              alert('Fehler beim Speichern: ' + error.message);
+            }
           }}
         />
       )}
