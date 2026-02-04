@@ -1787,125 +1787,224 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             </div>
           </div>
 
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-[500px] overflow-y-auto space-y-3">
             {ansicht === 'jahr' ? (
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-gray-100">
-                  <tr>
-                    <th className="text-left p-1">Jahr</th>
-                    <th className="text-right p-1">Miete</th>
-                    <th className="text-right p-1">NK</th>
-                    <th className="text-right p-1">Inst.</th>
-                    <th className="text-right p-1">Verw.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jahre.map(jahr => (
-                    <tr key={jahr} className={jahr === aktuellesJahr ? 'bg-blue-50' : ''}>
-                      <td className="p-1 font-semibold">{jahr}</td>
-                      <td className="p-1">
-                        <input
-                          type="number"
-                          value={getWertFuerZeitraum(jahr, null, 'kaltmiete')}
-                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'kaltmiete', e.target.value)}
-                          className="w-16 px-1 py-0.5 border rounded text-right"
-                        />
-                      </td>
-                      <td className="p-1">
-                        <input
-                          type="number"
-                          value={getWertFuerZeitraum(jahr, null, 'nebenkosten')}
-                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'nebenkosten', e.target.value)}
-                          className="w-14 px-1 py-0.5 border rounded text-right"
-                        />
-                      </td>
-                      <td className="p-1">
-                        <input
-                          type="number"
-                          value={getWertFuerZeitraum(jahr, null, 'instandhaltung')}
-                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'instandhaltung', e.target.value)}
-                          className="w-14 px-1 py-0.5 border rounded text-right"
-                        />
-                      </td>
-                      <td className="p-1">
-                        <input
-                          type="number"
-                          value={getWertFuerZeitraum(jahr, null, 'verwaltung')}
-                          onChange={(e) => setWertFuerZeitraum(jahr, null, 'verwaltung', e.target.value)}
-                          className="w-14 px-1 py-0.5 border rounded text-right"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              // Jahresansicht - Card Layout
+              jahre.map(jahr => (
+                <div key={jahr} className={`border rounded-lg p-3 ${jahr === aktuellesJahr ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-bold text-lg text-gray-800">{jahr}</span>
+                    {jahr === aktuellesJahr && <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded">Aktuell</span>}
+                  </div>
+
+                  {/* Einnahmen */}
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-green-700 mb-2">📈 Einnahmen</div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                        <label className="text-sm text-gray-700">Kaltmiete</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={getWertFuerZeitraum(jahr, null, 'kaltmiete')}
+                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'kaltmiete', e.target.value)}
+                            className="w-24 px-2 py-1 border border-green-300 rounded text-right text-sm"
+                          />
+                          <span className="text-xs text-gray-500">€</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Kosten */}
+                  <div>
+                    <div className="text-xs font-semibold text-red-700 mb-2">📉 Kosten</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <label className="text-xs text-gray-600">Nebenkosten</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={getWertFuerZeitraum(jahr, null, 'nebenkosten')}
+                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'nebenkosten', e.target.value)}
+                            className="w-20 px-2 py-1 border rounded text-right text-sm"
+                          />
+                          <span className="text-xs text-gray-400">€</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <label className="text-xs text-gray-600">Instandhaltung</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={getWertFuerZeitraum(jahr, null, 'instandhaltung')}
+                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'instandhaltung', e.target.value)}
+                            className="w-20 px-2 py-1 border rounded text-right text-sm"
+                          />
+                          <span className="text-xs text-gray-400">€</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <label className="text-xs text-gray-600">Verwaltung</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={getWertFuerZeitraum(jahr, null, 'verwaltung')}
+                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'verwaltung', e.target.value)}
+                            className="w-20 px-2 py-1 border rounded text-right text-sm"
+                          />
+                          <span className="text-xs text-gray-400">€</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <label className="text-xs text-gray-600">Hausgeld</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={getWertFuerZeitraum(jahr, null, 'hausgeld')}
+                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'hausgeld', e.target.value)}
+                            className="w-20 px-2 py-1 border rounded text-right text-sm"
+                          />
+                          <span className="text-xs text-gray-400">€</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <label className="text-xs text-gray-600">Strom</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={getWertFuerZeitraum(jahr, null, 'strom')}
+                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'strom', e.target.value)}
+                            className="w-20 px-2 py-1 border rounded text-right text-sm"
+                          />
+                          <span className="text-xs text-gray-400">€</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <label className="text-xs text-gray-600">Internet</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={getWertFuerZeitraum(jahr, null, 'internet')}
+                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'internet', e.target.value)}
+                            className="w-20 px-2 py-1 border rounded text-right text-sm"
+                          />
+                          <span className="text-xs text-gray-400">€</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
             ) : (
+              // Monatsansicht - Card Layout
               <div>
                 <select
-                  className="w-full mb-2 p-1 border rounded text-sm"
-                  onChange={(e) => document.getElementById(`monat-${e.target.value}`)?.scrollIntoView()}
+                  className="w-full mb-3 p-2 border rounded-lg text-sm font-semibold"
+                  onChange={(e) => document.getElementById(`monat-${e.target.value}`)?.scrollIntoView({ behavior: 'smooth' })}
+                  defaultValue={aktuellesJahr}
                 >
                   {jahre.map(j => <option key={j} value={j}>{j}</option>)}
                 </select>
                 {jahre.map(jahr => (
-                  <div key={jahr} id={`monat-${jahr}`} className="mb-4">
-                    <div className="font-semibold text-sm bg-gray-200 p-1 rounded mb-1">{jahr}</div>
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr>
-                          <th className="text-left p-1">Mon</th>
-                          <th className="text-right p-1">Miete</th>
-                          <th className="text-right p-1">NK</th>
-                          <th className="text-right p-1">Inst.</th>
-                          <th className="text-right p-1">Verw.</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {monate.map((monat, idx) => (
-                          <tr key={`${jahr}-${idx}`}>
-                            <td className="p-1">{monat}</td>
-                            <td className="p-1">
-                              <input
-                                type="number"
-                                value={getWertFuerZeitraum(jahr, idx, 'kaltmiete')}
-                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'kaltmiete', e.target.value)}
-                                className="w-16 px-1 py-0.5 border rounded text-right"
-                              />
-                            </td>
-                            <td className="p-1">
-                              <input
-                                type="number"
-                                value={getWertFuerZeitraum(jahr, idx, 'nebenkosten')}
-                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'nebenkosten', e.target.value)}
-                                className="w-14 px-1 py-0.5 border rounded text-right"
-                              />
-                            </td>
-                            <td className="p-1">
-                              <input
-                                type="number"
-                                value={getWertFuerZeitraum(jahr, idx, 'instandhaltung')}
-                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'instandhaltung', e.target.value)}
-                                className="w-14 px-1 py-0.5 border rounded text-right"
-                              />
-                            </td>
-                            <td className="p-1">
-                              <input
-                                type="number"
-                                value={getWertFuerZeitraum(jahr, idx, 'verwaltung')}
-                                onChange={(e) => setWertFuerZeitraum(jahr, idx, 'verwaltung', e.target.value)}
-                                className="w-14 px-1 py-0.5 border rounded text-right"
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div key={jahr} id={`monat-${jahr}`} className="mb-6">
+                    <div className={`font-bold text-lg p-2 rounded-t-lg ${jahr === aktuellesJahr ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
+                      {jahr}
+                    </div>
+                    <div className="border border-t-0 rounded-b-lg divide-y">
+                      {monate.map((monat, idx) => {
+                        const aktuellerMonat = new Date().getMonth();
+                        const istAktuell = jahr === aktuellesJahr && idx === aktuellerMonat;
+                        return (
+                          <div key={`${jahr}-${idx}`} className={`p-3 ${istAktuell ? 'bg-blue-50' : ''}`}>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold text-gray-700">{monat}</span>
+                              {istAktuell && <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded">Aktuell</span>}
+                            </div>
+
+                            {/* Einnahmen */}
+                            <div className="mb-2">
+                              <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                                <label className="text-sm text-green-800">💰 Kaltmiete</label>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number"
+                                    value={getWertFuerZeitraum(jahr, idx, 'kaltmiete')}
+                                    onChange={(e) => setWertFuerZeitraum(jahr, idx, 'kaltmiete', e.target.value)}
+                                    className="w-24 px-2 py-1 border border-green-300 rounded text-right text-sm"
+                                  />
+                                  <span className="text-xs text-gray-500">€</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Kosten Grid */}
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div className="bg-gray-50 p-2 rounded">
+                                <label className="text-gray-500 block mb-1">NK</label>
+                                <input
+                                  type="number"
+                                  value={getWertFuerZeitraum(jahr, idx, 'nebenkosten')}
+                                  onChange={(e) => setWertFuerZeitraum(jahr, idx, 'nebenkosten', e.target.value)}
+                                  className="w-full px-1 py-1 border rounded text-right"
+                                />
+                              </div>
+                              <div className="bg-gray-50 p-2 rounded">
+                                <label className="text-gray-500 block mb-1">Inst.</label>
+                                <input
+                                  type="number"
+                                  value={getWertFuerZeitraum(jahr, idx, 'instandhaltung')}
+                                  onChange={(e) => setWertFuerZeitraum(jahr, idx, 'instandhaltung', e.target.value)}
+                                  className="w-full px-1 py-1 border rounded text-right"
+                                />
+                              </div>
+                              <div className="bg-gray-50 p-2 rounded">
+                                <label className="text-gray-500 block mb-1">Verw.</label>
+                                <input
+                                  type="number"
+                                  value={getWertFuerZeitraum(jahr, idx, 'verwaltung')}
+                                  onChange={(e) => setWertFuerZeitraum(jahr, idx, 'verwaltung', e.target.value)}
+                                  className="w-full px-1 py-1 border rounded text-right"
+                                />
+                              </div>
+                              <div className="bg-gray-50 p-2 rounded">
+                                <label className="text-gray-500 block mb-1">Hausgeld</label>
+                                <input
+                                  type="number"
+                                  value={getWertFuerZeitraum(jahr, idx, 'hausgeld')}
+                                  onChange={(e) => setWertFuerZeitraum(jahr, idx, 'hausgeld', e.target.value)}
+                                  className="w-full px-1 py-1 border rounded text-right"
+                                />
+                              </div>
+                              <div className="bg-gray-50 p-2 rounded">
+                                <label className="text-gray-500 block mb-1">Strom</label>
+                                <input
+                                  type="number"
+                                  value={getWertFuerZeitraum(jahr, idx, 'strom')}
+                                  onChange={(e) => setWertFuerZeitraum(jahr, idx, 'strom', e.target.value)}
+                                  className="w-full px-1 py-1 border rounded text-right"
+                                />
+                              </div>
+                              <div className="bg-gray-50 p-2 rounded">
+                                <label className="text-gray-500 block mb-1">Internet</label>
+                                <input
+                                  type="number"
+                                  value={getWertFuerZeitraum(jahr, idx, 'internet')}
+                                  onChange={(e) => setWertFuerZeitraum(jahr, idx, 'internet', e.target.value)}
+                                  className="w-full px-1 py-1 border rounded text-right"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-2">Alle Werte in € pro Monat</p>
+          <p className="text-xs text-gray-400 mt-3 text-center">Alle Werte in € pro Monat</p>
         </div>
       )}
     </div>
