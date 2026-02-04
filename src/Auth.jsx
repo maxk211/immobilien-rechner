@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
 export default function Auth() {
@@ -6,8 +6,19 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+  const [isResetMode, setIsResetMode] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  // Prüfe ob User über Password-Reset-Link kommt
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+
+    if (type === 'recovery') {
+      setIsResetMode(true);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,7 +27,17 @@ export default function Auth() {
     setMessage(null);
 
     try {
-      if (isLogin) {
+      if (isResetMode) {
+        // Neues Passwort setzen
+        const { error } = await supabase.auth.updateUser({
+          password: password
+        });
+        if (error) throw error;
+        setMessage('Passwort erfolgreich geändert! Du wirst eingeloggt...');
+        setIsResetMode(false);
+        // Clear URL hash
+        window.history.replaceState(null, '', window.location.pathname);
+      } else if (isLogin) {
         // Login
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -30,7 +51,8 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        setMessage('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.');
+        setMessage('Registrierung erfolgreich! Du kannst dich jetzt einloggen.');
+        setIsLogin(true);
       }
     } catch (error) {
       setError(error.message);
@@ -53,7 +75,7 @@ export default function Auth() {
         redirectTo: window.location.origin,
       });
       if (error) throw error;
-      setMessage('Passwort-Reset E-Mail wurde gesendet!');
+      setMessage('Passwort-Reset E-Mail wurde gesendet! Prüfe dein Postfach.');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -69,7 +91,11 @@ export default function Auth() {
           <div className="text-5xl mb-3">🏠</div>
           <h1 className="text-2xl font-bold text-gray-800">Immobilien Portfolio</h1>
           <p className="text-gray-500 mt-1">
-            {isLogin ? 'Willkommen zurück!' : 'Erstelle deinen Account'}
+            {isResetMode
+              ? 'Neues Passwort vergeben'
+              : isLogin
+                ? 'Willkommen zurück!'
+                : 'Erstelle deinen Account'}
           </p>
         </div>
 
@@ -89,23 +115,25 @@ export default function Auth() {
 
         {/* Formular */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              E-Mail Adresse
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="max@beispiel.de"
-              required
-            />
-          </div>
+          {!isResetMode && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                E-Mail Adresse
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="max@beispiel.de"
+                required={!isResetMode}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Passwort
+              {isResetMode ? 'Neues Passwort' : 'Passwort'}
             </label>
             <input
               type="password"
@@ -118,7 +146,7 @@ export default function Auth() {
             />
           </div>
 
-          {isLogin && (
+          {isLogin && !isResetMode && (
             <button
               type="button"
               onClick={handleForgotPassword}
@@ -141,6 +169,8 @@ export default function Auth() {
                 </svg>
                 Laden...
               </span>
+            ) : isResetMode ? (
+              'Passwort speichern'
             ) : isLogin ? (
               'Einloggen'
             ) : (
@@ -150,28 +180,30 @@ export default function Auth() {
         </form>
 
         {/* Toggle Login/Register */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError(null);
-              setMessage(null);
-            }}
-            className="text-sm text-gray-600 hover:text-gray-800"
-          >
-            {isLogin ? (
-              <>
-                Noch kein Account?{' '}
-                <span className="text-blue-600 font-semibold">Jetzt registrieren</span>
-              </>
-            ) : (
-              <>
-                Bereits registriert?{' '}
-                <span className="text-blue-600 font-semibold">Zum Login</span>
-              </>
-            )}
-          </button>
-        </div>
+        {!isResetMode && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError(null);
+                setMessage(null);
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              {isLogin ? (
+                <>
+                  Noch kein Account?{' '}
+                  <span className="text-blue-600 font-semibold">Jetzt registrieren</span>
+                </>
+              ) : (
+                <>
+                  Bereits registriert?{' '}
+                  <span className="text-blue-600 font-semibold">Zum Login</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Features */}
         <div className="mt-8 pt-6 border-t border-gray-200">
