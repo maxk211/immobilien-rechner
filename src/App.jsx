@@ -4122,6 +4122,66 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                     </div>
                   </div>
 
+                  {/* Kreditkonditionen anpassen */}
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-300">
+                    <h4 className="font-semibold text-yellow-800 mb-3">✏️ Kreditkonditionen anpassen</h4>
+                    <p className="text-xs text-yellow-700 mb-3">Hier kannst du die Konditionen deiner Erstfinanzierung korrigieren:</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Zinssatz</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            max={15}
+                            step={0.1}
+                            value={params.zinssatz ?? 4.0}
+                            onChange={(e) => {
+                              const neuerZins = parseFloat(e.target.value) || 0;
+                              const aktuellePhasen = params.finanzierungsphasen || [];
+                              let neuePhasen = aktuellePhasen;
+                              if (aktuellePhasen.length > 0) {
+                                neuePhasen = aktuellePhasen.map((p, idx) => idx === 0 ? {...p, zinssatz: neuerZins} : p);
+                              }
+                              updateParams({...params, zinssatz: neuerZins, finanzierungsphasen: neuePhasen});
+                            }}
+                            className="w-full px-3 py-2 border border-yellow-400 rounded-lg focus:ring-2 focus:ring-yellow-500 text-lg font-semibold text-right"
+                          />
+                          <span className="text-gray-600 font-semibold">%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Anfängliche Tilgung</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            max={10}
+                            step={0.5}
+                            value={params.tilgung ?? 2.0}
+                            onChange={(e) => {
+                              const neueTilgung = parseFloat(e.target.value) || 0;
+                              const aktuellePhasen = params.finanzierungsphasen || [];
+                              let neuePhasen = aktuellePhasen;
+                              if (aktuellePhasen.length > 0) {
+                                neuePhasen = aktuellePhasen.map((p, idx) => idx === 0 ? {...p, tilgung: neueTilgung} : p);
+                              }
+                              updateParams({...params, tilgung: neueTilgung, finanzierungsphasen: neuePhasen});
+                            }}
+                            className="w-full px-3 py-2 border border-yellow-400 rounded-lg focus:ring-2 focus:ring-yellow-500 text-lg font-semibold text-right"
+                          />
+                          <span className="text-gray-600 font-semibold">%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-2 bg-white rounded border border-yellow-200">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Annuität (Zins + Tilgung):</span>
+                        <span className="font-bold text-yellow-800">{((params.zinssatz ?? 4.0) + (params.tilgung ?? 2.0)).toFixed(2)}%</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Initialer Kreditbetrag */}
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h4 className="font-semibold text-blue-800 mb-3">🏦 Anfänglicher Kreditbetrag</h4>
@@ -4391,12 +4451,459 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   );
 };
 
+// Kalkulations-Komponente für schnelle Vorab-Berechnung
+const KalkulationsModal = ({ onClose }) => {
+  const [typ, setTyp] = useState('kauf'); // 'kauf' oder 'arbitrage'
+
+  // Kauf-Parameter
+  const [kaufpreis, setKaufpreis] = useState(300000);
+  const [nebenkosten, setNebenkosten] = useState(10);
+  const [eigenkapital, setEigenkapital] = useState(60000);
+  const [zinssatz, setZinssatz] = useState(4.0);
+  const [tilgung, setTilgung] = useState(2.0);
+  const [kaltmiete, setKaltmiete] = useState(1200);
+  const [betriebskosten, setBetriebskosten] = useState(300);
+  const [steuersatz, setSteuersatz] = useState(42);
+
+  // Arbitrage-Parameter
+  const [eigeneWarmmiete, setEigeneWarmmiete] = useState(1500);
+  const [anzahlZimmer, setAnzahlZimmer] = useState(3);
+  const [mietProZimmer, setMietProZimmer] = useState(700);
+  const [arbNebenkosten, setArbNebenkosten] = useState(150);
+
+  // Berechnungen für Kaufimmobilie
+  const kaufBerechnung = useMemo(() => {
+    const nebenkostenAbsolut = kaufpreis * (nebenkosten / 100);
+    const gesamtinvestition = kaufpreis + nebenkostenAbsolut;
+    const kreditbetrag = gesamtinvestition - eigenkapital;
+    const annuitaet = (zinssatz + tilgung) / 100;
+    const monatlicheRate = (kreditbetrag * annuitaet) / 12;
+
+    const monatlicheEinnahmen = kaltmiete;
+    const monatlicheAusgaben = monatlicheRate + betriebskosten;
+    const cashflowMonat = monatlicheEinnahmen - monatlicheAusgaben;
+
+    // Steuerliche Berechnung
+    const jahresMiete = kaltmiete * 12;
+    const gebaeudeAnteil = kaufpreis * 0.8; // 80% Gebäudeanteil
+    const afaJahr = gebaeudeAnteil * 0.02; // 2% AfA
+    const zinsenJahr = kreditbetrag * (zinssatz / 100);
+    const werbungskosten = afaJahr + zinsenJahr + (betriebskosten * 12);
+    const zuVersteuern = jahresMiete - werbungskosten;
+    const steuerEffekt = zuVersteuern * (steuersatz / 100);
+    const cashflowNachSteuer = (cashflowMonat * 12) - steuerEffekt;
+
+    const bruttoRendite = (jahresMiete / kaufpreis) * 100;
+    const eigenkapitalRendite = eigenkapital > 0 ? (cashflowNachSteuer / eigenkapital) * 100 : 0;
+
+    return {
+      nebenkostenAbsolut,
+      gesamtinvestition,
+      kreditbetrag,
+      monatlicheRate,
+      cashflowMonat,
+      jahresMiete,
+      afaJahr,
+      zinsenJahr,
+      werbungskosten,
+      zuVersteuern,
+      steuerEffekt,
+      cashflowNachSteuer,
+      bruttoRendite,
+      eigenkapitalRendite
+    };
+  }, [kaufpreis, nebenkosten, eigenkapital, zinssatz, tilgung, kaltmiete, betriebskosten, steuersatz]);
+
+  // Berechnungen für Arbitrage
+  const arbitrageBerechnung = useMemo(() => {
+    const monatlicheEinnahmen = anzahlZimmer * mietProZimmer;
+    const monatlicheAusgaben = eigeneWarmmiete + arbNebenkosten;
+    const cashflowMonat = monatlicheEinnahmen - monatlicheAusgaben;
+    const cashflowJahr = cashflowMonat * 12;
+
+    // Steuerlich: Einkünfte müssen versteuert werden
+    const zuVersteuern = cashflowJahr > 0 ? cashflowJahr : 0;
+    const steuer = zuVersteuern * (steuersatz / 100);
+    const nettoJahr = cashflowJahr - steuer;
+
+    return {
+      monatlicheEinnahmen,
+      monatlicheAusgaben,
+      cashflowMonat,
+      cashflowJahr,
+      zuVersteuern,
+      steuer,
+      nettoJahr
+    };
+  }, [eigeneWarmmiete, anzahlZimmer, mietProZimmer, arbNebenkosten, steuersatz]);
+
+  const formatCurrency = (val) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-t-2xl">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">🧮 Schnellkalkulation</h2>
+              <p className="text-purple-200 text-sm">Prüfe ob sich eine Immobilie lohnt - ohne zu speichern</p>
+            </div>
+            <button onClick={onClose} className="text-white hover:text-purple-200 text-2xl">×</button>
+          </div>
+
+          {/* Typ-Auswahl */}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setTyp('kauf')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${typ === 'kauf' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
+            >
+              🏠 Kaufimmobilie
+            </button>
+            <button
+              onClick={() => setTyp('arbitrage')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${typ === 'arbitrage' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
+            >
+              🔄 Miet-Arbitrage
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {typ === 'kauf' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Eingaben */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-gray-700 border-b pb-2">📝 Eingaben</h3>
+
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-800 text-sm mb-3">Kaufdaten</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-600">Kaufpreis</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={kaufpreis} onChange={(e) => setKaufpreis(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={10000} />
+                        <span className="text-xs">€</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">Nebenkosten</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={nebenkosten} onChange={(e) => setNebenkosten(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={0.5} />
+                        <span className="text-xs">%</span>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-xs text-gray-600">Eigenkapital</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={eigenkapital} onChange={(e) => setEigenkapital(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={5000} />
+                        <span className="text-xs">€</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-green-800 text-sm mb-3">Finanzierung</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-600">Zinssatz</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={zinssatz} onChange={(e) => setZinssatz(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={0.1} />
+                        <span className="text-xs">%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">Tilgung</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={tilgung} onChange={(e) => setTilgung(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={0.5} />
+                        <span className="text-xs">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-yellow-800 text-sm mb-3">Einnahmen & Kosten</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-600">Kaltmiete/Monat</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={kaltmiete} onChange={(e) => setKaltmiete(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={50} />
+                        <span className="text-xs">€</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">Betriebskosten/Monat</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={betriebskosten} onChange={(e) => setBetriebskosten(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={25} />
+                        <span className="text-xs">€</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-purple-800 text-sm mb-3">Steuer</h4>
+                  <div>
+                    <label className="text-xs text-gray-600">Persönlicher Steuersatz</label>
+                    <div className="flex items-center gap-1">
+                      <input type="number" value={steuersatz} onChange={(e) => setSteuersatz(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={1} />
+                      <span className="text-xs">%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ergebnisse */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-gray-700 border-b pb-2">📊 Ergebnis</h3>
+
+                {/* Investitions-Übersicht */}
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-gray-600">Kaufpreis:</span>
+                    <span className="text-right font-semibold">{formatCurrency(kaufpreis)}</span>
+                    <span className="text-gray-600">+ Nebenkosten:</span>
+                    <span className="text-right font-semibold">{formatCurrency(kaufBerechnung.nebenkostenAbsolut)}</span>
+                    <span className="text-gray-600">= Gesamtinvestition:</span>
+                    <span className="text-right font-bold text-blue-700">{formatCurrency(kaufBerechnung.gesamtinvestition)}</span>
+                    <span className="text-gray-600">- Eigenkapital:</span>
+                    <span className="text-right font-semibold text-green-600">{formatCurrency(eigenkapital)}</span>
+                    <span className="text-gray-600">= Kreditbetrag:</span>
+                    <span className="text-right font-bold">{formatCurrency(kaufBerechnung.kreditbetrag)}</span>
+                  </div>
+                </div>
+
+                {/* Cashflow */}
+                <div className={`p-4 rounded-lg ${kaufBerechnung.cashflowMonat >= 0 ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
+                  <h4 className="font-semibold text-sm mb-2">💰 Monatlicher Cashflow</h4>
+                  <div className="grid grid-cols-2 gap-1 text-sm mb-3">
+                    <span>Kaltmiete:</span>
+                    <span className="text-right text-green-700">+{formatCurrency(kaltmiete)}</span>
+                    <span>Kreditrate:</span>
+                    <span className="text-right text-red-700">-{formatCurrency(kaufBerechnung.monatlicheRate)}</span>
+                    <span>Betriebskosten:</span>
+                    <span className="text-right text-red-700">-{formatCurrency(betriebskosten)}</span>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">Cashflow/Monat:</span>
+                      <span className={`text-2xl font-bold ${kaufBerechnung.cashflowMonat >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {kaufBerechnung.cashflowMonat >= 0 ? '+' : ''}{formatCurrency(kaufBerechnung.cashflowMonat)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Steuerliche Betrachtung */}
+                <div className="bg-purple-100 p-4 rounded-lg border border-purple-300">
+                  <h4 className="font-semibold text-sm mb-2">📋 Steuerliche Betrachtung (jährlich)</h4>
+                  <div className="grid grid-cols-2 gap-1 text-sm">
+                    <span>Mieteinnahmen:</span>
+                    <span className="text-right">{formatCurrency(kaufBerechnung.jahresMiete)}</span>
+                    <span>- AfA (2%):</span>
+                    <span className="text-right text-green-700">-{formatCurrency(kaufBerechnung.afaJahr)}</span>
+                    <span>- Schuldzinsen:</span>
+                    <span className="text-right text-green-700">-{formatCurrency(kaufBerechnung.zinsenJahr)}</span>
+                    <span>- Betriebskosten:</span>
+                    <span className="text-right text-green-700">-{formatCurrency(betriebskosten * 12)}</span>
+                    <span className="font-semibold">= Zu versteuern:</span>
+                    <span className={`text-right font-semibold ${kaufBerechnung.zuVersteuern < 0 ? 'text-green-700' : ''}`}>
+                      {formatCurrency(kaufBerechnung.zuVersteuern)}
+                    </span>
+                    <span>Steuereffekt ({steuersatz}%):</span>
+                    <span className={`text-right font-semibold ${kaufBerechnung.steuerEffekt < 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {kaufBerechnung.steuerEffekt >= 0 ? '-' : '+'}{formatCurrency(Math.abs(kaufBerechnung.steuerEffekt))}
+                    </span>
+                  </div>
+                  <div className="border-t mt-2 pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">Cashflow nach Steuer/Jahr:</span>
+                      <span className={`text-lg font-bold ${kaufBerechnung.cashflowNachSteuer >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {formatCurrency(kaufBerechnung.cashflowNachSteuer)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Renditen */}
+                <div className="bg-blue-100 p-4 rounded-lg">
+                  <h4 className="font-semibold text-sm mb-2">📈 Renditen</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-center p-2 bg-white rounded">
+                      <div className="text-xs text-gray-500">Bruttomietrendite</div>
+                      <div className="text-xl font-bold text-blue-700">{kaufBerechnung.bruttoRendite.toFixed(2)}%</div>
+                    </div>
+                    <div className="text-center p-2 bg-white rounded">
+                      <div className="text-xs text-gray-500">EK-Rendite (n. Steuer)</div>
+                      <div className={`text-xl font-bold ${kaufBerechnung.eigenkapitalRendite >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {kaufBerechnung.eigenkapitalRendite.toFixed(2)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fazit */}
+                <div className={`p-4 rounded-lg ${kaufBerechnung.cashflowNachSteuer >= 0 ? 'bg-green-200' : 'bg-yellow-200'}`}>
+                  <div className="font-bold">
+                    {kaufBerechnung.cashflowNachSteuer >= 0 ? '✅ Cashflow-positiv!' : '⚠️ Cashflow-negativ'}
+                  </div>
+                  <p className="text-sm mt-1">
+                    {kaufBerechnung.cashflowNachSteuer >= 0
+                      ? `Die Immobilie erwirtschaftet ${formatCurrency(kaufBerechnung.cashflowNachSteuer)} Gewinn pro Jahr nach Steuern.`
+                      : `Du musst ${formatCurrency(Math.abs(kaufBerechnung.cashflowNachSteuer))} pro Jahr zuschießen.`
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Arbitrage */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Eingaben */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-gray-700 border-b pb-2">📝 Eingaben</h3>
+
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-red-800 text-sm mb-3">Deine Mietkosten</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-gray-600">Deine Warmmiete/Monat</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={eigeneWarmmiete} onChange={(e) => setEigeneWarmmiete(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={50} />
+                        <span className="text-xs">€</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">Zusatzkosten (Strom, Internet, GEZ)</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={arbNebenkosten} onChange={(e) => setArbNebenkosten(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={10} />
+                        <span className="text-xs">€</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-green-800 text-sm mb-3">Untervermietung</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-gray-600">Anzahl Zimmer zur Vermietung</label>
+                      <input type="number" value={anzahlZimmer} onChange={(e) => setAnzahlZimmer(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" min={1} max={10} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">Einnahmen pro Zimmer/Monat</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={mietProZimmer} onChange={(e) => setMietProZimmer(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={50} />
+                        <span className="text-xs">€</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-purple-800 text-sm mb-3">Steuer</h4>
+                  <div>
+                    <label className="text-xs text-gray-600">Persönlicher Steuersatz</label>
+                    <div className="flex items-center gap-1">
+                      <input type="number" value={steuersatz} onChange={(e) => setSteuersatz(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={1} />
+                      <span className="text-xs">%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ergebnisse */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-gray-700 border-b pb-2">📊 Ergebnis</h3>
+
+                {/* Monatlicher Cashflow */}
+                <div className={`p-4 rounded-lg ${arbitrageBerechnung.cashflowMonat >= 0 ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
+                  <h4 className="font-semibold text-sm mb-2">💰 Monatlicher Cashflow</h4>
+                  <div className="grid grid-cols-2 gap-1 text-sm mb-3">
+                    <span>Einnahmen ({anzahlZimmer} × {formatCurrency(mietProZimmer)}):</span>
+                    <span className="text-right text-green-700">+{formatCurrency(arbitrageBerechnung.monatlicheEinnahmen)}</span>
+                    <span>Deine Warmmiete:</span>
+                    <span className="text-right text-red-700">-{formatCurrency(eigeneWarmmiete)}</span>
+                    <span>Zusatzkosten:</span>
+                    <span className="text-right text-red-700">-{formatCurrency(arbNebenkosten)}</span>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">Cashflow/Monat:</span>
+                      <span className={`text-3xl font-bold ${arbitrageBerechnung.cashflowMonat >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {arbitrageBerechnung.cashflowMonat >= 0 ? '+' : ''}{formatCurrency(arbitrageBerechnung.cashflowMonat)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
+                      <span>Cashflow/Jahr:</span>
+                      <span className="font-semibold">{formatCurrency(arbitrageBerechnung.cashflowJahr)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Steuerliche Betrachtung */}
+                <div className="bg-purple-100 p-4 rounded-lg border border-purple-300">
+                  <h4 className="font-semibold text-sm mb-2">📋 Steuerliche Betrachtung</h4>
+                  <div className="grid grid-cols-2 gap-1 text-sm">
+                    <span>Einkünfte/Jahr:</span>
+                    <span className="text-right">{formatCurrency(arbitrageBerechnung.zuVersteuern)}</span>
+                    <span>Einkommensteuer ({steuersatz}%):</span>
+                    <span className="text-right text-red-700">-{formatCurrency(arbitrageBerechnung.steuer)}</span>
+                  </div>
+                  <div className="border-t mt-2 pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">Netto nach Steuer/Jahr:</span>
+                      <span className={`text-lg font-bold ${arbitrageBerechnung.nettoJahr >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {formatCurrency(arbitrageBerechnung.nettoJahr)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fazit */}
+                <div className={`p-4 rounded-lg ${arbitrageBerechnung.cashflowMonat >= 0 ? 'bg-green-200' : 'bg-red-200'}`}>
+                  <div className="font-bold text-lg">
+                    {arbitrageBerechnung.cashflowMonat > 0 ? '✅ Profitabel!' : arbitrageBerechnung.cashflowMonat === 0 ? '⚖️ Break-Even' : '❌ Nicht profitabel'}
+                  </div>
+                  <p className="text-sm mt-1">
+                    {arbitrageBerechnung.cashflowMonat > 0
+                      ? `Du verdienst ${formatCurrency(arbitrageBerechnung.nettoJahr)} netto pro Jahr und wohnst quasi kostenlos!`
+                      : arbitrageBerechnung.cashflowMonat === 0
+                        ? 'Du wohnst kostenlos, verdienst aber nichts zusätzlich.'
+                        : `Du zahlst effektiv ${formatCurrency(Math.abs(arbitrageBerechnung.cashflowMonat))}/Monat für dein Wohnen.`
+                    }
+                  </p>
+                </div>
+
+                {/* Hinweis */}
+                <div className="bg-gray-100 p-3 rounded-lg text-xs text-gray-600">
+                  <strong>💡 Hinweis:</strong> Bei Miet-Arbitrage prüfe unbedingt deinen Mietvertrag auf Untervermietungsrechte und informiere dich über lokale Regelungen.
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t p-4 bg-gray-50 rounded-b-2xl flex justify-end">
+          <button onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+            Schließen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Haupt-App Komponente
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [portfolio, setPortfolio] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [showKalkulation, setShowKalkulation] = useState(false);
   const [selectedImmobilie, setSelectedImmobilie] = useState(null);
   const [editImmobilie, setEditImmobilie] = useState(null);
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'error'
@@ -5038,6 +5545,12 @@ function App() {
               />
             </label>
             <button
+              onClick={() => setShowKalkulation(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+            >
+              🧮 Kalkulation
+            </button>
+            <button
               onClick={() => setShowForm(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
@@ -5078,6 +5591,10 @@ function App() {
           onClose={() => { setShowForm(false); setEditImmobilie(null); }}
           initialData={editImmobilie}
         />
+      )}
+
+      {showKalkulation && (
+        <KalkulationsModal onClose={() => setShowKalkulation(false)} />
       )}
 
       {selectedImmobilie && (
