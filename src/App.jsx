@@ -4689,9 +4689,13 @@ const KalkulationsModal = ({ onClose }) => {
                   <div className="border-t pt-2">
                     <div className="flex justify-between items-center">
                       <span className="font-bold">Cashflow/Monat:</span>
-                      <span className={`text-2xl font-bold ${kaufBerechnung.cashflowMonat >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      <span className={`text-3xl font-bold ${kaufBerechnung.cashflowMonat >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                         {kaufBerechnung.cashflowMonat >= 0 ? '+' : ''}{formatCurrency(kaufBerechnung.cashflowMonat)}
                       </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
+                      <span>Cashflow/Jahr:</span>
+                      <span className="font-semibold">{formatCurrency(kaufBerechnung.cashflowMonat * 12)}</span>
                     </div>
                   </div>
                 </div>
