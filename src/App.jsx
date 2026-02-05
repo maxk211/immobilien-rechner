@@ -1205,6 +1205,21 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
     return einnahmen - ausgaben;
   })() : 0;
 
+  // Kaufimmobilie Cashflow berechnen
+  const kaufCashflow = !isMietimmobilie ? (() => {
+    const kaltmiete = immobilie.kaltmiete || 0;
+    const zinssatz = immobilie.zinssatz ?? 4.0;
+    const tilgung = immobilie.tilgung ?? 2.0;
+    const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
+    const kaufnebenkostenAbsolut = (immobilie.kaufpreis || 0) * (kaufnebenkosten / 100);
+    const gesamtinvestition = (immobilie.kaufpreis || 0) + kaufnebenkostenAbsolut;
+    const gesamtEK = (immobilie.ekFuerNebenkosten || 0) + (immobilie.ekFuerKaufpreis || 0) || (immobilie.eigenkapital || 0);
+    const kreditbetrag = immobilie.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+    const monatlicheRate = kreditbetrag > 0 ? (kreditbetrag * ((zinssatz + tilgung) / 100)) / 12 : 0;
+    const betriebskosten = (immobilie.nebenkosten || 0) + (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0);
+    return kaltmiete - monatlicheRate - betriebskosten;
+  })() : 0;
+
   return (
     <div
       className={`bg-white rounded-xl shadow-lg p-5 cursor-pointer hover:shadow-xl transition-shadow border ${isMietimmobilie ? 'border-purple-200' : 'border-gray-100'}`}
@@ -1290,6 +1305,22 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
                 </div>
               </div>
             )}
+
+            {/* Cashflow für Kaufimmobilie */}
+            <div className={`mt-2 p-2 rounded text-sm border ${kaufCashflow >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <div className="flex justify-between">
+                <span className="text-gray-600">💰 Monatlicher Cashflow:</span>
+                <span className={`font-bold ${kaufCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {kaufCashflow >= 0 ? '+' : ''}{formatCurrency(kaufCashflow)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs mt-1">
+                <span className="text-gray-400">Jährlicher Cashflow:</span>
+                <span className={`font-medium ${kaufCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {kaufCashflow >= 0 ? '+' : ''}{formatCurrency(kaufCashflow * 12)}
+                </span>
+              </div>
+            </div>
           </div>
         </>
       )}
