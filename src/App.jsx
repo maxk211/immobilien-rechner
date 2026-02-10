@@ -3653,6 +3653,10 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const [params, setParams] = useState({
     kaufpreis: immobilie.kaufpreis,
     kaufdatum: immobilie.kaufdatum || '',
+    // Objektdetails
+    wohnflaeche: immobilie.wohnflaeche || 80,
+    zimmer: immobilie.zimmer || 3,
+    baujahr: immobilie.baujahr || 2000,
     // Neue EK-Aufteilung
     ekFuerNebenkosten: initEkFuerNebenkosten,
     ekFuerKaufpreis: initEkFuerKaufpreis,
@@ -3714,8 +3718,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const handleQmPreisChange = (value) => {
     setQmPreis(value);
     const numValue = parseFloat(value) || 0;
-    if (numValue > 0 && immobilie.wohnflaeche > 0) {
-      const neuerWert = Math.round(numValue * immobilie.wohnflaeche);
+    const flaeche = params.wohnflaeche || immobilie.wohnflaeche || 80;
+    if (numValue > 0 && flaeche > 0) {
+      const neuerWert = Math.round(numValue * flaeche);
       updateParams({...params, geschaetzterWert: neuerWert});
     }
   };
@@ -3723,8 +3728,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const handleGesamtwertChange = (value) => {
     const numValue = parseFloat(value) || 0;
     updateParams({...params, geschaetzterWert: numValue});
-    if (numValue > 0 && immobilie.wohnflaeche > 0) {
-      setQmPreis(Math.round(numValue / immobilie.wohnflaeche).toString());
+    const flaeche = params.wohnflaeche || immobilie.wohnflaeche || 80;
+    if (numValue > 0 && flaeche > 0) {
+      setQmPreis(Math.round(numValue / flaeche).toString());
     }
   };
 
@@ -3784,7 +3790,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                   />
                   <span className="text-sm font-bold text-blue-600">€/m²</span>
                   <span className="text-gray-400">×</span>
-                  <span className="text-sm text-gray-600">{immobilie.wohnflaeche} m²</span>
+                  <span className="text-sm text-gray-600">{params.wohnflaeche} m²</span>
                   <span className="text-gray-400">=</span>
                 </div>
               </div>
@@ -3828,6 +3834,55 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Objektdetails bearbeiten */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <h3 className="font-semibold text-gray-700 mb-3">🏠 Objektdetails bearbeiten</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Wohnfläche</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={params.wohnflaeche}
+                    onChange={(e) => {
+                      const neueFlaeche = parseFloat(e.target.value) || 0;
+                      updateParams({...params, wohnflaeche: neueFlaeche});
+                      // qm-Preis aktualisieren wenn Fläche sich ändert
+                      if (neueFlaeche > 0 && params.geschaetzterWert > 0) {
+                        setQmPreis(Math.round(params.geschaetzterWert / neueFlaeche).toString());
+                      }
+                    }}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                    min={1}
+                  />
+                  <span className="text-gray-500">m²</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Zimmer</label>
+                <input
+                  type="number"
+                  value={params.zimmer}
+                  onChange={(e) => updateParams({...params, zimmer: parseFloat(e.target.value) || 0})}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                  min={1}
+                  step={0.5}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Baujahr</label>
+                <input
+                  type="number"
+                  value={params.baujahr}
+                  onChange={(e) => updateParams({...params, baujahr: parseInt(e.target.value) || 2000})}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                  min={1800}
+                  max={new Date().getFullYear()}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Renditekennzahlen */}
