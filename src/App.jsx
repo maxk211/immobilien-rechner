@@ -3820,6 +3820,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     hausgeld: immobilie.hausgeld ?? 0,
     strom: immobilie.strom ?? 0,
     internet: immobilie.internet ?? 0,
+    // Vermietungsmodell
+    vermietungsmodell: immobilie.vermietungsmodell || 'kaltmiete',
+    nebenkostenVomMieter: immobilie.nebenkostenVomMieter ?? 0,
     wertsteigerung: immobilie.wertsteigerung ?? 2.0,
     mietsteigerung: immobilie.mietsteigerung ?? 1.5,
     kaufnebenkosten: immobilie.kaufnebenkosten ?? 10,
