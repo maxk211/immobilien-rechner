@@ -585,7 +585,9 @@ const berechneRendite = (params) => {
     hausgeld = 0, strom = 0, internet = 0,
     wertsteigerung, mietsteigerung, kaufnebenkosten,
     finanzierungsbetrag, kaufdatum,
-    ekFuerNebenkosten, ekFuerKaufpreis, eigenkapital
+    ekFuerNebenkosten, ekFuerKaufpreis, eigenkapital,
+    vermietungsmodell = 'kaltmiete',
+    nebenkostenVomMieter = 0
   } = params;
 
   // Kaufjahr für Chart-Darstellung
@@ -604,18 +606,26 @@ const berechneRendite = (params) => {
     ? finanzierungsbetrag
     : Math.max(0, gesamtinvestition - gesamtEK);
 
+  // Einnahmen basierend auf Vermietungsmodell:
+  // - kaltmiete: Nur Kaltmiete (NK werden via Abrechnung umgelegt, kein direkter Cashflow)
+  // - kaltmiete_nk: Kaltmiete + NK-Vorauszahlung vom Mieter
+  // - warmmiete: Warmmiete (alles inkl., Vermieter zahlt alle Betriebskosten)
   const jahresmieteKalt = kaltmiete * 12;
-  const jahresnebenkosten = nebenkosten * 12; // Wird vom Mieter getragen, nicht in Nettorendite
+  const jahresNKVomMieter = vermietungsmodell === 'kaltmiete_nk' ? (nebenkostenVomMieter || 0) * 12 : 0;
+  const jahresEinnahmen = jahresmieteKalt + jahresNKVomMieter;
+
   const jahresinstandhaltung = instandhaltung * 12;
   const jahresverwaltung = verwaltung * 12;
-  // Zusätzliche Kosten (z.B. bei möblierter Vermietung)
   const jahresHausgeld = hausgeld * 12;
   const jahresStrom = strom * 12;
   const jahresInternet = internet * 12;
 
+  // Bruttorendite auf Basis der Mieteinnahmen (ohne NK-Vorauszahlung da Durchlaufposten bei kaltmiete_nk)
   const bruttorendite = (jahresmieteKalt / kaufpreis) * 100;
-  // Nettorendite: Alle vom Vermieter getragenen Kosten abziehen (Nebenkosten trägt der Mieter)
-  const nettoEinnahmen = jahresmieteKalt - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet;
+
+  // Nettorendite: Vermieter-Kosten von den Gesamteinnahmen abziehen
+  const jahresVermieterKosten = jahresinstandhaltung + jahresverwaltung + jahresHausgeld + jahresStrom + jahresInternet;
+  const nettoEinnahmen = jahresEinnahmen - jahresVermieterKosten;
   const nettorendite = (nettoEinnahmen / kaufpreis) * 100;
 
   const monatszins = zinssatz / 100 / 12;
@@ -648,7 +658,7 @@ const berechneRendite = (params) => {
       restschuld: Math.round(restschuld),
       eigenkapital: Math.round(aktuellerWert - restschuld),
       jahresmiete: Math.round(aktuelleMiete * 12),
-      cashflow: Math.round((aktuelleMiete * 12) - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet - jahresannuitaet)
+      cashflow: Math.round((aktuelleMiete * 12) + jahresNKVomMieter - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet - jahresannuitaet)
     });
 
     aktuellerWert *= (1 + wertsteigerung / 100);
@@ -695,6 +705,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     kaufpreis: 300000,
     eigenkapital: 60000,
     kaltmiete: 1000,
+    vermietungsmodell: 'kaltmiete', // 'kaltmiete', 'kaltmiete_nk', 'warmmiete'
+    nebenkostenVomMieter: 0,        // Monatliche NK-Vorauszahlung vom Mieter
     kaufdatum: '',
     // Mietimmobilie / Arbitrage spezifische Felder
     eigeneWarmmiete: 1500,        // Was man selbst zahlt (warm)
@@ -1012,7 +1024,9 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kaltmiete (€/Monat)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {formData.vermietungsmodell === 'warmmiete' ? 'Warmmiete (€/Monat)' : 'Kaltmiete (€/Monat)'}
+                    </label>
                     <input
                       type="number"
                       value={formData.kaltmiete}
@@ -1020,6 +1034,51 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                </div>
+
+                {/* Vermietungsmodell */}
+                <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                  <label className="block text-sm font-semibold text-blue-800 mb-2">🏠 Vermietungsmodell</label>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {[
+                      { value: 'kaltmiete', label: 'Kaltmiete', desc: 'Mieter zahlt nur Kaltmiete' },
+                      { value: 'kaltmiete_nk', label: 'Kaltmiete + NK', desc: 'Mieter zahlt NK-Vorauszahlung' },
+                      { value: 'warmmiete', label: 'Warmmiete', desc: 'Inklusivmiete, alles drin' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleChange('vermietungsmodell', opt.value)}
+                        className={`p-2 rounded-lg border-2 text-xs transition-all text-left ${
+                          formData.vermietungsmodell === opt.value
+                            ? 'border-blue-500 bg-white text-blue-700 font-semibold'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="font-semibold mb-0.5">{opt.label}</div>
+                        <div className="text-gray-400">{opt.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {formData.vermietungsmodell === 'kaltmiete' && (
+                    <p className="text-xs text-blue-600">📋 Betriebskosten werden via Nebenkostenabrechnung auf Mieter umgelegt (cashflow-neutral)</p>
+                  )}
+                  {formData.vermietungsmodell === 'kaltmiete_nk' && (
+                    <div>
+                      <p className="text-xs text-blue-600 mb-2">📋 Mieter zahlt NK-Vorauszahlung direkt an dich</p>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">NK-Vorauszahlung vom Mieter (€/Monat)</label>
+                      <input
+                        type="number"
+                        value={formData.nebenkostenVomMieter || 0}
+                        onChange={(e) => handleChange('nebenkostenVomMieter', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="z.B. 200"
+                      />
+                    </div>
+                  )}
+                  {formData.vermietungsmodell === 'warmmiete' && (
+                    <p className="text-xs text-blue-600">📋 Vermieter trägt alle Betriebskosten (Hausgeld, Strom etc.) aus der Warmmiete</p>
+                  )}
                 </div>
               </div>
             )}
@@ -1208,6 +1267,7 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   // Kaufimmobilie Cashflow berechnen
   const kaufCashflow = !isMietimmobilie ? (() => {
     const kaltmiete = immobilie.kaltmiete || 0;
+    const nkVomMieter = (immobilie.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immobilie.nebenkostenVomMieter || 0) : 0;
     const zinssatz = immobilie.zinssatz ?? 4.0;
     const tilgung = immobilie.tilgung ?? 2.0;
     const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
@@ -1216,8 +1276,8 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
     const gesamtEK = (immobilie.ekFuerNebenkosten || 0) + (immobilie.ekFuerKaufpreis || 0) || (immobilie.eigenkapital || 0);
     const kreditbetrag = immobilie.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
     const monatlicheRate = kreditbetrag > 0 ? (kreditbetrag * ((zinssatz + tilgung) / 100)) / 12 : 0;
-    const betriebskosten = (immobilie.nebenkosten || 0) + (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0);
-    return kaltmiete - monatlicheRate - betriebskosten;
+    const betriebskosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0);
+    return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten;
   })() : 0;
 
   return (
@@ -1234,6 +1294,11 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
           {isMietimmobilie && (
             <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
               Arbitrage-Modell
+            </span>
+          )}
+          {!isMietimmobilie && immobilie.vermietungsmodell && immobilie.vermietungsmodell !== 'kaltmiete' && (
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+              {immobilie.vermietungsmodell === 'kaltmiete_nk' ? 'Kaltmiete + NK' : 'Warmmiete'}
             </span>
           )}
         </div>
@@ -1403,7 +1468,8 @@ const PortfolioOverview = ({ portfolio }) => {
         anzahlKaufimmobilien++;
         gesamtKaufpreis += immo.kaufpreis || 0;
         gesamtWert += immo.geschaetzterWert || immo.kaufpreis || 0;
-        gesamtMiete += (immo.kaltmiete || 0) * 12;
+        const nkMieterJahr = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) * 12 : 0;
+        gesamtMiete += ((immo.kaltmiete || 0) + (nkMieterJahr / 12)) * 12;
 
         // Cashflow-Berechnung pro Kaufimmobilie
         const zinssatz = immo.zinssatz ?? 4.0;
@@ -1435,8 +1501,11 @@ const PortfolioOverview = ({ portfolio }) => {
         // Monatliche Kosten (inkl. zusätzliche Kosten bei möblierter Vermietung)
         const monatlicheKosten = instandhaltung + verwaltung + hausgeld + strom + internet;
 
+        // NK-Vorauszahlung vom Mieter (nur bei Modell kaltmiete_nk)
+        const nkVomMieter = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) : 0;
+
         // Monatlicher Cashflow
-        const monatsCashflow = (immo.kaltmiete || 0) - monatlicheRate - monatlicheKosten;
+        const monatsCashflow = (immo.kaltmiete || 0) + nkVomMieter - monatlicheRate - monatlicheKosten;
 
         gesamtCashflow += monatsCashflow * 12;
         gesamtKreditrate += monatlicheRate * 12;
@@ -1782,17 +1851,59 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
 
       {modus === 'automatisch' ? (
         <div>
+          {/* Vermietungsmodell Selector */}
+          <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+            <p className="text-xs font-semibold text-blue-800 mb-2">🏠 Vermietungsmodell</p>
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
+              {[
+                { value: 'kaltmiete', label: 'Kaltmiete', desc: 'NK via Abrechnung' },
+                { value: 'kaltmiete_nk', label: 'Kaltmiete + NK', desc: 'Mieter zahlt Vorauszahlung' },
+                { value: 'warmmiete', label: 'Warmmiete', desc: 'Inklusivmiete' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateParams({ ...params, vermietungsmodell: opt.value })}
+                  className={`p-1.5 rounded-lg border-2 text-xs transition-all text-left ${
+                    (params.vermietungsmodell || 'kaltmiete') === opt.value
+                      ? 'border-blue-500 bg-white text-blue-700 font-semibold'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold">{opt.label}</div>
+                  <div className="text-gray-400 text-[10px]">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+            {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete' && (
+              <p className="text-[10px] text-blue-600">Betriebskosten werden via Nebenkostenabrechnung auf Mieter umgelegt</p>
+            )}
+            {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' && (
+              <div className="mt-1">
+                <p className="text-[10px] text-blue-600 mb-1">Mieter zahlt NK-Vorauszahlung direkt an dich</p>
+                <InputSliderCombo label="NK-Vorauszahlung vom Mieter" value={params.nebenkostenVomMieter || 0} onChange={(v) => updateParams({...params, nebenkostenVomMieter: v})} min={0} max={600} step={10} unit="€" info="Monatliche Nebenkostenvorauszahlung vom Mieter (erhöht deine Einnahmen)" />
+              </div>
+            )}
+            {(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' && (
+              <p className="text-[10px] text-blue-600">Vermieter zahlt alle Betriebskosten aus der Warmmiete</p>
+            )}
+          </div>
+
           <p className="text-xs text-gray-500 mb-3">Basiswerte mit jährlicher Steigerung</p>
-          <InputSliderCombo label="Kaltmiete (Basis)" value={params.kaltmiete} onChange={(v) => updateParams({...params, kaltmiete: v})} min={200} max={5000} step={50} unit="€" />
+          <InputSliderCombo
+            label={(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete (Basis)' : 'Kaltmiete (Basis)'}
+            value={params.kaltmiete}
+            onChange={(v) => updateParams({...params, kaltmiete: v})}
+            min={200} max={5000} step={50} unit="€"
+          />
           <InputSliderCombo label="Mietsteigerung p.a." value={params.mietsteigerung} onChange={(v) => updateParams({...params, mietsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
           <div className="border-t pt-3 mt-3">
-            <InputSliderCombo label="Nebenkosten" value={params.nebenkosten} onChange={(v) => updateParams({...params, nebenkosten: v})} min={0} max={500} step={10} unit="€" />
+            <p className="text-xs text-gray-500 mb-2">🧾 Vermieter-Kosten (monatlich)</p>
             <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => updateParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
             <InputSliderCombo label="Verwaltung" value={params.verwaltung} onChange={(v) => updateParams({...params, verwaltung: v})} min={0} max={200} step={5} unit="€" />
           </div>
-          {/* Zusätzliche Kosten bei möblierter Vermietung */}
           <div className="border-t pt-3 mt-3">
-            <p className="text-xs text-gray-500 mb-2">📦 Zusätzliche Kosten (z.B. möblierte Vermietung)</p>
+            <p className="text-xs text-gray-500 mb-2">🏢 WEG & Betriebskosten (vom Vermieter getragen)</p>
             <InputSliderCombo label="WEG / Hausgeld" value={params.hausgeld} onChange={(v) => updateParams({...params, hausgeld: v})} min={0} max={500} step={10} unit="€" info="Monatliches Hausgeld an die WEG" />
             <InputSliderCombo label="Strom" value={params.strom} onChange={(v) => updateParams({...params, strom: v})} min={0} max={300} step={5} unit="€" info="Stromkosten (wenn vom Vermieter getragen)" />
             <InputSliderCombo label="Internet" value={params.internet} onChange={(v) => updateParams({...params, internet: v})} min={0} max={100} step={5} unit="€" info="Internetkosten (wenn vom Vermieter getragen)" />
@@ -1800,6 +1911,31 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
         </div>
       ) : (
         <div>
+          {/* Vermietungsmodell auch im manuellen Modus */}
+          <div className="mb-3 bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+            <p className="text-[10px] font-semibold text-blue-800 mb-1.5">🏠 Vermietungsmodell</p>
+            <div className="flex gap-1.5">
+              {[
+                { value: 'kaltmiete', label: 'Kaltmiete' },
+                { value: 'kaltmiete_nk', label: '+ NK' },
+                { value: 'warmmiete', label: 'Warmmiete' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateParams({ ...params, vermietungsmodell: opt.value })}
+                  className={`px-2 py-1 rounded text-[10px] border transition-all flex-1 ${
+                    (params.vermietungsmodell || 'kaltmiete') === opt.value
+                      ? 'border-blue-500 bg-white text-blue-700 font-semibold'
+                      : 'border-gray-200 bg-white text-gray-500'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex justify-between items-center mb-3">
             <p className="text-xs text-gray-500">Manuelle Eingabe pro Zeitraum</p>
             <div className="flex bg-gray-200 rounded-lg p-1">
@@ -1833,7 +1969,9 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                     <div className="text-xs font-semibold text-green-700 mb-2">📈 Einnahmen</div>
                     <div className="grid grid-cols-1 gap-2">
                       <div className="flex items-center justify-between bg-green-50 p-2 rounded">
-                        <label className="text-sm text-gray-700">Kaltmiete</label>
+                        <label className="text-sm text-gray-700">
+                          {(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete' : 'Kaltmiete'}
+                        </label>
                         <div className="flex items-center gap-1">
                           <input
                             type="number"
@@ -1844,25 +1982,27 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                           <span className="text-xs text-gray-500">€</span>
                         </div>
                       </div>
+                      {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' && (
+                        <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                          <label className="text-sm text-gray-700">NK-Vorauszahlung Mieter</label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={getWertFuerZeitraum(jahr, null, 'nebenkostenVomMieter')}
+                              onChange={(e) => setWertFuerZeitraum(jahr, null, 'nebenkostenVomMieter', e.target.value)}
+                              className="w-24 px-2 py-1 border border-green-300 rounded text-right text-sm"
+                            />
+                            <span className="text-xs text-gray-500">€</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Kosten */}
                   <div>
-                    <div className="text-xs font-semibold text-red-700 mb-2">📉 Kosten</div>
+                    <div className="text-xs font-semibold text-red-700 mb-2">📉 Kosten (Vermieter)</div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <label className="text-xs text-gray-600">Nebenkosten</label>
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            value={getWertFuerZeitraum(jahr, null, 'nebenkosten')}
-                            onChange={(e) => setWertFuerZeitraum(jahr, null, 'nebenkosten', e.target.value)}
-                            className="w-20 px-2 py-1 border rounded text-right text-sm"
-                          />
-                          <span className="text-xs text-gray-400">€</span>
-                        </div>
-                      </div>
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <label className="text-xs text-gray-600">Instandhaltung</label>
                         <div className="flex items-center gap-1">
@@ -1954,9 +2094,11 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                             </div>
 
                             {/* Einnahmen */}
-                            <div className="mb-2">
+                            <div className="mb-2 space-y-1">
                               <div className="flex items-center justify-between bg-green-50 p-2 rounded">
-                                <label className="text-sm text-green-800">💰 Kaltmiete</label>
+                                <label className="text-sm text-green-800">
+                                  💰 {(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete' : 'Kaltmiete'}
+                                </label>
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="number"
@@ -1967,19 +2109,24 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                                   <span className="text-xs text-gray-500">€</span>
                                 </div>
                               </div>
+                              {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' && (
+                                <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                                  <label className="text-sm text-green-800">💰 NK-Vorauszahlung</label>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      value={getWertFuerZeitraum(jahr, idx, 'nebenkostenVomMieter')}
+                                      onChange={(e) => setWertFuerZeitraum(jahr, idx, 'nebenkostenVomMieter', e.target.value)}
+                                      className="w-24 px-2 py-1 border border-green-300 rounded text-right text-sm"
+                                    />
+                                    <span className="text-xs text-gray-500">€</span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* Kosten Grid */}
                             <div className="grid grid-cols-3 gap-2 text-xs">
-                              <div className="bg-gray-50 p-2 rounded">
-                                <label className="text-gray-500 block mb-1">NK</label>
-                                <input
-                                  type="number"
-                                  value={getWertFuerZeitraum(jahr, idx, 'nebenkosten')}
-                                  onChange={(e) => setWertFuerZeitraum(jahr, idx, 'nebenkosten', e.target.value)}
-                                  className="w-full px-1 py-1 border rounded text-right"
-                                />
-                              </div>
                               <div className="bg-gray-50 p-2 rounded">
                                 <label className="text-gray-500 block mb-1">Inst.</label>
                                 <input
@@ -2059,7 +2206,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
       const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
 
       const jahresMiete = params.kaltmiete * 12 * mieteFaktor;
-      const jahresKosten = (params.nebenkosten + params.instandhaltung + params.verwaltung + (params.hausgeld || 0) + (params.strom || 0) + (params.internet || 0)) * 12;
+      const nkVomMieter = (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) * 12 : 0;
+      const jahresKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0) + (params.strom || 0) + (params.internet || 0)) * 12;
       const jahresKreditrate = ergebnis.monatlicheRate * 12;
 
       // Investitionen für dieses Jahr
@@ -2067,7 +2215,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
         .filter(inv => new Date(inv.datum).getFullYear() === jahr)
         .reduce((sum, inv) => sum + inv.betrag, 0);
 
-      const jahresCashflow = jahresMiete - jahresKosten - jahresKreditrate - jahresInvestitionen;
+      const jahresCashflow = jahresMiete + nkVomMieter - jahresKosten - jahresKreditrate - jahresInvestitionen;
       kumulierterCashflow += jahresCashflow;
 
       daten.push({
