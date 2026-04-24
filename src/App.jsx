@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -4048,9 +4048,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                           ]}
                           labelFormatter={(label) => `Jahr ${label}`}
                         />
-                        <Line type="monotone" dataKey="kaufpreis" stroke="#f59e0b" strokeDasharray="5 3" strokeWidth={2} dot={false} name="kaufpreis" />
                         <Area type="monotone" dataKey="wert" stroke="#2563eb" strokeWidth={2} fill="url(#gradWert)" dot={false} name="wert" connectNulls={false} />
                         <Area type="monotone" dataKey="projektion" stroke="#10b981" strokeWidth={2} strokeDasharray="5 3" fill="url(#gradProj)" dot={false} name="projektion" connectNulls={false} />
+                        <ReferenceLine y={immobilie.kaufpreis} stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" label={{ value: formatCurrency(immobilie.kaufpreis), position: 'insideTopLeft', fontSize: 9, fill: '#f59e0b' }} />
                       </AreaChart>
                     </ResponsiveContainer>
                     <div className="flex justify-between text-xs mt-2 pt-2 border-t border-green-100">
