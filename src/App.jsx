@@ -5307,9 +5307,17 @@ function App() {
       jahr = new Date().getFullYear();
     }
 
-    // Nur Kaufimmobilien für Steuer-Export (Mietimmobilien haben andere Logik)
-    const kaufimmobilien = portfolio.filter(i => i.immobilienTyp !== 'mietimmobilie');
-    const mietimmobilien = portfolio.filter(i => i.immobilienTyp === 'mietimmobilie');
+    // Nur Immobilien die im gewählten Jahr bereits erworben/angemietet waren
+    const kaufimmobilien = portfolio.filter(i => {
+      if (i.immobilienTyp === 'mietimmobilie') return false;
+      if (!i.kaufdatum) return true; // kein Datum → immer anzeigen
+      return new Date(i.kaufdatum).getFullYear() <= jahr;
+    });
+    const mietimmobilien = portfolio.filter(i => {
+      if (i.immobilienTyp !== 'mietimmobilie') return false;
+      if (!i.mietvertragStart) return true; // kein Datum → immer anzeigen
+      return new Date(i.mietvertragStart).getFullYear() <= jahr;
+    });
 
     // Excel Workbook erstellen
     const wb = XLSX.utils.book_new();
