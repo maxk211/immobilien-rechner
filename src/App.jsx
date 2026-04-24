@@ -4024,7 +4024,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                     <div className="flex gap-3 text-[10px] text-gray-400 mb-1">
                       <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-blue-500"></span>Historisch</span>
                       <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-green-400"></span>Projektion ({params.wertsteigerung ?? 2}% p.a.)</span>
-                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-gray-400"></span>Kaufpreis</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-amber-400"></span>Kaufpreis</span>
                     </div>
                     <ResponsiveContainer width="100%" height={160}>
                       <AreaChart data={wertentwicklungDaten} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -4048,7 +4048,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                           ]}
                           labelFormatter={(label) => `Jahr ${label}`}
                         />
-                        <Line type="monotone" dataKey="kaufpreis" stroke="#9ca3af" strokeDasharray="4 4" strokeWidth={1} dot={false} name="kaufpreis" />
+                        <Line type="monotone" dataKey="kaufpreis" stroke="#f59e0b" strokeDasharray="5 3" strokeWidth={2} dot={false} name="kaufpreis" />
                         <Area type="monotone" dataKey="wert" stroke="#2563eb" strokeWidth={2} fill="url(#gradWert)" dot={false} name="wert" connectNulls={false} />
                         <Area type="monotone" dataKey="projektion" stroke="#10b981" strokeWidth={2} strokeDasharray="5 3" fill="url(#gradProj)" dot={false} name="projektion" connectNulls={false} />
                       </AreaChart>
