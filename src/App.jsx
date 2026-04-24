@@ -5395,6 +5395,18 @@ function App() {
       return new Date(i.mietvertragStart).getFullYear() <= jahr;
     });
 
+    // Pro-rata Faktor: Anteil der Monate im Steuerjahr seit Kauf/Anmietung
+    const berechneMonatsFaktor = (datum, exportJahr) => {
+      if (!datum) return 1;
+      const d = new Date(datum);
+      const datumJahr = d.getFullYear();
+      if (datumJahr > exportJahr) return 0;
+      if (datumJahr < exportJahr) return 1;
+      // Gleiches Jahr: ab Kaufmonat bis Jahresende
+      const monate = 12 - d.getMonth(); // getMonth() 0-basiert → Dez = 11 → 1 Monat
+      return monate / 12;
+    };
+
     // Excel Workbook erstellen
     const wb = XLSX.utils.book_new();
 
@@ -5413,43 +5425,44 @@ function App() {
 
     // Berechne Summen
     kaufimmobilien.forEach(immo => {
-      const kaltmiete = (immo.kaltmiete || 0) * 12;
+      const faktor = berechneMonatsFaktor(immo.kaufdatum, jahr);
+      const kaufpreis = immo.kaufpreis || 0;
+
+      const kaltmiete = (immo.kaltmiete || 0) * 12 * faktor;
       gesamtEinnahmen += kaltmiete;
 
-      // AfA berechnen
-      const kaufpreis = immo.kaufpreis || 0;
+      // AfA berechnen (pro-rata ab Kaufmonat)
       const gebaeudeAnteil = (immo.gebaeudeAnteilProzent || 80) / 100;
       const afaSatz = (immo.afaSatz || 2) / 100;
-      const afaBasis = kaufpreis * gebaeudeAnteil;
-      const afaJahr = afaBasis * afaSatz;
+      const afaJahr = kaufpreis * gebaeudeAnteil * afaSatz * faktor;
       gesamtWerbungskosten += afaJahr;
 
-      // Schuldzinsen berechnen
+      // Schuldzinsen berechnen (pro-rata)
       const zinssatz = immo.zinssatz || 4;
       const kaufnebenkosten = immo.kaufnebenkosten || 10;
       const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
       const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
       const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
       const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-      const schuldzinsenJahr = fremdkapital * (zinssatz / 100);
+      const schuldzinsenJahr = fremdkapital * (zinssatz / 100) * faktor;
       gesamtWerbungskosten += schuldzinsenJahr;
 
-      // Sonstige Kosten
-      const instandhaltung = (immo.instandhaltung || 0) * 12;
-      const verwaltung = (immo.verwaltung || 0) * 12;
-      const hausgeld = (immo.hausgeld || 0) * 12;
-      const strom = (immo.strom || 0) * 12;
-      const internet = (immo.internet || 0) * 12;
+      // Sonstige Kosten (pro-rata)
+      const instandhaltung = (immo.instandhaltung || 0) * 12 * faktor;
+      const verwaltung = (immo.verwaltung || 0) * 12 * faktor;
+      const hausgeld = (immo.hausgeld || 0) * 12 * faktor;
+      const strom = (immo.strom || 0) * 12 * faktor;
+      const internet = (immo.internet || 0) * 12 * faktor;
       gesamtWerbungskosten += instandhaltung + verwaltung + hausgeld + strom + internet;
 
-      // Fahrtkosten
+      // Fahrtkosten (pro-rata)
       const fahrtenProMonat = immo.fahrtenProMonat || 0;
       const entfernungKm = immo.entfernungKm || 0;
       const kmPauschale = immo.kmPauschale || 0.30;
-      const fahrtkosten = fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale;
+      const fahrtkosten = fahrtenProMonat * 12 * faktor * entfernungKm * 2 * kmPauschale;
       gesamtWerbungskosten += fahrtkosten;
 
-      // Erhaltungsaufwand aus Investitionen
+      // Erhaltungsaufwand: tatsächliche Ausgaben im Jahr (kein pro-rata nötig)
       const investitionen = immo.investitionen || [];
       const erhaltungsaufwandJahr = investitionen
         .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
@@ -5457,13 +5470,14 @@ function App() {
       gesamtWerbungskosten += erhaltungsaufwandJahr;
     });
 
-    // Arbitrage-Einkünfte
+    // Arbitrage-Einkünfte (pro-rata ab Mietbeginn)
     let arbitrageEinnahmen = 0;
     let arbitrageAusgaben = 0;
     mietimmobilien.forEach(immo => {
-      const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12;
-      const miete = (immo.eigeneWarmmiete || 0) * 12;
-      const zusatzkosten = ((immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12;
+      const faktor = berechneMonatsFaktor(immo.mietvertragStart, jahr);
+      const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12 * faktor;
+      const miete = (immo.eigeneWarmmiete || 0) * 12 * faktor;
+      const zusatzkosten = ((immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12 * faktor;
       arbitrageEinnahmen += einnahmen;
       arbitrageAusgaben += miete + zusatzkosten;
     });
@@ -5496,37 +5510,40 @@ function App() {
       const detailData = [detailHeader];
 
       kaufimmobilien.forEach(immo => {
-        const kaltmieteJahr = (immo.kaltmiete || 0) * 12;
-
-        // AfA
+        const faktor = berechneMonatsFaktor(immo.kaufdatum, jahr);
+        const monate = Math.round(faktor * 12);
         const kaufpreis = immo.kaufpreis || 0;
+
+        const kaltmieteJahr = (immo.kaltmiete || 0) * 12 * faktor;
+
+        // AfA (pro-rata ab Kaufmonat)
         const gebaeudeAnteil = (immo.gebaeudeAnteilProzent || 80) / 100;
         const afaSatz = (immo.afaSatz || 2) / 100;
-        const afaJahr = kaufpreis * gebaeudeAnteil * afaSatz;
+        const afaJahr = kaufpreis * gebaeudeAnteil * afaSatz * faktor;
 
-        // Schuldzinsen
+        // Schuldzinsen (pro-rata)
         const zinssatz = immo.zinssatz || 4;
         const kaufnebenkosten = immo.kaufnebenkosten || 10;
         const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
         const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
         const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
         const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-        const schuldzinsenJahr = fremdkapital * (zinssatz / 100);
+        const schuldzinsenJahr = fremdkapital * (zinssatz / 100) * faktor;
 
-        // Kosten
-        const instandhaltung = (immo.instandhaltung || 0) * 12;
-        const verwaltung = (immo.verwaltung || 0) * 12;
-        const hausgeld = (immo.hausgeld || 0) * 12;
-        const strom = (immo.strom || 0) * 12;
-        const internet = (immo.internet || 0) * 12;
+        // Kosten (pro-rata)
+        const instandhaltung = (immo.instandhaltung || 0) * 12 * faktor;
+        const verwaltung = (immo.verwaltung || 0) * 12 * faktor;
+        const hausgeld = (immo.hausgeld || 0) * 12 * faktor;
+        const strom = (immo.strom || 0) * 12 * faktor;
+        const internet = (immo.internet || 0) * 12 * faktor;
 
-        // Fahrtkosten
+        // Fahrtkosten (pro-rata)
         const fahrtenProMonat = immo.fahrtenProMonat || 0;
         const entfernungKm = immo.entfernungKm || 0;
         const kmPauschale = immo.kmPauschale || 0.30;
-        const fahrtkosten = fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale;
+        const fahrtkosten = fahrtenProMonat * 12 * faktor * entfernungKm * 2 * kmPauschale;
 
-        // Erhaltungsaufwand
+        // Erhaltungsaufwand: tatsächliche Ausgaben (kein pro-rata)
         const investitionen = immo.investitionen || [];
         const erhaltungsaufwand = investitionen
           .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
@@ -5539,9 +5556,9 @@ function App() {
           immo.name || 'Unbenannt',
           `${immo.plz || ''} ${immo.adresse || ''}`,
           kaufpreis.toFixed(2),
-          kaltmieteJahr.toFixed(2),
-          afaJahr.toFixed(2),
-          schuldzinsenJahr.toFixed(2),
+          kaltmieteJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
+          afaJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
+          schuldzinsenJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
           instandhaltung.toFixed(2),
           verwaltung.toFixed(2),
           hausgeld.toFixed(2),
