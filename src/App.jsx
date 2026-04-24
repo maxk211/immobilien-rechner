@@ -5431,12 +5431,6 @@ function App() {
       const kaltmiete = (immo.kaltmiete || 0) * 12 * faktor;
       gesamtEinnahmen += kaltmiete;
 
-      // AfA berechnen (pro-rata ab Kaufmonat)
-      const gebaeudeAnteil = (immo.gebaeudeAnteilProzent || 80) / 100;
-      const afaSatz = (immo.afaSatz || 2) / 100;
-      const afaJahr = kaufpreis * gebaeudeAnteil * afaSatz * faktor;
-      gesamtWerbungskosten += afaJahr;
-
       // Schuldzinsen berechnen (pro-rata)
       const zinssatz = immo.zinssatz || 4;
       const kaufnebenkosten = immo.kaufnebenkosten || 10;
@@ -5486,7 +5480,7 @@ function App() {
 
     uebersichtData.push(
       ['Mieteinnahmen (Kaufimmobilien)', gesamtEinnahmen.toFixed(2), 'Kaltmiete × 12 Monate'],
-      ['Werbungskosten', (-gesamtWerbungskosten).toFixed(2), 'AfA, Zinsen, Kosten'],
+      ['Werbungskosten', (-gesamtWerbungskosten).toFixed(2), 'Zinsen, Kosten (AfA durch Steuerberater)'],
       [''],
       ['Arbitrage-Einnahmen', arbitrageEinnahmen.toFixed(2), 'Untervermietung'],
       ['Arbitrage-Ausgaben', (-arbitrageAusgaben).toFixed(2), 'Miete + Nebenkosten'],
@@ -5502,9 +5496,10 @@ function App() {
     if (kaufimmobilien.length > 0) {
       const detailHeader = [
         'Immobilie', 'Adresse', 'Kaufpreis €', 'Kaltmiete/Jahr €',
-        'AfA €', 'Schuldzinsen €', 'Instandhaltung €', 'Verwaltung €',
+        'Schuldzinsen €', 'Instandhaltung €', 'Verwaltung €',
         'Hausgeld €', 'Strom €', 'Internet €', 'Fahrtkosten €',
-        'Erhaltungsaufwand €', 'Summe Werbungskosten €', 'Ergebnis €'
+        'Erhaltungsaufwand €', 'Summe Werbungskosten €', 'Ergebnis €',
+        'Hinweis'
       ];
 
       const detailData = [detailHeader];
@@ -5515,11 +5510,6 @@ function App() {
         const kaufpreis = immo.kaufpreis || 0;
 
         const kaltmieteJahr = (immo.kaltmiete || 0) * 12 * faktor;
-
-        // AfA (pro-rata ab Kaufmonat)
-        const gebaeudeAnteil = (immo.gebaeudeAnteilProzent || 80) / 100;
-        const afaSatz = (immo.afaSatz || 2) / 100;
-        const afaJahr = kaufpreis * gebaeudeAnteil * afaSatz * faktor;
 
         // Schuldzinsen (pro-rata)
         const zinssatz = immo.zinssatz || 4;
@@ -5549,15 +5539,14 @@ function App() {
           .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
           .reduce((sum, inv) => sum + inv.betrag, 0);
 
-        const summeWerbungskosten = afaJahr + schuldzinsenJahr + instandhaltung + verwaltung + hausgeld + strom + internet + fahrtkosten + erhaltungsaufwand;
-        const ergebnis = kaltmieteJahr - summeWerbungskosten;
+        const summeWerbungskosten = schuldzinsenJahr + instandhaltung + verwaltung + hausgeld + strom + internet + fahrtkosten + erhaltungsaufwand;
+        const ergebnisVorAfa = kaltmieteJahr - summeWerbungskosten;
 
         detailData.push([
           immo.name || 'Unbenannt',
           `${immo.plz || ''} ${immo.adresse || ''}`,
           kaufpreis.toFixed(2),
           kaltmieteJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
-          afaJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
           schuldzinsenJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
           instandhaltung.toFixed(2),
           verwaltung.toFixed(2),
@@ -5567,7 +5556,8 @@ function App() {
           fahrtkosten.toFixed(2),
           erhaltungsaufwand.toFixed(2),
           summeWerbungskosten.toFixed(2),
-          ergebnis.toFixed(2)
+          ergebnisVorAfa.toFixed(2),
+          'AfA wird durch Steuerberater berechnet'
         ]);
       });
 
@@ -5575,6 +5565,7 @@ function App() {
       wsDetail['!cols'] = Array(15).fill({ wch: 14 });
       wsDetail['!cols'][0] = { wch: 20 };
       wsDetail['!cols'][1] = { wch: 25 };
+      wsDetail['!cols'][14] = { wch: 35 };
       XLSX.utils.book_append_sheet(wb, wsDetail, 'Kaufimmobilien');
     }
 
@@ -5685,7 +5676,7 @@ function App() {
       head: [['Position', 'Betrag', 'Hinweis']],
       body: [
         ['Mieteinnahmen (Kaufimmobilien)', formatCurrency(gesamtEinnahmen), 'Kaltmiete × 12 Monate'],
-        ['Werbungskosten', formatCurrency(-gesamtWerbungskosten), 'AfA, Zinsen, Kosten'],
+        ['Werbungskosten', formatCurrency(-gesamtWerbungskosten), 'Zinsen, Kosten (AfA durch Steuerberater)'],
         ['Arbitrage-Einnahmen', formatCurrency(arbitrageEinnahmen), 'Untervermietung'],
         ['Arbitrage-Ausgaben', formatCurrency(-arbitrageAusgaben), 'Miete + Nebenkosten'],
         ['', '', ''],
