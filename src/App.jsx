@@ -3535,7 +3535,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
     mietvertragStart: immobilie.mietvertragStart || '',
     name: immobilie.name || '',
     plz: immobilie.plz || '',
-    adresse: immobilie.adresse || ''
+    adresse: immobilie.adresse || '',
+    // Mietanpassungen: [{datum, eigeneWarmmiete?, untermieteProZimmer?}]
+    mietAnpassungen: immobilie.mietAnpassungen || []
   });
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -3800,6 +3802,94 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
                   <p className="text-xs text-gray-500 mt-2">
                     Summe: <strong>{formatCurrency(zusatzkosten)}</strong>/Monat · <strong>{formatCurrency(zusatzkosten * 12)}</strong>/Jahr
                   </p>
+                </div>
+
+                {/* Mietanpassungen */}
+                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm font-medium text-yellow-800">📅 Mietanpassungen</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const neu = { datum: new Date().toISOString().split('T')[0], eigeneWarmmiete: params.eigeneWarmmiete, untermieteProZimmer: params.untermieteProZimmer };
+                        updateParams({ mietAnpassungen: [...(params.mietAnpassungen || []), neu] });
+                      }}
+                      className="text-xs bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-2 py-1 rounded"
+                    >
+                      + Anpassung
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-yellow-700 mb-2">Trage Änderungen an deiner Miete oder Untermiete mit Datum ein – wird für den korrekten Steuerexport verwendet.</p>
+                  {(params.mietAnpassungen || []).length === 0 ? (
+                    <p className="text-[10px] text-gray-400 italic bg-white p-2 rounded border border-yellow-100">Keine Anpassungen → aktuelle Werte gelten durchgehend</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(params.mietAnpassungen || [])
+                        .map((anp, originalIdx) => ({ ...anp, originalIdx }))
+                        .sort((a, b) => new Date(a.datum) - new Date(b.datum))
+                        .map((anp) => (
+                          <div key={anp.originalIdx} className="bg-white rounded border border-yellow-200 p-2">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="text-[10px] text-gray-500 w-10 shrink-0">Datum</span>
+                              <input
+                                type="date"
+                                value={anp.datum}
+                                onChange={(e) => {
+                                  const neu = [...(params.mietAnpassungen || [])];
+                                  neu[anp.originalIdx] = { ...neu[anp.originalIdx], datum: e.target.value };
+                                  updateParams({ mietAnpassungen: neu });
+                                }}
+                                className="text-xs border border-gray-300 rounded px-1 py-0.5 flex-1"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const neu = (params.mietAnpassungen || []).filter((_, i) => i !== anp.originalIdx);
+                                  updateParams({ mietAnpassungen: neu });
+                                }}
+                                className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-red-600 shrink-0">Warmmiete</span>
+                                <input
+                                  type="number"
+                                  value={anp.eigeneWarmmiete ?? ''}
+                                  placeholder="—"
+                                  onChange={(e) => {
+                                    const neu = [...(params.mietAnpassungen || [])];
+                                    const val = e.target.value === '' ? undefined : parseFloat(e.target.value) || 0;
+                                    neu[anp.originalIdx] = { ...neu[anp.originalIdx], eigeneWarmmiete: val };
+                                    updateParams({ mietAnpassungen: neu });
+                                  }}
+                                  className="w-full text-xs border border-red-200 rounded px-1 py-0.5 text-right"
+                                />
+                                <span className="text-[10px] text-gray-400">€</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-green-600 shrink-0">Untermiete</span>
+                                <input
+                                  type="number"
+                                  value={anp.untermieteProZimmer ?? ''}
+                                  placeholder="—"
+                                  onChange={(e) => {
+                                    const neu = [...(params.mietAnpassungen || [])];
+                                    const val = e.target.value === '' ? undefined : parseFloat(e.target.value) || 0;
+                                    neu[anp.originalIdx] = { ...neu[anp.originalIdx], untermieteProZimmer: val };
+                                    updateParams({ mietAnpassungen: neu });
+                                  }}
+                                  className="w-full text-xs border border-green-200 rounded px-1 py-0.5 text-right"
+                                />
+                                <span className="text-[10px] text-gray-400">€</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -5529,6 +5619,56 @@ function App() {
       return (endMonat - startMonat + 1) / 12;
     };
 
+    // Jahres-Arbitrage berechnen unter Berücksichtigung von Mietanpassungen (Mietimmobilien)
+    const berechneJahresArbitrage = (immo, exportJahr) => {
+      const startDatum = immo.mietvertragStart || null;
+      const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
+
+      let startMonat = 0;
+      let endMonat = 11;
+
+      if (startDatum) {
+        const d = new Date(startDatum);
+        if (d.getFullYear() > exportJahr) return { einnahmen: 0, eigeneWarmmiete: 0, faktor: 0 };
+        if (d.getFullYear() === exportJahr) startMonat = d.getMonth();
+      }
+      if (endDatum) {
+        const d = new Date(endDatum);
+        if (d.getFullYear() < exportJahr) return { einnahmen: 0, eigeneWarmmiete: 0, faktor: 0 };
+        if (d.getFullYear() === exportJahr) endMonat = d.getMonth();
+      }
+
+      const monate = endMonat - startMonat + 1;
+      const faktor = monate / 12;
+      const anpassungen = immo.mietAnpassungen || [];
+
+      if (anpassungen.length === 0) {
+        return {
+          einnahmen: (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * monate,
+          eigeneWarmmiete: (immo.eigeneWarmmiete || 0) * monate,
+          faktor
+        };
+      }
+
+      const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+      let gesamtEinnahmen = 0;
+      let gesamtWarmmiete = 0;
+
+      for (let m = startMonat; m <= endMonat; m++) {
+        const monatDatum = new Date(exportJahr, m, 15);
+        let gueltige = null;
+        for (const a of sorted) {
+          if (new Date(a.datum) <= monatDatum) gueltige = a;
+        }
+        const untermiete = gueltige?.untermieteProZimmer ?? (immo.untermieteProZimmer || 0);
+        const warmmiete = gueltige?.eigeneWarmmiete ?? (immo.eigeneWarmmiete || 0);
+        gesamtEinnahmen += (immo.anzahlZimmerVermietet || 0) * untermiete;
+        gesamtWarmmiete += warmmiete;
+      }
+
+      return { einnahmen: gesamtEinnahmen, eigeneWarmmiete: gesamtWarmmiete, faktor };
+    };
+
     // Jahresmiete berechnen unter Berücksichtigung von Mietanpassungen + Eigentumsdauer
     const berechneJahresmiete = (immo, exportJahr) => {
       const startDatum = immo.kaufdatum || null;
@@ -5630,13 +5770,10 @@ function App() {
     let arbitrageEinnahmen = 0;
     let arbitrageAusgaben = 0;
     mietimmobilien.forEach(immo => {
-      const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
-      const faktor = berechneFaktorFuerImmo(immo.mietvertragStart, endDatum, jahr);
-      const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12 * faktor;
-      const miete = (immo.eigeneWarmmiete || 0) * 12 * faktor;
-      const zusatzkosten = ((immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12 * faktor;
-      arbitrageEinnahmen += einnahmen;
-      arbitrageAusgaben += miete + zusatzkosten;
+      const arb = berechneJahresArbitrage(immo, jahr);
+      const zusatzkosten = ((immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12 * arb.faktor;
+      arbitrageEinnahmen += arb.einnahmen;
+      arbitrageAusgaben += arb.eigeneWarmmiete + zusatzkosten;
     });
 
     const steuerlichesErgebnis = gesamtEinnahmen - gesamtWerbungskosten + (arbitrageEinnahmen - arbitrageAusgaben);
@@ -5744,13 +5881,12 @@ function App() {
       const arbitrageData = [arbitrageHeader];
 
       mietimmobilien.forEach(immo => {
-        const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
-        const faktorM = berechneFaktorFuerImmo(immo.mietvertragStart, endDatum, jahr);
-        const eigeneMiete = (immo.eigeneWarmmiete || 0) * 12 * faktorM;
-        const strom = (immo.arbitrageStrom || 0) * 12 * faktorM;
-        const internet = (immo.arbitrageInternet || 0) * 12 * faktorM;
-        const gez = (immo.arbitrageGEZ || 0) * 12 * faktorM;
-        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12 * faktorM;
+        const arb = berechneJahresArbitrage(immo, jahr);
+        const strom = (immo.arbitrageStrom || 0) * 12 * arb.faktor;
+        const internet = (immo.arbitrageInternet || 0) * 12 * arb.faktor;
+        const gez = (immo.arbitrageGEZ || 0) * 12 * arb.faktor;
+        const einnahmen = arb.einnahmen;
+        const eigeneMiete = arb.eigeneWarmmiete;
         const gewinn = einnahmen - eigeneMiete - strom - internet - gez;
 
         arbitrageData.push([
