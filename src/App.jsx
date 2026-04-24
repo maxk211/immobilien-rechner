@@ -716,7 +716,10 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     arbitrageStrom: 0,            // Stromkosten monatlich
     arbitrageInternet: 0,         // Internetkosten monatlich
     arbitrageGEZ: 18.36,          // GEZ/Rundfunkbeitrag monatlich (Standard: 18,36€)
-    mietvertragStart: ''          // Startdatum des Mietvertrags
+    mietvertragStart: '',         // Startdatum des Mietvertrags
+    aktiv: true,                  // Immobilie aktiv oder aufgegeben
+    aufgabedatum: '',             // Datum der Aufgabe/Verkauf
+    mietAnpassungen: []           // [{datum, kaltmiete}] Miethistorie mit Datum
   });
 
   const schaetzung = useMemo(() => schaetzeImmobilienwert(formData), [formData]);
@@ -1897,6 +1900,69 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             min={200} max={5000} step={50} unit="€"
           />
           <InputSliderCombo label="Mietsteigerung p.a." value={params.mietsteigerung} onChange={(v) => updateParams({...params, mietsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
+
+          {/* Mietanpassungen / Miethistorie */}
+          <div className="border-t pt-3 mt-3">
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-xs font-semibold text-gray-600">📅 Mietanpassungen</p>
+              <button
+                type="button"
+                onClick={() => {
+                  const neueAnpassung = { datum: new Date().toISOString().split('T')[0], kaltmiete: params.kaltmiete || 0 };
+                  updateParams({ ...params, mietAnpassungen: [...(params.mietAnpassungen || []), neueAnpassung] });
+                }}
+                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
+              >
+                + Anpassung
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mb-2">Trage Mietänderungen mit Datum ein – wird für den korrekten Steuerexport verwendet.</p>
+            {(params.mietAnpassungen || []).length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic bg-gray-100 p-2 rounded">Keine Anpassungen → Kaltmiete (Basis) gilt durchgehend</p>
+            ) : (
+              <div className="space-y-1.5">
+                {(params.mietAnpassungen || [])
+                  .map((anp, originalIdx) => ({ ...anp, originalIdx }))
+                  .sort((a, b) => new Date(a.datum) - new Date(b.datum))
+                  .map((anp) => (
+                    <div key={anp.originalIdx} className="flex items-center gap-2 bg-white border border-gray-200 rounded p-1.5">
+                      <input
+                        type="date"
+                        value={anp.datum}
+                        onChange={(e) => {
+                          const neu = [...(params.mietAnpassungen || [])];
+                          neu[anp.originalIdx] = { ...neu[anp.originalIdx], datum: e.target.value };
+                          updateParams({ ...params, mietAnpassungen: neu });
+                        }}
+                        className="text-xs border border-gray-300 rounded px-1 py-0.5 flex-1 min-w-0"
+                      />
+                      <input
+                        type="number"
+                        value={anp.kaltmiete}
+                        onChange={(e) => {
+                          const neu = [...(params.mietAnpassungen || [])];
+                          neu[anp.originalIdx] = { ...neu[anp.originalIdx], kaltmiete: parseFloat(e.target.value) || 0 };
+                          updateParams({ ...params, mietAnpassungen: neu });
+                        }}
+                        className="w-20 text-xs border border-gray-300 rounded px-1 py-0.5 text-right"
+                      />
+                      <span className="text-[10px] text-gray-400 whitespace-nowrap">€/Mon</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const neu = (params.mietAnpassungen || []).filter((_, i) => i !== anp.originalIdx);
+                          updateParams({ ...params, mietAnpassungen: neu });
+                        }}
+                        className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+
           <div className="border-t pt-3 mt-3">
             <p className="text-xs text-gray-500 mb-2">🧾 Vermieter-Kosten (monatlich)</p>
             <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => updateParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
@@ -3855,7 +3921,10 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     entfernungKm: immobilie.entfernungKm || 0,
     kmPauschale: immobilie.kmPauschale || 0.30,
     fahrtenListe: immobilie.fahrtenListe || [],
-    investitionen: immobilie.investitionen || []
+    investitionen: immobilie.investitionen || [],
+    aktiv: immobilie.aktiv !== false,
+    aufgabedatum: immobilie.aufgabedatum || '',
+    mietAnpassungen: immobilie.mietAnpassungen || []
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -3942,10 +4011,51 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
         <div className="sticky top-0 bg-white p-6 border-b border-gray-200 z-10">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">{immobilie.name}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-800">{immobilie.name}</h2>
+                {params.aktiv === false && (
+                  <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full font-medium">
+                    Aufgegeben {params.aufgabedatum ? `(${new Date(params.aufgabedatum).toLocaleDateString('de-DE')})` : ''}
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600">{immobilie.plz} {immobilie.adresse}</p>
             </div>
             <div className="flex items-center gap-3">
+              {params.aktiv === false ? (
+                <button
+                  onClick={() => { updateParams({...params, aktiv: true, aufgabedatum: ''}); }}
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-semibold"
+                >
+                  ✓ Reaktivieren
+                </button>
+              ) : (
+                <details className="relative">
+                  <summary className="px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 text-sm font-semibold cursor-pointer list-none">
+                    Aufgeben / Verkaufen
+                  </summary>
+                  <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-20 w-72">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Immobilie aufgeben</p>
+                    <p className="text-xs text-gray-500 mb-3">Die Daten bleiben erhalten und können weiterhin für den Steuerexport genutzt werden.</p>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Datum der Aufgabe / Verkauf</label>
+                    <input
+                      type="date"
+                      defaultValue={new Date().toISOString().split('T')[0]}
+                      id="aufgabedatum-input"
+                      className="w-full px-2 py-1.5 border rounded-lg text-sm mb-3"
+                    />
+                    <button
+                      onClick={() => {
+                        const datum = document.getElementById('aufgabedatum-input').value;
+                        updateParams({...params, aktiv: false, aufgabedatum: datum});
+                      }}
+                      className="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold"
+                    >
+                      Immobilie aufgeben
+                    </button>
+                  </div>
+                </details>
+              )}
               {hasChanges && (
                 <button
                   onClick={handleSave}
@@ -5383,28 +5493,79 @@ function App() {
       jahr = new Date().getFullYear();
     }
 
-    // Nur Immobilien die im gewählten Jahr bereits erworben/angemietet waren
+    // Immobilien die im gewählten Jahr aktiv waren (erworben vor/in dem Jahr und noch nicht aufgegeben vor dem Jahr)
     const kaufimmobilien = portfolio.filter(i => {
       if (i.immobilienTyp === 'mietimmobilie') return false;
-      if (!i.kaufdatum) return true; // kein Datum → immer anzeigen
-      return new Date(i.kaufdatum).getFullYear() <= jahr;
+      // Muss vor oder in dem Jahr erworben worden sein
+      if (i.kaufdatum && new Date(i.kaufdatum).getFullYear() > jahr) return false;
+      // Wenn aufgegeben: darf nicht VOR dem Exportjahr aufgegeben worden sein
+      if (i.aktiv === false && i.aufgabedatum && new Date(i.aufgabedatum).getFullYear() < jahr) return false;
+      return true;
     });
     const mietimmobilien = portfolio.filter(i => {
       if (i.immobilienTyp !== 'mietimmobilie') return false;
-      if (!i.mietvertragStart) return true; // kein Datum → immer anzeigen
-      return new Date(i.mietvertragStart).getFullYear() <= jahr;
+      if (i.mietvertragStart && new Date(i.mietvertragStart).getFullYear() > jahr) return false;
+      if (i.aktiv === false && i.aufgabedatum && new Date(i.aufgabedatum).getFullYear() < jahr) return false;
+      return true;
     });
 
-    // Pro-rata Faktor: Anteil der Monate im Steuerjahr seit Kauf/Anmietung
-    const berechneMonatsFaktor = (datum, exportJahr) => {
-      if (!datum) return 1;
-      const d = new Date(datum);
-      const datumJahr = d.getFullYear();
-      if (datumJahr > exportJahr) return 0;
-      if (datumJahr < exportJahr) return 1;
-      // Gleiches Jahr: ab Kaufmonat bis Jahresende
-      const monate = 12 - d.getMonth(); // getMonth() 0-basiert → Dez = 11 → 1 Monat
-      return monate / 12;
+    // Pro-rata Faktor: berücksichtigt Kauf- UND Aufgabedatum innerhalb des Exportjahres
+    const berechneFaktorFuerImmo = (startDatum, endDatum, exportJahr) => {
+      let startMonat = 0;  // Januaar = 0
+      let endMonat = 11;   // Dezember = 11
+
+      if (startDatum) {
+        const d = new Date(startDatum);
+        if (d.getFullYear() > exportJahr) return 0;
+        if (d.getFullYear() === exportJahr) startMonat = d.getMonth();
+      }
+
+      if (endDatum) {
+        const d = new Date(endDatum);
+        if (d.getFullYear() < exportJahr) return 0;
+        if (d.getFullYear() === exportJahr) endMonat = d.getMonth();
+      }
+
+      return (endMonat - startMonat + 1) / 12;
+    };
+
+    // Jahresmiete berechnen unter Berücksichtigung von Mietanpassungen + Eigentumsdauer
+    const berechneJahresmiete = (immo, exportJahr) => {
+      const startDatum = immo.kaufdatum || null;
+      const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
+
+      let startMonat = 0;
+      let endMonat = 11;
+
+      if (startDatum) {
+        const d = new Date(startDatum);
+        if (d.getFullYear() > exportJahr) return 0;
+        if (d.getFullYear() === exportJahr) startMonat = d.getMonth();
+      }
+      if (endDatum) {
+        const d = new Date(endDatum);
+        if (d.getFullYear() < exportJahr) return 0;
+        if (d.getFullYear() === exportJahr) endMonat = d.getMonth();
+      }
+
+      const anpassungen = immo.mietAnpassungen || [];
+      if (anpassungen.length === 0) {
+        // Keine Anpassungen: Basiskaltmiete × Anzahl Monate
+        return (immo.kaltmiete || 0) * (endMonat - startMonat + 1);
+      }
+
+      // Mit Anpassungen: pro Monat die jeweils gültige Miete ermitteln
+      const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+      let gesamtmiete = 0;
+      for (let m = startMonat; m <= endMonat; m++) {
+        const monatDatum = new Date(exportJahr, m, 15);
+        let gueltige = null;
+        for (const a of sorted) {
+          if (new Date(a.datum) <= monatDatum) gueltige = a;
+        }
+        gesamtmiete += gueltige ? gueltige.kaltmiete : (immo.kaltmiete || 0);
+      }
+      return gesamtmiete;
     };
 
     // Excel Workbook erstellen
@@ -5425,10 +5586,11 @@ function App() {
 
     // Berechne Summen
     kaufimmobilien.forEach(immo => {
-      const faktor = berechneMonatsFaktor(immo.kaufdatum, jahr);
+      const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
+      const faktor = berechneFaktorFuerImmo(immo.kaufdatum, endDatum, jahr);
       const kaufpreis = immo.kaufpreis || 0;
 
-      const kaltmiete = (immo.kaltmiete || 0) * 12 * faktor;
+      const kaltmiete = berechneJahresmiete(immo, jahr);
       gesamtEinnahmen += kaltmiete;
 
       // Schuldzinsen berechnen (pro-rata)
@@ -5468,7 +5630,8 @@ function App() {
     let arbitrageEinnahmen = 0;
     let arbitrageAusgaben = 0;
     mietimmobilien.forEach(immo => {
-      const faktor = berechneMonatsFaktor(immo.mietvertragStart, jahr);
+      const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
+      const faktor = berechneFaktorFuerImmo(immo.mietvertragStart, endDatum, jahr);
       const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12 * faktor;
       const miete = (immo.eigeneWarmmiete || 0) * 12 * faktor;
       const zusatzkosten = ((immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12 * faktor;
@@ -5505,11 +5668,12 @@ function App() {
       const detailData = [detailHeader];
 
       kaufimmobilien.forEach(immo => {
-        const faktor = berechneMonatsFaktor(immo.kaufdatum, jahr);
+        const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
+        const faktor = berechneFaktorFuerImmo(immo.kaufdatum, endDatum, jahr);
         const monate = Math.round(faktor * 12);
         const kaufpreis = immo.kaufpreis || 0;
 
-        const kaltmieteJahr = (immo.kaltmiete || 0) * 12 * faktor;
+        const kaltmieteJahr = berechneJahresmiete(immo, jahr);
 
         // Schuldzinsen (pro-rata)
         const zinssatz = immo.zinssatz || 4;
@@ -5580,11 +5744,13 @@ function App() {
       const arbitrageData = [arbitrageHeader];
 
       mietimmobilien.forEach(immo => {
-        const eigeneMiete = (immo.eigeneWarmmiete || 0) * 12;
-        const strom = (immo.arbitrageStrom || 0) * 12;
-        const internet = (immo.arbitrageInternet || 0) * 12;
-        const gez = (immo.arbitrageGEZ || 0) * 12;
-        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12;
+        const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
+        const faktorM = berechneFaktorFuerImmo(immo.mietvertragStart, endDatum, jahr);
+        const eigeneMiete = (immo.eigeneWarmmiete || 0) * 12 * faktorM;
+        const strom = (immo.arbitrageStrom || 0) * 12 * faktorM;
+        const internet = (immo.arbitrageInternet || 0) * 12 * faktorM;
+        const gez = (immo.arbitrageGEZ || 0) * 12 * faktorM;
+        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12 * faktorM;
         const gewinn = einnahmen - eigeneMiete - strom - internet - gez;
 
         arbitrageData.push([
@@ -5905,16 +6071,35 @@ function App() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {portfolio.map(immobilie => (
-              <ImmobilienKarte
-                key={immobilie.id}
-                immobilie={immobilie}
-                onClick={() => setSelectedImmobilie(immobilie)}
-                onDelete={() => handleDelete(immobilie.id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {portfolio.filter(i => i.aktiv !== false).map(immobilie => (
+                <ImmobilienKarte
+                  key={immobilie.id}
+                  immobilie={immobilie}
+                  onClick={() => setSelectedImmobilie(immobilie)}
+                  onDelete={() => handleDelete(immobilie.id)}
+                />
+              ))}
+            </div>
+            {portfolio.some(i => i.aktiv === false) && (
+              <details className="mt-8">
+                <summary className="cursor-pointer text-sm font-semibold text-gray-400 hover:text-gray-600 flex items-center gap-2 mb-4">
+                  <span>🗄️ Aufgegebene / Verkaufte Immobilien ({portfolio.filter(i => i.aktiv === false).length})</span>
+                </summary>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60 grayscale">
+                  {portfolio.filter(i => i.aktiv === false).map(immobilie => (
+                    <ImmobilienKarte
+                      key={immobilie.id}
+                      immobilie={immobilie}
+                      onClick={() => setSelectedImmobilie(immobilie)}
+                      onDelete={() => handleDelete(immobilie.id)}
+                    />
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
         )}
       </main>
 
