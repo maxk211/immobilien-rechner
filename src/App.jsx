@@ -4015,82 +4015,53 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 <div className={`text-sm ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {wertsteigerungSeitKauf.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)}% in {wertsteigerungSeitKauf.jahreSeitKauf.toFixed(1)} Jahren
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-500 mt-1 mb-3">
                   Jährliche Rendite: {wertsteigerungSeitKauf.jaehrlicheRendite.toFixed(2)}% p.a.
                 </div>
+                {/* Chart direkt in der Box */}
+                {wertentwicklungDaten.length > 0 && (
+                  <>
+                    <div className="flex gap-3 text-[10px] text-gray-400 mb-1">
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-blue-500"></span>Historisch</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-green-400"></span>Projektion ({params.wertsteigerung ?? 2}% p.a.)</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-gray-400"></span>Kaufpreis</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={wertentwicklungDaten} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="gradWert" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="gradProj" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.12}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
+                        <XAxis dataKey="jahr" tick={{ fontSize: 9 }} />
+                        <YAxis tickFormatter={(v) => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : (v/1000).toFixed(0)+'k'} tick={{ fontSize: 9 }} width={42} />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            value ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value) : '–',
+                            name === 'wert' ? 'Marktwert' : name === 'projektion' ? 'Projektion' : 'Kaufpreis'
+                          ]}
+                          labelFormatter={(label) => `Jahr ${label}`}
+                        />
+                        <Line type="monotone" dataKey="kaufpreis" stroke="#9ca3af" strokeDasharray="4 4" strokeWidth={1} dot={false} name="kaufpreis" />
+                        <Area type="monotone" dataKey="wert" stroke="#2563eb" strokeWidth={2} fill="url(#gradWert)" dot={false} name="wert" connectNulls={false} />
+                        <Area type="monotone" dataKey="projektion" stroke="#10b981" strokeWidth={2} strokeDasharray="5 3" fill="url(#gradProj)" dot={false} name="projektion" connectNulls={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    <div className="flex justify-between text-xs mt-2 pt-2 border-t border-green-100">
+                      <div><span className="text-gray-400">Kaufpreis </span><span className="font-semibold text-gray-700">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(immobilie.kaufpreis)}</span></div>
+                      <div><span className="text-gray-400">In 10 Jahren </span><span className="font-semibold text-green-600">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(aktuellerWert * Math.pow(1 + (params.wertsteigerung || 2) / 100, 10)))}</span></div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
-
-          {/* Wertentwicklungs-Chart */}
-          {wertentwicklungDaten.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-semibold text-gray-700">📈 Wertentwicklung</h3>
-                <div className="flex gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-blue-500"></span> Historisch</span>
-                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-green-400 border-dashed border-t border-green-400"></span> Projektion ({params.wertsteigerung ?? 2}% p.a.)</span>
-                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-gray-400"></span> Kaufpreis</span>
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={wertentwicklungDaten} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="gradWert" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/>
-                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="gradProj" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.12}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="jahr" tick={{ fontSize: 11 }} />
-                  <YAxis
-                    tickFormatter={(v) => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : (v/1000).toFixed(0)+'k'}
-                    tick={{ fontSize: 11 }}
-                    width={55}
-                  />
-                  <Tooltip
-                    formatter={(value, name) => [
-                      value ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value) : '–',
-                      name === 'wert' ? 'Marktwert' : name === 'projektion' ? 'Projektion' : 'Kaufpreis'
-                    ]}
-                    labelFormatter={(label) => `Jahr ${label}`}
-                  />
-                  {/* Kaufpreis-Referenzlinie */}
-                  <Line type="monotone" dataKey="kaufpreis" stroke="#9ca3af" strokeDasharray="4 4" strokeWidth={1} dot={false} name="kaufpreis" />
-                  {/* Historischer Wert */}
-                  <Area type="monotone" dataKey="wert" stroke="#2563eb" strokeWidth={2.5} fill="url(#gradWert)" dot={(props) => {
-                    const isLast = props.index === wertentwicklungDaten.filter(d => d.wert !== null).length - 1;
-                    return isLast ? <circle key={props.key} cx={props.cx} cy={props.cy} r={4} fill="#2563eb" stroke="white" strokeWidth={2}/> : <g key={props.key}/>;
-                  }} name="wert" connectNulls={false} />
-                  {/* Projektion */}
-                  <Area type="monotone" dataKey="projektion" stroke="#10b981" strokeWidth={2} strokeDasharray="6 3" fill="url(#gradProj)" dot={false} name="projektion" connectNulls={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-              {/* Kennzahlen unter dem Chart */}
-              <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
-                <div className="text-center">
-                  <div className="text-xs text-gray-500">Kaufpreis</div>
-                  <div className="font-semibold text-gray-800 text-sm">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(immobilie.kaufpreis)}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-500">Aktueller Wert</div>
-                  <div className={`font-semibold text-sm ${aktuellerWert >= immobilie.kaufpreis ? 'text-green-600' : 'text-red-600'}`}>
-                    {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(aktuellerWert)}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-500">Wert in 10 Jahren</div>
-                  <div className="font-semibold text-green-600 text-sm">
-                    {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(aktuellerWert * Math.pow(1 + (params.wertsteigerung || 2) / 100, 10)))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Objektdetails bearbeiten */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
