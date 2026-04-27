@@ -129,7 +129,10 @@ function dbToApp(db) {
     mietEingaenge: db.miet_eingaenge || [],
     fahrtenListe: db.fahrten_liste || [],
     investitionen: db.investitionen || [],
-    kaufnebenkostenPositionen: db.kaufnebenkosten_positionen
+    kaufnebenkostenPositionen: db.kaufnebenkosten_positionen,
+    aktiv: db.aktiv !== false,
+    aufgabedatum: db.aufgabedatum || '',
+    mietAnpassungen: db.miet_anpassungen || []
   };
 }
 
@@ -194,6 +197,9 @@ function appToDb(app) {
     miet_eingaenge: app.mietEingaenge,
     fahrten_liste: app.fahrtenListe,
     investitionen: app.investitionen,
-    kaufnebenkosten_positionen: app.kaufnebenkostenPositionen
+    kaufnebenkosten_positionen: app.kaufnebenkostenPositionen,
+    aktiv: app.aktiv !== false,
+    aufgabedatum: app.aufgabedatum || null,
+    miet_anpassungen: app.mietAnpassungen || []
   };
 }
