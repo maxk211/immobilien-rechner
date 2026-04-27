@@ -5721,8 +5721,16 @@ function App() {
       ['Position', 'Betrag (€)', 'Hinweis'],
     ];
 
+    // Einzelne Kostentöpfe für detaillierte Übersicht
     let gesamtEinnahmen = 0;
-    let gesamtWerbungskosten = 0;
+    let sumSchuldzinsen = 0;
+    let sumInstandhaltung = 0;
+    let sumVerwaltung = 0;
+    let sumHausgeld = 0;
+    let sumStrom = 0;
+    let sumInternet = 0;
+    let sumFahrtkosten = 0;
+    let sumErhaltungsaufwand = 0;
 
     // Berechne Summen
     kaufimmobilien.forEach(immo => {
@@ -5733,59 +5741,88 @@ function App() {
       const kaltmiete = berechneJahresmiete(immo, jahr);
       gesamtEinnahmen += kaltmiete;
 
-      // Schuldzinsen berechnen (pro-rata)
       const zinssatz = immo.zinssatz || 4;
       const kaufnebenkosten = immo.kaufnebenkosten || 10;
       const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
       const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
       const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
       const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-      const schuldzinsenJahr = fremdkapital * (zinssatz / 100) * faktor;
-      gesamtWerbungskosten += schuldzinsenJahr;
+      sumSchuldzinsen   += fremdkapital * (zinssatz / 100) * faktor;
+      sumInstandhaltung += (immo.instandhaltung || 0) * 12 * faktor;
+      sumVerwaltung     += (immo.verwaltung || 0) * 12 * faktor;
+      sumHausgeld       += (immo.hausgeld || 0) * 12 * faktor;
+      sumStrom          += (immo.strom || 0) * 12 * faktor;
+      sumInternet       += (immo.internet || 0) * 12 * faktor;
 
-      // Sonstige Kosten (pro-rata)
-      const instandhaltung = (immo.instandhaltung || 0) * 12 * faktor;
-      const verwaltung = (immo.verwaltung || 0) * 12 * faktor;
-      const hausgeld = (immo.hausgeld || 0) * 12 * faktor;
-      const strom = (immo.strom || 0) * 12 * faktor;
-      const internet = (immo.internet || 0) * 12 * faktor;
-      gesamtWerbungskosten += instandhaltung + verwaltung + hausgeld + strom + internet;
-
-      // Fahrtkosten (pro-rata)
       const fahrtenProMonat = immo.fahrtenProMonat || 0;
       const entfernungKm = immo.entfernungKm || 0;
       const kmPauschale = immo.kmPauschale || 0.30;
-      const fahrtkosten = fahrtenProMonat * 12 * faktor * entfernungKm * 2 * kmPauschale;
-      gesamtWerbungskosten += fahrtkosten;
+      sumFahrtkosten += fahrtenProMonat * 12 * faktor * entfernungKm * 2 * kmPauschale;
 
-      // Erhaltungsaufwand: tatsächliche Ausgaben im Jahr (kein pro-rata nötig)
       const investitionen = immo.investitionen || [];
-      const erhaltungsaufwandJahr = investitionen
+      sumErhaltungsaufwand += investitionen
         .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
         .reduce((sum, inv) => sum + inv.betrag, 0);
-      gesamtWerbungskosten += erhaltungsaufwandJahr;
     });
+
+    const gesamtWerbungskosten = sumSchuldzinsen + sumInstandhaltung + sumVerwaltung + sumHausgeld + sumStrom + sumInternet + sumFahrtkosten + sumErhaltungsaufwand;
 
     // Arbitrage-Einkünfte (pro-rata ab Mietbeginn)
     let arbitrageEinnahmen = 0;
-    let arbitrageAusgaben = 0;
+    let arbWarmmiete = 0;
+    let arbStrom = 0;
+    let arbInternet = 0;
+    let arbGEZ = 0;
     mietimmobilien.forEach(immo => {
       const arb = berechneJahresArbitrage(immo, jahr);
-      const zusatzkosten = ((immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12 * arb.faktor;
       arbitrageEinnahmen += arb.einnahmen;
-      arbitrageAusgaben += arb.eigeneWarmmiete + zusatzkosten;
+      arbWarmmiete += arb.eigeneWarmmiete;
+      arbStrom     += (immo.arbitrageStrom || 0) * 12 * arb.faktor;
+      arbInternet  += (immo.arbitrageInternet || 0) * 12 * arb.faktor;
+      arbGEZ       += (immo.arbitrageGEZ || 0) * 12 * arb.faktor;
     });
+    const arbitrageAusgaben = arbWarmmiete + arbStrom + arbInternet + arbGEZ;
 
     const steuerlichesErgebnis = gesamtEinnahmen - gesamtWerbungskosten + (arbitrageEinnahmen - arbitrageAusgaben);
 
+    // ── Übersicht aufbauen ──────────────────────────────────────────
+    if (kaufimmobilien.length > 0) {
+      uebersichtData.push(
+        ['── KAUFIMMOBILIEN ──', '', ''],
+        ['Mieteinnahmen', gesamtEinnahmen.toFixed(2), 'Kaltmiete (Summe aller Kaufimmobilien)'],
+        ['', '', ''],
+        ['  Schuldzinsen', (-sumSchuldzinsen).toFixed(2), 'Fremdkapitalzinsen'],
+        ['  Instandhaltung', (-sumInstandhaltung).toFixed(2), 'Rücklagen & lfd. Instandhaltung'],
+        ['  Verwaltungskosten', (-sumVerwaltung).toFixed(2), 'Hausverwaltung'],
+        ['  Hausgeld / WEG', (-sumHausgeld).toFixed(2), 'Monatliches Hausgeld'],
+        ['  Strom', (-sumStrom).toFixed(2), 'Stromkosten (Vermieter)'],
+        ['  Internet', (-sumInternet).toFixed(2), 'Internetkosten (Vermieter)'],
+        ['  Fahrtkosten', (-sumFahrtkosten).toFixed(2), 'Km-Pauschale für Fahrten zur Immobilie'],
+        ['  Erhaltungsaufwand', (-sumErhaltungsaufwand).toFixed(2), 'Tatsächliche Reparaturen im Jahr'],
+        ['  AfA', '(Steuerberater)', 'Wird durch Steuerberater berechnet'],
+        ['Werbungskosten gesamt', (-gesamtWerbungskosten).toFixed(2), 'ohne AfA'],
+        ['Ergebnis Kaufimmobilien', (gesamtEinnahmen - gesamtWerbungskosten).toFixed(2), ''],
+        ['', '', '']
+      );
+    }
+
+    if (mietimmobilien.length > 0) {
+      uebersichtData.push(
+        ['── MIETIMMOBILIEN (ARBITRAGE) ──', '', ''],
+        ['Einnahmen Untervermietung', arbitrageEinnahmen.toFixed(2), 'Summe aller Untervermietungen'],
+        ['', '', ''],
+        ['  Eigene Warmmiete', (-arbWarmmiete).toFixed(2), 'Miete an Vermieter'],
+        ['  Strom', (-arbStrom).toFixed(2), 'Stromkosten'],
+        ['  Internet', (-arbInternet).toFixed(2), 'Internetkosten'],
+        ['  GEZ / Rundfunkbeitrag', (-arbGEZ).toFixed(2), '18,36 €/Monat Standard'],
+        ['Ausgaben gesamt', (-arbitrageAusgaben).toFixed(2), ''],
+        ['Ergebnis Arbitrage', (arbitrageEinnahmen - arbitrageAusgaben).toFixed(2), ''],
+        ['', '', '']
+      );
+    }
+
     uebersichtData.push(
-      ['Mieteinnahmen (Kaufimmobilien)', gesamtEinnahmen.toFixed(2), 'Kaltmiete × 12 Monate'],
-      ['Werbungskosten', (-gesamtWerbungskosten).toFixed(2), 'Zinsen, Kosten (AfA durch Steuerberater)'],
-      [''],
-      ['Arbitrage-Einnahmen', arbitrageEinnahmen.toFixed(2), 'Untervermietung'],
-      ['Arbitrage-Ausgaben', (-arbitrageAusgaben).toFixed(2), 'Miete + Nebenkosten'],
-      [''],
-      ['STEUERLICHES ERGEBNIS', steuerlichesErgebnis.toFixed(2), steuerlichesErgebnis < 0 ? 'Verlust' : 'Gewinn']
+      ['══ STEUERLICHES ERGEBNIS GESAMT ══', steuerlichesErgebnis.toFixed(2), steuerlichesErgebnis < 0 ? '→ Verlust (steuermindernd)' : '→ Gewinn (zu versteuern)']
     );
 
     const wsUebersicht = XLSX.utils.aoa_to_sheet(uebersichtData);
