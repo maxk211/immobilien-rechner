@@ -26,34 +26,52 @@ export async function loadImmobilien() {
   return data.map(dbToApp);
 }
 
+// Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen'];
+
 // Immobilie speichern (neu oder update)
 export async function saveImmobilie(immobilie) {
   const dbData = appToDb(immobilie);
 
-  if (immobilie.id && typeof immobilie.id === 'string' && immobilie.id.includes('-')) {
-    // Update existierende Immobilie (UUID)
-    const { data, error } = await supabase
-      .from('immobilien')
-      .update(dbData)
-      .eq('id', immobilie.id)
-      .select()
-      .single();
+  const doSave = async (data) => {
+    if (immobilie.id && typeof immobilie.id === 'string' && immobilie.id.includes('-')) {
+      // Update existierende Immobilie (UUID)
+      const { data: result, error } = await supabase
+        .from('immobilien')
+        .update(data)
+        .eq('id', immobilie.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return dbToApp(result);
+    } else {
+      // Neue Immobilie erstellen
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Nicht eingeloggt');
+      const { data: result, error } = await supabase
+        .from('immobilien')
+        .insert({ ...data, user_id: user.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return dbToApp(result);
+    }
+  };
 
-    if (error) throw error;
-    return dbToApp(data);
-  } else {
-    // Neue Immobilie erstellen
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Nicht eingeloggt');
-
-    const { data, error } = await supabase
-      .from('immobilien')
-      .insert({ ...dbData, user_id: user.id })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return dbToApp(data);
+  try {
+    return await doSave(dbData);
+  } catch (error) {
+    // Fallback: SQL-Migration noch nicht ausgeführt → ohne neue Spalten speichern
+    const isSchemaProblem = error.message && (
+      error.message.includes('column') ||
+      error.message.includes('schema cache')
+    );
+    if (isSchemaProblem) {
+      const fallbackData = { ...dbData };
+      MIGRATION_FIELDS.forEach(f => delete fallbackData[f]);
+      return await doSave(fallbackData);
+    }
+    throw error;
   }
 }
 
