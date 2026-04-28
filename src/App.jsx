@@ -6192,6 +6192,14 @@ function App() {
     return <Auth />;
   }
 
+  // Aktive vs. inaktive Immobilien für Dashboard
+  const heute = new Date();
+  const isInaktiv = (i) =>
+    i.aktiv === false ||
+    (i.immobilienTyp === 'mietimmobilie' && i.mietvertragEnde && new Date(i.mietvertragEnde) < heute);
+  const aktiveImmobilien = portfolio.filter(i => !isInaktiv(i));
+  const inaktiveImmobilien = portfolio.filter(i => isInaktiv(i));
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 px-4 shadow-lg">
@@ -6306,17 +6314,24 @@ function App() {
             </button>
           </div>
         ) : (
-          (() => {
-            const heute = new Date();
-            const isInaktiv = (i) =>
-              i.aktiv === false ||
-              (i.immobilienTyp === 'mietimmobilie' && i.mietvertragEnde && new Date(i.mietvertragEnde) < heute);
-            const aktive = portfolio.filter(i => !isInaktiv(i));
-            const inaktive = portfolio.filter(i => isInaktiv(i));
-            return (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {aktive.map(immobilie => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {aktiveImmobilien.map(immobilie => (
+                <ImmobilienKarte
+                  key={immobilie.id}
+                  immobilie={immobilie}
+                  onClick={() => setSelectedImmobilie(immobilie)}
+                  onDelete={() => handleDelete(immobilie.id)}
+                />
+              ))}
+            </div>
+            {inaktiveImmobilien.length > 0 && (
+              <details className="mt-8">
+                <summary className="cursor-pointer text-sm font-semibold text-gray-400 hover:text-gray-600 flex items-center gap-2 mb-4">
+                  <span>🗄️ Inaktive Immobilien ({inaktiveImmobilien.length})</span>
+                </summary>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60 grayscale">
+                  {inaktiveImmobilien.map(immobilie => (
                     <ImmobilienKarte
                       key={immobilie.id}
                       immobilie={immobilie}
@@ -6325,26 +6340,9 @@ function App() {
                     />
                   ))}
                 </div>
-                {inaktive.length > 0 && (
-                  <details className="mt-8">
-                    <summary className="cursor-pointer text-sm font-semibold text-gray-400 hover:text-gray-600 flex items-center gap-2 mb-4">
-                      <span>🗄️ Inaktive Immobilien ({inaktive.length})</span>
-                    </summary>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60 grayscale">
-                      {inaktive.map(immobilie => (
-                        <ImmobilienKarte
-                          key={immobilie.id}
-                          immobilie={immobilie}
-                          onClick={() => setSelectedImmobilie(immobilie)}
-                          onDelete={() => handleDelete(immobilie.id)}
-                        />
-                      ))}
-                    </div>
-                  </details>
-                )}
-              </>
-            );
-          })()
+              </details>
+            )}
+          </>
         )}
       </main>
 
