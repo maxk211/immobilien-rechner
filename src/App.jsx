@@ -6306,7 +6306,7 @@ function App() {
             </button>
           </div>
         ) : (
-          {(() => {
+          (() => {
             const heute = new Date();
             const isInaktiv = (i) =>
               i.aktiv === false ||
@@ -6344,7 +6344,7 @@ function App() {
                 )}
               </>
             );
-          })()}
+          })()
         )}
       </main>
 
