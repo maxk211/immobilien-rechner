@@ -1261,6 +1261,8 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
 
   // Arbitrage Cashflow berechnen
   const arbitrageCashflow = isMietimmobilie ? (() => {
+    const ende = immobilie.mietvertragEnde ? new Date(immobilie.mietvertragEnde) : null;
+    if (ende && ende < new Date()) return 0; // Vertrag beendet
     const einnahmen = (immobilie.anzahlZimmerVermietet || 0) * (immobilie.untermieteProZimmer || 0);
     const zusatzkosten = (immobilie.arbitrageStrom || 0) + (immobilie.arbitrageInternet || 0) + (immobilie.arbitrageGEZ ?? 18.36);
     const ausgaben = (immobilie.eigeneWarmmiete || 0) + zusatzkosten;
@@ -1458,9 +1460,11 @@ const PortfolioOverview = ({ portfolio }) => {
       if (isMietimmobilie) {
         // Mietimmobilie (Arbitrage-Modell)
         anzahlMietimmobilien++;
-        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0);
-        const zusatzkosten = (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36);
-        const ausgaben = (immo.eigeneWarmmiete || 0) + zusatzkosten;
+        const vertragsEndeImmo = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
+        const vertragsLaeuft = !vertragsEndeImmo || vertragsEndeImmo >= new Date();
+        const einnahmen = vertragsLaeuft ? (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) : 0;
+        const zusatzkosten = vertragsLaeuft ? (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36) : 0;
+        const ausgaben = vertragsLaeuft ? (immo.eigeneWarmmiete || 0) + zusatzkosten : 0;
         const monatsCashflow = einnahmen - ausgaben;
 
         gesamtMiete += einnahmen * 12; // Einnahmen aus Untervermietung
@@ -3533,6 +3537,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
     wohnflaeche: immobilie.wohnflaeche || 80,
     zimmer: immobilie.zimmer || 4,
     mietvertragStart: immobilie.mietvertragStart || '',
+    mietvertragEnde: immobilie.mietvertragEnde || '',
     name: immobilie.name || '',
     plz: immobilie.plz || '',
     adresse: immobilie.adresse || '',
@@ -3551,19 +3556,28 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
     setHasChanges(false);
   };
 
-  // Berechnungen
-  const einnahmen = params.anzahlZimmerVermietet * params.untermieteProZimmer;
-  const zusatzkosten = (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36);
-  const ausgaben = params.eigeneWarmmiete + zusatzkosten;
+  // Mietvertragsende prüfen
+  const vertragsende = params.mietvertragEnde ? new Date(params.mietvertragEnde) : null;
+  const heute = new Date();
+  const vertragsBeendet = vertragsende && vertragsende < heute;
+
+  // Berechnungen — wenn Vertrag beendet: laufender Cashflow = 0
+  const einnahmen = vertragsBeendet ? 0 : params.anzahlZimmerVermietet * params.untermieteProZimmer;
+  const zusatzkosten = vertragsBeendet ? 0 : (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36);
+  const ausgaben = vertragsBeendet ? 0 : params.eigeneWarmmiete + zusatzkosten;
   const monatsCashflow = einnahmen - ausgaben;
   const jahresCashflow = monatsCashflow * 12;
 
-  // Monate seit Mietvertragstart
+  // Bisheriger Cashflow: von Start bis min(heute, Vertragsende)
   const mietvertragStart = params.mietvertragStart ? new Date(params.mietvertragStart) : null;
+  const bisWann = vertragsende && vertragsende < heute ? vertragsende : heute;
   const monateSeitStart = mietvertragStart
-    ? Math.max(0, Math.floor((new Date() - mietvertragStart) / (1000 * 60 * 60 * 24 * 30)))
+    ? Math.max(0, Math.floor((bisWann - mietvertragStart) / (1000 * 60 * 60 * 24 * 30)))
     : 0;
-  const bisherigeCashflowGesamt = monatsCashflow * monateSeitStart;
+  // Für bisherigen Cashflow immer die echten Werte (inkl. Vertragszeit)
+  const echterMonatsCashflow = (params.anzahlZimmerVermietet * params.untermieteProZimmer) -
+    (params.eigeneWarmmiete + (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36));
+  const bisherigeCashflowGesamt = echterMonatsCashflow * monateSeitStart;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -3576,9 +3590,21 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
                 <h2 className="text-2xl font-bold">{params.name || 'Mietimmobilie'}</h2>
               </div>
               <p className="text-purple-200">{params.plz} {params.adresse}</p>
-              <span className="inline-block mt-2 text-xs px-2 py-0.5 bg-white/20 rounded-full">
-                Arbitrage-Modell
-              </span>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <span className="text-xs px-2 py-0.5 bg-white/20 rounded-full">
+                  Arbitrage-Modell
+                </span>
+                {vertragsBeendet && (
+                  <span className="text-xs px-2 py-0.5 bg-red-500/80 rounded-full font-semibold">
+                    🔴 Vertrag beendet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}
+                  </span>
+                )}
+                {vertragsende && !vertragsBeendet && (
+                  <span className="text-xs px-2 py-0.5 bg-yellow-400/80 text-yellow-900 rounded-full">
+                    ⏳ Endet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {hasChanges && (
@@ -3686,6 +3712,38 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
                       onChange={(e) => updateParams({ mietvertragStart: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                     />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Mietvertragsende</label>
+                    <input
+                      type="date"
+                      value={params.mietvertragEnde}
+                      onChange={(e) => updateParams({ mietvertragEnde: e.target.value })}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 ${vertragsBeendet ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                    />
+                    {params.mietvertragEnde && (
+                      <button
+                        type="button"
+                        onClick={() => updateParams({ mietvertragEnde: '' })}
+                        className="text-xs text-gray-400 hover:text-red-500 mt-1"
+                      >
+                        ✕ Datum entfernen
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-end pb-2">
+                    {vertragsBeendet && (
+                      <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">
+                        Cashflow wird ab Vertragsende nicht mehr berechnet.
+                      </div>
+                    )}
+                    {vertragsende && !vertragsBeendet && (
+                      <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2">
+                        Noch {Math.ceil((vertragsende - heute) / (1000 * 60 * 60 * 24 * 30))} Monate verbleibend.
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -5595,6 +5653,8 @@ function App() {
     const mietimmobilien = portfolio.filter(i => {
       if (i.immobilienTyp !== 'mietimmobilie') return false;
       if (i.mietvertragStart && new Date(i.mietvertragStart).getFullYear() > jahr) return false;
+      // Wenn Mietvertragsende vor dem Exportjahr: nicht anzeigen
+      if (i.mietvertragEnde && new Date(i.mietvertragEnde).getFullYear() < jahr) return false;
       if (i.aktiv === false && i.aufgabedatum && new Date(i.aufgabedatum).getFullYear() < jahr) return false;
       return true;
     });
@@ -5622,7 +5682,9 @@ function App() {
     // Jahres-Arbitrage berechnen unter Berücksichtigung von Mietanpassungen (Mietimmobilien)
     const berechneJahresArbitrage = (immo, exportJahr) => {
       const startDatum = immo.mietvertragStart || null;
-      const endDatum = (immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null;
+      // Enddatum: Mietvertragsende hat Vorrang, sonst Aufgabedatum
+      const endDatum = immo.mietvertragEnde ||
+        ((immo.aktiv === false && immo.aufgabedatum) ? immo.aufgabedatum : null);
 
       let startMonat = 0;
       let endMonat = 11;

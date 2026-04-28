@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende'];
 
 // Immobilie speichern (neu oder update)
 export async function saveImmobilie(immobilie) {
@@ -150,7 +150,8 @@ function dbToApp(db) {
     kaufnebenkostenPositionen: db.kaufnebenkosten_positionen,
     aktiv: db.aktiv !== false,
     aufgabedatum: db.aufgabedatum || '',
-    mietAnpassungen: db.miet_anpassungen || []
+    mietAnpassungen: db.miet_anpassungen || [],
+    mietvertragEnde: db.mietvertrag_ende || ''
   };
 }
 
@@ -218,6 +219,7 @@ function appToDb(app) {
     kaufnebenkosten_positionen: app.kaufnebenkostenPositionen,
     aktiv: app.aktiv !== false,
     aufgabedatum: app.aufgabedatum || null,
-    miet_anpassungen: app.mietAnpassungen || []
+    miet_anpassungen: app.mietAnpassungen || [],
+    mietvertrag_ende: app.mietvertragEnde || null
   };
 }
