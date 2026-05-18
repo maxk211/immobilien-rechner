@@ -223,3 +223,71 @@ function appToDb(app) {
     mietvertrag_ende: app.mietvertragEnde || null
   };
 }
+
+// ==================== MIETER ====================
+
+export async function loadMieter() {
+  const { data, error } = await supabase
+    .from('mieter')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function saveMieter(mieter) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Nicht eingeloggt');
+
+  const dbData = {
+    immobilie_id: mieter.immobilieId,
+    name: mieter.name,
+    email: mieter.email || null,
+    telefon: mieter.telefon || null,
+    zimmer_bezeichnung: mieter.zimmerBezeichnung || null,
+    mietbeginn: mieter.mietbeginn || null,
+    mietende: mieter.mietende || null,
+    kaltmiete: mieter.kaltmiete || null,
+    kaution_betrag: mieter.kautionBetrag || null,
+    kaution_bezahlt: mieter.kautionBezahlt || false,
+    kaution_bezahlt_am: mieter.kautionBezahltAm || null,
+    kaution_zurueck: mieter.kautionZurueck || false,
+    kaution_zurueck_am: mieter.kautionZurueckAm || null,
+    kaution_abzug: mieter.kautionAbzug || 0,
+    kaution_abzug_grund: mieter.kautionAbzugGrund || null,
+    auszugsdatum: mieter.auszugsdatum || null,
+    zaehlerstand_strom: mieter.zaehlerstandStrom || null,
+    zaehlerstand_wasser: mieter.zaehlerstandWasser || null,
+    zaehlerstand_heizung: mieter.zaehlerstandHeizung || null,
+    schluessel_zurueck: mieter.schlusselZurueck || false,
+    zustand_notizen: mieter.zustandNotizen || null,
+    mahnstufe: mieter.mahnstufe || 0,
+    letzte_mahnung_am: mieter.letzteMahnungAm || null,
+    aktiv: mieter.aktiv !== false,
+    notizen: mieter.notizen || null,
+  };
+
+  if (mieter.id) {
+    const { data, error } = await supabase
+      .from('mieter')
+      .update(dbData)
+      .eq('id', mieter.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('mieter')
+      .insert({ ...dbData, user_id: user.id })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+}
+
+export async function deleteMieter(id) {
+  const { error } = await supabase.from('mieter').delete().eq('id', id);
+  if (error) throw error;
+}

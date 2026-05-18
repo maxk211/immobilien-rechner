@@ -3,7 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie } from './supabaseClient';
+import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter } from './supabaseClient';
 import Auth from './Auth';
 
 // PLZ-basierte Preise pro m² für verschiedene deutsche Städte und Regionen
@@ -5472,6 +5472,463 @@ const KalkulationsModal = ({ onClose }) => {
   );
 };
 
+// ==================== MIETER KOMPONENTEN ====================
+
+const MieterAuszug = ({ mieter, onSave, onClose }) => {
+  const [form, setForm] = useState({
+    ...mieter,
+    auszugsdatum: mieter.auszugsdatum || new Date().toISOString().split('T')[0],
+    zaehlerstandStrom: mieter.zaehlerstand_strom || '',
+    zaehlerstandWasser: mieter.zaehlerstand_wasser || '',
+    zaehlerstandHeizung: mieter.zaehlerstand_heizung || '',
+    schlusselZurueck: mieter.schluessel_zurueck || false,
+    zustandNotizen: mieter.zustand_notizen || '',
+    kautionAbzug: mieter.kaution_abzug || 0,
+    kautionAbzugGrund: mieter.kaution_abzug_grund || '',
+    kautionZurueck: mieter.kaution_zurueck || false,
+    kautionZurueckAm: mieter.kaution_zurueck_am || '',
+    aktiv: false,
+  });
+  const [saving, setSaving] = useState(false);
+
+  const kautionRueckzahlung = Math.max(0, (Number(mieter.kaution_betrag) || 0) - (Number(form.kautionAbzug) || 0));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try { await onSave(form); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
+        <div className="sticky top-0 bg-red-700 text-white p-5 rounded-t-xl flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold">🚪 Auszug: {mieter.name}</h2>
+            <p className="text-red-200 text-sm">Mieter als ausgezogen markieren</p>
+          </div>
+          <button onClick={onClose} className="text-white text-2xl hover:text-red-200">&times;</button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Auszugsdatum *</label>
+            <input type="date" value={form.auszugsdatum} onChange={e => setForm({...form, auszugsdatum: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" required />
+          </div>
+
+          {/* Übergabeprotokoll */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-3">📋 Übergabeprotokoll</p>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">⚡ Strom</label>
+                <input type="number" value={form.zaehlerstandStrom} onChange={e => setForm({...form, zaehlerstandStrom: e.target.value})}
+                  placeholder="kWh" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">💧 Wasser</label>
+                <input type="number" value={form.zaehlerstandWasser} onChange={e => setForm({...form, zaehlerstandWasser: e.target.value})}
+                  placeholder="m³" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">🔥 Heizung</label>
+                <input type="number" value={form.zaehlerstandHeizung} onChange={e => setForm({...form, zaehlerstandHeizung: e.target.value})}
+                  placeholder="kWh" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 mb-3 cursor-pointer">
+              <input type="checkbox" checked={form.schlusselZurueck} onChange={e => setForm({...form, schlusselZurueck: e.target.checked})}
+                className="w-4 h-4 accent-blue-600" />
+              <span className="text-sm text-gray-700">🔑 Schlüssel zurückgegeben</span>
+            </label>
+            <textarea value={form.zustandNotizen} onChange={e => setForm({...form, zustandNotizen: e.target.value})}
+              rows={3} placeholder="Zustand der Wohnung, Schäden, Besonderheiten..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500" />
+          </div>
+
+          {/* Kaution */}
+          {mieter.kaution_betrag > 0 && (
+            <div className="bg-yellow-50 rounded-lg p-4">
+              <p className="text-sm font-semibold text-yellow-800 mb-3">🔑 Kautionsrückzahlung</p>
+              <div className="flex justify-between text-sm mb-3">
+                <span className="text-gray-600">Kaution gesamt:</span>
+                <span className="font-semibold">{Number(mieter.kaution_betrag).toLocaleString('de-DE')} €</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Abzüge (€)</label>
+                  <input type="number" value={form.kautionAbzug} onChange={e => setForm({...form, kautionAbzug: parseFloat(e.target.value) || 0})}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-yellow-500" min="0" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Grund der Abzüge</label>
+                  <input type="text" value={form.kautionAbzugGrund} onChange={e => setForm({...form, kautionAbzugGrund: e.target.value})}
+                    placeholder="z.B. Schäden" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-yellow-500" />
+                </div>
+              </div>
+              <div className={`flex justify-between text-sm font-bold mb-3 p-2 rounded ${kautionRueckzahlung > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                <span>Rückzahlung:</span>
+                <span>{kautionRueckzahlung.toLocaleString('de-DE')} €</span>
+              </div>
+              <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                <input type="checkbox" checked={form.kautionZurueck} onChange={e => setForm({...form, kautionZurueck: e.target.checked})}
+                  className="w-4 h-4 accent-blue-600" />
+                <span className="text-sm text-gray-700">Kaution bereits zurückgezahlt</span>
+              </label>
+              {form.kautionZurueck && (
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Zurückgezahlt am</label>
+                  <input type="date" value={form.kautionZurueckAm} onChange={e => setForm({...form, kautionZurueckAm: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500" />
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              Abbrechen
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:opacity-50">
+              {saving ? 'Speichern...' : '✓ Auszug bestätigen'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
+  const [form, setForm] = useState({
+    id: mieter?.id || null,
+    immobilieId: mieter?.immobilie_id || (portfolio[0]?.id || ''),
+    name: mieter?.name || '',
+    email: mieter?.email || '',
+    telefon: mieter?.telefon || '',
+    zimmerBezeichnung: mieter?.zimmer_bezeichnung || '',
+    mietbeginn: mieter?.mietbeginn || '',
+    mietende: mieter?.mietende || '',
+    kaltmiete: mieter?.kaltmiete || '',
+    kautionBetrag: mieter?.kaution_betrag || '',
+    kautionBezahlt: mieter?.kaution_bezahlt || false,
+    kautionBezahltAm: mieter?.kaution_bezahlt_am || '',
+    mahnstufe: mieter?.mahnstufe || 0,
+    letzteMahnungAm: mieter?.letzte_mahnung_am || '',
+    notizen: mieter?.notizen || '',
+    aktiv: mieter?.aktiv !== false,
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) { alert('Name ist Pflicht'); return; }
+    if (!form.immobilieId) { alert('Immobilie ist Pflicht'); return; }
+    setSaving(true);
+    try { await onSave(form); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+        <div className="sticky top-0 bg-blue-700 text-white p-5 rounded-t-xl flex justify-between items-center">
+          <h2 className="text-xl font-bold">{form.id ? 'Mieter bearbeiten' : 'Neuer Mieter'}</h2>
+          <button onClick={onClose} className="text-white text-2xl hover:text-blue-200">&times;</button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Immobilie */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Immobilie *</label>
+            <select value={form.immobilieId} onChange={e => setForm({...form, immobilieId: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+              <option value="">— Immobilie wählen —</option>
+              {portfolio.map(i => <option key={i.id} value={i.id}>{i.name || i.adresse || i.plz}</option>)}
+            </select>
+          </div>
+
+          {/* Stammdaten */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-3">👤 Stammdaten</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-600 mb-1">Name *</label>
+                <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Email</label>
+                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Telefon</label>
+                <input type="tel" value={form.telefon} onChange={e => setForm({...form, telefon: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-600 mb-1">Zimmer / Einheit</label>
+                <input type="text" value={form.zimmerBezeichnung} onChange={e => setForm({...form, zimmerBezeichnung: e.target.value})}
+                  placeholder="z.B. Zimmer 2, Ganze Wohnung, EG links"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Vertrag */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <p className="text-sm font-semibold text-blue-800 mb-3">📄 Mietvertrag</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Mietbeginn</label>
+                <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Mietende (optional)</label>
+                <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Monat)</label>
+                <input type="number" value={form.kaltmiete} onChange={e => setForm({...form, kaltmiete: parseFloat(e.target.value) || ''})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" step="10" />
+              </div>
+            </div>
+          </div>
+
+          {/* Kaution */}
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <p className="text-sm font-semibold text-yellow-800 mb-3">🔑 Kaution</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Kautionshöhe (€)</label>
+                <input type="number" value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="flex items-end gap-3 pb-0.5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.kautionBezahlt} onChange={e => setForm({...form, kautionBezahlt: e.target.checked})}
+                    className="w-4 h-4 rounded accent-blue-600" />
+                  <span className="text-sm text-gray-700">Bezahlt</span>
+                </label>
+              </div>
+              {form.kautionBezahlt && (
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Bezahlt am</label>
+                  <input type="date" value={form.kautionBezahltAm} onChange={e => setForm({...form, kautionBezahltAm: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mahnwesen */}
+          <div className="bg-orange-50 rounded-lg p-4">
+            <p className="text-sm font-semibold text-orange-800 mb-3">⚠️ Mahnwesen</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Mahnstufe</label>
+                <select value={form.mahnstufe} onChange={e => setForm({...form, mahnstufe: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  <option value={0}>Keine Mahnung</option>
+                  <option value={1}>1. Mahnung</option>
+                  <option value={2}>2. Mahnung</option>
+                  <option value={3}>Letzte Mahnung</option>
+                </select>
+              </div>
+              {form.mahnstufe > 0 && (
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Letzte Mahnung am</label>
+                  <input type="date" value={form.letzteMahnungAm} onChange={e => setForm({...form, letzteMahnungAm: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notizen */}
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Notizen</label>
+            <textarea value={form.notizen} onChange={e => setForm({...form, notizen: e.target.value})}
+              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Besonderheiten, Vereinbarungen, etc." />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              Abbrechen
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:opacity-50">
+              {saving ? 'Speichern...' : 'Speichern'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave }) => {
+  const [selectedMieter, setSelectedMieter] = useState(null);
+  const [showAuszug, setShowAuszug] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [filter, setFilter] = useState('aktiv'); // 'aktiv' | 'inaktiv' | 'alle'
+
+  const getImmobilieName = (id) => {
+    const immo = portfolio.find(i => i.id === id);
+    return immo ? (immo.name || immo.adresse || 'Immobilie') : 'Unbekannt';
+  };
+
+  const aktiveMieter = mieterListe.filter(m => m.aktiv !== false);
+  const inaktiveMieter = mieterListe.filter(m => m.aktiv === false);
+  const anzeigedMieter = filter === 'aktiv' ? aktiveMieter : filter === 'inaktiv' ? inaktiveMieter : mieterListe;
+
+  // Stats
+  const kautionOffen = aktiveMieter.filter(m => !m.kaution_bezahlt && m.kaution_betrag > 0).length;
+  const mahnstufeAktiv = aktiveMieter.filter(m => m.mahnstufe > 0).length;
+
+  const mahnstufeLabel = (s) => ['—', '1. Mahnung', '2. Mahnung', 'Letzte Mahnung'][s] || '—';
+  const mahnstufeColor = (s) => ['text-gray-400', 'text-yellow-600', 'text-orange-600', 'text-red-700'][s] || 'text-gray-400';
+
+  return (
+    <div>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-4 shadow">
+          <div className="text-2xl font-bold text-blue-700">{aktiveMieter.length}</div>
+          <div className="text-sm text-gray-500">Aktive Mieter</div>
+        </div>
+        <div className={`bg-white rounded-xl p-4 shadow ${kautionOffen > 0 ? 'border-l-4 border-red-400' : ''}`}>
+          <div className={`text-2xl font-bold ${kautionOffen > 0 ? 'text-red-600' : 'text-green-600'}`}>{kautionOffen}</div>
+          <div className="text-sm text-gray-500">Kaution offen</div>
+        </div>
+        <div className={`bg-white rounded-xl p-4 shadow ${mahnstufeAktiv > 0 ? 'border-l-4 border-orange-400' : ''}`}>
+          <div className={`text-2xl font-bold ${mahnstufeAktiv > 0 ? 'text-orange-600' : 'text-gray-400'}`}>{mahnstufeAktiv}</div>
+          <div className="text-sm text-gray-500">Mahnungen aktiv</div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow">
+          <div className="text-2xl font-bold text-gray-600">{inaktiveMieter.length}</div>
+          <div className="text-sm text-gray-500">Ausgezogen</div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+          {[['aktiv', 'Aktiv'], ['inaktiv', 'Ausgezogen'], ['alle', 'Alle']].map(([val, label]) => (
+            <button key={val} onClick={() => setFilter(val)}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${filter === val ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => { setEditData(null); setShowForm(true); }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold flex items-center gap-2"
+        >
+          + Mieter hinzufügen
+        </button>
+      </div>
+
+      {/* Mieter List */}
+      {anzeigedMieter.length === 0 ? (
+        <div className="bg-white rounded-xl p-12 text-center shadow">
+          <div className="text-5xl mb-3">👥</div>
+          <p className="text-gray-500">{filter === 'inaktiv' ? 'Keine ausgezogenen Mieter.' : 'Noch keine Mieter angelegt.'}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {anzeigedMieter.map(mieter => {
+            const kautionStatus = !mieter.kaution_betrag ? 'keine' : mieter.kaution_bezahlt ? 'bezahlt' : 'offen';
+            return (
+              <div key={mieter.id} className={`bg-white rounded-xl shadow p-4 border-l-4 ${mieter.aktiv === false ? 'border-gray-300 opacity-70' : mieter.mahnstufe > 0 ? 'border-orange-400' : 'border-blue-400'}`}>
+                <div className="flex flex-wrap justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-gray-800">{mieter.name}</span>
+                      {mieter.aktiv === false && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Ausgezogen</span>}
+                      {mieter.mahnstufe > 0 && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 ${mahnstufeColor(mieter.mahnstufe)}`}>
+                          ⚠️ {mahnstufeLabel(mieter.mahnstufe)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500 flex flex-wrap gap-3">
+                      <span>🏠 {getImmobilieName(mieter.immobilie_id)}</span>
+                      {mieter.zimmer_bezeichnung && <span>📍 {mieter.zimmer_bezeichnung}</span>}
+                      {mieter.mietbeginn && <span>📅 seit {new Date(mieter.mietbeginn).toLocaleDateString('de-DE')}</span>}
+                      {mieter.kaltmiete && <span>💶 {Number(mieter.kaltmiete).toLocaleString('de-DE')} €/Mon</span>}
+                      {mieter.email && <span>✉️ {mieter.email}</span>}
+                      {mieter.telefon && <span>📞 {mieter.telefon}</span>}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      {/* Kaution Badge */}
+                      {mieter.kaution_betrag > 0 && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          mieter.kaution_zurueck ? 'bg-gray-100 text-gray-500' :
+                          kautionStatus === 'bezahlt' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {mieter.kaution_zurueck ? '↩️ Kaution zurück' : kautionStatus === 'bezahlt' ? '✅ Kaution bezahlt' : `🔴 Kaution offen (${Number(mieter.kaution_betrag).toLocaleString('de-DE')} €)`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    {mieter.aktiv !== false && (
+                      <button
+                        onClick={() => { setSelectedMieter(mieter); setShowAuszug(true); }}
+                        className="px-3 py-1.5 text-xs bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100"
+                      >
+                        🚪 Auszug
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setEditData(mieter); setShowForm(true); }}
+                      className="px-3 py-1.5 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+                    >
+                      ✏️ Bearbeiten
+                    </button>
+                    <button
+                      onClick={() => onDelete(mieter.id)}
+                      className="px-3 py-1.5 text-xs bg-red-50 text-red-500 rounded-lg hover:bg-red-100"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Formular Modal */}
+      {showForm && (
+        <MieterFormular
+          mieter={editData}
+          portfolio={portfolio}
+          onSave={async (data) => { await onSave(data); setShowForm(false); }}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {/* Auszug Modal */}
+      {showAuszug && selectedMieter && (
+        <MieterAuszug
+          mieter={selectedMieter}
+          onSave={async (data) => { await onSave(data); setShowAuszug(false); setSelectedMieter(null); }}
+          onClose={() => { setShowAuszug(false); setSelectedMieter(null); }}
+        />
+      )}
+    </div>
+  );
+};
+
 // Haupt-App Komponente
 function App() {
   const [session, setSession] = useState(null);
@@ -5482,6 +5939,11 @@ function App() {
   const [selectedImmobilie, setSelectedImmobilie] = useState(null);
   const [editImmobilie, setEditImmobilie] = useState(null);
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'error'
+  const [activeView, setActiveView] = useState('portfolio'); // 'portfolio' | 'mieter'
+  const [mieterListe, setMieterListe] = useState([]);
+  const [showMieterForm, setShowMieterForm] = useState(false);
+  const [editMieter, setEditMieter] = useState(null);
+  const [selectedMieter, setSelectedMieter] = useState(null);
 
   // Auth State überwachen
   useEffect(() => {
@@ -5503,8 +5965,10 @@ function App() {
   useEffect(() => {
     if (session) {
       loadPortfolioFromDB();
+      loadMieterFromDB();
     } else {
       setPortfolio([]);
+      setMieterListe([]);
     }
   }, [session]);
 
@@ -5518,6 +5982,44 @@ function App() {
     } catch (error) {
       console.error('Fehler beim Laden:', error);
       setSyncStatus('error');
+    }
+  };
+
+  // Mieter aus Datenbank laden
+  const loadMieterFromDB = async () => {
+    try {
+      const data = await loadMieter();
+      setMieterListe(data);
+    } catch (error) {
+      console.error('Fehler beim Laden der Mieter:', error);
+    }
+  };
+
+  const handleSaveMieter = async (data) => {
+    try {
+      setSyncStatus('syncing');
+      const saved = await saveMieter(data);
+      if (data.id) {
+        setMieterListe(prev => prev.map(m => m.id === data.id ? saved : m));
+      } else {
+        setMieterListe(prev => [saved, ...prev]);
+      }
+      setShowMieterForm(false);
+      setEditMieter(null);
+      setSyncStatus('idle');
+    } catch (error) {
+      alert('Fehler beim Speichern: ' + error.message);
+      setSyncStatus('error');
+    }
+  };
+
+  const handleDeleteMieter = async (id) => {
+    if (!window.confirm('Mieter wirklich löschen?')) return;
+    try {
+      await deleteMieter(id);
+      setMieterListe(prev => prev.filter(m => m.id !== id));
+    } catch (error) {
+      alert('Fehler beim Löschen: ' + error.message);
     }
   };
 
@@ -6241,7 +6743,20 @@ function App() {
         <PortfolioOverview portfolio={portfolio} />
 
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Meine Immobilien</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveView('portfolio')}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${activeView === 'portfolio' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              🏠 Immobilien
+            </button>
+            <button
+              onClick={() => setActiveView('mieter')}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${activeView === 'mieter' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              👥 Mieter {mieterListe.filter(m => m.aktiv !== false).length > 0 ? `(${mieterListe.filter(m => m.aktiv !== false).length})` : ''}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {/* Import/Export Buttons */}
             {portfolio.length > 0 && (
@@ -6301,7 +6816,7 @@ function App() {
           </div>
         </div>
 
-        {portfolio.length === 0 ? (
+        {activeView === 'portfolio' && (portfolio.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center shadow-lg">
             <div className="text-6xl mb-4">🏡</div>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">Noch keine Immobilien</h3>
@@ -6343,6 +6858,17 @@ function App() {
               </details>
             )}
           </>
+        ))}
+
+        {activeView === 'mieter' && (
+          <MieterDashboard
+            mieterListe={mieterListe}
+            portfolio={portfolio}
+            onAdd={() => setShowMieterForm(true)}
+            onEdit={(m) => setEditMieter(m)}
+            onDelete={handleDeleteMieter}
+            onSave={handleSaveMieter}
+          />
         )}
       </main>
 
