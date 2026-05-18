@@ -291,3 +291,58 @@ export async function deleteMieter(id) {
   const { error } = await supabase.from('mieter').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ==================== NEBENKOSTENABRECHNUNGEN ====================
+
+export async function loadNKAbrechnungen() {
+  const { data, error } = await supabase
+    .from('nebenkostenabrechnungen')
+    .select('*')
+    .order('abrechnungsjahr', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function saveNKAbrechnung(abrechnung) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Nicht eingeloggt');
+
+  const dbData = {
+    mieter_id: abrechnung.mieterId || null,
+    immobilie_id: abrechnung.immobilieId || null,
+    abrechnungsjahr: abrechnung.abrechnungsjahr,
+    mieter_name: abrechnung.mieterName || '',
+    immobilie_name: abrechnung.immobilieName || '',
+    mieterflaeche: abrechnung.mieterflaeche || 0,
+    gesamtflaeche: abrechnung.gesamtflaeche || 0,
+    anzahl_parteien: abrechnung.anzahlParteien || 1,
+    kostenpositionen: abrechnung.kostenpositionen || [],
+    vorauszahlungen_gesamt: abrechnung.vorauszahlungenGesamt || 0,
+    status: abrechnung.status || 'entwurf',
+    notizen: abrechnung.notizen || null,
+  };
+
+  if (abrechnung.id) {
+    const { data, error } = await supabase
+      .from('nebenkostenabrechnungen')
+      .update(dbData)
+      .eq('id', abrechnung.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('nebenkostenabrechnungen')
+      .insert({ ...dbData, user_id: user.id })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+}
+
+export async function deleteNKAbrechnung(id) {
+  const { error } = await supabase.from('nebenkostenabrechnungen').delete().eq('id', id);
+  if (error) throw error;
+}

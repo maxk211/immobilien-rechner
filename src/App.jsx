@@ -3,7 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter } from './supabaseClient';
+import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung } from './supabaseClient';
 import Auth from './Auth';
 
 // PLZ-basierte Preise pro m² für verschiedene deutsche Städte und Regionen
@@ -5772,12 +5772,13 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
   );
 };
 
-const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave }) => {
+const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK }) => {
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [showAuszug, setShowAuszug] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [filter, setFilter] = useState('aktiv'); // 'aktiv' | 'inaktiv' | 'alle'
+  const [expandedNK, setExpandedNK] = useState(null); // mieter.id or null
 
   const getImmobilieName = (id) => {
     const immo = portfolio.find(i => i.id === id);
@@ -5878,7 +5879,13 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 flex-wrap">
+                    <button
+                      onClick={() => setExpandedNK(expandedNK === mieter.id ? null : mieter.id)}
+                      className={`px-3 py-1.5 text-xs border rounded-lg ${expandedNK === mieter.id ? 'bg-teal-600 text-white border-teal-600' : 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'}`}
+                    >
+                      📄 NK {(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length > 0 ? `(${(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length})` : ''}
+                    </button>
                     {mieter.aktiv !== false && (
                       <button
                         onClick={() => { setSelectedMieter(mieter); setShowAuszug(true); }}
@@ -5891,7 +5898,7 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                       onClick={() => { setEditData(mieter); setShowForm(true); }}
                       className="px-3 py-1.5 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
                     >
-                      ✏️ Bearbeiten
+                      ✏️
                     </button>
                     <button
                       onClick={() => onDelete(mieter.id)}
@@ -5901,6 +5908,17 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                     </button>
                   </div>
                 </div>
+                {expandedNK === mieter.id && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <NKAbrechnungListe
+                      mieter={mieter}
+                      nkAbrechnungen={nkAbrechnungen || []}
+                      portfolio={portfolio}
+                      onSave={onSaveNK}
+                      onDelete={onDeleteNK}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -5929,6 +5947,569 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
   );
 };
 
+// ==================== NK-ABRECHNUNG KOMPONENTEN ====================
+
+const NK_STANDARD_POSITIONEN = [
+  { bezeichnung: 'Heizung & Warmwasser', kategorie: 'heizung', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+  { bezeichnung: 'Wasser & Abwasser', kategorie: 'wasser', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+  { bezeichnung: 'Müll & Entsorgung', kategorie: 'muell', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+  { bezeichnung: 'Grundsteuer', kategorie: 'muell', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+  { bezeichnung: 'Gebäudeversicherung', kategorie: 'versicherung', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+  { bezeichnung: 'Hausmeister', kategorie: 'versicherung', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+];
+
+function berechneMieteranteil(pos, mieterflaeche, gesamtflaeche, anzahlParteien) {
+  const gesamt = Number(pos.gesamtkosten) || 0;
+  if (!gesamt) return 0;
+  if (pos.umlageschluessel === 'fest') return Number(pos.mieteranteil_fest) || 0;
+  if (pos.umlageschluessel === 'kopf') return gesamtflaeche > 0 ? gesamt / (anzahlParteien || 1) : 0;
+  // wohnflaeche (default)
+  return gesamtflaeche > 0 ? gesamt * (mieterflaeche / gesamtflaeche) : 0;
+}
+
+const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, onClose }) => {
+  const immo = portfolio.find(i => i.id === mieter.immobilie_id);
+
+  const [form, setForm] = useState(() => {
+    if (existingAbrechnung) {
+      return {
+        abrechnungsjahr: existingAbrechnung.abrechnungsjahr || new Date().getFullYear() - 1,
+        mieterflaeche: existingAbrechnung.mieterflaeche || '',
+        gesamtflaeche: existingAbrechnung.gesamtflaeche || '',
+        anzahlParteien: existingAbrechnung.anzahl_parteien || 1,
+        kostenpositionen: existingAbrechnung.kostenpositionen || NK_STANDARD_POSITIONEN.map(p => ({...p})),
+        vorauszahlungenGesamt: existingAbrechnung.vorauszahlungen_gesamt || '',
+        status: existingAbrechnung.status || 'entwurf',
+        notizen: existingAbrechnung.notizen || '',
+      };
+    }
+    return {
+      abrechnungsjahr: new Date().getFullYear() - 1,
+      mieterflaeche: immo ? (immo.wohnflaeche || '') : '',
+      gesamtflaeche: immo ? (immo.wohnflaeche || '') : '',
+      anzahlParteien: 1,
+      kostenpositionen: NK_STANDARD_POSITIONEN.map(p => ({...p})),
+      vorauszahlungenGesamt: mieter.kaltmiete ? (Number(mieter.kaltmiete) * 0.2 * 12).toFixed(0) : '',
+      status: 'entwurf',
+      notizen: '',
+    };
+  });
+
+  const [saving, setSaving] = useState(false);
+
+  const mf = Number(form.mieterflaeche) || 0;
+  const gf = Number(form.gesamtflaeche) || 0;
+  const ap = Number(form.anzahlParteien) || 1;
+
+  const gesamtMieteranteil = form.kostenpositionen.reduce((sum, pos) =>
+    sum + berechneMieteranteil(pos, mf, gf, ap), 0);
+  const vorauszahlungen = Number(form.vorauszahlungenGesamt) || 0;
+  const ergebnis = gesamtMieteranteil - vorauszahlungen;
+
+  const updatePos = (idx, field, value) => {
+    setForm(f => ({
+      ...f,
+      kostenpositionen: f.kostenpositionen.map((p, i) => i === idx ? { ...p, [field]: value } : p)
+    }));
+  };
+
+  const addPos = () => {
+    setForm(f => ({
+      ...f,
+      kostenpositionen: [...f.kostenpositionen, { bezeichnung: '', kategorie: 'sonstige', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' }]
+    }));
+  };
+
+  const removePos = (idx) => {
+    setForm(f => ({ ...f, kostenpositionen: f.kostenpositionen.filter((_, i) => i !== idx) }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave({
+        ...(existingAbrechnung ? { id: existingAbrechnung.id } : {}),
+        mieterId: mieter.id,
+        immobilieId: mieter.immobilie_id,
+        mieterName: mieter.name,
+        immobilieName: immo ? (immo.name || immo.adresse || '') : '',
+        ...form,
+      });
+    } finally { setSaving(false); }
+  };
+
+  const schluesselLabel = { wohnflaeche: 'Wohnfläche', kopf: 'Pro Partei', fest: 'Fester Betrag' };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+        <div className="sticky top-0 bg-teal-700 text-white p-5 rounded-t-xl flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold">📄 NK-Abrechnung: {mieter.name}</h2>
+            <p className="text-teal-200 text-sm">{immo ? (immo.name || immo.adresse) : ''}</p>
+          </div>
+          <button onClick={onClose} className="text-white text-2xl hover:text-teal-200">&times;</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Basisdaten */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="col-span-2 md:col-span-1">
+              <label className="block text-xs text-gray-600 mb-1 font-semibold">Abrechnungsjahr</label>
+              <input type="number" value={form.abrechnungsjahr}
+                onChange={e => setForm(f => ({...f, abrechnungsjahr: parseInt(e.target.value)}))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 font-semibold">Mieterfl. (m²)</label>
+              <input type="number" step="0.01" value={form.mieterflaeche}
+                onChange={e => setForm(f => ({...f, mieterflaeche: e.target.value}))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 font-semibold">Gesamtfl. (m²)</label>
+              <input type="number" step="0.01" value={form.gesamtflaeche}
+                onChange={e => setForm(f => ({...f, gesamtflaeche: e.target.value}))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 font-semibold">Anz. Parteien</label>
+              <input type="number" value={form.anzahlParteien}
+                onChange={e => setForm(f => ({...f, anzahlParteien: parseInt(e.target.value) || 1}))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" min="1" />
+            </div>
+          </div>
+
+          {/* Anteil-Info */}
+          {mf > 0 && gf > 0 && (
+            <div className="bg-teal-50 rounded-lg px-4 py-2 text-sm text-teal-700">
+              Mieteranteil nach Fläche: <strong>{((mf / gf) * 100).toFixed(1)} %</strong>
+              {' '}({mf} m² von {gf} m²)
+            </div>
+          )}
+
+          {/* Kostenpositionen */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-sm font-semibold text-gray-700">Kostenpositionen</p>
+              <button type="button" onClick={addPos}
+                className="text-xs px-3 py-1 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200">
+                + Position hinzufügen
+              </button>
+            </div>
+            <div className="space-y-2">
+              {form.kostenpositionen.map((pos, idx) => {
+                const anteil = berechneMieteranteil(pos, mf, gf, ap);
+                return (
+                  <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                    <div className="grid grid-cols-12 gap-2 items-end">
+                      <div className="col-span-12 md:col-span-4">
+                        <label className="block text-xs text-gray-500 mb-1">Bezeichnung</label>
+                        <input type="text" value={pos.bezeichnung}
+                          onChange={e => updatePos(idx, 'bezeichnung', e.target.value)}
+                          placeholder="z.B. Heizung"
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
+                      </div>
+                      <div className="col-span-5 md:col-span-2">
+                        <label className="block text-xs text-gray-500 mb-1">Gesamtkosten (€)</label>
+                        <input type="number" step="0.01" value={pos.gesamtkosten}
+                          onChange={e => updatePos(idx, 'gesamtkosten', e.target.value)}
+                          placeholder="0,00"
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
+                      </div>
+                      <div className="col-span-5 md:col-span-2">
+                        <label className="block text-xs text-gray-500 mb-1">Schlüssel</label>
+                        <select value={pos.umlageschluessel}
+                          onChange={e => updatePos(idx, 'umlageschluessel', e.target.value)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500">
+                          <option value="wohnflaeche">Wohnfläche</option>
+                          <option value="kopf">Pro Partei</option>
+                          <option value="fest">Fester Betrag</option>
+                        </select>
+                      </div>
+                      {pos.umlageschluessel === 'fest' ? (
+                        <div className="col-span-5 md:col-span-2">
+                          <label className="block text-xs text-gray-500 mb-1">Mieteranteil (€)</label>
+                          <input type="number" step="0.01" value={pos.mieteranteil_fest}
+                            onChange={e => updatePos(idx, 'mieteranteil_fest', e.target.value)}
+                            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
+                        </div>
+                      ) : (
+                        <div className="col-span-5 md:col-span-2 flex items-end pb-1.5">
+                          <span className="text-sm text-teal-700 font-semibold">
+                            = {anteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                          </span>
+                        </div>
+                      )}
+                      <div className="col-span-2 md:col-span-1 flex items-end justify-end pb-0.5">
+                        <button type="button" onClick={() => removePos(idx)}
+                          className="text-red-400 hover:text-red-600 text-lg leading-none">&times;</button>
+                      </div>
+                    </div>
+                    {pos.umlageschluessel === 'fest' && (
+                      <div className="text-right text-xs text-teal-600 mt-1">
+                        = {anteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Vorauszahlungen + Ergebnis */}
+          <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">Gesamte NK-Kosten des Mieters:</span>
+              <span className="font-bold text-gray-800">
+                {gesamtMieteranteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+              </span>
+            </div>
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <label className="block text-xs text-gray-600 mb-1 font-semibold">Geleistete Vorauszahlungen (€)</label>
+                <input type="number" step="0.01" value={form.vorauszahlungenGesamt}
+                  onChange={e => setForm(f => ({...f, vorauszahlungenGesamt: e.target.value}))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+              </div>
+            </div>
+            <div className={`flex justify-between items-center p-3 rounded-lg font-bold text-sm ${
+              ergebnis > 0 ? 'bg-red-100 text-red-700' : ergebnis < 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+            }`}>
+              <span>{ergebnis > 0 ? '💸 Nachzahlung Mieter:' : ergebnis < 0 ? '💚 Guthaben Mieter:' : 'Ergebnis:'}</span>
+              <span>{Math.abs(ergebnis).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+            </div>
+          </div>
+
+          {/* Status + Notizen */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 font-semibold">Status</label>
+              <select value={form.status} onChange={e => setForm(f => ({...f, status: e.target.value}))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
+                <option value="entwurf">Entwurf</option>
+                <option value="versendet">Versendet</option>
+                <option value="abgeschlossen">Abgeschlossen</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 font-semibold">Notizen</label>
+              <input type="text" value={form.notizen} onChange={e => setForm(f => ({...f, notizen: e.target.value}))}
+                placeholder="Interne Notizen..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              Abbrechen
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-semibold disabled:opacity-50">
+              {saving ? 'Speichern...' : 'Speichern'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
+  const mf = Number(abrechnung.mieterflaeche) || 0;
+  const gf = Number(abrechnung.gesamtflaeche) || 0;
+  const ap = Number(abrechnung.anzahl_parteien) || 1;
+  const positionen = abrechnung.kostenpositionen || [];
+
+  const gesamtMieteranteil = positionen.reduce((sum, pos) =>
+    sum + berechneMieteranteil(pos, mf, gf, ap), 0);
+  const vorauszahlungen = Number(abrechnung.vorauszahlungen_gesamt) || 0;
+  const ergebnis = gesamtMieteranteil - vorauszahlungen;
+
+  const statusBadge = { entwurf: '📝 Entwurf', versendet: '📬 Versendet', abgeschlossen: '✅ Abgeschlossen' };
+  const statusColor = { entwurf: 'bg-yellow-100 text-yellow-700', versendet: 'bg-blue-100 text-blue-700', abgeschlossen: 'bg-green-100 text-green-700' };
+
+  const exportPDF = () => {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    // Header
+    pdf.setFontSize(18);
+    pdf.setTextColor(0, 100, 80);
+    pdf.text('Nebenkostenabrechnung', 105, 20, { align: 'center' });
+    pdf.setFontSize(14);
+    pdf.setTextColor(50, 50, 50);
+    pdf.text(`Abrechnungsjahr ${abrechnung.abrechnungsjahr}`, 105, 28, { align: 'center' });
+
+    pdf.setFontSize(9);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 14, 38);
+
+    // Mieterdaten
+    pdf.setFontSize(11);
+    pdf.setTextColor(30, 30, 30);
+    pdf.text('Mieter:', 14, 50);
+    pdf.setFontSize(10);
+    pdf.text(abrechnung.mieter_name || '—', 14, 57);
+    if (abrechnung.immobilie_name) {
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(abrechnung.immobilie_name, 14, 63);
+    }
+
+    // Flächen
+    pdf.autoTable({
+      startY: 70,
+      head: [['Angabe', 'Wert']],
+      body: [
+        ['Mieterfläche', `${mf} m²`],
+        ['Gesamtfläche', `${gf} m²`],
+        ['Mieteranteil', gf > 0 ? `${((mf / gf) * 100).toFixed(1)} %` : '—'],
+        ['Anzahl Parteien', `${ap}`],
+        ['Abrechnungszeitraum', `01.01.${abrechnung.abrechnungsjahr} – 31.12.${abrechnung.abrechnungsjahr}`],
+      ],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [0, 128, 100] },
+      columnStyles: { 1: { halign: 'right' } },
+      margin: { left: 14, right: 14 }
+    });
+
+    // Kostenpositionen
+    const posRows = positionen.map(pos => {
+      const anteil = berechneMieteranteil(pos, mf, gf, ap);
+      const schluessel = { wohnflaeche: 'Wohnfläche', kopf: 'Pro Partei', fest: 'Fest' }[pos.umlageschluessel] || pos.umlageschluessel;
+      return [
+        pos.bezeichnung,
+        `${(Number(pos.gesamtkosten) || 0).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`,
+        schluessel,
+        `${anteil.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`,
+      ];
+    });
+
+    const lastY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY + 10 : 130;
+    pdf.setFontSize(11);
+    pdf.setTextColor(30, 30, 30);
+    pdf.text('Kostenaufstellung', 14, lastY);
+
+    pdf.autoTable({
+      startY: lastY + 5,
+      head: [['Position', 'Gesamtkosten', 'Schlüssel', 'Ihr Anteil']],
+      body: posRows,
+      foot: [['Gesamt Ihr Anteil', '', '', `${gesamtMieteranteil.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`]],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [0, 128, 100] },
+      footStyles: { fillColor: [220, 240, 235], textColor: [0, 80, 60], fontStyle: 'bold' },
+      columnStyles: { 1: { halign: 'right' }, 3: { halign: 'right' } },
+      margin: { left: 14, right: 14 }
+    });
+
+    // Ergebnis
+    const resY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY + 10 : 200;
+    pdf.autoTable({
+      startY: resY,
+      body: [
+        ['Summe NK-Kosten Ihr Anteil', `${gesamtMieteranteil.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`],
+        ['./. geleistete Vorauszahlungen', `${vorauszahlungen.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`],
+        [ergebnis >= 0 ? '= Nachzahlung' : '= Guthaben', `${Math.abs(ergebnis).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`],
+      ],
+      styles: { fontSize: 10 },
+      columnStyles: {
+        0: { fontStyle: 'bold' },
+        1: { halign: 'right', fontStyle: 'bold' }
+      },
+      didParseCell: (data) => {
+        if (data.row.index === 2) {
+          data.cell.styles.fillColor = ergebnis >= 0 ? [255, 220, 220] : [220, 255, 220];
+          data.cell.styles.textColor = ergebnis >= 0 ? [160, 0, 0] : [0, 120, 0];
+        }
+      },
+      margin: { left: 14, right: 14 }
+    });
+
+    if (abrechnung.notizen) {
+      const notizY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY + 10 : 240;
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Notizen: ${abrechnung.notizen}`, 14, notizY);
+    }
+
+    pdf.save(`NK-Abrechnung_${abrechnung.mieter_name}_${abrechnung.abrechnungsjahr}.pdf`);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
+        <div className="sticky top-0 bg-teal-700 text-white p-5 rounded-t-xl flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold">📄 NK-Abrechnung {abrechnung.abrechnungsjahr}</h2>
+            <p className="text-teal-200 text-sm">{abrechnung.mieter_name} · {abrechnung.immobilie_name}</p>
+          </div>
+          <button onClick={onClose} className="text-white text-2xl hover:text-teal-200">&times;</button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Status */}
+          <div className="flex items-center justify-between">
+            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${statusColor[abrechnung.status] || 'bg-gray-100 text-gray-600'}`}>
+              {statusBadge[abrechnung.status] || abrechnung.status}
+            </span>
+            <span className="text-xs text-gray-400">Erstellt: {new Date(abrechnung.created_at).toLocaleDateString('de-DE')}</span>
+          </div>
+
+          {/* Flächeninfo */}
+          <div className="bg-gray-50 rounded-lg p-3 text-sm grid grid-cols-3 gap-2">
+            <div><div className="text-xs text-gray-500">Mieterfläche</div><div className="font-semibold">{mf} m²</div></div>
+            <div><div className="text-xs text-gray-500">Gesamtfläche</div><div className="font-semibold">{gf} m²</div></div>
+            <div><div className="text-xs text-gray-500">Anteil</div><div className="font-semibold text-teal-700">{gf > 0 ? ((mf/gf)*100).toFixed(1) : '—'} %</div></div>
+          </div>
+
+          {/* Positionen */}
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-2">Kostenaufstellung</p>
+            <div className="space-y-1">
+              {positionen.map((pos, idx) => {
+                const anteil = berechneMieteranteil(pos, mf, gf, ap);
+                return (
+                  <div key={idx} className="flex justify-between text-sm py-1 border-b border-gray-100">
+                    <span className="text-gray-700">{pos.bezeichnung}</span>
+                    <div className="text-right">
+                      <span className="font-semibold text-gray-800">
+                        {anteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </span>
+                      <span className="text-xs text-gray-400 ml-1">
+                        (von {(Number(pos.gesamtkosten)||0).toLocaleString('de-DE', {minimumFractionDigits:2})} €)
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ergebnis */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">NK-Kosten gesamt (Ihr Anteil)</span>
+              <span className="font-semibold">{gesamtMieteranteil.toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">./. Vorauszahlungen</span>
+              <span className="font-semibold">− {vorauszahlungen.toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
+            </div>
+            <div className={`flex justify-between font-bold pt-2 border-t border-gray-200 ${ergebnis > 0 ? 'text-red-700' : ergebnis < 0 ? 'text-green-700' : 'text-gray-700'}`}>
+              <span>{ergebnis > 0 ? '💸 Nachzahlung Mieter' : ergebnis < 0 ? '💚 Guthaben Mieter' : 'Ergebnis'}</span>
+              <span>{Math.abs(ergebnis).toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
+            </div>
+          </div>
+
+          {abrechnung.notizen && (
+            <div className="text-xs text-gray-500 bg-gray-50 rounded p-3">📝 {abrechnung.notizen}</div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-2 pt-2">
+            <button onClick={exportPDF}
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-semibold text-sm">
+              📥 PDF herunterladen
+            </button>
+            <button onClick={onEdit}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+              ✏️ Bearbeiten
+            </button>
+            <button onClick={onDelete}
+              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm">
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [editAbrechnung, setEditAbrechnung] = useState(null);
+  const [viewAbrechnung, setViewAbrechnung] = useState(null);
+
+  const meinAbrechnungen = nkAbrechnungen.filter(a => a.mieter_id === mieter.id)
+    .sort((a, b) => b.abrechnungsjahr - a.abrechnungsjahr);
+
+  const statusColor = {
+    entwurf: 'bg-yellow-100 text-yellow-700',
+    versendet: 'bg-blue-100 text-blue-700',
+    abgeschlossen: 'bg-green-100 text-green-700'
+  };
+  const statusLabel = { entwurf: 'Entwurf', versendet: 'Versendet', abgeschlossen: 'Abgeschlossen' };
+
+  return (
+    <div className="mt-4">
+      <div className="flex justify-between items-center mb-3">
+        <p className="text-sm font-semibold text-gray-700">📄 NK-Abrechnungen</p>
+        <button onClick={() => { setEditAbrechnung(null); setShowForm(true); }}
+          className="text-xs px-3 py-1 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200">
+          + Neue Abrechnung
+        </button>
+      </div>
+
+      {meinAbrechnungen.length === 0 ? (
+        <p className="text-xs text-gray-400 italic">Noch keine NK-Abrechnungen für diesen Mieter.</p>
+      ) : (
+        <div className="space-y-2">
+          {meinAbrechnungen.map(a => {
+            const mf = Number(a.mieterflaeche) || 0;
+            const gf = Number(a.gesamtflaeche) || 0;
+            const ap = Number(a.anzahl_parteien) || 1;
+            const positionen = a.kostenpositionen || [];
+            const gesamt = positionen.reduce((s, p) => s + berechneMieteranteil(p, mf, gf, ap), 0);
+            const ergebnis = gesamt - (Number(a.vorauszahlungen_gesamt) || 0);
+            return (
+              <div key={a.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className="font-semibold text-gray-800">{a.abrechnungsjahr}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[a.status] || 'bg-gray-100'}`}>
+                    {statusLabel[a.status] || a.status}
+                  </span>
+                  <span className={`text-xs font-semibold ${ergebnis > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {ergebnis > 0 ? `+${Math.abs(ergebnis).toLocaleString('de-DE', {maximumFractionDigits:0})} € NK` : `-${Math.abs(ergebnis).toLocaleString('de-DE', {maximumFractionDigits:0})} € Gut.`}
+                  </span>
+                </div>
+                <button onClick={() => setViewAbrechnung(a)}
+                  className="text-xs px-2 py-1 bg-teal-50 text-teal-700 rounded hover:bg-teal-100">
+                  Ansehen
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showForm && (
+        <NKAbrechnungFormular
+          mieter={mieter}
+          portfolio={portfolio}
+          existingAbrechnung={editAbrechnung}
+          onSave={async (data) => { await onSave(data); setShowForm(false); setEditAbrechnung(null); }}
+          onClose={() => { setShowForm(false); setEditAbrechnung(null); }}
+        />
+      )}
+
+      {viewAbrechnung && (
+        <NKAbrechnungDetail
+          abrechnung={viewAbrechnung}
+          onEdit={() => { setEditAbrechnung(viewAbrechnung); setViewAbrechnung(null); setShowForm(true); }}
+          onDelete={async () => {
+            if (!window.confirm('Abrechnung wirklich löschen?')) return;
+            await onDelete(viewAbrechnung.id);
+            setViewAbrechnung(null);
+          }}
+          onClose={() => setViewAbrechnung(null)}
+        />
+      )}
+    </div>
+  );
+};
+
 // Haupt-App Komponente
 function App() {
   const [session, setSession] = useState(null);
@@ -5944,6 +6525,7 @@ function App() {
   const [showMieterForm, setShowMieterForm] = useState(false);
   const [editMieter, setEditMieter] = useState(null);
   const [selectedMieter, setSelectedMieter] = useState(null);
+  const [nkAbrechnungen, setNkAbrechnungen] = useState([]);
 
   // Auth State überwachen
   useEffect(() => {
@@ -5966,9 +6548,11 @@ function App() {
     if (session) {
       loadPortfolioFromDB();
       loadMieterFromDB();
+      loadNKFromDB();
     } else {
       setPortfolio([]);
       setMieterListe([]);
+      setNkAbrechnungen([]);
     }
   }, [session]);
 
@@ -5992,6 +6576,38 @@ function App() {
       setMieterListe(data);
     } catch (error) {
       console.error('Fehler beim Laden der Mieter:', error);
+    }
+  };
+
+  // NK-Abrechnungen laden
+  const loadNKFromDB = async () => {
+    try {
+      const data = await loadNKAbrechnungen();
+      setNkAbrechnungen(data);
+    } catch (error) {
+      console.error('Fehler beim Laden der NK-Abrechnungen:', error);
+    }
+  };
+
+  const handleSaveNK = async (data) => {
+    try {
+      const saved = await saveNKAbrechnung(data);
+      if (data.id) {
+        setNkAbrechnungen(prev => prev.map(a => a.id === data.id ? saved : a));
+      } else {
+        setNkAbrechnungen(prev => [saved, ...prev]);
+      }
+    } catch (error) {
+      alert('Fehler beim Speichern der NK-Abrechnung: ' + error.message);
+    }
+  };
+
+  const handleDeleteNK = async (id) => {
+    try {
+      await deleteNKAbrechnung(id);
+      setNkAbrechnungen(prev => prev.filter(a => a.id !== id));
+    } catch (error) {
+      alert('Fehler beim Löschen: ' + error.message);
     }
   };
 
@@ -6868,6 +7484,9 @@ function App() {
             onEdit={(m) => setEditMieter(m)}
             onDelete={handleDeleteMieter}
             onSave={handleSaveMieter}
+            nkAbrechnungen={nkAbrechnungen}
+            onSaveNK={handleSaveNK}
+            onDeleteNK={handleDeleteNK}
           />
         )}
       </main>
