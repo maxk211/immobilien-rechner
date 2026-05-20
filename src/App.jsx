@@ -3215,276 +3215,339 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
 // Mieteinnahmen-Tracker Komponente
 const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   const [mietEingaenge, setMietEingaenge] = useState(params.mietEingaenge || []);
-  const [neuerEingang, setNeuerEingang] = useState({
-    datum: new Date().toISOString().split('T')[0],
-    betrag: params.kaltmiete || 0,
-    typ: 'kaltmiete',
-    notiz: ''
-  });
   const [filterJahr, setFilterJahr] = useState(new Date().getFullYear());
-  const [filterMonat, setFilterMonat] = useState(null); // null = alle Monate
+  const [ausnahmeMonat, setAusnahmeMonat] = useState(null); // {nr, name} for exception modal
+  const [ausnahmeForm, setAusnahmeForm] = useState({ typ: 'verspaetet', betrag: '', notiz: '' });
+  const [detailMonat, setDetailMonat] = useState(null); // nr of expanded month
 
   const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
   const aktuellesJahr = new Date().getFullYear();
+  const aktuellerMonat = new Date().getMonth() + 1;
   const jahre = [];
-  for (let j = kaufjahr; j <= aktuellesJahr + 1; j++) {
-    jahre.push(j);
-  }
+  for (let j = kaufjahr; j <= aktuellesJahr + 1; j++) jahre.push(j);
 
-  const monate = [
-    { nr: 1, name: 'Januar' }, { nr: 2, name: 'Februar' }, { nr: 3, name: 'März' },
-    { nr: 4, name: 'April' }, { nr: 5, name: 'Mai' }, { nr: 6, name: 'Juni' },
-    { nr: 7, name: 'Juli' }, { nr: 8, name: 'August' }, { nr: 9, name: 'September' },
-    { nr: 10, name: 'Oktober' }, { nr: 11, name: 'November' }, { nr: 12, name: 'Dezember' }
+  const MONATE = [
+    { nr: 1, name: 'Januar', kurz: 'Jan' }, { nr: 2, name: 'Februar', kurz: 'Feb' },
+    { nr: 3, name: 'März', kurz: 'Mär' }, { nr: 4, name: 'April', kurz: 'Apr' },
+    { nr: 5, name: 'Mai', kurz: 'Mai' }, { nr: 6, name: 'Juni', kurz: 'Jun' },
+    { nr: 7, name: 'Juli', kurz: 'Jul' }, { nr: 8, name: 'August', kurz: 'Aug' },
+    { nr: 9, name: 'September', kurz: 'Sep' }, { nr: 10, name: 'Oktober', kurz: 'Okt' },
+    { nr: 11, name: 'November', kurz: 'Nov' }, { nr: 12, name: 'Dezember', kurz: 'Dez' }
   ];
 
-  const handleAddEingang = () => {
-    if (!neuerEingang.datum || !neuerEingang.betrag) return;
+  const isDauerauftrag = params.dauerauftrag || false;
+  const dauerauftragBetrag = params.dauerauftragBetrag || params.kaltmiete || 0;
+  const erwarteterBetrag = params.kaltmiete || 0;
 
-    const neueEingaenge = [...mietEingaenge, { ...neuerEingang, id: Date.now() }];
-    setMietEingaenge(neueEingaenge);
-    updateParams({ ...params, mietEingaenge: neueEingaenge });
-
-    // Reset für nächsten Eintrag
-    setNeuerEingang({
-      datum: new Date().toISOString().split('T')[0],
-      betrag: params.kaltmiete || 0,
-      typ: 'kaltmiete',
-      notiz: ''
-    });
-  };
-
-  const handleDeleteEingang = (id) => {
-    const neueEingaenge = mietEingaenge.filter(e => e.id !== id);
+  const saveEingaenge = (neueEingaenge) => {
     setMietEingaenge(neueEingaenge);
     updateParams({ ...params, mietEingaenge: neueEingaenge });
   };
 
-  // Gefilterte Eingänge
-  const gefilterteEingaenge = mietEingaenge.filter(e => {
-    const datum = new Date(e.datum);
-    if (datum.getFullYear() !== filterJahr) return false;
-    if (filterMonat !== null && (datum.getMonth() + 1) !== filterMonat) return false;
-    return true;
-  }).sort((a, b) => new Date(b.datum) - new Date(a.datum));
+  const handleDeleteEingang = (id) => saveEingaenge(mietEingaenge.filter(e => e.id !== id));
 
-  // Summen berechnen
-  const summeGefiltert = gefilterteEingaenge.reduce((sum, e) => sum + (parseFloat(e.betrag) || 0), 0);
+  // Ein-Klick Abhaken: Erstellt sofort eine Zahlung für den Monat
+  const handleAbhaken = (monat) => {
+    const datum = `${filterJahr}-${String(monat.nr).padStart(2, '0')}-01`;
+    const neuerEingang = { id: Date.now(), datum, betrag: erwarteterBetrag, typ: 'kaltmiete', notiz: '' };
+    saveEingaenge([...mietEingaenge, neuerEingang]);
+  };
 
-  // Erwartete Miete pro Monat
-  const erwarteteMonatsmiete = params.kaltmiete || 0;
+  // Ausnahme speichern
+  const handleAusnahmeSpeichern = () => {
+    if (!ausnahmeMonat) return;
+    const datum = `${filterJahr}-${String(ausnahmeMonat.nr).padStart(2, '0')}-05`;
+    const ausnahmeLabels = { verspaetet: 'Verspätet', falscher_betrag: 'Falscher Betrag', nicht_bezahlt: 'Nicht bezahlt' };
+    const neuerEingang = {
+      id: Date.now(),
+      datum,
+      betrag: ausnahmeForm.betrag !== '' ? parseFloat(ausnahmeForm.betrag) : 0,
+      typ: 'ausnahme',
+      ausnahmeTyp: ausnahmeForm.typ,
+      notiz: ausnahmeForm.notiz || ausnahmeLabels[ausnahmeForm.typ]
+    };
+    saveEingaenge([...mietEingaenge, neuerEingang]);
+    setAusnahmeMonat(null);
+    setAusnahmeForm({ typ: 'verspaetet', betrag: '', notiz: '' });
+  };
 
-  // Monatsübersicht für aktuelles Jahr
-  const monatsUebersicht = monate.map(m => {
+  // Monatsberechnung
+  const monatsUebersicht = MONATE.map(m => {
     const monatEingaenge = mietEingaenge.filter(e => {
-      const datum = new Date(e.datum);
-      return datum.getFullYear() === filterJahr && (datum.getMonth() + 1) === m.nr;
+      const d = new Date(e.datum);
+      return d.getFullYear() === filterJahr && (d.getMonth() + 1) === m.nr;
     });
-    const summe = monatEingaenge.reduce((sum, e) => sum + (parseFloat(e.betrag) || 0), 0);
-    const erwartet = erwarteteMonatsmiete;
-    const differenz = summe - erwartet;
-    const status = summe === 0 ? 'offen' : (summe >= erwartet ? 'bezahlt' : 'teilweise');
+    const ausnahmen = monatEingaenge.filter(e => e.typ === 'ausnahme');
+    const zahlungen = monatEingaenge.filter(e => e.typ !== 'ausnahme');
+    const summe = zahlungen.reduce((s, e) => s + (parseFloat(e.betrag) || 0), 0);
+    const istZukunft = filterJahr > aktuellesJahr || (filterJahr === aktuellesJahr && m.nr > aktuellerMonat);
 
-    // Prüfen ob Zahlung verspätet war (nach dem 5. des Monats)
-    const verspaetet = monatEingaenge.some(e => {
-      const datum = new Date(e.datum);
-      return datum.getDate() > 5;
-    });
+    let status;
+    if (istZukunft) {
+      status = 'zukunft';
+    } else if (ausnahmen.some(e => e.ausnahmeTyp === 'nicht_bezahlt')) {
+      status = 'nicht_bezahlt';
+    } else if (isDauerauftrag && ausnahmen.length === 0) {
+      status = 'dauerauftrag'; // auto-bezahlt
+    } else if (summe >= erwarteterBetrag && summe > 0) {
+      status = 'bezahlt';
+    } else if (summe > 0) {
+      status = 'teilweise';
+    } else {
+      status = 'offen';
+    }
+    const verspaetet = ausnahmen.some(e => e.ausnahmeTyp === 'verspaetet') ||
+      zahlungen.some(e => new Date(e.datum).getDate() > 5);
 
-    return { ...m, summe, erwartet, differenz, status, verspaetet, eingaenge: monatEingaenge };
+    return { ...m, monatEingaenge, ausnahmen, zahlungen, summe, status, verspaetet, istZukunft };
   });
 
-  // Offene Forderungen
-  const aktuellerMonat = new Date().getMonth() + 1;
-  const offeneForderungen = monatsUebersicht.filter(m =>
-    m.nr <= aktuellerMonat && m.status !== 'bezahlt' && filterJahr === new Date().getFullYear()
-  );
+  const bezahltMonate = monatsUebersicht.filter(m => m.status === 'bezahlt' || m.status === 'dauerauftrag').length;
+  const offeneMonate = monatsUebersicht.filter(m => m.status === 'offen' || m.status === 'nicht_bezahlt').length;
+  const gesamtJahr = monatsUebersicht.reduce((s, m) => {
+    if (m.status === 'dauerauftrag') return s + (dauerauftragBetrag || erwarteterBetrag);
+    return s + m.summe;
+  }, 0);
+
+  const statusConfig = {
+    bezahlt:      { bg: 'bg-emerald-50 border-emerald-200', icon: '✓', iconColor: 'text-emerald-600', label: 'bg-emerald-100 text-emerald-700' },
+    dauerauftrag: { bg: 'bg-emerald-50 border-emerald-200', icon: '⚡', iconColor: 'text-emerald-500', label: 'bg-emerald-100 text-emerald-700' },
+    teilweise:    { bg: 'bg-amber-50 border-amber-200', icon: '~', iconColor: 'text-amber-600', label: 'bg-amber-100 text-amber-700' },
+    offen:        { bg: 'bg-red-50 border-red-200', icon: '✗', iconColor: 'text-red-500', label: 'bg-red-100 text-red-700' },
+    nicht_bezahlt:{ bg: 'bg-red-50 border-red-300', icon: '✗', iconColor: 'text-red-600', label: 'bg-red-100 text-red-700' },
+    zukunft:      { bg: 'bg-gray-50 border-gray-200', icon: '–', iconColor: 'text-gray-300', label: 'bg-gray-100 text-gray-400' },
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Neuen Eingang hinzufügen */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="font-semibold text-gray-700 mb-4">Mieteingang erfassen</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Eingangsdatum</label>
-            <input
-              type="date"
-              value={neuerEingang.datum}
-              onChange={(e) => setNeuerEingang({...neuerEingang, datum: e.target.value})}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
-            <input
-              type="number"
-              value={neuerEingang.betrag}
-              onChange={(e) => setNeuerEingang({...neuerEingang, betrag: parseFloat(e.target.value) || 0})}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Typ</label>
-            <select
-              value={neuerEingang.typ}
-              onChange={(e) => setNeuerEingang({...neuerEingang, typ: e.target.value})}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
-            >
-              <option value="kaltmiete">Kaltmiete</option>
-              <option value="nebenkosten">Nebenkosten</option>
-              <option value="nachzahlung">Nachzahlung</option>
-              <option value="kaution">Kaution</option>
-              <option value="sonstige">Sonstige</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Notiz (optional)</label>
-            <input
-              type="text"
-              value={neuerEingang.notiz}
-              onChange={(e) => setNeuerEingang({...neuerEingang, notiz: e.target.value})}
-              placeholder="z.B. Mieter Name"
-              className="w-full px-3 py-2 border rounded-lg text-sm"
-            />
-          </div>
-          <div className="flex items-end">
+    <div className="space-y-5">
+      {/* Dauerauftrag-Einstellung */}
+      <div className={`rounded-2xl border p-5 ${isDauerauftrag ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleAddEingang}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+              type="button"
+              onClick={() => updateParams({ ...params, dauerauftrag: !isDauerauftrag, dauerauftragBetrag: dauerauftragBetrag || erwarteterBetrag })}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isDauerauftrag ? 'bg-emerald-500' : 'bg-gray-300'}`}
             >
-              + Hinzufügen
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${isDauerauftrag ? 'translate-x-6' : ''}`}></span>
             </button>
+            <div>
+              <div className="font-bold text-gray-800 text-sm">⚡ Dauerauftrag</div>
+              <div className="text-xs text-gray-500">Miete kommt automatisch — kein manuelles Abhaken nötig</div>
+            </div>
           </div>
+          {isDauerauftrag && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 font-medium">Erwarteter Betrag:</span>
+              <input
+                type="number"
+                value={dauerauftragBetrag}
+                onChange={e => updateParams({ ...params, dauerauftragBetrag: parseFloat(e.target.value) || 0 })}
+                className="w-28 px-3 py-1.5 text-sm font-bold border border-emerald-300 rounded-lg text-emerald-700 bg-white focus:ring-2 focus:ring-emerald-400"
+              />
+              <span className="text-sm text-gray-500">€/Monat</span>
+            </div>
+          )}
+        </div>
+        {isDauerauftrag && (
+          <p className="text-xs text-emerald-600 mt-3">
+            Alle vergangenen Monate werden als ✓ bezahlt angezeigt. Nur Ausnahmen (Verspätung, falscher Betrag) müssen erfasst werden.
+          </p>
+        )}
+      </div>
+
+      {/* Jahres-KPI Leiste */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
+          <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Bezahlte Monate</div>
+          <div className="text-2xl font-black text-emerald-600">{bezahltMonate}<span className="text-sm text-gray-400 font-normal"> / 12</span></div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
+          <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Offen/Ausstehend</div>
+          <div className={`text-2xl font-black ${offeneMonate > 0 ? 'text-red-500' : 'text-gray-300'}`}>{offeneMonate}</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
+          <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Einnahmen {filterJahr}</div>
+          <div className="text-2xl font-black text-indigo-600">{formatCurrency(gesamtJahr)}</div>
         </div>
       </div>
 
-      {/* Offene Forderungen Warnung */}
-      {offeneForderungen.length > 0 && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-          <h4 className="font-semibold text-red-700 mb-2">⚠️ Offene Forderungen</h4>
-          <div className="space-y-1">
-            {offeneForderungen.map(m => (
-              <div key={m.nr} className="flex justify-between text-sm text-red-600">
-                <span>{m.name} {filterJahr}:</span>
-                <span className="font-medium">
-                  {m.status === 'offen' ? 'Nicht bezahlt' : `Offen: ${formatCurrency(Math.abs(m.differenz))}`}
-                </span>
+      {/* Jahresauswahl */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Jahr:</span>
+        <div className="flex gap-1">
+          {jahre.map(j => (
+            <button key={j} onClick={() => setFilterJahr(j)}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              {j}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Monatsraster */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {monatsUebersicht.map(m => {
+          const cfg = statusConfig[m.status] || statusConfig.zukunft;
+          const isExpanded = detailMonat === m.nr;
+          return (
+            <div key={m.nr} className={`rounded-2xl border-2 transition-all ${cfg.bg} ${isExpanded ? 'col-span-2 md:col-span-3 lg:col-span-4' : ''}`}>
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{m.kurz}</div>
+                    <div className="text-base font-bold text-gray-800 leading-tight">{m.name}</div>
+                  </div>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-lg font-black border-2 ${
+                    m.status === 'bezahlt' || m.status === 'dauerauftrag' ? 'bg-emerald-100 border-emerald-300 text-emerald-600' :
+                    m.status === 'offen' || m.status === 'nicht_bezahlt' ? 'bg-red-100 border-red-300 text-red-500' :
+                    m.status === 'teilweise' ? 'bg-amber-100 border-amber-300 text-amber-600' :
+                    'bg-gray-100 border-gray-200 text-gray-300'
+                  }`}>
+                    {cfg.icon}
+                  </div>
+                </div>
+
+                {/* Betrag */}
+                <div className={`text-lg font-black mb-1 ${
+                  m.status === 'bezahlt' || m.status === 'dauerauftrag' ? 'text-emerald-700' :
+                  m.status === 'offen' || m.status === 'nicht_bezahlt' ? 'text-red-500' :
+                  m.status === 'teilweise' ? 'text-amber-700' : 'text-gray-300'
+                }`}>
+                  {m.status === 'dauerauftrag'
+                    ? formatCurrency(dauerauftragBetrag)
+                    : m.summe > 0 ? formatCurrency(m.summe)
+                    : m.istZukunft ? '—' : formatCurrency(0)}
+                </div>
+
+                {/* Badges */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {m.status === 'dauerauftrag' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">⚡ Auto</span>}
+                  {m.verspaetet && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">⏰ Verspätet</span>}
+                  {m.ausnahmen.length > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠ Ausnahme</span>}
+                  {m.status === 'teilweise' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Teilzahlung</span>}
+                </div>
+
+                {/* Action buttons */}
+                {!m.istZukunft && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {(m.status === 'offen') && !isDauerauftrag && (
+                      <button onClick={() => handleAbhaken(m)}
+                        className="flex-1 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        ✓ Abhaken
+                      </button>
+                    )}
+                    {(m.status === 'bezahlt' || m.status === 'dauerauftrag' || m.status === 'teilweise') && (
+                      <button onClick={() => setDetailMonat(isExpanded ? null : m.nr)}
+                        className="flex-1 py-1.5 text-xs font-semibold bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                        {isExpanded ? '▲ Schließen' : '▾ Details'}
+                      </button>
+                    )}
+                    <button onClick={() => { setAusnahmeMonat(m); setAusnahmeForm({ typ: 'verspaetet', betrag: '', notiz: '' }); }}
+                      className="py-1.5 px-2 text-xs font-semibold bg-white border border-gray-200 text-gray-500 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                      ⚠
+                    </button>
+                    {m.status !== 'offen' && !isDauerauftrag && m.zahlungen.length > 0 && (
+                      <button onClick={() => setDetailMonat(isExpanded ? null : m.nr)}
+                        className="py-1.5 px-2 text-xs font-semibold bg-white border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50 transition-colors">
+                        ▾
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+
+              {/* Expanded detail view */}
+              {isExpanded && (
+                <div className="border-t border-gray-200 px-4 pb-4">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mt-3 mb-2">Einträge</p>
+                  <div className="space-y-1.5">
+                    {m.monatEingaenge.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">Keine Einträge</p>
+                    ) : m.monatEingaenge.map(e => (
+                      <div key={e.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 text-sm border border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-1.5 py-0.5 rounded font-semibold ${e.typ === 'ausnahme' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {e.typ === 'ausnahme' ? (e.ausnahmeTyp === 'verspaetet' ? '⏰' : e.ausnahmeTyp === 'nicht_bezahlt' ? '✗' : '⚠') : '✓'}
+                          </span>
+                          <span className="text-gray-600">{new Date(e.datum).toLocaleDateString('de-DE')}</span>
+                          {e.notiz && <span className="text-gray-400 text-xs">— {e.notiz}</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${e.typ === 'ausnahme' ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {e.betrag > 0 ? formatCurrency(e.betrag) : '—'}
+                          </span>
+                          <button onClick={() => handleDeleteEingang(e.id)} className="text-gray-300 hover:text-red-500 text-base">×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Ausnahme-Modal */}
+      {ausnahmeMonat && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-gray-800">⚠ Ausnahme — {ausnahmeMonat.name} {filterJahr}</h3>
+              <button onClick={() => setAusnahmeMonat(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Art der Ausnahme</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[['verspaetet','⏰ Verspätet'],['falscher_betrag','⚠ Falsch'],['nicht_bezahlt','✗ Nicht bezahlt']].map(([val,label]) => (
+                    <button key={val} onClick={() => setAusnahmeForm(f => ({...f, typ: val}))}
+                      className={`py-2 text-xs font-bold rounded-xl border-2 transition-all ${ausnahmeForm.typ === val ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {ausnahmeForm.typ !== 'nicht_bezahlt' && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">
+                    {ausnahmeForm.typ === 'falscher_betrag' ? 'Eingegangener Betrag (€)' : 'Betrag (optional)'}
+                  </label>
+                  <input type="number" value={ausnahmeForm.betrag}
+                    onChange={e => setAusnahmeForm(f => ({...f, betrag: e.target.value}))}
+                    placeholder={formatCurrency(erwarteterBetrag)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-red-400" />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Notiz (optional)</label>
+                <input type="text" value={ausnahmeForm.notiz}
+                  onChange={e => setAusnahmeForm(f => ({...f, notiz: e.target.value}))}
+                  placeholder="z.B. Mieter hat falschen Betrag überwiesen"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-red-400" />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setAusnahmeMonat(null)}
+                className="flex-1 py-2 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50">
+                Abbrechen
+              </button>
+              <button onClick={handleAusnahmeSpeichern}
+                className="flex-1 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700">
+                Ausnahme speichern
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Jahres- und Monatsfilter */}
-      <div className="flex gap-4 items-center">
-        <div>
-          <label className="block text-xs text-gray-600 mb-1">Jahr</label>
-          <select
-            value={filterJahr}
-            onChange={(e) => setFilterJahr(parseInt(e.target.value))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
-            {jahre.map(j => (
-              <option key={j} value={j}>{j}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-600 mb-1">Monat</label>
-          <select
-            value={filterMonat || ''}
-            onChange={(e) => setFilterMonat(e.target.value ? parseInt(e.target.value) : null)}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
-            <option value="">Alle Monate</option>
-            {monate.map(m => (
-              <option key={m.nr} value={m.nr}>{m.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ml-auto text-right">
-          <div className="text-xs text-gray-600">Summe {filterMonat ? monate.find(m => m.nr === filterMonat)?.name : 'Jahr'}</div>
-          <div className="text-xl font-bold text-green-600">{formatCurrency(summeGefiltert)}</div>
-        </div>
-      </div>
-
-      {/* Monatsübersicht Grid */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="font-semibold text-gray-700 mb-4">Monatsübersicht {filterJahr}</h3>
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {monatsUebersicht.map(m => (
-            <div
-              key={m.nr}
-              onClick={() => setFilterMonat(filterMonat === m.nr ? null : m.nr)}
-              className={`p-3 rounded-lg cursor-pointer transition-all ${
-                filterMonat === m.nr ? 'ring-2 ring-blue-500' : ''
-              } ${
-                m.status === 'bezahlt' ? 'bg-green-100 hover:bg-green-200' :
-                m.status === 'teilweise' ? 'bg-yellow-100 hover:bg-yellow-200' :
-                m.nr <= aktuellerMonat ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-            >
-              <div className="text-xs font-medium text-gray-600">{m.name.substring(0, 3)}</div>
-              <div className={`text-sm font-bold ${
-                m.status === 'bezahlt' ? 'text-green-700' :
-                m.status === 'teilweise' ? 'text-yellow-700' :
-                m.nr <= aktuellerMonat ? 'text-red-700' : 'text-gray-500'
-              }`}>
-                {formatCurrency(m.summe)}
-              </div>
-              {m.verspaetet && m.status === 'bezahlt' && (
-                <div className="text-xs text-orange-600">⏰ verspätet</div>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 flex gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> Bezahlt</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-yellow-100 rounded"></span> Teilweise</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> Offen</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-100 rounded"></span> Zukunft</span>
-        </div>
-      </div>
-
-      {/* Detailliste */}
-      <div className="bg-white border rounded-lg overflow-hidden">
-        <div className="bg-gray-100 px-4 py-2 font-semibold text-gray-700 text-sm">
-          Eingänge {filterMonat ? monate.find(m => m.nr === filterMonat)?.name : ''} {filterJahr} ({gefilterteEingaenge.length})
-        </div>
-        {gefilterteEingaenge.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            Keine Mieteinnahmen für diesen Zeitraum erfasst.
-          </div>
-        ) : (
-          <div className="divide-y">
-            {gefilterteEingaenge.map(e => (
-              <div key={e.id} className="px-4 py-3 flex justify-between items-center hover:bg-gray-50">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <div className="font-medium">{new Date(e.datum).toLocaleDateString('de-DE')}</div>
-                    <div className="text-xs text-gray-500">
-                      {e.typ === 'kaltmiete' ? 'Kaltmiete' :
-                       e.typ === 'nebenkosten' ? 'Nebenkosten' :
-                       e.typ === 'nachzahlung' ? 'Nachzahlung' :
-                       e.typ === 'kaution' ? 'Kaution' : 'Sonstige'}
-                      {e.notiz && ` - ${e.notiz}`}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-lg font-bold text-green-600">{formatCurrency(e.betrag)}</div>
-                  <button
-                    onClick={() => handleDeleteEingang(e.id)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Legende */}
+      <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-600 font-bold text-[10px]">✓</span> Bezahlt</span>
+        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-500 font-bold text-[10px]">⚡</span> Dauerauftrag</span>
+        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-600 font-bold text-[10px]">~</span> Teilzahlung</span>
+        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-red-100 border border-red-300 flex items-center justify-center text-red-500 font-bold text-[10px]">✗</span> Offen / Ausnahme</span>
       </div>
     </div>
   );
@@ -4013,7 +4076,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     investitionen: immobilie.investitionen || [],
     aktiv: immobilie.aktiv !== false,
     aufgabedatum: immobilie.aufgabedatum || '',
-    mietAnpassungen: immobilie.mietAnpassungen || []
+    mietAnpassungen: immobilie.mietAnpassungen || [],
+    dauerauftrag: immobilie.dauerauftrag || false,
+    dauerauftragBetrag: immobilie.dauerauftragBetrag || immobilie.kaltmiete || 0
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());

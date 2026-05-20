@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag'];
 
 // Immobilie speichern (neu oder update)
 export async function saveImmobilie(immobilie) {
@@ -151,7 +151,9 @@ function dbToApp(db) {
     aktiv: db.aktiv !== false,
     aufgabedatum: db.aufgabedatum || '',
     mietAnpassungen: db.miet_anpassungen || [],
-    mietvertragEnde: db.mietvertrag_ende || ''
+    mietvertragEnde: db.mietvertrag_ende || '',
+    dauerauftrag: db.dauerauftrag || false,
+    dauerauftragBetrag: Number(db.dauerauftrag_betrag) || 0
   };
 }
 
@@ -220,7 +222,9 @@ function appToDb(app) {
     aktiv: app.aktiv !== false,
     aufgabedatum: app.aufgabedatum || null,
     miet_anpassungen: app.mietAnpassungen || [],
-    mietvertrag_ende: app.mietvertragEnde || null
+    mietvertrag_ende: app.mietvertragEnde || null,
+    dauerauftrag: app.dauerauftrag || false,
+    dauerauftrag_betrag: app.dauerauftragBetrag || null
   };
 }
 
