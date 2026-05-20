@@ -1259,17 +1259,15 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   const wertsteigerung = !isMietimmobilie ? berechneWertsteigerungSeitKauf(immobilie, aktuellerWert) : null;
   const restschuldInfo = !isMietimmobilie ? berechneRestschuld(immobilie) : null;
 
-  // Arbitrage Cashflow berechnen
   const arbitrageCashflow = isMietimmobilie ? (() => {
     const ende = immobilie.mietvertragEnde ? new Date(immobilie.mietvertragEnde) : null;
-    if (ende && ende < new Date()) return 0; // Vertrag beendet
+    if (ende && ende < new Date()) return 0;
     const einnahmen = (immobilie.anzahlZimmerVermietet || 0) * (immobilie.untermieteProZimmer || 0);
     const zusatzkosten = (immobilie.arbitrageStrom || 0) + (immobilie.arbitrageInternet || 0) + (immobilie.arbitrageGEZ ?? 18.36);
     const ausgaben = (immobilie.eigeneWarmmiete || 0) + zusatzkosten;
     return einnahmen - ausgaben;
   })() : 0;
 
-  // Kaufimmobilie Cashflow berechnen
   const kaufCashflow = !isMietimmobilie ? (() => {
     const kaltmiete = immobilie.kaltmiete || 0;
     const nkVomMieter = (immobilie.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immobilie.nebenkostenVomMieter || 0) : 0;
@@ -1285,157 +1283,146 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
     return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten;
   })() : 0;
 
+  const cashflow = isMietimmobilie ? arbitrageCashflow : kaufCashflow;
+  const cashflowPositiv = cashflow >= 0;
+
+  // Tile accent color
+  const accentClass = isMietimmobilie
+    ? 'from-violet-500 to-purple-600'
+    : 'from-blue-500 to-indigo-600';
+
+  const eigenkapital = !isMietimmobilie && restschuldInfo
+    ? aktuellerWert - restschuldInfo.restschuld
+    : null;
+
   return (
     <div
-      className={`bg-white rounded-xl shadow-lg p-5 cursor-pointer hover:shadow-xl transition-shadow border ${isMietimmobilie ? 'border-purple-200' : 'border-gray-100'}`}
+      className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden border border-gray-100 hover:-translate-y-0.5"
       onClick={onClick}
     >
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{isMietimmobilie ? '🔄' : '🏠'}</span>
-            <h3 className="text-lg font-bold text-gray-800">{immobilie.name || 'Unbenannte Immobilie'}</h3>
+      {/* Card Header Strip */}
+      <div className={`bg-gradient-to-r ${accentClass} px-5 pt-4 pb-5`}>
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isMietimmobilie ? 'bg-white/20 text-white' : 'bg-white/20 text-white'}`}>
+                {isMietimmobilie ? '🔄 Arbitrage' : '🏠 Kaufimmobilie'}
+              </span>
+              {!isMietimmobilie && immobilie.vermietungsmodell && immobilie.vermietungsmodell !== 'kaltmiete' && (
+                <span className="text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">
+                  {immobilie.vermietungsmodell === 'kaltmiete_nk' ? 'NK inkl.' : 'Warmmiete'}
+                </span>
+              )}
+            </div>
+            <h3 className="text-lg font-bold text-white leading-tight truncate">
+              {immobilie.name || 'Unbenannte Immobilie'}
+            </h3>
+            {(immobilie.plz || immobilie.adresse) && (
+              <p className="text-white/70 text-xs mt-0.5 truncate">
+                📍 {immobilie.plz} {immobilie.adresse}
+              </p>
+            )}
           </div>
-          {isMietimmobilie && (
-            <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-              Arbitrage-Modell
-            </span>
-          )}
-          {!isMietimmobilie && immobilie.vermietungsmodell && immobilie.vermietungsmodell !== 'kaltmiete' && (
-            <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-              {immobilie.vermietungsmodell === 'kaltmiete_nk' ? 'Kaltmiete + NK' : 'Warmmiete'}
-            </span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="text-white/50 hover:text-white/90 text-lg leading-none ml-2 mt-0.5 transition-colors"
+            title="Löschen"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      {/* Cashflow Hero — pulled up over the border */}
+      <div className="mx-5 -mt-3 mb-4">
+        <div className={`rounded-xl px-4 py-3 flex items-center justify-between shadow-sm ${cashflowPositiv ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+          <div>
+            <div className="text-xs text-gray-500 font-medium">Monatlicher Cashflow</div>
+            <div className={`text-xl font-black ${cashflowPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+              {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 font-medium">pro Jahr</div>
+            <div className={`text-sm font-bold ${cashflowPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+              {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow * 12)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-5 pb-5 space-y-3">
+        {/* Eckdaten */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          {!isMietimmobilie ? (
+            <>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Kaufpreis</div>
+                <div className="text-sm font-semibold text-gray-800">{formatCurrency(immobilie.kaufpreis)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Aktueller Wert</div>
+                <div className="text-sm font-semibold text-indigo-600">{formatCurrency(aktuellerWert)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Wohnfläche</div>
+                <div className="text-sm font-semibold text-gray-800">{immobilie.wohnflaeche} m²</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Kaltmiete</div>
+                <div className="text-sm font-semibold text-emerald-600">{formatCurrency(immobilie.kaltmiete)}/Monat</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Eigene Miete</div>
+                <div className="text-sm font-semibold text-red-500">−{formatCurrency(immobilie.eigeneWarmmiete)}/Mon</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Untermiet-Einnahmen</div>
+                <div className="text-sm font-semibold text-emerald-600">+{formatCurrency((immobilie.anzahlZimmerVermietet||0)*(immobilie.untermieteProZimmer||0))}/Mon</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Wohnfläche</div>
+                <div className="text-sm font-semibold text-gray-800">{immobilie.wohnflaeche} m²</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Vermietet</div>
+                <div className="text-sm font-semibold text-gray-800">{immobilie.anzahlZimmerVermietet} von {immobilie.zimmer} Zi.</div>
+              </div>
+            </>
           )}
         </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="text-red-500 hover:text-red-700 text-sm"
-        >
-          Löschen
-        </button>
-      </div>
 
-      <div className="text-sm text-gray-600 mb-2">
-        {immobilie.plz} {immobilie.adresse}
-      </div>
-
-      {/* Für Kaufimmobilie - normale Anzeige */}
-      {!isMietimmobilie && (
-        <>
-          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-            <div><span className="text-gray-500">Wohnfläche:</span> {immobilie.wohnflaeche} m²</div>
-            <div><span className="text-gray-500">Zimmer:</span> {immobilie.zimmer}</div>
-            <div><span className="text-gray-500">Baujahr:</span> {immobilie.baujahr}</div>
-            <div><span className="text-gray-500">Zustand:</span> {immobilie.zustand}</div>
-          </div>
-
-          <div className="border-t pt-3 mt-3">
+        {/* Wertsteigerung (Kaufimmobilie) */}
+        {!isMietimmobilie && wertsteigerung && (
+          <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
             <div className="flex justify-between items-center">
-              <div>
-                <div className="text-xs text-gray-500">Kaufpreis</div>
-                <div className="font-semibold">{formatCurrency(immobilie.kaufpreis)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-gray-500">Aktueller Wert</div>
-                <div className="font-semibold text-blue-600">{formatCurrency(aktuellerWert)}</div>
-              </div>
+              <span className="text-xs text-gray-500 font-medium">Wertsteigerung seit Kauf</span>
+              <span className={`text-sm font-bold ${wertsteigerung.absoluteSteigerung >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {wertsteigerung.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerung.absoluteSteigerung)}
+                <span className="text-xs font-medium ml-1 opacity-75">
+                  ({wertsteigerung.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerung.prozentSteigerung.toFixed(1)}%)
+                </span>
+              </span>
             </div>
-
-            {restschuldInfo && restschuldInfo.anfangsFremdkapital > 0 && (
-              <div className="mt-2 p-2 bg-orange-50 rounded text-sm border border-orange-100">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Restschuld:</span>
-                  <span className="text-orange-700 font-semibold">{formatCurrency(restschuldInfo.restschuld)}</span>
+            {eigenkapital !== null && restschuldInfo && restschuldInfo.anfangsFremdkapital > 0 && (
+              <div className="mt-2 pt-2 border-t border-gray-200 grid grid-cols-2 gap-2">
+                <div>
+                  <div className="text-xs text-gray-400">Restschuld</div>
+                  <div className="text-sm font-semibold text-orange-600">{formatCurrency(restschuldInfo.restschuld)}</div>
                 </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-gray-400">Bereits getilgt:</span>
-                  <span className="text-green-600">{formatCurrency(restschuldInfo.getilgt)}</span>
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-gray-400">Netto-Eigenkapital:</span>
-                  <span className="text-blue-600 font-medium">{formatCurrency(aktuellerWert - restschuldInfo.restschuld)}</span>
+                <div>
+                  <div className="text-xs text-gray-400">Netto-Eigenkapital</div>
+                  <div className="text-sm font-semibold text-indigo-600">{formatCurrency(eigenkapital)}</div>
                 </div>
               </div>
             )}
-
-            {wertsteigerung && (
-              <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Wertsteigerung seit Kauf:</span>
-                  <span className={wertsteigerung.absoluteSteigerung >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                    {wertsteigerung.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerung.absoluteSteigerung)}
-                    ({wertsteigerung.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerung.prozentSteigerung.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-gray-400">Jährliche Rendite:</span>
-                  <span className={wertsteigerung.jaehrlicheRendite >= 0 ? 'text-green-500' : 'text-red-500'}>
-                    {wertsteigerung.jaehrlicheRendite >= 0 ? '+' : ''}{wertsteigerung.jaehrlicheRendite.toFixed(2)}% p.a.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Cashflow für Kaufimmobilie */}
-            <div className={`mt-2 p-2 rounded text-sm border ${kaufCashflow >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-              <div className="flex justify-between">
-                <span className="text-gray-600">💰 Monatlicher Cashflow:</span>
-                <span className={`font-bold ${kaufCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {kaufCashflow >= 0 ? '+' : ''}{formatCurrency(kaufCashflow)}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs mt-1">
-                <span className="text-gray-400">Jährlicher Cashflow:</span>
-                <span className={`font-medium ${kaufCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {kaufCashflow >= 0 ? '+' : ''}{formatCurrency(kaufCashflow * 12)}
-                </span>
-              </div>
-            </div>
           </div>
-        </>
-      )}
-
-      {/* Für Mietimmobilie - Arbitrage Anzeige */}
-      {isMietimmobilie && (
-        <>
-          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-            <div><span className="text-gray-500">Wohnfläche:</span> {immobilie.wohnflaeche} m²</div>
-            <div><span className="text-gray-500">Zimmer gesamt:</span> {immobilie.zimmer}</div>
-            <div><span className="text-gray-500">Vermietet:</span> {immobilie.anzahlZimmerVermietet} Zimmer</div>
-            <div><span className="text-gray-500">Pro Zimmer:</span> {formatCurrency(immobilie.untermieteProZimmer)}</div>
-          </div>
-
-          <div className="border-t pt-3 mt-3">
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="text-xs text-gray-500">Eigene Miete</div>
-                <div className="font-semibold text-red-600">-{formatCurrency(immobilie.eigeneWarmmiete)}/m</div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-gray-500">Einnahmen</div>
-                <div className="font-semibold text-green-600">
-                  +{formatCurrency((immobilie.anzahlZimmerVermietet || 0) * (immobilie.untermieteProZimmer || 0))}/m
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-2 p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded text-sm border border-green-200">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Monatlicher Cashflow:</span>
-                <span className={`font-bold ${arbitrageCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {arbitrageCashflow >= 0 ? '+' : ''}{formatCurrency(arbitrageCashflow)}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs mt-1">
-                <span className="text-gray-400">Jährlicher Cashflow:</span>
-                <span className={`font-medium ${arbitrageCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {arbitrageCashflow >= 0 ? '+' : ''}{formatCurrency(arbitrageCashflow * 12)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -1540,77 +1527,56 @@ const PortfolioOverview = ({ portfolio }) => {
 
   if (portfolio.length === 0) return null;
 
+  const cfPositiv = stats.gesamtCashflowMonat >= 0;
+
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white mb-6">
-      <h2 className="text-xl font-bold mb-4">Portfolio-Übersicht</h2>
+    <div className="mb-8">
+      {/* Top KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        {/* Cashflow — most important, gets visual prominence */}
+        <div className={`col-span-2 md:col-span-1 rounded-2xl p-5 border ${cfPositiv ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Monatl. Cashflow</div>
+          <div className={`text-3xl font-black ${cfPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+            {stats.gesamtCashflowMonat >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowMonat)}
+          </div>
+          <div className={`text-xs mt-1 font-medium ${cfPositiv ? 'text-emerald-500' : 'text-red-400'}`}>
+            {stats.gesamtCashflowJahr >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowJahr)} p.a.
+          </div>
+          <div className="text-xs text-gray-400 mt-0.5">nach Kredit &amp; Kosten</div>
+        </div>
 
-      {/* Mieteinnahmen & Cashflow Highlight */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Mieteinnahmen */}
-        <div className="bg-white/10 rounded-lg p-4">
-          <div className="text-blue-200 text-sm mb-2">
-            💰 Gesamte Mieteinnahmen
-            {stats.anzahlMietimmobilien > 0 && stats.anzahlKaufimmobilien > 0 && (
-              <span className="text-xs ml-1">(Kaltmiete + Untermiete)</span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-2xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteMonat)}</div>
-              <div className="text-blue-200 text-xs">pro Monat</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-300">{formatCurrency(stats.gesamtMieteJahr)}</div>
-              <div className="text-blue-200 text-xs">pro Jahr</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Cashflow */}
-        <div className={`rounded-lg p-4 ${stats.gesamtCashflowMonat >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-          <div className="text-blue-200 text-sm mb-2">📊 Gesamt-Cashflow (nach Kredit & Kosten)</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className={`text-2xl font-bold ${stats.gesamtCashflowMonat >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                {stats.gesamtCashflowMonat >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowMonat)}
-              </div>
-              <div className="text-blue-200 text-xs">pro Monat</div>
-            </div>
-            <div>
-              <div className={`text-2xl font-bold ${stats.gesamtCashflowJahr >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                {stats.gesamtCashflowJahr >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowJahr)}
-              </div>
-              <div className="text-blue-200 text-xs">pro Jahr</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div>
-          <div className="text-blue-200 text-sm">Immobilien</div>
-          <div className="text-2xl font-bold">{stats.anzahl}</div>
-          {(stats.anzahlKaufimmobilien > 0 && stats.anzahlMietimmobilien > 0) && (
-            <div className="text-xs text-blue-300 mt-1">
-              🏠 {stats.anzahlKaufimmobilien} Kauf · 🔄 {stats.anzahlMietimmobilien} Miete
-            </div>
+        <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Mieteinnahmen</div>
+          <div className="text-2xl font-black text-gray-800">{formatCurrency(stats.gesamtMieteMonat)}</div>
+          <div className="text-xs text-gray-400 mt-1 font-medium">{formatCurrency(stats.gesamtMieteJahr)} p.a.</div>
+          {stats.anzahlKaufimmobilien > 0 && stats.anzahlMietimmobilien > 0 && (
+            <div className="text-xs text-gray-400 mt-0.5">Kaltmiete + Untermiete</div>
           )}
         </div>
-        <div>
-          <div className="text-blue-200 text-sm">Gesamtwert (Eigentum)</div>
-          <div className="text-2xl font-bold">{formatCurrency(stats.gesamtWert)}</div>
-        </div>
-        <div>
-          <div className="text-blue-200 text-sm">Wertsteigerung</div>
-          <div className={`text-2xl font-bold ${stats.wertsteigerung >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-            {stats.wertsteigerung >= 0 ? '+' : ''}{formatCurrency(stats.wertsteigerung)}
+
+        {/* Gesamtwert */}
+        <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Portfoliowert</div>
+          <div className="text-2xl font-black text-indigo-600">{formatCurrency(stats.gesamtWert)}</div>
+          {stats.wertsteigerung !== 0 && (
+            <div className={`text-xs mt-1 font-semibold ${stats.wertsteigerung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              {stats.wertsteigerung >= 0 ? '▲' : '▼'} {formatCurrency(Math.abs(stats.wertsteigerung))} Wertgewinn
+            </div>
+          )}
+          <div className="text-xs text-gray-400 mt-0.5">
+            {stats.anzahl} Immobilie{stats.anzahl !== 1 ? 'n' : ''}
+            {stats.anzahlKaufimmobilien > 0 && stats.anzahlMietimmobilien > 0 && ` · ${stats.anzahlKaufimmobilien} Kauf, ${stats.anzahlMietimmobilien} Arb.`}
           </div>
         </div>
-        <div>
-          <div className="text-blue-200 text-sm">Ø Bruttorendite</div>
-          <div className="text-2xl font-bold">{stats.durchschnittRendite.toFixed(2)}%</div>
+
+        {/* Rendite */}
+        <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Ø Bruttorendite</div>
+          <div className="text-2xl font-black text-amber-600">{stats.durchschnittRendite.toFixed(2)} %</div>
+          <div className="text-xs text-gray-400 mt-1 font-medium">{formatCurrency(stats.gesamtFlaeche)} m² Gesamtfläche</div>
           {stats.anzahlKaufimmobilien === 0 && stats.anzahlMietimmobilien > 0 && (
-            <div className="text-xs text-blue-300 mt-1">nur Arbitrage</div>
+            <div className="text-xs text-gray-400 mt-0.5">nur Arbitrage</div>
           )}
         </div>
       </div>
@@ -7295,11 +7261,11 @@ function App() {
   // Loading Screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
-          <div className="text-6xl mb-4">🏠</div>
-          <div className="animate-spin h-8 w-8 border-4 border-white border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-4">Lade...</p>
+          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-lg">🏠</div>
+          <div className="animate-spin h-6 w-6 border-3 border-indigo-400 border-t-transparent rounded-full mx-auto" style={{borderWidth:'3px'}}></div>
+          <p className="mt-4 text-slate-400 text-sm">Portfolio wird geladen…</p>
         </div>
       </div>
     );
@@ -7319,37 +7285,37 @@ function App() {
   const inaktiveImmobilien = portfolio.filter(i => isInaktiv(i));
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 px-4 shadow-lg">
-        <div className="max-w-7xl mx-auto flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              🏠 Immobilien Portfolio & Leverage Rechner
-            </h1>
-            <p className="mt-2 text-blue-100">Rendite • Cashflow • Wertentwicklung • Portfolio</p>
-          </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-slate-900 text-white px-4 shadow-xl">
+        <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
-            {/* Sync Status Indicator */}
+            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-lg">🏠</div>
+            <div>
+              <div className="font-bold text-white text-base leading-tight">Immobilien Portfolio</div>
+              <div className="text-slate-400 text-xs">Rendite · Cashflow · Wertentwicklung</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
             {syncStatus === 'syncing' && (
-              <div className="flex items-center gap-2 text-blue-200 text-sm">
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                Synchronisiere...
+              <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                <div className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full"></div>
+                Sync…
               </div>
             )}
             {syncStatus === 'error' && (
-              <div className="flex items-center gap-2 text-red-300 text-sm">
-                <span>⚠️</span> Sync-Fehler
-              </div>
+              <span className="text-red-400 text-xs">⚠️ Sync-Fehler</span>
             )}
-            {/* User Info & Logout */}
-            <div className="text-right">
-              <p className="text-sm text-blue-200">{session.user.email}</p>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-blue-100 hover:text-white underline"
-              >
-                Abmelden
-              </button>
+            <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
+              <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">
+                {session.user.email.charAt(0).toUpperCase()}
+              </div>
+              <div className="hidden md:block">
+                <div className="text-xs text-slate-300 leading-tight max-w-[140px] truncate">{session.user.email}</div>
+                <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                  Abmelden
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -7358,95 +7324,90 @@ function App() {
       <main className="max-w-7xl mx-auto py-8 px-4">
         <PortfolioOverview portfolio={portfolio} />
 
+        {/* Navigation & Actions Bar */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-          <div className="flex gap-2">
+          {/* Tab Navigation */}
+          <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
             <button
               onClick={() => setActiveView('portfolio')}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${activeView === 'portfolio' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all ${activeView === 'portfolio' ? 'bg-slate-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
             >
               🏠 Immobilien
+              {portfolio.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'portfolio' ? 'bg-white/20' : 'bg-gray-100'}`}>{aktiveImmobilien.length}</span>}
             </button>
             <button
               onClick={() => setActiveView('mieter')}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${activeView === 'mieter' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all ${activeView === 'mieter' ? 'bg-slate-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
             >
-              👥 Mieter {mieterListe.filter(m => m.aktiv !== false).length > 0 ? `(${mieterListe.filter(m => m.aktiv !== false).length})` : ''}
+              👥 Mieter
+              {mieterListe.filter(m => m.aktiv !== false).length > 0 && (
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'mieter' ? 'bg-white/20' : 'bg-gray-100'}`}>{mieterListe.filter(m => m.aktiv !== false).length}</span>
+              )}
             </button>
           </div>
+
+          {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
-            {/* Import/Export Buttons */}
             {portfolio.length > 0 && (
               <>
                 <button
                   onClick={handleExport}
-                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-sm"
+                  className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors"
                 >
                   📤 Export
                 </button>
                 <div className="relative group">
-                  <button
-                    className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 flex items-center gap-2 text-sm"
-                  >
+                  <button className="px-3 py-2 bg-white border border-gray-200 text-emerald-700 rounded-xl hover:bg-emerald-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
                     📊 Steuer-Export
                   </button>
-                  <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <div className="py-1">
-                      {[...Array(5)].map((_, i) => {
-                        const year = new Date().getFullYear() - i;
-                        return (
-                          <button
-                            key={year}
-                            onClick={() => handleSteuerExport(year)}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-green-50 text-gray-700"
-                          >
-                            Jahr {year}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                    {[...Array(5)].map((_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return (
+                        <button key={year} onClick={() => handleSteuerExport(year)}
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-emerald-50 text-gray-700 border-b border-gray-100 last:border-0">
+                          {year}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </>
             )}
-            <label className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-sm cursor-pointer">
+            <label className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors cursor-pointer">
               📥 Import
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
             </label>
             <button
               onClick={() => setShowKalkulation(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+              className="px-3 py-2 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-100 flex items-center gap-1.5 text-sm shadow-sm transition-colors"
             >
               🧮 Kalkulation
             </button>
             <button
               onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
             >
-              <span>+</span> Neue Immobilie
+              + Neue Immobilie
             </button>
           </div>
         </div>
 
         {activeView === 'portfolio' && (portfolio.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center shadow-lg">
-            <div className="text-6xl mb-4">🏡</div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">Noch keine Immobilien</h3>
-            <p className="text-gray-500 mb-4">Fügen Sie Ihre erste Immobilie hinzu, um Renditen und Cashflow zu berechnen.</p>
+          <div className="bg-white rounded-2xl p-16 text-center shadow-sm border border-gray-200">
+            <div className="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5">🏡</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Noch keine Immobilien</h3>
+            <p className="text-gray-400 mb-6 max-w-sm mx-auto">Füge deine erste Immobilie hinzu, um Rendite und Cashflow zu berechnen.</p>
             <button
               onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-semibold shadow-sm transition-colors"
             >
-              Erste Immobilie hinzufügen
+              + Erste Immobilie hinzufügen
             </button>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {aktiveImmobilien.map(immobilie => (
                 <ImmobilienKarte
                   key={immobilie.id}
@@ -7457,19 +7418,22 @@ function App() {
               ))}
             </div>
             {inaktiveImmobilien.length > 0 && (
-              <details className="mt-8">
-                <summary className="cursor-pointer text-sm font-semibold text-gray-400 hover:text-gray-600 flex items-center gap-2 mb-4">
-                  <span>🗄️ Inaktive Immobilien ({inaktiveImmobilien.length})</span>
+              <details className="mt-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-gray-400 hover:text-gray-600 flex items-center gap-2 select-none">
+                  <span className="text-base">🗄️</span>
+                  Inaktive / beendete Immobilien ({inaktiveImmobilien.length})
                 </summary>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60 grayscale">
-                  {inaktiveImmobilien.map(immobilie => (
-                    <ImmobilienKarte
-                      key={immobilie.id}
-                      immobilie={immobilie}
-                      onClick={() => setSelectedImmobilie(immobilie)}
-                      onDelete={() => handleDelete(immobilie.id)}
-                    />
-                  ))}
+                <div className="px-5 pb-5 pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 opacity-55 grayscale">
+                    {inaktiveImmobilien.map(immobilie => (
+                      <ImmobilienKarte
+                        key={immobilie.id}
+                        immobilie={immobilie}
+                        onClick={() => setSelectedImmobilie(immobilie)}
+                        onDelete={() => handleDelete(immobilie.id)}
+                      />
+                    ))}
+                  </div>
                 </div>
               </details>
             )}
