@@ -3239,6 +3239,27 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   const dauerauftragBetrag = params.dauerauftragBetrag || params.kaltmiete || 0;
   const erwarteterBetrag = params.kaltmiete || 0;
 
+  // Ermittelt die gültige Miete für einen bestimmten Monat anhand der Mietanpassungen
+  const getMieteForMonat = (jahr, monatNr) => {
+    const anpassungen = (params.mietAnpassungen || []).filter(a => a.kaltmiete != null);
+    if (anpassungen.length === 0) return erwarteterBetrag;
+    // Sortiere nach Datum aufsteigend
+    const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+    // Finde die letzte Anpassung, die vor oder in diesem Monat liegt
+    const monatsDatum = new Date(jahr, monatNr - 1, 1);
+    let gueltig = null;
+    for (const anp of sorted) {
+      const anpDatum = new Date(anp.datum);
+      if (anpDatum <= monatsDatum) gueltig = anp;
+      else break;
+    }
+    // Wenn Dauerauftrag aktiv: nutze dauerauftragBetrag als Override für aktuelle Miete,
+    // aber historische Mietanpassungen schlagen Dauerauftrag-Betrag
+    if (gueltig) return gueltig.kaltmiete;
+    // Kein Eintrag vor diesem Monat → Basiskaltmiete
+    return isDauerauftrag ? dauerauftragBetrag : erwarteterBetrag;
+  };
+
   const saveEingaenge = (neueEingaenge) => {
     setMietEingaenge(neueEingaenge);
     updateParams({ ...params, mietEingaenge: neueEingaenge });
@@ -3246,10 +3267,11 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
 
   const handleDeleteEingang = (id) => saveEingaenge(mietEingaenge.filter(e => e.id !== id));
 
-  // Ein-Klick Abhaken: Erstellt sofort eine Zahlung für den Monat
+  // Ein-Klick Abhaken: Erstellt sofort eine Zahlung für den Monat (mit historisch korrektem Betrag)
   const handleAbhaken = (monat) => {
     const datum = `${filterJahr}-${String(monat.nr).padStart(2, '0')}-01`;
-    const neuerEingang = { id: Date.now(), datum, betrag: erwarteterBetrag, typ: 'kaltmiete', notiz: '' };
+    const betrag = getMieteForMonat(filterJahr, monat.nr);
+    const neuerEingang = { id: Date.now(), datum, betrag, typ: 'kaltmiete', notiz: '' };
     saveEingaenge([...mietEingaenge, neuerEingang]);
   };
 
@@ -3281,6 +3303,8 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
     const zahlungen = monatEingaenge.filter(e => e.typ !== 'ausnahme');
     const summe = zahlungen.reduce((s, e) => s + (parseFloat(e.betrag) || 0), 0);
     const istZukunft = filterJahr > aktuellesJahr || (filterJahr === aktuellesJahr && m.nr > aktuellerMonat);
+    // Historisch korrekte Miete für diesen Monat
+    const erwartetFuerMonat = getMieteForMonat(filterJahr, m.nr);
 
     let status;
     if (istZukunft) {
@@ -3289,7 +3313,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
       status = 'nicht_bezahlt';
     } else if (isDauerauftrag && ausnahmen.length === 0) {
       status = 'dauerauftrag'; // auto-bezahlt
-    } else if (summe >= erwarteterBetrag && summe > 0) {
+    } else if (summe >= erwartetFuerMonat && summe > 0) {
       status = 'bezahlt';
     } else if (summe > 0) {
       status = 'teilweise';
@@ -3299,13 +3323,13 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
     const verspaetet = ausnahmen.some(e => e.ausnahmeTyp === 'verspaetet') ||
       zahlungen.some(e => new Date(e.datum).getDate() > 5);
 
-    return { ...m, monatEingaenge, ausnahmen, zahlungen, summe, status, verspaetet, istZukunft };
+    return { ...m, monatEingaenge, ausnahmen, zahlungen, summe, status, verspaetet, istZukunft, erwartetFuerMonat };
   });
 
   const bezahltMonate = monatsUebersicht.filter(m => m.status === 'bezahlt' || m.status === 'dauerauftrag').length;
   const offeneMonate = monatsUebersicht.filter(m => m.status === 'offen' || m.status === 'nicht_bezahlt').length;
   const gesamtJahr = monatsUebersicht.reduce((s, m) => {
-    if (m.status === 'dauerauftrag') return s + (dauerauftragBetrag || erwarteterBetrag);
+    if (m.status === 'dauerauftrag') return s + m.erwartetFuerMonat;
     return s + m.summe;
   }, 0);
 
@@ -3415,7 +3439,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
                   m.status === 'teilweise' ? 'text-amber-700' : 'text-gray-300'
                 }`}>
                   {m.status === 'dauerauftrag'
-                    ? formatCurrency(dauerauftragBetrag)
+                    ? formatCurrency(m.erwartetFuerMonat)
                     : m.summe > 0 ? formatCurrency(m.summe)
                     : m.istZukunft ? '—' : formatCurrency(0)}
                 </div>
@@ -3516,7 +3540,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
                   </label>
                   <input type="number" value={ausnahmeForm.betrag}
                     onChange={e => setAusnahmeForm(f => ({...f, betrag: e.target.value}))}
-                    placeholder={formatCurrency(erwarteterBetrag)}
+                    placeholder={formatCurrency(ausnahmeMonat ? getMieteForMonat(filterJahr, ausnahmeMonat.nr) : erwarteterBetrag)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-red-400" />
                 </div>
               )}
