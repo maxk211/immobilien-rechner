@@ -3220,7 +3220,9 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   const [ausnahmeForm, setAusnahmeForm] = useState({ typ: 'verspaetet', betrag: '', notiz: '' });
   const [detailMonat, setDetailMonat] = useState(null); // nr of expanded month
 
-  const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
+  const kaufDatumObj = immobilie.kaufdatum ? new Date(immobilie.kaufdatum) : null;
+  const kaufjahr = kaufDatumObj ? kaufDatumObj.getFullYear() : new Date().getFullYear();
+  const kaufmonat = kaufDatumObj ? kaufDatumObj.getMonth() + 1 : 1; // 1-basiert
   const aktuellesJahr = new Date().getFullYear();
   const aktuellerMonat = new Date().getMonth() + 1;
   const jahre = [];
@@ -3295,6 +3297,9 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
 
   // Monatsberechnung
   const monatsUebersicht = MONATE.map(m => {
+    // Monate vor dem Kaufdatum im Kaufjahr überspringen
+    const istVorKauf = filterJahr === kaufjahr && m.nr < kaufmonat;
+
     const monatEingaenge = mietEingaenge.filter(e => {
       const d = new Date(e.datum);
       return d.getFullYear() === filterJahr && (d.getMonth() + 1) === m.nr;
@@ -3307,7 +3312,9 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
     const erwartetFuerMonat = getMieteForMonat(filterJahr, m.nr);
 
     let status;
-    if (istZukunft) {
+    if (istVorKauf) {
+      status = 'vor_kauf';
+    } else if (istZukunft) {
       status = 'zukunft';
     } else if (ausnahmen.some(e => e.ausnahmeTyp === 'nicht_bezahlt')) {
       status = 'nicht_bezahlt';
@@ -3323,12 +3330,14 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
     const verspaetet = ausnahmen.some(e => e.ausnahmeTyp === 'verspaetet') ||
       zahlungen.some(e => new Date(e.datum).getDate() > 5);
 
-    return { ...m, monatEingaenge, ausnahmen, zahlungen, summe, status, verspaetet, istZukunft, erwartetFuerMonat };
+    return { ...m, monatEingaenge, ausnahmen, zahlungen, summe, status, verspaetet, istZukunft, istVorKauf, erwartetFuerMonat };
   });
 
   const bezahltMonate = monatsUebersicht.filter(m => m.status === 'bezahlt' || m.status === 'dauerauftrag').length;
   const offeneMonate = monatsUebersicht.filter(m => m.status === 'offen' || m.status === 'nicht_bezahlt').length;
+  // Jahreseinnahmen: vor_kauf und zukunft ignorieren
   const gesamtJahr = monatsUebersicht.reduce((s, m) => {
+    if (m.status === 'vor_kauf' || m.status === 'zukunft') return s;
     if (m.status === 'dauerauftrag') return s + m.erwartetFuerMonat;
     return s + m.summe;
   }, 0);
@@ -3340,6 +3349,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
     offen:        { bg: 'bg-red-50 border-red-200', icon: '✗', iconColor: 'text-red-500', label: 'bg-red-100 text-red-700' },
     nicht_bezahlt:{ bg: 'bg-red-50 border-red-300', icon: '✗', iconColor: 'text-red-600', label: 'bg-red-100 text-red-700' },
     zukunft:      { bg: 'bg-gray-50 border-gray-200', icon: '–', iconColor: 'text-gray-300', label: 'bg-gray-100 text-gray-400' },
+    vor_kauf:     { bg: 'bg-gray-50 border-gray-100', icon: '○', iconColor: 'text-gray-200', label: 'bg-gray-100 text-gray-300' },
   };
 
   return (
@@ -3438,8 +3448,8 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
                   m.status === 'offen' || m.status === 'nicht_bezahlt' ? 'text-red-500' :
                   m.status === 'teilweise' ? 'text-amber-700' : 'text-gray-300'
                 }`}>
-                  {m.status === 'dauerauftrag'
-                    ? formatCurrency(m.erwartetFuerMonat)
+                  {m.status === 'vor_kauf' ? '—'
+                    : m.status === 'dauerauftrag' ? formatCurrency(m.erwartetFuerMonat)
                     : m.summe > 0 ? formatCurrency(m.summe)
                     : m.istZukunft ? '—' : formatCurrency(0)}
                 </div>
@@ -3453,7 +3463,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
                 </div>
 
                 {/* Action buttons */}
-                {!m.istZukunft && (
+                {!m.istZukunft && !m.istVorKauf && (
                   <div className="flex gap-1.5 flex-wrap">
                     {(m.status === 'offen') && !isDauerauftrag && (
                       <button onClick={() => handleAbhaken(m)}
