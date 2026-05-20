@@ -3548,107 +3548,98 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-purple-800 p-6 z-10 rounded-t-xl">
-          <div className="flex justify-between items-center text-white">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-2xl">🔄</span>
-                <h2 className="text-2xl font-bold">{params.name || 'Mietimmobilie'}</h2>
+        {/* Header */}
+        <div className="sticky top-0 z-10 rounded-t-2xl overflow-hidden">
+          <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-6 pt-5 pb-4">
+            <div className="flex justify-between items-start">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">🔄 Arbitrage</span>
+                  {vertragsBeendet && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/80 text-white">🔴 Vertrag beendet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
+                  )}
+                  {vertragsende && !vertragsBeendet && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-400/80 text-amber-900">⏳ Endet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
+                  )}
+                </div>
+                <h2 className="text-2xl font-black text-white truncate">{params.name || 'Mietimmobilie'}</h2>
+                {(params.plz || params.adresse) && (
+                  <p className="text-violet-200 text-sm mt-0.5">📍 {params.plz} {params.adresse}</p>
+                )}
               </div>
-              <p className="text-purple-200">{params.plz} {params.adresse}</p>
-              <div className="flex gap-2 mt-2 flex-wrap">
-                <span className="text-xs px-2 py-0.5 bg-white/20 rounded-full">
-                  Arbitrage-Modell
-                </span>
-                {vertragsBeendet && (
-                  <span className="text-xs px-2 py-0.5 bg-red-500/80 rounded-full font-semibold">
-                    🔴 Vertrag beendet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}
-                  </span>
+              <div className="flex items-center gap-2 ml-4 shrink-0">
+                {hasChanges && (
+                  <button onClick={handleSave}
+                    className="px-4 py-2 bg-white text-violet-700 rounded-xl hover:bg-violet-50 font-bold text-sm shadow-sm transition-colors">
+                    Speichern
+                  </button>
                 )}
-                {vertragsende && !vertragsBeendet && (
-                  <span className="text-xs px-2 py-0.5 bg-yellow-400/80 text-yellow-900 rounded-full">
-                    ⏳ Endet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}
-                  </span>
-                )}
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl leading-none">&times;</button>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              {hasChanges && (
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold"
-                >
-                  Speichern
-                </button>
-              )}
-              <button onClick={onClose} className="text-white hover:text-purple-200 text-3xl">&times;</button>
+          </div>
+          {/* KPI Strip */}
+          <div className="grid grid-cols-3 bg-white border-b border-gray-200 divide-x divide-gray-100">
+            <div className={`px-5 py-3 ${monatsCashflow >= 0 ? '' : ''}`}>
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Monatl. Cashflow</div>
+              <div className={`text-xl font-black ${monatsCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}
+              </div>
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Jährl. Cashflow</div>
+              <div className={`text-xl font-black ${jahresCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow)}
+              </div>
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bisheriger Gewinn</div>
+              <div className={`text-xl font-black text-violet-600`}>
+                {bisherigeCashflowGesamt >= 0 ? '+' : ''}{formatCurrency(bisherigeCashflowGesamt)}
+              </div>
+              <div className="text-xs text-gray-400">{monateSeitStart} Monate</div>
             </div>
           </div>
         </div>
 
         <div className="p-6">
-          {/* Cashflow Übersicht */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className={`p-4 rounded-lg ${monatsCashflow >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-              <div className="text-sm text-gray-600 mb-1">Monatlicher Cashflow</div>
-              <div className={`text-3xl font-bold ${monatsCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}
-              </div>
-            </div>
-            <div className={`p-4 rounded-lg ${jahresCashflow >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-              <div className="text-sm text-gray-600 mb-1">Jährlicher Cashflow</div>
-              <div className={`text-3xl font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow)}
-              </div>
-            </div>
-            <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
-              <div className="text-sm text-gray-600 mb-1">Bisheriger Gewinn</div>
-              <div className="text-3xl font-bold text-purple-600">
-                {bisherigeCashflowGesamt >= 0 ? '+' : ''}{formatCurrency(bisherigeCashflowGesamt)}
-              </div>
-              <div className="text-xs text-gray-500">{monateSeitStart} Monate</div>
-            </div>
-          </div>
-
-          {/* Detailberechnungs-Anzeige */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-gray-700 mb-3">📊 Cashflow-Berechnung</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">
-                  Einnahmen ({params.anzahlZimmerVermietet} Zimmer × {formatCurrency(params.untermieteProZimmer)})
+          {/* Cashflow-Aufschlüsselung */}
+          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 mb-6">
+            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide mb-4">Cashflow-Aufschlüsselung</h3>
+            <div className="space-y-1">
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
+                <span className="text-sm text-gray-600">
+                  Einnahmen — {params.anzahlZimmerVermietet} Zimmer × {formatCurrency(params.untermieteProZimmer)}
                 </span>
-                <span className="font-semibold text-green-600">+{formatCurrency(einnahmen)}</span>
+                <span className="text-sm font-bold text-emerald-600">+{formatCurrency(einnahmen)}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">Eigene Warmmiete</span>
-                <span className="font-semibold text-red-600">-{formatCurrency(params.eigeneWarmmiete)}</span>
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
+                <span className="text-sm text-gray-600">Eigene Warmmiete</span>
+                <span className="text-sm font-bold text-red-500">−{formatCurrency(params.eigeneWarmmiete)}</span>
               </div>
-              {(params.arbitrageStrom > 0 || params.arbitrageInternet > 0 || params.arbitrageGEZ > 0) && (
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">
-                    Strom / Internet / GEZ
-                    <span className="text-xs text-gray-400 ml-1">
-                      ({formatCurrency(params.arbitrageStrom || 0)} + {formatCurrency(params.arbitrageInternet || 0)} + {formatCurrency(params.arbitrageGEZ ?? 18.36)})
+              {zusatzkosten > 0 && (
+                <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
+                  <span className="text-sm text-gray-600">
+                    Nebenkosten
+                    <span className="text-xs text-gray-400 ml-2">
+                      Strom {formatCurrency(params.arbitrageStrom||0)} · Internet {formatCurrency(params.arbitrageInternet||0)} · GEZ {formatCurrency(params.arbitrageGEZ??18.36)}
                     </span>
                   </span>
-                  <span className="font-semibold text-red-600">-{formatCurrency(zusatzkosten)}</span>
+                  <span className="text-sm font-bold text-red-500">−{formatCurrency(zusatzkosten)}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center py-2 font-bold text-lg">
-                <span className="text-gray-800">= Monatlicher Cashflow</span>
-                <span className={monatsCashflow >= 0 ? 'text-green-600' : 'text-red-600'}>
-                  {monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}
-                </span>
+              <div className={`flex justify-between items-center pt-3 font-black text-base ${monatsCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                <span>= Monatlicher Cashflow</span>
+                <span>{monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}</span>
               </div>
             </div>
           </div>
 
           {/* Bearbeitungsbereich */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Grunddaten */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-4">📍 Grunddaten</h3>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">📍 Grunddaten</h3>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Name/Bezeichnung</label>
@@ -3746,8 +3737,8 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
             </div>
 
             {/* Finanzdaten */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-4">💰 Arbitrage-Kalkulation</h3>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">💰 Arbitrage-Kalkulation</h3>
               <div className="space-y-4">
                 <div className="p-3 bg-red-50 rounded-lg border border-red-100">
                   <label className="block text-sm font-medium text-red-700 mb-1">Eigene Warmmiete (€/Monat)</label>
@@ -3920,33 +3911,17 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
           </div>
 
           {/* Prognose */}
-          <div className="mt-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
-            <h3 className="font-semibold text-purple-800 mb-3">📈 Prognose</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-sm text-gray-600">In 1 Jahr</div>
-                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow)}
+          <div className="mt-5 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">📈 Kumulierter Cashflow</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[[1,'1 Jahr'],[2,'2 Jahre'],[3,'3 Jahre'],[5,'5 Jahre']].map(([mult, label]) => (
+                <div key={mult} className={`rounded-xl p-4 text-center border ${jahresCashflow >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                  <div className="text-xs text-gray-400 font-medium mb-1">{label}</div>
+                  <div className={`text-lg font-black ${jahresCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * mult)}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">In 2 Jahren</div>
-                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * 2)}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">In 3 Jahren</div>
-                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * 3)}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">In 5 Jahren</div>
-                <div className={`text-lg font-bold ${jahresCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * 5)}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -4121,64 +4096,78 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white p-6 border-b border-gray-200 z-10">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-gray-800">{immobilie.name}</h2>
-                {params.aktiv === false && (
-                  <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full font-medium">
-                    Aufgegeben {params.aufgabedatum ? `(${new Date(params.aufgabedatum).toLocaleDateString('de-DE')})` : ''}
-                  </span>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 z-10 rounded-t-2xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 pt-5 pb-4">
+            <div className="flex justify-between items-start">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">🏠 Kaufimmobilie</span>
+                  {params.aktiv === false && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500/60 text-white">
+                      Aufgegeben {params.aufgabedatum ? new Date(params.aufgabedatum).toLocaleDateString('de-DE') : ''}
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-2xl font-black text-white truncate">{immobilie.name}</h2>
+                {(immobilie.plz || immobilie.adresse) && (
+                  <p className="text-indigo-200 text-sm mt-0.5">📍 {immobilie.plz} {immobilie.adresse}</p>
                 )}
               </div>
-              <p className="text-gray-600">{immobilie.plz} {immobilie.adresse}</p>
+              <div className="flex items-center gap-2 ml-4 shrink-0">
+                {params.aktiv === false ? (
+                  <button onClick={() => { updateParams({...params, aktiv: true, aufgabedatum: ''}); }}
+                    className="px-3 py-1.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-colors">
+                    ✓ Reaktivieren
+                  </button>
+                ) : (
+                  <details className="relative">
+                    <summary className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold cursor-pointer list-none transition-colors">
+                      Aufgeben
+                    </summary>
+                    <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-20 w-72">
+                      <p className="text-sm font-bold text-gray-800 mb-1">Immobilie aufgeben</p>
+                      <p className="text-xs text-gray-400 mb-3">Daten bleiben für den Steuerexport erhalten.</p>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Datum der Aufgabe</label>
+                      <input type="date" defaultValue={new Date().toISOString().split('T')[0]} id="aufgabedatum-input"
+                        className="w-full px-2 py-1.5 border rounded-xl text-sm mb-3 focus:ring-2 focus:ring-red-400" />
+                      <button onClick={() => { const datum = document.getElementById('aufgabedatum-input').value; updateParams({...params, aktiv: false, aufgabedatum: datum}); }}
+                        className="w-full px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 text-sm font-bold">
+                        Immobilie aufgeben
+                      </button>
+                    </div>
+                  </details>
+                )}
+                {hasChanges && (
+                  <button onClick={handleSave}
+                    className="px-4 py-2 bg-white text-indigo-700 rounded-xl hover:bg-indigo-50 font-bold text-sm shadow-sm transition-colors">
+                    Speichern
+                  </button>
+                )}
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl leading-none">&times;</button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              {params.aktiv === false ? (
-                <button
-                  onClick={() => { updateParams({...params, aktiv: true, aufgabedatum: ''}); }}
-                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-semibold"
-                >
-                  ✓ Reaktivieren
-                </button>
-              ) : (
-                <details className="relative">
-                  <summary className="px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 text-sm font-semibold cursor-pointer list-none">
-                    Aufgeben / Verkaufen
-                  </summary>
-                  <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-20 w-72">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Immobilie aufgeben</p>
-                    <p className="text-xs text-gray-500 mb-3">Die Daten bleiben erhalten und können weiterhin für den Steuerexport genutzt werden.</p>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Datum der Aufgabe / Verkauf</label>
-                    <input
-                      type="date"
-                      defaultValue={new Date().toISOString().split('T')[0]}
-                      id="aufgabedatum-input"
-                      className="w-full px-2 py-1.5 border rounded-lg text-sm mb-3"
-                    />
-                    <button
-                      onClick={() => {
-                        const datum = document.getElementById('aufgabedatum-input').value;
-                        updateParams({...params, aktiv: false, aufgabedatum: datum});
-                      }}
-                      className="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold"
-                    >
-                      Immobilie aufgeben
-                    </button>
-                  </div>
-                </details>
-              )}
-              {hasChanges && (
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
-                >
-                  Speichern
-                </button>
-              )}
-              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl">&times;</button>
+          </div>
+          {/* KPI Strip */}
+          <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
+            <div className="px-4 py-3">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bruttorendite</div>
+              <div className="text-xl font-black text-indigo-600">{ergebnis.bruttorendite.toFixed(2)} %</div>
+            </div>
+            <div className="px-4 py-3">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Nettorendite</div>
+              <div className="text-xl font-black text-emerald-600">{ergebnis.nettorendite.toFixed(2)} %</div>
+            </div>
+            <div className="px-4 py-3">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
+              <div className="text-xl font-black text-violet-600">{ergebnis.eigenkapitalRendite.toFixed(2)} %</div>
+            </div>
+            <div className="px-4 py-3">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Leverage</div>
+              <div className={`text-xl font-black ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {ergebnis.leverageEffekt >= 0 ? '+' : ''}{ergebnis.leverageEffekt.toFixed(2)} %
+              </div>
             </div>
           </div>
         </div>
@@ -4186,8 +4175,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
         <div className="p-6">
           {/* Wertschätzung & Wertsteigerung */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-blue-800 mb-2">Aktueller Marktwert</h3>
+            <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
+              <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
               <div className="mb-3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
                 <div className="flex items-center gap-2">
@@ -4229,8 +4218,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             </div>
 
             {wertsteigerungSeitKauf && (
-              <div className={`p-4 rounded-lg ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-                <h3 className={`text-lg font-semibold mb-2 ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-800' : 'text-red-800'}`}>
+              <div className={`p-5 rounded-2xl border ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                <h3 className={`text-sm font-bold uppercase tracking-wide mb-3 ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                   Wertsteigerung seit Kauf
                 </h3>
                 <div className={`text-3xl font-bold ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -4288,8 +4277,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
           </div>
 
           {/* Objektdetails bearbeiten */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h3 className="font-semibold text-gray-700 mb-3">🏠 Objektdetails bearbeiten</h3>
+          <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl mb-6">
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">Objektdetails</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Wohnfläche</label>
@@ -4336,60 +4325,36 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Renditekennzahlen */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg text-center">
-              <div className="text-sm text-blue-600">Bruttorendite</div>
-              <div className="text-2xl font-bold text-blue-800">{ergebnis.bruttorendite.toFixed(2)}%</div>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg text-center">
-              <div className="text-sm text-green-600">Nettorendite</div>
-              <div className="text-2xl font-bold text-green-800">{ergebnis.nettorendite.toFixed(2)}%</div>
-            </div>
-            <div className="bg-purple-50 p-4 rounded-lg text-center">
-              <div className="text-sm text-purple-600">EK-Rendite</div>
-              <div className="text-2xl font-bold text-purple-800">{ergebnis.eigenkapitalRendite.toFixed(2)}%</div>
-            </div>
-            <div className={`p-4 rounded-lg text-center ${ergebnis.leverageEffekt >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-              <div className={`text-sm ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>Leverage-Effekt</div>
-              <div className={`text-2xl font-bold ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
-                {ergebnis.leverageEffekt >= 0 ? '+' : ''}{ergebnis.leverageEffekt.toFixed(2)}%
-              </div>
-            </div>
-          </div>
-
           {/* Tab-Navigation */}
-          <div className="border-b border-gray-200 mb-6">
-            <nav className="flex flex-wrap gap-1">
-              {[
-                { id: 'uebersicht', label: '📊 Übersicht' },
-                { id: 'finanzierung', label: '🏦 Finanzierung' },
-                { id: 'mieteinnahmen', label: '💵 Mieteinnahmen' },
-                { id: 'cashflow', label: '💰 Cashflow' },
-                { id: 'steuern', label: '📋 Steuern' },
-                { id: 'investitionen', label: '🔧 Investitionen' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+          <div className="flex flex-wrap gap-1 bg-slate-100 rounded-xl p-1 mb-6">
+            {[
+              { id: 'uebersicht', label: '📊 Übersicht' },
+              { id: 'finanzierung', label: '🏦 Finanzierung' },
+              { id: 'mieteinnahmen', label: '💵 Mieteinnahmen' },
+              { id: 'cashflow', label: '💰 Cashflow' },
+              { id: 'steuern', label: '📋 Steuern' },
+              { id: 'investitionen', label: '🔧 Investitionen' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-3 text-sm font-semibold rounded-lg transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {/* Tab-Inhalte */}
           {activeTab === 'uebersicht' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Vermögensentwicklung Chart */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Vermögensentwicklung</h3>
+              <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Vermögensentwicklung</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={ergebnis.entwicklung}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -4405,8 +4370,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               </div>
 
               {/* Leverage-Effekt Visualisierung */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Leverage-Effekt Visualisierung</h3>
+              <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Leverage-Effekt</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={[
                     { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
@@ -4431,8 +4396,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               </div>
 
               {/* Prognose */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-3">Prognose</h3>
+              <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Prognose</h3>
                 <InputSliderCombo label="Wertsteigerung p.a." value={params.wertsteigerung} onChange={(v) => updateParams({...params, wertsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
               </div>
             </div>
