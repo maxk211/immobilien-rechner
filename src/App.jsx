@@ -437,6 +437,23 @@ const schaetzeImmobilienwert = (immobilie) => {
   };
 };
 
+// Gibt die aktuell gültige Kaltmiete zurück, berücksichtigt mietAnpassungen
+// Nimmt das aktuellste Datum <= heute aus mietAnpassungen[].kaltmiete
+const getAktuelleMiete = (immobilieOrParams) => {
+  const basisMiete = immobilieOrParams.kaltmiete || 0;
+  const anpassungen = (immobilieOrParams.mietAnpassungen || []).filter(a => a.kaltmiete != null);
+  if (anpassungen.length === 0) return basisMiete;
+  const heute = new Date();
+  heute.setHours(23, 59, 59, 999);
+  const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  let aktuelle = null;
+  for (const anp of sorted) {
+    if (new Date(anp.datum) <= heute) aktuelle = anp;
+    else break;
+  }
+  return aktuelle ? aktuelle.kaltmiete : basisMiete;
+};
+
 // Wertsteigerung seit Kauf berechnen
 const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
   if (!immobilie.kaufdatum || !immobilie.kaufpreis) return null;
@@ -1269,7 +1286,7 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   })() : 0;
 
   const kaufCashflow = !isMietimmobilie ? (() => {
-    const kaltmiete = immobilie.kaltmiete || 0;
+    const kaltmiete = getAktuelleMiete(immobilie); // aktuelle Miete lt. mietAnpassungen
     const nkVomMieter = (immobilie.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immobilie.nebenkostenVomMieter || 0) : 0;
     const zinssatz = immobilie.zinssatz ?? 4.0;
     const tilgung = immobilie.tilgung ?? 2.0;
@@ -1371,7 +1388,7 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Kaltmiete</div>
-                <div className="text-sm font-semibold text-emerald-600">{formatCurrency(immobilie.kaltmiete)}/Monat</div>
+                <div className="text-sm font-semibold text-emerald-600">{formatCurrency(getAktuelleMiete(immobilie))}/Monat</div>
               </div>
             </>
           ) : (
@@ -1463,7 +1480,7 @@ const PortfolioOverview = ({ portfolio }) => {
         gesamtKaufpreis += immo.kaufpreis || 0;
         gesamtWert += immo.geschaetzterWert || immo.kaufpreis || 0;
         const nkMieterJahr = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) * 12 : 0;
-        gesamtMiete += ((immo.kaltmiete || 0) + (nkMieterJahr / 12)) * 12;
+        gesamtMiete += (getAktuelleMiete(immo) + (nkMieterJahr / 12)) * 12;
 
         // Cashflow-Berechnung pro Kaufimmobilie
         const zinssatz = immo.zinssatz ?? 4.0;
@@ -1498,8 +1515,8 @@ const PortfolioOverview = ({ portfolio }) => {
         // NK-Vorauszahlung vom Mieter (nur bei Modell kaltmiete_nk)
         const nkVomMieter = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) : 0;
 
-        // Monatlicher Cashflow
-        const monatsCashflow = (immo.kaltmiete || 0) + nkVomMieter - monatlicheRate - monatlicheKosten;
+        // Monatlicher Cashflow (aktuelle Miete lt. mietAnpassungen)
+        const monatsCashflow = getAktuelleMiete(immo) + nkVomMieter - monatlicheRate - monatlicheKosten;
 
         gesamtCashflow += monatsCashflow * 12;
         gesamtKreditrate += monatlicheRate * 12;
@@ -2241,7 +2258,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
       const jahreIndex = jahr - kaufjahr;
       const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
 
-      const jahresMiete = params.kaltmiete * 12 * mieteFaktor;
+      const basisMiete = getAktuelleMiete(params); // aktuelle Miete als Basis für Prognose
+      const jahresMiete = basisMiete * 12 * mieteFaktor;
       const nkVomMieter = (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) * 12 : 0;
       const jahresKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0) + (params.strom || 0) + (params.internet || 0)) * 12;
       const jahresKreditrate = ergebnis.monatlicheRate * 12;
@@ -2293,7 +2311,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
   const kreditDetails = berechneZinsTilgung();
 
   const monatsDaten = {
-    einnahmen: params.kaltmiete,
+    einnahmen: getAktuelleMiete(params), // aktuelle Miete lt. mietAnpassungen
     nebenkosten: params.nebenkosten,
     instandhaltung: params.instandhaltung,
     verwaltung: params.verwaltung,
@@ -2536,9 +2554,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
     const jahreIndex = jahr - kaufjahr;
     if (jahreIndex < 0) return null;
 
-    // Mieteinnahmen mit Steigerung
+    // Mieteinnahmen mit Steigerung (Basis: aktuelle Miete lt. mietAnpassungen)
     const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
-    const jahresMiete = params.kaltmiete * 12 * mieteFaktor;
+    const jahresMiete = getAktuelleMiete(params) * 12 * mieteFaktor;
 
     // Laufende Kosten (Werbungskosten)
     const laufendeKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0)) * 12;
@@ -3238,8 +3256,9 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   ];
 
   const isDauerauftrag = params.dauerauftrag || false;
-  const dauerauftragBetrag = params.dauerauftragBetrag || params.kaltmiete || 0;
-  const erwarteterBetrag = params.kaltmiete || 0;
+  const aktuelleMiete = getAktuelleMiete(params); // aktuell gültige Miete
+  const dauerauftragBetrag = params.dauerauftragBetrag || aktuelleMiete || 0;
+  const erwarteterBetrag = aktuelleMiete || 0;
 
   // Ermittelt die gültige Miete für einen bestimmten Monat anhand der Mietanpassungen
   const getMieteForMonat = (jahr, monatNr) => {
@@ -4149,7 +4168,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     setHasChanges(false);
   };
 
-  const ergebnis = useMemo(() => berechneRendite(params), [params]);
+  // Berechne mit aktuell gültiger Miete (berücksichtigt mietAnpassungen)
+  const ergebnis = useMemo(() => berechneRendite({ ...params, kaltmiete: getAktuelleMiete(params) }), [params]);
   const aktuellerWert = params.geschaetzterWert || immobilie.kaufpreis;
   // Verwende params.kaufdatum für Berechnungen (bearbeitbar)
   const immobilieMitAktuellemKaufdatum = { ...immobilie, kaufdatum: params.kaufdatum };
@@ -7245,7 +7265,7 @@ function App() {
       pdf.text('Kaufimmobilien - Details', 14, 20);
 
       const kaufRows = kaufimmobilien.map(immo => {
-        const kaltmieteJahr = (immo.kaltmiete || 0) * 12;
+        const kaltmieteJahr = getAktuelleMiete(immo) * 12;
         const kaufpreis = immo.kaufpreis || 0;
         const afaJahr = kaufpreis * ((immo.gebaeudeAnteilProzent || 80) / 100) * ((immo.afaSatz || 2) / 100);
         const gesamtinvestition = kaufpreis * (1 + (immo.kaufnebenkosten || 10) / 100);
