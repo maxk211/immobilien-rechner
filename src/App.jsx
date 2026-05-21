@@ -454,6 +454,50 @@ const getAktuelleMiete = (immobilieOrParams) => {
   return aktuelle ? aktuelle.kaltmiete : basisMiete;
 };
 
+// Gibt die aktuell gültige Warmmiete (Vermieter→User) zurück, berücksichtigt mietAnpassungen
+const getAktuelleWarmmiete = (p) => {
+  const basis = p.eigeneWarmmiete || 0;
+  const anpassungen = (p.mietAnpassungen || []).filter(a => a.eigeneWarmmiete != null);
+  if (anpassungen.length === 0) return basis;
+  const heute = new Date(); heute.setHours(23, 59, 59, 999);
+  const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  let akt = null;
+  for (const anp of sorted) { if (new Date(anp.datum) <= heute) akt = anp; else break; }
+  return akt ? akt.eigeneWarmmiete : basis;
+};
+
+// Gibt die aktuell gültige Untermiete pro Zimmer zurück, berücksichtigt mietAnpassungen
+const getAktuelleUntermiete = (p) => {
+  const basis = p.untermieteProZimmer || 0;
+  const anpassungen = (p.mietAnpassungen || []).filter(a => a.untermieteProZimmer != null);
+  if (anpassungen.length === 0) return basis;
+  const heute = new Date(); heute.setHours(23, 59, 59, 999);
+  const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  let akt = null;
+  for (const anp of sorted) { if (new Date(anp.datum) <= heute) akt = anp; else break; }
+  return akt ? akt.untermieteProZimmer : basis;
+};
+
+// Berechnet den historisch korrekten Cashflow eines Arbitrage-Objekts Monat für Monat
+const berechneHistorischenArbitrageCashflow = (p, vonDatum, bisDatum) => {
+  if (!vonDatum || !bisDatum || vonDatum > bisDatum) return 0;
+  const zusatzkosten = (p.arbitrageStrom || 0) + (p.arbitrageInternet || 0) + (p.arbitrageGEZ ?? 18.36);
+  const anpassungen = [...(p.mietAnpassungen || [])].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  let gesamt = 0;
+  let d = new Date(vonDatum.getFullYear(), vonDatum.getMonth(), 1);
+  const ende = new Date(bisDatum.getFullYear(), bisDatum.getMonth(), 1);
+  while (d <= ende) {
+    const monatsMitte = new Date(d.getFullYear(), d.getMonth(), 15);
+    let gueltige = null;
+    for (const a of anpassungen) { if (new Date(a.datum) <= monatsMitte) gueltige = a; }
+    const warmmiete = gueltige?.eigeneWarmmiete ?? (p.eigeneWarmmiete || 0);
+    const untermiete = gueltige?.untermieteProZimmer ?? (p.untermieteProZimmer || 0);
+    gesamt += (p.anzahlZimmerVermietet || 0) * untermiete - warmmiete - zusatzkosten;
+    d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  }
+  return gesamt;
+};
+
 // Wertsteigerung seit Kauf berechnen
 const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
   if (!immobilie.kaufdatum || !immobilie.kaufpreis) return null;
@@ -1279,9 +1323,10 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   const arbitrageCashflow = isMietimmobilie ? (() => {
     const ende = immobilie.mietvertragEnde ? new Date(immobilie.mietvertragEnde) : null;
     if (ende && ende < new Date()) return 0;
-    const einnahmen = (immobilie.anzahlZimmerVermietet || 0) * (immobilie.untermieteProZimmer || 0);
+    // aktuelle Werte aus mietAnpassungen (historisch korrekt)
+    const einnahmen = (immobilie.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immobilie);
     const zusatzkosten = (immobilie.arbitrageStrom || 0) + (immobilie.arbitrageInternet || 0) + (immobilie.arbitrageGEZ ?? 18.36);
-    const ausgaben = (immobilie.eigeneWarmmiete || 0) + zusatzkosten;
+    const ausgaben = getAktuelleWarmmiete(immobilie) + zusatzkosten;
     return einnahmen - ausgaben;
   })() : 0;
 
@@ -1463,13 +1508,13 @@ const PortfolioOverview = ({ portfolio }) => {
       gesamtFlaeche += immo.wohnflaeche || 0;
 
       if (isMietimmobilie) {
-        // Mietimmobilie (Arbitrage-Modell)
+        // Mietimmobilie (Arbitrage-Modell) — aktuelle Werte aus mietAnpassungen
         anzahlMietimmobilien++;
         const vertragsEndeImmo = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
         const vertragsLaeuft = !vertragsEndeImmo || vertragsEndeImmo >= new Date();
-        const einnahmen = vertragsLaeuft ? (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) : 0;
+        const einnahmen = vertragsLaeuft ? (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo) : 0;
         const zusatzkosten = vertragsLaeuft ? (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36) : 0;
-        const ausgaben = vertragsLaeuft ? (immo.eigeneWarmmiete || 0) + zusatzkosten : 0;
+        const ausgaben = vertragsLaeuft ? getAktuelleWarmmiete(immo) + zusatzkosten : 0;
         const monatsCashflow = einnahmen - ausgaben;
 
         gesamtMiete += einnahmen * 12; // Einnahmen aus Untervermietung
@@ -4018,23 +4063,23 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
   const heute = new Date();
   const vertragsBeendet = vertragsende && vertragsende < heute;
 
+  // Aktuelle Werte aus mietAnpassungen (historisch korrekt, neuster Wert ≤ heute)
+  const aktWarmmiete = getAktuelleWarmmiete(params);
+  const aktUntermiete = getAktuelleUntermiete(params);
+
   // Berechnungen — wenn Vertrag beendet: laufender Cashflow = 0
-  const einnahmen = vertragsBeendet ? 0 : params.anzahlZimmerVermietet * params.untermieteProZimmer;
+  const einnahmen = vertragsBeendet ? 0 : params.anzahlZimmerVermietet * aktUntermiete;
   const zusatzkosten = vertragsBeendet ? 0 : (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36);
-  const ausgaben = vertragsBeendet ? 0 : params.eigeneWarmmiete + zusatzkosten;
+  const ausgaben = vertragsBeendet ? 0 : aktWarmmiete + zusatzkosten;
   const monatsCashflow = einnahmen - ausgaben;
   const jahresCashflow = monatsCashflow * 12;
 
-  // Bisheriger Cashflow: von Start bis min(heute, Vertragsende)
+  // Bisheriger Cashflow: Monat-für-Monat mit historisch korrekten Werten je Anpassungsperiode
   const mietvertragStart = params.mietvertragStart ? new Date(params.mietvertragStart) : null;
   const bisWann = vertragsende && vertragsende < heute ? vertragsende : heute;
-  const monateSeitStart = mietvertragStart
-    ? Math.max(0, Math.floor((bisWann - mietvertragStart) / (1000 * 60 * 60 * 24 * 30)))
+  const bisherigeCashflowGesamt = mietvertragStart
+    ? berechneHistorischenArbitrageCashflow(params, mietvertragStart, bisWann)
     : 0;
-  // Für bisherigen Cashflow immer die echten Werte (inkl. Vertragszeit)
-  const echterMonatsCashflow = (params.anzahlZimmerVermietet * params.untermieteProZimmer) -
-    (params.eigeneWarmmiete + (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36));
-  const bisherigeCashflowGesamt = echterMonatsCashflow * monateSeitStart;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -8094,8 +8139,9 @@ function App() {
       pdf.text('Mietimmobilien (Arbitrage) - Details', 14, yPos > 250 ? 20 : yPos);
 
       const mietRows = mietimmobilien.map(immo => {
-        const einnahmen = (immo.anzahlZimmerVermietet || 0) * (immo.untermieteProZimmer || 0) * 12;
-        const ausgaben = ((immo.eigeneWarmmiete || 0) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12;
+        // aktuelle Werte aus mietAnpassungen
+        const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo) * 12;
+        const ausgaben = (getAktuelleWarmmiete(immo) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12;
         return [
           immo.name || 'Unbenannt',
           formatCurrency(einnahmen),
