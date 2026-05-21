@@ -5487,6 +5487,16 @@ const KalkulationsModal = ({ onClose }) => {
   const [mietProZimmer, setMietProZimmer] = useState(700);
   const [arbNebenkosten, setArbNebenkosten] = useState(150);
 
+  // Gespeicherte Kalkulationen (localStorage)
+  const [showSaved, setShowSaved] = useState(false);
+  const [savedCalcs, setSavedCalcs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('immobilien_kalkulationen') || '[]'); }
+    catch { return []; }
+  });
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [editingId, setEditingId] = useState(null); // ID der gerade überschriebenen Kalkulation
+
   // Berechnungen für Kaufimmobilie
   const kaufBerechnung = useMemo(() => {
     // Miete je nach Modus ermitteln
@@ -5568,6 +5578,79 @@ const KalkulationsModal = ({ onClose }) => {
 
   const formatCurrency = (val) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
+  // ---- Speichern / Laden / Löschen ----
+  const gatherParams = () => ({
+    typ,
+    kaufpreis, nebenkosten, eigenkapital, zinssatz, tilgung, kaltmiete, betriebskosten, steuersatz,
+    mietmodus, wohnflaecheKalk, mietPreisProQm, anzahlZimmerKauf, mietPreisProZimmer,
+    sanierung: { ...sanierung },
+    eigeneWarmmiete, anzahlZimmer, mietProZimmer, arbNebenkosten,
+  });
+
+  const applyParams = (p) => {
+    setTyp(p.typ || 'kauf');
+    setKaufpreis(p.kaufpreis ?? 300000);
+    setNebenkosten(p.nebenkosten ?? 10);
+    setEigenkapital(p.eigenkapital ?? 60000);
+    setZinssatz(p.zinssatz ?? 4.0);
+    setTilgung(p.tilgung ?? 2.0);
+    setKaltmiete(p.kaltmiete ?? 1200);
+    setBetriebskosten(p.betriebskosten ?? 300);
+    setSteuersatz(p.steuersatz ?? 42);
+    setMietmodus(p.mietmodus || 'direkt');
+    setWohnflaecheKalk(p.wohnflaecheKalk ?? 80);
+    setMietPreisProQm(p.mietPreisProQm ?? 12);
+    setAnzahlZimmerKauf(p.anzahlZimmerKauf ?? 3);
+    setMietPreisProZimmer(p.mietPreisProZimmer ?? 400);
+    setSanierung(p.sanierung || { dach_fassade:0, heizung_sanitaer:0, elektro:0, boeden_waende:0, fliesen_bad:0, fenster_tueren:0, keller_garage:0, aussenanlagen:0, kueche:0 });
+    setEigeneWarmmiete(p.eigeneWarmmiete ?? 1500);
+    setAnzahlZimmer(p.anzahlZimmer ?? 3);
+    setMietProZimmer(p.mietProZimmer ?? 700);
+    setArbNebenkosten(p.arbNebenkosten ?? 150);
+  };
+
+  const handleSave = () => {
+    const name = saveName.trim() || `Kalkulation ${new Date().toLocaleDateString('de-DE')}`;
+    let updated;
+    if (editingId) {
+      // Vorhandene Kalkulation überschreiben
+      updated = savedCalcs.map(c => c.id === editingId
+        ? { ...c, ...gatherParams(), name, savedAt: new Date().toISOString() }
+        : c
+      );
+    } else {
+      const newCalc = { id: Date.now().toString(), name, savedAt: new Date().toISOString(), ...gatherParams() };
+      updated = [newCalc, ...savedCalcs];
+    }
+    setSavedCalcs(updated);
+    localStorage.setItem('immobilien_kalkulationen', JSON.stringify(updated));
+    setSaveDialogOpen(false);
+    setSaveName('');
+    setEditingId(null);
+  };
+
+  const handleLoad = (calc) => {
+    applyParams(calc);
+    setShowSaved(false);
+  };
+
+  const handleDelete = (id) => {
+    const updated = savedCalcs.filter(c => c.id !== id);
+    setSavedCalcs(updated);
+    localStorage.setItem('immobilien_kalkulationen', JSON.stringify(updated));
+  };
+
+  const openSaveDialog = (calc = null) => {
+    if (calc) {
+      setSaveName(calc.name);
+      setEditingId(calc.id);
+    } else {
+      setSaveName('');
+      setEditingId(null);
+    }
+    setSaveDialogOpen(true);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -5576,30 +5659,98 @@ const KalkulationsModal = ({ onClose }) => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">🧮 Schnellkalkulation</h2>
-              <p className="text-purple-200 text-sm">Prüfe ob sich eine Immobilie lohnt - ohne zu speichern</p>
+              <p className="text-purple-200 text-sm">Prüfe ob sich eine Immobilie lohnt — speichere und lade Kalkulationen</p>
             </div>
             <button onClick={onClose} className="text-white hover:text-purple-200 text-2xl">×</button>
           </div>
 
-          {/* Typ-Auswahl */}
-          <div className="flex gap-2 mt-4">
+          {/* Typ-Auswahl + Gespeichert-Tab */}
+          <div className="flex gap-2 mt-4 flex-wrap">
             <button
-              onClick={() => setTyp('kauf')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${typ === 'kauf' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
+              onClick={() => { setTyp('kauf'); setShowSaved(false); }}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${!showSaved && typ === 'kauf' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
             >
               🏠 Kaufimmobilie
             </button>
             <button
-              onClick={() => setTyp('arbitrage')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${typ === 'arbitrage' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
+              onClick={() => { setTyp('arbitrage'); setShowSaved(false); }}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${!showSaved && typ === 'arbitrage' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
             >
               🔄 Miet-Arbitrage
+            </button>
+            <button
+              onClick={() => setShowSaved(v => !v)}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ml-auto ${showSaved ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
+            >
+              📁 Gespeichert {savedCalcs.length > 0 && `(${savedCalcs.length})`}
             </button>
           </div>
         </div>
 
         <div className="p-6">
-          {typ === 'kauf' ? (
+          {/* ===== Gespeicherte Kalkulationen ===== */}
+          {showSaved ? (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-800">📁 Gespeicherte Kalkulationen</h3>
+                <span className="text-sm text-gray-500">{savedCalcs.length} gespeichert</span>
+              </div>
+              {savedCalcs.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                  <div className="text-5xl mb-3">🗂️</div>
+                  <p className="font-medium">Noch keine Kalkulationen gespeichert</p>
+                  <p className="text-sm mt-1">Erstelle eine Kalkulation und klicke auf „Speichern"</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {savedCalcs.map(calc => {
+                    const d = new Date(calc.savedAt);
+                    const datum = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
+                    const uhr = d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+                    const typLabel = calc.typ === 'arbitrage' ? '🔄 Miet-Arbitrage' : '🏠 Kaufimmobilie';
+                    const betragLabel = calc.typ === 'arbitrage'
+                      ? `EK: ${new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(calc.eigeneWarmmiete || 0)}/Mo.`
+                      : `Kaufpreis: ${new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(calc.kaufpreis || 0)}`;
+                    return (
+                      <div key={calc.id} className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-gray-900 truncate">{calc.name}</span>
+                              <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">{typLabel}</span>
+                            </div>
+                            <div className="text-sm text-gray-500 mt-0.5">{betragLabel} · {datum} {uhr}</div>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleLoad(calc)}
+                              className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 font-semibold"
+                            >
+                              Laden
+                            </button>
+                            <button
+                              onClick={() => openSaveDialog(calc)}
+                              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200"
+                              title="Aktuellen Stand in dieser Kalkulation speichern"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDelete(calc.id)}
+                              className="px-3 py-1.5 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100"
+                              title="Löschen"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : typ === 'kauf' ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Eingaben */}
               <div className="space-y-4">
@@ -6020,10 +6171,43 @@ const KalkulationsModal = ({ onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="border-t p-4 bg-gray-50 rounded-b-2xl flex justify-end">
-          <button onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-            Schließen
-          </button>
+        <div className="border-t bg-gray-50 rounded-b-2xl">
+          {/* Save-Dialog */}
+          {saveDialogOpen && (
+            <div className="px-5 pt-4 pb-3 border-b bg-purple-50">
+              <p className="text-sm font-semibold text-purple-800 mb-2">
+                {editingId ? '✏️ Kalkulation überschreiben' : '💾 Kalkulation speichern'}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={e => setSaveName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSave()}
+                  placeholder={`z.B. „Wohnung Berlin Mitte"`}
+                  className="flex-1 px-3 py-2 border border-purple-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                  autoFocus
+                />
+                <button onClick={handleSave} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700">
+                  Speichern
+                </button>
+                <button onClick={() => { setSaveDialogOpen(false); setSaveName(''); setEditingId(null); }} className="px-3 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-300">
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="p-4 flex justify-between items-center gap-3">
+            <button
+              onClick={() => openSaveDialog()}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold flex items-center gap-1.5 shadow-sm"
+            >
+              💾 Kalkulation speichern
+            </button>
+            <button onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
+              Schließen
+            </button>
+          </div>
         </div>
       </div>
     </div>
