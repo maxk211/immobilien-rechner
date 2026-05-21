@@ -5468,6 +5468,7 @@ const KalkulationsModal = ({ onClose }) => {
     boeden_waende: 0, fliesen_bad: 0, fenster_tueren: 0,
     keller_garage: 0, aussenanlagen: 0, kueche: 0,
   });
+  const [sanierungFinanziert, setSanierungFinanziert] = useState(true); // true = Kredit, false = EK
 
   const GEWERKE = [
     { id: 'dach_fassade',    label: 'Dach & Fassade',    icon: '🏗️' },
@@ -5511,7 +5512,10 @@ const KalkulationsModal = ({ onClose }) => {
 
     const nebenkostenAbsolut = kaufpreis * (nebenkosten / 100);
     const gesamtinvestition = kaufpreis + nebenkostenAbsolut + totalSanierung;
-    const kreditbetrag = gesamtinvestition - eigenkapital;
+    // Kreditbetrag hängt davon ab, ob Sanierung mitfinanziert wird oder aus EK kommt
+    const kreditbetrag = sanierungFinanziert
+      ? gesamtinvestition - eigenkapital                   // Sanierung im Kredit
+      : kaufpreis + nebenkostenAbsolut - eigenkapital;     // Sanierung aus EK (reduziert verfügbares EK)
     const annuitaet = (zinssatz + tilgung) / 100;
     const monatlicheRate = (kreditbetrag * annuitaet) / 12;
 
@@ -5551,7 +5555,7 @@ const KalkulationsModal = ({ onClose }) => {
       eigenkapitalRendite
     };
   }, [kaufpreis, nebenkosten, eigenkapital, zinssatz, tilgung, kaltmiete, betriebskosten, steuersatz,
-      mietmodus, wohnflaecheKalk, mietPreisProQm, anzahlZimmerKauf, mietPreisProZimmer, sanierung]);
+      mietmodus, wohnflaecheKalk, mietPreisProQm, anzahlZimmerKauf, mietPreisProZimmer, sanierung, sanierungFinanziert]);
 
   // Berechnungen für Arbitrage
   const arbitrageBerechnung = useMemo(() => {
@@ -5584,6 +5588,7 @@ const KalkulationsModal = ({ onClose }) => {
     kaufpreis, nebenkosten, eigenkapital, zinssatz, tilgung, kaltmiete, betriebskosten, steuersatz,
     mietmodus, wohnflaecheKalk, mietPreisProQm, anzahlZimmerKauf, mietPreisProZimmer,
     sanierung: { ...sanierung },
+    sanierungFinanziert,
     eigeneWarmmiete, anzahlZimmer, mietProZimmer, arbNebenkosten,
   });
 
@@ -5603,6 +5608,7 @@ const KalkulationsModal = ({ onClose }) => {
     setAnzahlZimmerKauf(p.anzahlZimmerKauf ?? 3);
     setMietPreisProZimmer(p.mietPreisProZimmer ?? 400);
     setSanierung(p.sanierung || { dach_fassade:0, heizung_sanitaer:0, elektro:0, boeden_waende:0, fliesen_bad:0, fenster_tueren:0, keller_garage:0, aussenanlagen:0, kueche:0 });
+    setSanierungFinanziert(p.sanierungFinanziert !== false);
     setEigeneWarmmiete(p.eigeneWarmmiete ?? 1500);
     setAnzahlZimmer(p.anzahlZimmer ?? 3);
     setMietProZimmer(p.mietProZimmer ?? 700);
@@ -5886,7 +5892,27 @@ const KalkulationsModal = ({ onClose }) => {
 
                 {/* Sanierungskosten */}
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <h4 className="font-semibold text-orange-800 text-sm mb-3">🔨 Sanierung & Renovierung</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-orange-800 text-sm">🔨 Sanierung & Renovierung</h4>
+                    {kaufBerechnung.totalSanierung > 0 && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setSanierungFinanziert(true)}
+                          className={`px-2 py-0.5 rounded text-xs font-semibold border transition-all ${sanierungFinanziert ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-orange-50'}`}
+                          title="Sanierungskosten werden in den Kredit eingeschlossen"
+                        >
+                          🏦 Mitfinanziert
+                        </button>
+                        <button
+                          onClick={() => setSanierungFinanziert(false)}
+                          className={`px-2 py-0.5 rounded text-xs font-semibold border transition-all ${!sanierungFinanziert ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-orange-50'}`}
+                          title="Sanierungskosten werden aus Eigenkapital bezahlt"
+                        >
+                          💰 Aus EK
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-2">
                     {GEWERKE.map(g => (
                       <div key={g.id} className="flex items-center gap-2">
@@ -5939,13 +5965,24 @@ const KalkulationsModal = ({ onClose }) => {
                     <span className="text-gray-600">+ Nebenkosten ({nebenkosten}%):</span>
                     <span className="text-right font-semibold">{formatCurrency(kaufBerechnung.nebenkostenAbsolut)}</span>
                     {kaufBerechnung.totalSanierung > 0 && (<>
-                      <span className="text-orange-700">+ Sanierung:</span>
+                      <span className="text-orange-700">
+                        + Sanierung {sanierungFinanziert ? '(Kredit)' : '(EK)'}:
+                      </span>
                       <span className="text-right font-semibold text-orange-700">{formatCurrency(kaufBerechnung.totalSanierung)}</span>
                     </>)}
                     <span className="text-gray-600">= Gesamtinvestition:</span>
                     <span className="text-right font-bold text-blue-700">{formatCurrency(kaufBerechnung.gesamtinvestition)}</span>
-                    <span className="text-gray-600">- Eigenkapital:</span>
-                    <span className="text-right font-semibold text-green-600">{formatCurrency(eigenkapital)}</span>
+                    {!sanierungFinanziert && kaufBerechnung.totalSanierung > 0 ? (<>
+                      <span className="text-gray-600">- EK (Kaufpreis):</span>
+                      <span className="text-right font-semibold text-green-600">{formatCurrency(eigenkapital)}</span>
+                      <span className="text-gray-600">- EK (Sanierung):</span>
+                      <span className="text-right font-semibold text-orange-600">{formatCurrency(kaufBerechnung.totalSanierung)}</span>
+                      <span className="text-gray-500 text-xs">= EK gesamt:</span>
+                      <span className="text-right text-xs font-semibold text-green-700">{formatCurrency(eigenkapital + kaufBerechnung.totalSanierung)}</span>
+                    </>) : (<>
+                      <span className="text-gray-600">- Eigenkapital:</span>
+                      <span className="text-right font-semibold text-green-600">{formatCurrency(eigenkapital)}</span>
+                    </>)}
                     <span className="text-gray-600">= Kreditbetrag:</span>
                     <span className="text-right font-bold">{formatCurrency(kaufBerechnung.kreditbetrag)}</span>
                   </div>
