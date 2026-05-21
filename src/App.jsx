@@ -3,7 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung } from './supabaseClient';
+import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
 
 // PLZ-basierte Preise pro m² für verschiedene deutsche Städte und Regionen
@@ -5488,12 +5488,11 @@ const KalkulationsModal = ({ onClose }) => {
   const [mietProZimmer, setMietProZimmer] = useState(700);
   const [arbNebenkosten, setArbNebenkosten] = useState(150);
 
-  // Gespeicherte Kalkulationen (localStorage)
+  // Gespeicherte Kalkulationen (Supabase — geräteübergreifend)
   const [showSaved, setShowSaved] = useState(false);
-  const [savedCalcs, setSavedCalcs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('immobilien_kalkulationen') || '[]'); }
-    catch { return []; }
-  });
+  const [savedCalcs, setSavedCalcs] = useState([]);
+  const [kalkLoading, setKalkLoading] = useState(false);
+  const [kalkError, setKalkError] = useState('');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [editingId, setEditingId] = useState(null); // ID der gerade überschriebenen Kalkulation
@@ -5582,6 +5581,37 @@ const KalkulationsModal = ({ onClose }) => {
 
   const formatCurrency = (val) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
+  // ---- Supabase: Kalkulationen laden ----
+  useEffect(() => {
+    const fetchCalcs = async () => {
+      setKalkLoading(true);
+      setKalkError('');
+      try {
+        // Vorhandene localStorage-Daten ggf. migrieren
+        const local = JSON.parse(localStorage.getItem('immobilien_kalkulationen') || '[]');
+        const remote = await loadKalkulationen();
+        if (remote.length === 0 && local.length > 0) {
+          // Einmalige Migration: lokale Einträge nach Supabase hochladen
+          const migrated = await Promise.all(local.map(c => saveKalkulation(c)));
+          setSavedCalcs(migrated);
+          localStorage.removeItem('immobilien_kalkulationen');
+        } else {
+          setSavedCalcs(remote);
+          localStorage.removeItem('immobilien_kalkulationen'); // aufräumen
+        }
+      } catch (e) {
+        setKalkError('Kalkulationen konnten nicht geladen werden.');
+        // Fallback: localStorage
+        try {
+          setSavedCalcs(JSON.parse(localStorage.getItem('immobilien_kalkulationen') || '[]'));
+        } catch {}
+      } finally {
+        setKalkLoading(false);
+      }
+    };
+    fetchCalcs();
+  }, []);
+
   // ---- Speichern / Laden / Löschen ----
   const gatherParams = () => ({
     typ,
@@ -5615,24 +5645,22 @@ const KalkulationsModal = ({ onClose }) => {
     setArbNebenkosten(p.arbNebenkosten ?? 150);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const name = saveName.trim() || `Kalkulation ${new Date().toLocaleDateString('de-DE')}`;
-    let updated;
-    if (editingId) {
-      // Vorhandene Kalkulation überschreiben
-      updated = savedCalcs.map(c => c.id === editingId
-        ? { ...c, ...gatherParams(), name, savedAt: new Date().toISOString() }
-        : c
-      );
-    } else {
-      const newCalc = { id: Date.now().toString(), name, savedAt: new Date().toISOString(), ...gatherParams() };
-      updated = [newCalc, ...savedCalcs];
-    }
-    setSavedCalcs(updated);
-    localStorage.setItem('immobilien_kalkulationen', JSON.stringify(updated));
+    const kalk = { id: editingId || undefined, name, ...gatherParams() };
     setSaveDialogOpen(false);
     setSaveName('');
     setEditingId(null);
+    try {
+      const saved = await saveKalkulation(kalk);
+      setSavedCalcs(prev =>
+        editingId
+          ? prev.map(c => c.id === editingId ? saved : c)
+          : [saved, ...prev]
+      );
+    } catch (e) {
+      alert('Fehler beim Speichern: ' + e.message);
+    }
   };
 
   const handleLoad = (calc) => {
@@ -5640,10 +5668,15 @@ const KalkulationsModal = ({ onClose }) => {
     setShowSaved(false);
   };
 
-  const handleDelete = (id) => {
-    const updated = savedCalcs.filter(c => c.id !== id);
-    setSavedCalcs(updated);
-    localStorage.setItem('immobilien_kalkulationen', JSON.stringify(updated));
+  const handleDelete = async (id) => {
+    setSavedCalcs(prev => prev.filter(c => c.id !== id));
+    try {
+      await deleteKalkulation(id);
+    } catch (e) {
+      alert('Fehler beim Löschen: ' + e.message);
+      // Rückgängig machen falls API-Fehler
+      setSavedCalcs(prev => prev); // bleibt wie es ist
+    }
   };
 
   const openSaveDialog = (calc = null) => {
@@ -5701,7 +5734,17 @@ const KalkulationsModal = ({ onClose }) => {
                 <h3 className="text-lg font-bold text-gray-800">📁 Gespeicherte Kalkulationen</h3>
                 <span className="text-sm text-gray-500">{savedCalcs.length} gespeichert</span>
               </div>
-              {savedCalcs.length === 0 ? (
+              {kalkLoading ? (
+                <div className="text-center py-16 text-gray-400">
+                  <div className="text-3xl mb-3 animate-spin">⏳</div>
+                  <p className="text-sm">Kalkulationen werden geladen…</p>
+                </div>
+              ) : kalkError ? (
+                <div className="text-center py-10 text-red-500">
+                  <div className="text-3xl mb-2">⚠️</div>
+                  <p className="text-sm font-medium">{kalkError}</p>
+                </div>
+              ) : savedCalcs.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                   <div className="text-5xl mb-3">🗂️</div>
                   <p className="font-medium">Noch keine Kalkulationen gespeichert</p>

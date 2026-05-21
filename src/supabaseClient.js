@@ -352,3 +352,57 @@ export async function deleteNKAbrechnung(id) {
   const { error } = await supabase.from('nebenkostenabrechnungen').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ==================== KALKULATIONEN ====================
+
+export async function loadKalkulationen() {
+  const { data, error } = await supabase
+    .from('kalkulationen')
+    .select('*')
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(d => ({
+    id: d.id,
+    name: d.name,
+    savedAt: d.updated_at,
+    ...(d.params || {}),
+  }));
+}
+
+export async function saveKalkulation(kalk) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Nicht eingeloggt');
+
+  const { id, name, savedAt, ...params } = kalk;
+  const dbData = {
+    name: name || 'Kalkulation',
+    typ: params.typ || 'kauf',
+    params,
+    updated_at: new Date().toISOString(),
+  };
+
+  const isUpdate = id && typeof id === 'string' && id.includes('-');
+  if (isUpdate) {
+    const { data, error } = await supabase
+      .from('kalkulationen')
+      .update(dbData)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return { id: data.id, name: data.name, savedAt: data.updated_at, ...(data.params || {}) };
+  } else {
+    const { data, error } = await supabase
+      .from('kalkulationen')
+      .insert({ ...dbData, user_id: user.id })
+      .select()
+      .single();
+    if (error) throw error;
+    return { id: data.id, name: data.name, savedAt: data.updated_at, ...(data.params || {}) };
+  }
+}
+
+export async function deleteKalkulation(id) {
+  const { error } = await supabase.from('kalkulationen').delete().eq('id', id);
+  if (error) throw error;
+}
