@@ -5455,6 +5455,32 @@ const KalkulationsModal = ({ onClose }) => {
   const [betriebskosten, setBetriebskosten] = useState(300);
   const [steuersatz, setSteuersatz] = useState(42);
 
+  // Mietmodus für Kaufimmobilie
+  const [mietmodus, setMietmodus] = useState('direkt'); // 'direkt' | 'qm' | 'zimmer'
+  const [wohnflaecheKalk, setWohnflaecheKalk] = useState(80);
+  const [mietPreisProQm, setMietPreisProQm] = useState(12);
+  const [anzahlZimmerKauf, setAnzahlZimmerKauf] = useState(3);
+  const [mietPreisProZimmer, setMietPreisProZimmer] = useState(400);
+
+  // Sanierungskosten nach Gewerk
+  const [sanierung, setSanierung] = useState({
+    dach_fassade: 0, heizung_sanitaer: 0, elektro: 0,
+    boeden_waende: 0, fliesen_bad: 0, fenster_tueren: 0,
+    keller_garage: 0, aussenanlagen: 0, kueche: 0,
+  });
+
+  const GEWERKE = [
+    { id: 'dach_fassade',    label: 'Dach & Fassade',    icon: '🏗️' },
+    { id: 'heizung_sanitaer',label: 'Heizung & Sanitär', icon: '🔧' },
+    { id: 'elektro',         label: 'Elektro',            icon: '⚡' },
+    { id: 'boeden_waende',   label: 'Böden & Wände',      icon: '🪵' },
+    { id: 'fliesen_bad',     label: 'Fliesen / Bad',      icon: '🚿' },
+    { id: 'fenster_tueren',  label: 'Fenster & Türen',    icon: '🚪' },
+    { id: 'keller_garage',   label: 'Keller & Garage',    icon: '🏚️' },
+    { id: 'aussenanlagen',   label: 'Außenanlagen',        icon: '🌿' },
+    { id: 'kueche',          label: 'Küche',               icon: '🍳' },
+  ];
+
   // Arbitrage-Parameter
   const [eigeneWarmmiete, setEigeneWarmmiete] = useState(1500);
   const [anzahlZimmer, setAnzahlZimmer] = useState(3);
@@ -5463,20 +5489,30 @@ const KalkulationsModal = ({ onClose }) => {
 
   // Berechnungen für Kaufimmobilie
   const kaufBerechnung = useMemo(() => {
+    // Miete je nach Modus ermitteln
+    const miete = mietmodus === 'qm'
+      ? wohnflaecheKalk * mietPreisProQm
+      : mietmodus === 'zimmer'
+        ? anzahlZimmerKauf * mietPreisProZimmer
+        : kaltmiete;
+
+    // Sanierungskosten summieren
+    const totalSanierung = Object.values(sanierung).reduce((s, v) => s + (Number(v) || 0), 0);
+
     const nebenkostenAbsolut = kaufpreis * (nebenkosten / 100);
-    const gesamtinvestition = kaufpreis + nebenkostenAbsolut;
+    const gesamtinvestition = kaufpreis + nebenkostenAbsolut + totalSanierung;
     const kreditbetrag = gesamtinvestition - eigenkapital;
     const annuitaet = (zinssatz + tilgung) / 100;
     const monatlicheRate = (kreditbetrag * annuitaet) / 12;
 
-    const monatlicheEinnahmen = kaltmiete;
+    const monatlicheEinnahmen = miete;
     const monatlicheAusgaben = monatlicheRate + betriebskosten;
     const cashflowMonat = monatlicheEinnahmen - monatlicheAusgaben;
 
     // Steuerliche Berechnung
-    const jahresMiete = kaltmiete * 12;
-    const gebaeudeAnteil = kaufpreis * 0.8; // 80% Gebäudeanteil
-    const afaJahr = gebaeudeAnteil * 0.02; // 2% AfA
+    const jahresMiete = miete * 12;
+    const gebaeudeAnteil = kaufpreis * 0.8;
+    const afaJahr = gebaeudeAnteil * 0.02;
     const zinsenJahr = kreditbetrag * (zinssatz / 100);
     const werbungskosten = afaJahr + zinsenJahr + (betriebskosten * 12);
     const zuVersteuern = jahresMiete - werbungskosten;
@@ -5487,6 +5523,8 @@ const KalkulationsModal = ({ onClose }) => {
     const eigenkapitalRendite = eigenkapital > 0 ? (cashflowNachSteuer / eigenkapital) * 100 : 0;
 
     return {
+      miete,
+      totalSanierung,
       nebenkostenAbsolut,
       gesamtinvestition,
       kreditbetrag,
@@ -5502,7 +5540,8 @@ const KalkulationsModal = ({ onClose }) => {
       bruttoRendite,
       eigenkapitalRendite
     };
-  }, [kaufpreis, nebenkosten, eigenkapital, zinssatz, tilgung, kaltmiete, betriebskosten, steuersatz]);
+  }, [kaufpreis, nebenkosten, eigenkapital, zinssatz, tilgung, kaltmiete, betriebskosten, steuersatz,
+      mietmodus, wohnflaecheKalk, mietPreisProQm, anzahlZimmerKauf, mietPreisProZimmer, sanierung]);
 
   // Berechnungen für Arbitrage
   const arbitrageBerechnung = useMemo(() => {
@@ -5615,14 +5654,75 @@ const KalkulationsModal = ({ onClose }) => {
 
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-yellow-800 text-sm mb-3">Einnahmen & Kosten</h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-3">
+                    {/* Mietmodus-Auswahl */}
                     <div>
-                      <label className="text-xs text-gray-600">Kaltmiete/Monat</label>
-                      <div className="flex items-center gap-1">
-                        <input type="number" value={kaltmiete} onChange={(e) => setKaltmiete(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={50} />
-                        <span className="text-xs">€</span>
+                      <label className="text-xs text-gray-600 block mb-1">Mietberechnung</label>
+                      <div className="flex gap-1">
+                        {[{id:'direkt',label:'Direkt (€)'},{id:'qm',label:'pro m²'},{id:'zimmer',label:'pro Zimmer'}].map(m => (
+                          <button key={m.id} onClick={() => setMietmodus(m.id)}
+                            className={`flex-1 py-1 px-1 rounded text-xs font-semibold border transition-all ${mietmodus === m.id ? 'bg-yellow-600 text-white border-yellow-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-yellow-50'}`}>
+                            {m.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
+
+                    {mietmodus === 'direkt' && (
+                      <div>
+                        <label className="text-xs text-gray-600">Kaltmiete/Monat</label>
+                        <div className="flex items-center gap-1">
+                          <input type="number" value={kaltmiete} onChange={(e) => setKaltmiete(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={50} />
+                          <span className="text-xs">€</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {mietmodus === 'qm' && (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-gray-600">Wohnfläche</label>
+                            <div className="flex items-center gap-1">
+                              <input type="number" value={wohnflaecheKalk} onChange={(e) => setWohnflaecheKalk(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={5} />
+                              <span className="text-xs">m²</span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600">Preis pro m²</label>
+                            <div className="flex items-center gap-1">
+                              <input type="number" value={mietPreisProQm} onChange={(e) => setMietPreisProQm(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={0.5} />
+                              <span className="text-xs">€</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-yellow-100 border border-yellow-300 p-2 rounded text-center text-sm font-semibold text-yellow-900">
+                          = {formatCurrency(wohnflaecheKalk * mietPreisProQm)}/Monat
+                        </div>
+                      </div>
+                    )}
+
+                    {mietmodus === 'zimmer' && (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-gray-600">Anzahl Zimmer</label>
+                            <input type="number" value={anzahlZimmerKauf} onChange={(e) => setAnzahlZimmerKauf(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" min={1} max={20} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600">Miete/Zimmer</label>
+                            <div className="flex items-center gap-1">
+                              <input type="number" value={mietPreisProZimmer} onChange={(e) => setMietPreisProZimmer(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded text-sm text-right" step={50} />
+                              <span className="text-xs">€</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-yellow-100 border border-yellow-300 p-2 rounded text-center text-sm font-semibold text-yellow-900">
+                          = {formatCurrency(anzahlZimmerKauf * mietPreisProZimmer)}/Monat ({anzahlZimmerKauf} × {formatCurrency(mietPreisProZimmer)})
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <label className="text-xs text-gray-600">Betriebskosten/Monat</label>
                       <div className="flex items-center gap-1">
@@ -5630,6 +5730,37 @@ const KalkulationsModal = ({ onClose }) => {
                         <span className="text-xs">€</span>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Sanierungskosten */}
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <h4 className="font-semibold text-orange-800 text-sm mb-3">🔨 Sanierung & Renovierung</h4>
+                  <div className="space-y-2">
+                    {GEWERKE.map(g => (
+                      <div key={g.id} className="flex items-center gap-2">
+                        <span className="text-base w-5 flex-shrink-0">{g.icon}</span>
+                        <label className="text-xs text-gray-600 flex-1">{g.label}</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={sanierung[g.id] || ''}
+                            onChange={e => setSanierung(s => ({ ...s, [g.id]: Number(e.target.value) || 0 }))}
+                            placeholder="0"
+                            className="w-24 px-2 py-1 border rounded text-xs text-right focus:ring-1 focus:ring-orange-400"
+                            step={500}
+                            min={0}
+                          />
+                          <span className="text-xs text-gray-500">€</span>
+                        </div>
+                      </div>
+                    ))}
+                    {kaufBerechnung.totalSanierung > 0 && (
+                      <div className="border-t border-orange-200 mt-3 pt-2 flex justify-between text-sm font-bold text-orange-800">
+                        <span>Gesamt Sanierung:</span>
+                        <span>{formatCurrency(kaufBerechnung.totalSanierung)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -5654,8 +5785,12 @@ const KalkulationsModal = ({ onClose }) => {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <span className="text-gray-600">Kaufpreis:</span>
                     <span className="text-right font-semibold">{formatCurrency(kaufpreis)}</span>
-                    <span className="text-gray-600">+ Nebenkosten:</span>
+                    <span className="text-gray-600">+ Nebenkosten ({nebenkosten}%):</span>
                     <span className="text-right font-semibold">{formatCurrency(kaufBerechnung.nebenkostenAbsolut)}</span>
+                    {kaufBerechnung.totalSanierung > 0 && (<>
+                      <span className="text-orange-700">+ Sanierung:</span>
+                      <span className="text-right font-semibold text-orange-700">{formatCurrency(kaufBerechnung.totalSanierung)}</span>
+                    </>)}
                     <span className="text-gray-600">= Gesamtinvestition:</span>
                     <span className="text-right font-bold text-blue-700">{formatCurrency(kaufBerechnung.gesamtinvestition)}</span>
                     <span className="text-gray-600">- Eigenkapital:</span>
@@ -5669,8 +5804,12 @@ const KalkulationsModal = ({ onClose }) => {
                 <div className={`p-4 rounded-lg ${kaufBerechnung.cashflowMonat >= 0 ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
                   <h4 className="font-semibold text-sm mb-2">💰 Monatlicher Cashflow</h4>
                   <div className="grid grid-cols-2 gap-1 text-sm mb-3">
-                    <span>Kaltmiete:</span>
-                    <span className="text-right text-green-700">+{formatCurrency(kaltmiete)}</span>
+                    <span>
+                      {mietmodus === 'qm' ? `Kaltmiete (${wohnflaecheKalk}m² × ${mietPreisProQm}€)` :
+                       mietmodus === 'zimmer' ? `Kaltmiete (${anzahlZimmerKauf} Zimmer)` :
+                       'Kaltmiete'}:
+                    </span>
+                    <span className="text-right text-green-700">+{formatCurrency(kaufBerechnung.miete)}</span>
                     <span>Kreditrate:</span>
                     <span className="text-right text-red-700">-{formatCurrency(kaufBerechnung.monatlicheRate)}</span>
                     <span>Betriebskosten:</span>
@@ -5694,9 +5833,9 @@ const KalkulationsModal = ({ onClose }) => {
                 <div className="bg-purple-100 p-4 rounded-lg border border-purple-300">
                   <h4 className="font-semibold text-sm mb-2">📋 Steuerliche Betrachtung (jährlich)</h4>
                   <div className="grid grid-cols-2 gap-1 text-sm">
-                    <span>Mieteinnahmen:</span>
+                    <span>Mieteinnahmen ({formatCurrency(kaufBerechnung.miete)}/M.):</span>
                     <span className="text-right">{formatCurrency(kaufBerechnung.jahresMiete)}</span>
-                    <span>- AfA (2%):</span>
+                    <span>- AfA (2% v. 80% Gebäude):</span>
                     <span className="text-right text-green-700">-{formatCurrency(kaufBerechnung.afaJahr)}</span>
                     <span>- Schuldzinsen:</span>
                     <span className="text-right text-green-700">-{formatCurrency(kaufBerechnung.zinsenJahr)}</span>
