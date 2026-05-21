@@ -4077,6 +4077,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
   // Bisheriger Cashflow: Monat-für-Monat mit historisch korrekten Werten je Anpassungsperiode
   const mietvertragStart = params.mietvertragStart ? new Date(params.mietvertragStart) : null;
   const bisWann = vertragsende && vertragsende < heute ? vertragsende : heute;
+  const monateSeitStart = mietvertragStart
+    ? Math.max(0, Math.floor((bisWann - mietvertragStart) / (1000 * 60 * 60 * 24 * 30)))
+    : 0;
   const bisherigeCashflowGesamt = mietvertragStart
     ? berechneHistorischenArbitrageCashflow(params, mietvertragStart, bisWann)
     : 0;
