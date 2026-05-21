@@ -1454,6 +1454,7 @@ const PortfolioOverview = ({ portfolio }) => {
     let gesamtCashflow = 0;
     let gesamtKreditrate = 0;
     let gesamtKosten = 0;
+    let gesamtEigenkapital = 0;
     let anzahlKaufimmobilien = 0;
     let anzahlMietimmobilien = 0;
 
@@ -1521,6 +1522,7 @@ const PortfolioOverview = ({ portfolio }) => {
         gesamtCashflow += monatsCashflow * 12;
         gesamtKreditrate += monatlicheRate * 12;
         gesamtKosten += monatlicheKosten * 12;
+        gesamtEigenkapital += gesamtEK;
       }
     });
 
@@ -1538,7 +1540,8 @@ const PortfolioOverview = ({ portfolio }) => {
       gesamtKreditrateJahr: gesamtKreditrate,
       gesamtKostenJahr: gesamtKosten,
       gesamtFlaeche,
-      durchschnittRendite: gesamtKaufpreis > 0 ? (gesamtMiete / gesamtKaufpreis) * 100 : 0
+      gesamtEigenkapital,
+      ekRendite: gesamtEigenkapital > 0 ? (gesamtCashflow / gesamtEigenkapital) * 100 : null,
     };
   }, [portfolio]);
 
@@ -1587,13 +1590,25 @@ const PortfolioOverview = ({ portfolio }) => {
           </div>
         </div>
 
-        {/* Rendite */}
+        {/* EK-Rendite */}
         <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Ø Bruttorendite</div>
-          <div className="text-2xl font-black text-amber-600">{stats.durchschnittRendite.toFixed(2)} %</div>
-          <div className="text-xs text-gray-400 mt-1 font-medium">{formatCurrency(stats.gesamtFlaeche)} m² Gesamtfläche</div>
-          {stats.anzahlKaufimmobilien === 0 && stats.anzahlMietimmobilien > 0 && (
-            <div className="text-xs text-gray-400 mt-0.5">nur Arbitrage</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">EK-Rendite</div>
+          {stats.ekRendite !== null ? (
+            <>
+              <div className={`text-2xl font-black ${stats.ekRendite >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                {stats.ekRendite >= 0 ? '+' : ''}{stats.ekRendite.toFixed(1)} %
+              </div>
+              <div className="text-xs text-gray-400 mt-1 font-medium">
+                EK: {formatCurrency(stats.gesamtEigenkapital)}
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">Cashflow / einges. EK p.a.</div>
+            </>
+          ) : (
+            <>
+              <div className="text-2xl font-black text-gray-300">–</div>
+              <div className="text-xs text-gray-400 mt-1">Kein EK erfasst</div>
+              <div className="text-xs text-gray-400 mt-0.5">{formatCurrency(stats.gesamtFlaeche)} m² gesamt</div>
+            </>
           )}
         </div>
       </div>
