@@ -685,7 +685,8 @@ const berechneRendite = (params) => {
   const bruttorendite = (jahresmieteKalt / kaufpreis) * 100;
 
   // Nettorendite: Vermieter-Kosten von den Gesamteinnahmen abziehen
-  const jahresVermieterKosten = jahresinstandhaltung + jahresverwaltung + jahresHausgeld + jahresStrom + jahresInternet;
+  const jahresNebenkosten = (params.nebenkosten || 0) * 12;
+  const jahresVermieterKosten = jahresinstandhaltung + jahresverwaltung + jahresHausgeld + jahresStrom + jahresInternet + jahresNebenkosten;
   const nettoEinnahmen = jahresEinnahmen - jahresVermieterKosten;
   const nettorendite = (nettoEinnahmen / kaufpreis) * 100;
 
@@ -1340,8 +1341,12 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
     const gesamtinvestition = (immobilie.kaufpreis || 0) + kaufnebenkostenAbsolut;
     const gesamtEK = (immobilie.ekFuerNebenkosten || 0) + (immobilie.ekFuerKaufpreis || 0) || (immobilie.eigenkapital || 0);
     const kreditbetrag = immobilie.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-    const monatlicheRate = kreditbetrag > 0 ? (kreditbetrag * ((zinssatz + tilgung) / 100)) / 12 : 0;
-    const betriebskosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0);
+    const monatszinsKauf = zinssatz / 100 / 12;
+    const laufzeitKauf = immobilie.laufzeit ?? 25;
+    const monatlicheRate = kreditbetrag > 0 && monatszinsKauf > 0
+      ? kreditbetrag * (monatszinsKauf * Math.pow(1 + monatszinsKauf, laufzeitKauf * 12)) / (Math.pow(1 + monatszinsKauf, laufzeitKauf * 12) - 1)
+      : 0;
+    const betriebskosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0) + (immobilie.nebenkosten || 0);
     return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten;
   })() : 0;
 
@@ -2020,6 +2025,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             <InputSliderCombo label="WEG / Hausgeld" value={params.hausgeld} onChange={(v) => updateParams({...params, hausgeld: v})} min={0} max={500} step={10} unit="€" info="Monatliches Hausgeld an die WEG" />
             <InputSliderCombo label="Strom" value={params.strom} onChange={(v) => updateParams({...params, strom: v})} min={0} max={300} step={5} unit="€" info="Stromkosten (wenn vom Vermieter getragen)" />
             <InputSliderCombo label="Internet" value={params.internet} onChange={(v) => updateParams({...params, internet: v})} min={0} max={100} step={5} unit="€" info="Internetkosten (wenn vom Vermieter getragen)" />
+            <InputSliderCombo label="Sonstige Nebenkosten" value={params.nebenkosten || 0} onChange={(v) => updateParams({...params, nebenkosten: v})} min={0} max={500} step={10} unit="€" info="Weitere monatliche Kosten (z.B. Versicherungen, Grundsteuer anteilig)" />
           </div>
         </div>
       ) : (
@@ -2321,7 +2327,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
       const basisMiete = getAktuelleMiete(params); // aktuelle Miete als Basis für Prognose
       const jahresMiete = basisMiete * 12 * mieteFaktor;
       const nkVomMieter = (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) * 12 : 0;
-      const jahresKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0) + (params.strom || 0) + (params.internet || 0)) * 12;
+      const jahresKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0) + (params.strom || 0) + (params.internet || 0) + (params.nebenkosten || 0)) * 12;
       const jahresKreditrate = ergebnis.monatlicheRate * 12;
 
       // Investitionen für dieses Jahr
@@ -4507,7 +4513,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
     tilgung: immobilie.tilgung ?? 2.0,
     laufzeit: immobilie.laufzeit ?? 25,
     kaltmiete: immobilie.kaltmiete,
-    nebenkosten: immobilie.nebenkosten ?? 200,
+    nebenkosten: immobilie.nebenkosten ?? 0,
     instandhaltung: immobilie.instandhaltung ?? 100,
     verwaltung: immobilie.verwaltung ?? 30,
     // Zusätzliche Kosten (z.B. bei möblierter Vermietung)
