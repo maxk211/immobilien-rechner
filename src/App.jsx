@@ -552,10 +552,13 @@ const berechneRestschuld = (immobilie) => {
 
   if (anfangsFremdkapital <= 0) return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
 
-  // Monatliche Annuität berechnen (Zins + Tilgung)
+  // Monatliche Annuität: feste Rate aus erster Phase oder berechnet
   const monatszins = zinssatz / 100 / 12;
   const laufzeit = immobilie.laufzeit ?? 25;
-  const annuitaet = anfangsFremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) / (Math.pow(1 + monatszins, laufzeit * 12) - 1);
+  const erstePhase = (immobilie.finanzierungsphasen || [])[0];
+  const annuitaet = (erstePhase?.finanzierungsModus === 'festRate' && erstePhase?.monatlicherBetrag > 0)
+    ? erstePhase.monatlicherBetrag
+    : (monatszins > 0 ? anfangsFremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) / (Math.pow(1 + monatszins, laufzeit * 12) - 1) : 0);
 
   // Restschuld iterativ berechnen
   let restschuld = anfangsFremdkapital;
@@ -718,7 +721,7 @@ const berechneRendite = (params) => {
       aktuelleRestschuld = rs;
       jahrOffset += phase.zinsbindung;
       if (aktuellesJahr < endjahr || i === phasen.length - 1) {
-        return { zinssatz: phase.zinssatz, restschuld: startKreditPhase, laufzeit: phase.zinsbindung };
+        return { zinssatz: phase.zinssatz, restschuld: startKreditPhase, laufzeit: phase.zinsbindung, monatlicherBetrag: phase.finanzierungsModus === 'festRate' ? phase.monatlicherBetrag : null };
       }
     }
     return null;
@@ -728,7 +731,10 @@ const berechneRendite = (params) => {
   const effKredit = aktivePhaseDaten ? aktivePhaseDaten.restschuld : fremdkapital;
   const effLaufzeit = aktivePhaseDaten ? aktivePhaseDaten.laufzeit : (laufzeit ?? 25);
   const monatszins = effZinssatz / 100 / 12;
-  const annuitaet = effKredit > 0 ? effKredit * (monatszins * Math.pow(1 + monatszins, effLaufzeit * 12)) / (Math.pow(1 + monatszins, effLaufzeit * 12) - 1) : 0;
+  // Feste Rate aus aktiver Phase verwenden, sonst berechnen
+  const annuitaet = (aktivePhaseDaten?.monatlicherBetrag > 0)
+    ? aktivePhaseDaten.monatlicherBetrag
+    : (effKredit > 0 && monatszins > 0 ? effKredit * (monatszins * Math.pow(1 + monatszins, effLaufzeit * 12)) / (Math.pow(1 + monatszins, effLaufzeit * 12) - 1) : 0);
   const jahresannuitaet = annuitaet * 12;
 
   const cashflowVorSteuern = nettoEinnahmen - jahresannuitaet;
@@ -807,6 +813,12 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     vermietungsmodell: 'kaltmiete', // 'kaltmiete', 'kaltmiete_nk', 'warmmiete'
     nebenkostenVomMieter: 0,        // Monatliche NK-Vorauszahlung vom Mieter
     kaufdatum: '',
+    zinssatz: 4.0,
+    tilgung: 2.0,
+    laufzeit: 25,
+    zinsbindung: 10,
+    finanzierungsModus: 'berechnet', // 'berechnet' oder 'festRate'
+    monatlicherBetrag: null,
     // Mietimmobilie / Arbitrage spezifische Felder
     eigeneWarmmiete: 1500,        // Was man selbst zahlt (warm)
     anzahlZimmerVermietet: 3,     // Anzahl Zimmer die untervermietet werden
@@ -1125,6 +1137,89 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                {/* Finanzierungskonditionen */}
+                <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-3">🏦 Finanzierung</h4>
+                  {/* Modus Toggle */}
+                  <div className="flex gap-2 mb-3">
+                    {[['berechnet','📐 Rate berechnen'],['festRate','🏦 Feste Rate (Bankvertrag)']].map(([val, label]) => (
+                      <button key={val} type="button"
+                        onClick={() => handleChange('finanzierungsModus', val)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${formData.finanzierungsModus === val ? 'border-blue-500 bg-white text-blue-700' : 'border-gray-200 bg-white text-gray-500'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Zinssatz</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" min={0} max={15} step={0.1} value={formData.zinssatz}
+                          onChange={(e) => handleChange('zinssatz', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                        <span className="text-xs text-gray-500">%</span>
+                      </div>
+                    </div>
+                    {formData.finanzierungsModus === 'berechnet' ? (
+                      <>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Anfangstilgung</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" min={0} max={10} step={0.5} value={formData.tilgung}
+                              onChange={(e) => handleChange('tilgung', parseFloat(e.target.value) || 0)}
+                              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                            <span className="text-xs text-gray-500">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Gesamtlaufzeit</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" min={5} max={40} step={1} value={formData.laufzeit}
+                              onChange={(e) => handleChange('laufzeit', parseInt(e.target.value) || 25)}
+                              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                            <span className="text-xs text-gray-500">J.</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Monatl. Rate (fest)</label>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min={0} step={10} value={formData.monatlicherBetrag || ''}
+                            placeholder="z.B. 650"
+                            onChange={(e) => handleChange('monatlicherBetrag', parseFloat(e.target.value) || null)}
+                            className="w-full px-2 py-1.5 border-2 border-blue-400 bg-white rounded text-sm text-right font-semibold" />
+                          <span className="text-xs text-gray-500">€</span>
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Zinsbindung</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" min={1} max={30} step={1} value={formData.zinsbindung}
+                          onChange={(e) => handleChange('zinsbindung', parseInt(e.target.value) || 10)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                        <span className="text-xs text-gray-500">J.</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Rate-Vorschau */}
+                  {formData.finanzierungsModus === 'berechnet' && formData.zinssatz > 0 && formData.eigenkapital >= 0 && (
+                    (() => {
+                      const kredit = Math.max(0, formData.kaufpreis * 1.1 - formData.eigenkapital);
+                      const mz = formData.zinssatz / 100 / 12;
+                      const lm = (formData.laufzeit || 25) * 12;
+                      const rate = kredit > 0 && mz > 0 ? kredit * (mz * Math.pow(1+mz,lm)) / (Math.pow(1+mz,lm)-1) : 0;
+                      return rate > 0 ? (
+                        <p className="text-xs text-blue-700 mt-2 font-semibold">
+                          ≈ Monatliche Rate: {new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(rate)}
+                          <span className="font-normal text-blue-500 ml-1">(bei ca. {new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(kredit)} Kredit)</span>
+                        </p>
+                      ) : null;
+                    })()
+                  )}
+                </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {formData.vermietungsmodell === 'warmmiete' ? 'Warmmiete (€/Monat)' : 'Kaltmiete (€/Monat)'}
@@ -1339,7 +1434,22 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               Abbrechen
             </button>
             <button
-              onClick={() => onSave(formData)}
+              onClick={() => {
+                // Finanzierungskonditionen in erste Phase übertragen
+                const erstePhase = {
+                  id: 1,
+                  name: 'Erstfinanzierung',
+                  zinsbindung: formData.zinsbindung || 10,
+                  zinssatz: formData.zinssatz ?? 4.0,
+                  tilgung: formData.tilgung ?? 2.0,
+                  sondertilgungJaehrlich: 0,
+                  aktiv: true,
+                  finanzierungsModus: formData.finanzierungsModus || 'berechnet',
+                  monatlicherBetrag: formData.monatlicherBetrag || null,
+                  restschuldOverride: null,
+                };
+                onSave({ ...formData, finanzierungsphasen: [erstePhase] });
+              }}
               className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
             >
               Speichern
@@ -5035,15 +5145,19 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               const monatszins = phase.zinssatz / 100 / 12;
               const zinsbindungMonate = phase.zinsbindung * 12;
 
-              // Verbleibende Gesamtlaufzeit für diese Phase (bestimmt die Annuität/Rate)
-              const verbleibendeJahre = Math.max(phase.zinsbindung, gesamtLaufzeit - abgelaufeneJahre);
-              const tilgungsMonate = verbleibendeJahre * 12;
-
-              // Annuität basiert auf verbleibender Gesamtlaufzeit → korrekte Rate
+              // Annuität: entweder feste Rate (vom User eingegeben) oder berechnet aus Gesamtlaufzeit
               let annuitaet = 0;
-              if (monatszins > 0 && startKredit > 0) {
-                annuitaet = startKredit * (monatszins * Math.pow(1 + monatszins, tilgungsMonate)) /
-                           (Math.pow(1 + monatszins, tilgungsMonate) - 1);
+              if (phase.finanzierungsModus === 'festRate' && phase.monatlicherBetrag > 0) {
+                // Feste Rate — wie von der Bank vereinbart
+                annuitaet = phase.monatlicherBetrag;
+              } else {
+                // Berechnet: Verbleibende Gesamtlaufzeit bestimmt die Rate
+                const verbleibendeJahre = Math.max(phase.zinsbindung, gesamtLaufzeit - abgelaufeneJahre);
+                const tilgungsMonate = verbleibendeJahre * 12;
+                if (monatszins > 0 && startKredit > 0) {
+                  annuitaet = startKredit * (monatszins * Math.pow(1 + monatszins, tilgungsMonate)) /
+                             (Math.pow(1 + monatszins, tilgungsMonate) - 1);
+                }
               }
 
               // Restschuld nur über Zinsbindungsdauer iterieren
@@ -5407,6 +5521,17 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                         )}
                       </div>
 
+                      {/* Finanzierungsmodus Toggle */}
+                      <div className="flex gap-2 mb-3">
+                        {[['berechnet','📐 Rate berechnen'],['festRate','🏦 Feste Rate']].map(([val, label]) => (
+                          <button key={val} type="button"
+                            onClick={() => updatePhase(phase.id, { finanzierungsModus: val })}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${(phase.finanzierungsModus || 'berechnet') === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                         <div>
                           <label className="block text-xs text-gray-500 mb-1">Zinsbindung</label>
@@ -5438,21 +5563,44 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                             <span className="text-xs text-gray-500">%</span>
                           </div>
                         </div>
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">Anf. Tilgung</label>
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              min={0}
-                              max={10}
-                              step={0.5}
-                              value={phase.tilgung}
-                              onChange={(e) => updatePhase(phase.id, { tilgung: parseFloat(e.target.value) || 0 })}
-                              className="w-16 px-2 py-1.5 border rounded text-sm text-right"
-                            />
-                            <span className="text-xs text-gray-500">%</span>
+                        {(phase.finanzierungsModus || 'berechnet') === 'berechnet' ? (
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Anf. Tilgung</label>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min={0}
+                                max={10}
+                                step={0.5}
+                                value={phase.tilgung}
+                                onChange={(e) => updatePhase(phase.id, { tilgung: parseFloat(e.target.value) || 0 })}
+                                className="w-16 px-2 py-1.5 border rounded text-sm text-right"
+                              />
+                              <span className="text-xs text-gray-500">%</span>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Monatl. Rate</label>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min={0}
+                                step={10}
+                                value={phase.monatlicherBetrag || ''}
+                                placeholder="z.B. 650"
+                                onChange={(e) => updatePhase(phase.id, { monatlicherBetrag: parseFloat(e.target.value) || 0 })}
+                                className="w-20 px-2 py-1.5 border-2 border-blue-300 bg-blue-50 rounded text-sm text-right font-semibold"
+                              />
+                              <span className="text-xs text-gray-500">€</span>
+                            </div>
+                            {phase.monatlicherBetrag > 0 && phase.zinssatz > 0 && (
+                              <p className="text-[10px] text-blue-600 mt-0.5">
+                                Anfangstilgung: {Math.max(0, ((phase.monatlicherBetrag - (phase.startKredit || 0) * phase.zinssatz / 100 / 12) / (phase.startKredit || 1) * 100 * 12)).toFixed(2)}%
+                              </p>
+                            )}
+                          </div>
+                        )}
                         <div>
                           <label className="block text-xs text-gray-500 mb-1">Sondertilgung/Jahr</label>
                           <div className="flex items-center gap-1">
