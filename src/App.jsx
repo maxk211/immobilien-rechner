@@ -3011,14 +3011,25 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
         <h4 className="font-semibold text-gray-800 mb-3">📉 AfA-Einstellungen</h4>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Gebäudeanteil</label>
-            <div className="flex items-center gap-1">
-              <input type="number" min="0" max="100" value={gebaeudeAnteilProzent}
+            <label className="block text-xs text-gray-600 mb-1">Gebäudeanteil (AfA-Basis)</label>
+            <div className="flex items-center gap-1 mb-1">
+              <input type="number" min="0" max="100" step="0.5" value={gebaeudeAnteilProzent}
                 onChange={(e) => updateSteuerParams({ gebaeudeAnteilProzent: parseFloat(e.target.value) || 0 })}
-                className="w-20 px-2 py-1 border rounded text-sm text-right" />
+                className="w-16 px-2 py-1 border rounded text-sm text-right" />
               <span className="text-sm text-gray-600">%</span>
             </div>
-            <div className="text-xs text-gray-400 mt-1">= {formatCurrency(params.kaufpreis * (gebaeudeAnteilProzent / 100))}</div>
+            <div className="flex items-center gap-1">
+              <input type="number" min="0" step="1000"
+                value={Math.round(params.kaufpreis * (gebaeudeAnteilProzent / 100))}
+                onChange={(e) => {
+                  const absWert = parseFloat(e.target.value) || 0;
+                  const neuProzent = params.kaufpreis > 0 ? (absWert / params.kaufpreis) * 100 : 0;
+                  updateSteuerParams({ gebaeudeAnteilProzent: Math.min(100, Math.round(neuProzent * 10) / 10) });
+                }}
+                className="w-24 px-2 py-1 border border-blue-300 rounded text-sm text-right bg-blue-50" />
+              <span className="text-sm text-gray-600">€</span>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">Prozent oder €-Betrag eingeben — beides synchronisiert sich</div>
           </div>
           <div>
             <label className="block text-xs text-gray-600 mb-1">AfA-Satz</label>
@@ -5000,8 +5011,11 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             const effektiverKredit = params.finanzierungsbetrag ?? berechneterKredit;
 
             // Finanzierungsphasen mit Berechnungen
+            // Zinsbindung = wie lange der Zinssatz gilt (z.B. 10 Jahre)
+            // Gesamtlaufzeit = über wie viele Jahre wird getilgt (z.B. 25 Jahre) → bestimmt die Rate
+            const gesamtLaufzeit = params.laufzeit ?? 25;
             const finanzierungsphasen = params.finanzierungsphasen || [{
-              id: 1, name: 'Erstfinanzierung', zinsbindung: params.laufzeit ?? 10,
+              id: 1, name: 'Erstfinanzierung', zinsbindung: 10,
               zinssatz: params.zinssatz ?? 4.0, tilgung: params.tilgung ?? 2.0, sondertilgungJaehrlich: 0, aktiv: true
             }];
 
@@ -5010,6 +5024,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             const phasenMitBerechnung = [];
             let aktuelleRestschuld = effektiverKredit;
             let aktuellesStartjahr = kaufjahr;
+            let abgelaufeneJahre = 0;
 
             for (let i = 0; i < finanzierungsphasen.length; i++) {
               const phase = finanzierungsphasen[i];
@@ -5018,18 +5033,22 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 ? phase.restschuldOverride
                 : aktuelleRestschuld;
               const monatszins = phase.zinssatz / 100 / 12;
-              const laufzeitMonate = phase.zinsbindung * 12;
+              const zinsbindungMonate = phase.zinsbindung * 12;
 
-              // Annuität berechnen
+              // Verbleibende Gesamtlaufzeit für diese Phase (bestimmt die Annuität/Rate)
+              const verbleibendeJahre = Math.max(phase.zinsbindung, gesamtLaufzeit - abgelaufeneJahre);
+              const tilgungsMonate = verbleibendeJahre * 12;
+
+              // Annuität basiert auf verbleibender Gesamtlaufzeit → korrekte Rate
               let annuitaet = 0;
               if (monatszins > 0 && startKredit > 0) {
-                annuitaet = startKredit * (monatszins * Math.pow(1 + monatszins, laufzeitMonate)) /
-                           (Math.pow(1 + monatszins, laufzeitMonate) - 1);
+                annuitaet = startKredit * (monatszins * Math.pow(1 + monatszins, tilgungsMonate)) /
+                           (Math.pow(1 + monatszins, tilgungsMonate) - 1);
               }
 
-              // Restschuld am Ende der Phase
+              // Restschuld nur über Zinsbindungsdauer iterieren
               let restschuld = startKredit;
-              for (let monat = 0; monat < laufzeitMonate && restschuld > 0; monat++) {
+              for (let monat = 0; monat < zinsbindungMonate && restschuld > 0; monat++) {
                 const monatsZinsen = restschuld * monatszins;
                 const monatsTilgung = Math.min(annuitaet - monatsZinsen, restschuld);
                 restschuld = Math.max(0, restschuld - monatsTilgung);
@@ -5038,6 +5057,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                   restschuld = Math.max(0, restschuld - phase.sondertilgungJaehrlich);
                 }
               }
+              abgelaufeneJahre += phase.zinsbindung;
 
               phasenMitBerechnung.push({
                 ...phase,
@@ -5219,6 +5239,23 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                   <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-300">
                     <h4 className="font-semibold text-yellow-800 mb-3">✏️ Kreditkonditionen anpassen</h4>
                     <p className="text-xs text-yellow-700 mb-3">Hier kannst du die Konditionen deiner Erstfinanzierung korrigieren:</p>
+                    {/* Gesamtlaufzeit — bestimmt die monatliche Rate über alle Phasen */}
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Gesamtlaufzeit (Tilgungsdauer)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={5}
+                          max={40}
+                          step={1}
+                          value={params.laufzeit ?? 25}
+                          onChange={(e) => updateParams({...params, laufzeit: parseInt(e.target.value) || 25})}
+                          className="w-24 px-3 py-2 border border-yellow-400 rounded-lg focus:ring-2 focus:ring-yellow-500 text-lg font-semibold text-right"
+                        />
+                        <span className="text-gray-600 font-semibold">Jahre</span>
+                        <span className="text-xs text-gray-400 ml-2">→ bestimmt die Ratenhöhe. Zinsbindung pro Phase separat.</span>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Zinssatz</label>
@@ -5384,6 +5421,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                             />
                             <span className="text-xs text-gray-500">Jahre</span>
                           </div>
+                          <p className="text-[10px] text-gray-400 mt-0.5">Zinsfestschreibung</p>
                         </div>
                         <div>
                           <label className="block text-xs text-gray-500 mb-1">Zinssatz</label>
