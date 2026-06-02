@@ -690,8 +690,45 @@ const berechneRendite = (params) => {
   const nettoEinnahmen = jahresEinnahmen - jahresVermieterKosten;
   const nettorendite = (nettoEinnahmen / kaufpreis) * 100;
 
-  const monatszins = zinssatz / 100 / 12;
-  const annuitaet = fremdkapital > 0 ? fremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) / (Math.pow(1 + monatszins, laufzeit * 12) - 1) : 0;
+  // Aktive Finanzierungsphase bestimmen (basierend auf Kaufdatum + heute)
+  // Wenn finanzierungsphasen vorhanden: nimm die aktuell laufende Phase
+  const aktivePhaseDaten = (() => {
+    const phasen = params.finanzierungsphasen;
+    if (!phasen || phasen.length <= 1 || !kaufdatum) return null;
+    const startJahr = new Date(kaufdatum).getFullYear();
+    const aktuellesJahr = new Date().getFullYear();
+    let jahrOffset = 0;
+    let aktuelleRestschuld = fremdkapital;
+    for (let i = 0; i < phasen.length; i++) {
+      const phase = phasen[i];
+      const startKreditPhase = (i > 0 && phase.restschuldOverride != null) ? phase.restschuldOverride : aktuelleRestschuld;
+      const endjahr = startJahr + jahrOffset + phase.zinsbindung;
+      // Restschuld für diese Phase berechnen
+      const mzins = phase.zinssatz / 100 / 12;
+      const lmonate = phase.zinsbindung * 12;
+      let ann = 0;
+      if (mzins > 0 && startKreditPhase > 0) {
+        ann = startKreditPhase * (mzins * Math.pow(1 + mzins, lmonate)) / (Math.pow(1 + mzins, lmonate) - 1);
+      }
+      let rs = startKreditPhase;
+      for (let m = 0; m < lmonate && rs > 0; m++) {
+        const mz = rs * mzins;
+        rs = Math.max(0, rs - Math.min(ann - mz, rs));
+      }
+      aktuelleRestschuld = rs;
+      jahrOffset += phase.zinsbindung;
+      if (aktuellesJahr < endjahr || i === phasen.length - 1) {
+        return { zinssatz: phase.zinssatz, restschuld: startKreditPhase, laufzeit: phase.zinsbindung };
+      }
+    }
+    return null;
+  })();
+
+  const effZinssatz = aktivePhaseDaten ? aktivePhaseDaten.zinssatz : zinssatz;
+  const effKredit = aktivePhaseDaten ? aktivePhaseDaten.restschuld : fremdkapital;
+  const effLaufzeit = aktivePhaseDaten ? aktivePhaseDaten.laufzeit : (laufzeit ?? 25);
+  const monatszins = effZinssatz / 100 / 12;
+  const annuitaet = effKredit > 0 ? effKredit * (monatszins * Math.pow(1 + monatszins, effLaufzeit * 12)) / (Math.pow(1 + monatszins, effLaufzeit * 12) - 1) : 0;
   const jahresannuitaet = annuitaet * 12;
 
   const cashflowVorSteuern = nettoEinnahmen - jahresannuitaet;
@@ -4976,7 +5013,10 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
 
             for (let i = 0; i < finanzierungsphasen.length; i++) {
               const phase = finanzierungsphasen[i];
-              const startKredit = aktuelleRestschuld;
+              // Für Anschlussfinanzierungen: manuelle Restschuld-Eingabe überschreibt berechneten Wert
+              const startKredit = (i > 0 && phase.restschuldOverride != null)
+                ? phase.restschuldOverride
+                : aktuelleRestschuld;
               const monatszins = phase.zinssatz / 100 / 12;
               const laufzeitMonate = phase.zinsbindung * 12;
 
@@ -5022,6 +5062,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                 zinssatz: letzePhase.zinssatz + 0.5,
                 tilgung: letzePhase.tilgung,
                 sondertilgungJaehrlich: 0,
+                restschuldOverride: null, // null = berechnet, Zahl = manuell vom User eingegeben
                 aktiv: false
               };
               updateParams({...params, finanzierungsphasen: [...finanzierungsphasen, neuePhase]});
@@ -5389,6 +5430,44 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Für Anschlussfinanzierungen: manuelle Restschuld-Eingabe */}
+                      {idx > 0 && (
+                        <div className="mb-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-amber-800">
+                              🏦 Tatsächliche Restschuld (Startbetrag dieser Phase)
+                            </label>
+                            {phase.restschuldOverride != null && (
+                              <button
+                                type="button"
+                                onClick={() => updatePhase(phase.id, { restschuldOverride: null })}
+                                className="text-xs text-amber-600 hover:text-amber-800 underline"
+                              >
+                                Zurück zur Berechnung ({formatCurrency(phasenMitBerechnung[idx - 1]?.restschuld ?? 0)})
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={phase.restschuldOverride != null ? phase.restschuldOverride : ''}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? null : parseFloat(e.target.value) || 0;
+                                updatePhase(phase.id, { restschuldOverride: val });
+                              }}
+                              placeholder={`Berechnet: ${formatCurrency(phasenMitBerechnung[idx - 1]?.restschuld ?? 0)}`}
+                              className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400"
+                            />
+                            <span className="text-sm text-gray-500">€</span>
+                          </div>
+                          <p className="text-[10px] text-amber-700 mt-1">
+                            {phase.restschuldOverride != null
+                              ? `✓ Manuell eingegeben — Abweichung zur Berechnung: ${formatCurrency(phase.restschuldOverride - (phasenMitBerechnung[idx - 1]?.restschuld ?? 0))}`
+                              : 'Leer lassen = automatisch aus Vorphase berechnet. Oder tatsächlichen Restbetrag laut Bank eingeben.'}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Berechnungen für diese Phase */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-gray-200">
