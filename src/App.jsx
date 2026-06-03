@@ -3814,7 +3814,9 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
   );
 };
 
-// Mieteinnahmen-Tracker Komponente
+// Mieteinnahmen-Tracker — Forderungs-basiert
+// Jeder Monat seit Kauf hat eine automatische Forderung (erwarteter Mieteingang).
+// Zahlungen werden gegen diese Forderung gebucht. Offene Forderungen bleiben sichtbar.
 const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   const [mietEingaenge, setMietEingaenge] = useState(params.mietEingaenge || []);
   const [filterJahr, setFilterJahr] = useState(new Date().getFullYear());
@@ -3955,6 +3957,42 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
     vor_kauf:     { bg: 'bg-gray-50 border-gray-100', icon: '○', iconColor: 'text-gray-200', label: 'bg-gray-100 text-gray-300' },
   };
 
+  // Monatsliste generieren: von Kaufdatum bis heute
+  const forderungen = useMemo(() => {
+    if (!immobilie.kaufdatum) return [];
+    const start = new Date(immobilie.kaufdatum);
+    start.setDate(1);
+    const heute = new Date();
+    heute.setDate(1);
+    const liste = [];
+    let d = new Date(start);
+    while (d <= heute) {
+      const monatKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const forderungBetrag = getMieteForMonat(d.getFullYear(), d.getMonth()+1);
+      // Zahlungen die diesem Monat zugeordnet sind
+      const zahlungen = mietEingaenge.filter(e => {
+        const emonat = e.monat || `${new Date(e.datum).getFullYear()}-${String(new Date(e.datum).getMonth()+1).padStart(2,'0')}`;
+        return emonat === monatKey && e.typ !== 'ausnahme';
+      });
+      const eingegangen = zahlungen.reduce((s,e) => s + (parseFloat(e.betrag)||0), 0);
+      const differenz = eingegangen - forderungBetrag;
+      let status = 'offen';
+      if (eingegangen >= forderungBetrag && eingegangen > 0) status = 'beglichen';
+      else if (eingegangen > 0) status = 'teilweise';
+      else if (isDauerauftrag) status = 'dauerauftrag';
+      liste.push({ monatKey, jahr: d.getFullYear(), monat: d.getMonth()+1, forderungBetrag, eingegangen, differenz, status, zahlungen });
+      d = new Date(d.getFullYear(), d.getMonth()+1, 1);
+    }
+    return liste.reverse(); // neueste zuerst
+  }, [mietEingaenge, immobilie.kaufdatum, params.mietAnpassungen, isDauerauftrag, filterJahr]);
+
+  const MONATE_NAMEN = ['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+  const offenGesamt = forderungen.filter(f => f.status === 'offen').reduce((s,f) => s + f.forderungBetrag, 0);
+  const offenAnzahl = forderungen.filter(f => f.status === 'offen').length;
+  const jahresForderungen = forderungen.filter(f => f.jahr === filterJahr);
+  const jahresEinnahmen = jahresForderungen.reduce((s,f) => s + (f.status === 'dauerauftrag' ? f.forderungBetrag : f.eingegangen), 0);
+
   return (
     <div className="space-y-5">
       {/* Dauerauftrag-Einstellung */}
@@ -3993,25 +4031,19 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
         )}
       </div>
 
-      {/* Jahres-KPI Leiste */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
-          <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Bezahlte Monate</div>
-          <div className="text-2xl font-black text-emerald-600">{bezahltMonate}<span className="text-sm text-gray-400 font-normal"> / 12</span></div>
+      {/* Übersicht Forderungen */}
+      {offenAnzahl > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-4">
+          <div className="text-3xl font-black text-red-500">{offenAnzahl}</div>
+          <div>
+            <div className="font-bold text-red-700">Offene Forderung{offenAnzahl !== 1 ? 'en' : ''}</div>
+            <div className="text-sm text-red-600">Ausstehend: {formatCurrency(offenGesamt)}</div>
+          </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
-          <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Offen/Ausstehend</div>
-          <div className={`text-2xl font-black ${offeneMonate > 0 ? 'text-red-500' : 'text-gray-300'}`}>{offeneMonate}</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
-          <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Einnahmen {filterJahr}</div>
-          <div className="text-2xl font-black text-indigo-600">{formatCurrency(gesamtJahr)}</div>
-        </div>
-      </div>
+      )}
 
-      {/* Jahresauswahl */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Jahr:</span>
+      {/* Jahresauswahl + KPI */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-1">
           {jahre.map(j => (
             <button key={j} onClick={() => setFilterJahr(j)}
@@ -4020,175 +4052,166 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
             </button>
           ))}
         </div>
+        <div className="text-sm text-gray-500">
+          Einnahmen {filterJahr}: <span className="font-bold text-indigo-700">{formatCurrency(jahresEinnahmen)}</span>
+        </div>
       </div>
 
-      {/* Monatsraster */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {monatsUebersicht.map(m => {
-          const cfg = statusConfig[m.status] || statusConfig.zukunft;
-          const isExpanded = detailMonat === m.nr;
+      {/* Forderungs-Liste */}
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+          <div className="col-span-3">Monat</div>
+          <div className="col-span-3 text-right">Forderung</div>
+          <div className="col-span-3 text-right">Eingegangen</div>
+          <div className="col-span-2 text-center">Status</div>
+          <div className="col-span-1"></div>
+        </div>
+
+        {forderungen.filter(f => f.jahr === filterJahr).map((f, idx) => {
+          const isExpanded = detailMonat === f.monatKey;
           return (
-            <div key={m.nr} className={`rounded-2xl border-2 transition-all ${cfg.bg} ${isExpanded ? 'col-span-2 md:col-span-3 lg:col-span-4' : ''}`}>
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{m.kurz}</div>
-                    <div className="text-base font-bold text-gray-800 leading-tight">{m.name}</div>
-                  </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-lg font-black border-2 ${
-                    m.status === 'bezahlt' || m.status === 'dauerauftrag' ? 'bg-emerald-100 border-emerald-300 text-emerald-600' :
-                    m.status === 'offen' || m.status === 'nicht_bezahlt' ? 'bg-red-100 border-red-300 text-red-500' :
-                    m.status === 'teilweise' ? 'bg-amber-100 border-amber-300 text-amber-600' :
-                    'bg-gray-100 border-gray-200 text-gray-300'
-                  }`}>
-                    {cfg.icon}
-                  </div>
+            <div key={f.monatKey} className={`border-b border-gray-100 last:border-0 ${isExpanded ? 'bg-blue-50' : ''}`}>
+              <div className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
+                {/* Monat */}
+                <div className="col-span-3">
+                  <div className="font-semibold text-gray-800 text-sm">{MONATE_NAMEN[f.monat]}</div>
+                  <div className="text-xs text-gray-400">{f.jahr}</div>
                 </div>
-
-                {/* Betrag */}
-                <div className={`text-lg font-black mb-1 ${
-                  m.status === 'bezahlt' || m.status === 'dauerauftrag' ? 'text-emerald-700' :
-                  m.status === 'offen' || m.status === 'nicht_bezahlt' ? 'text-red-500' :
-                  m.status === 'teilweise' ? 'text-amber-700' : 'text-gray-300'
-                }`}>
-                  {m.status === 'vor_kauf' ? '—'
-                    : m.status === 'dauerauftrag' ? formatCurrency(m.erwartetFuerMonat)
-                    : m.summe > 0 ? formatCurrency(m.summe)
-                    : m.istZukunft ? '—' : formatCurrency(0)}
+                {/* Forderung */}
+                <div className="col-span-3 text-right">
+                  <div className="text-sm font-semibold text-gray-700">{formatCurrency(f.forderungBetrag)}</div>
                 </div>
-
-                {/* Badges */}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {m.status === 'dauerauftrag' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">⚡ Auto</span>}
-                  {m.verspaetet && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">⏰ Verspätet</span>}
-                  {m.ausnahmen.length > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠ Ausnahme</span>}
-                  {m.status === 'teilweise' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Teilzahlung</span>}
+                {/* Eingegangen */}
+                <div className="col-span-3 text-right">
+                  {f.status === 'dauerauftrag' ? (
+                    <div className="text-sm font-semibold text-emerald-600">⚡ Auto</div>
+                  ) : f.eingegangen > 0 ? (
+                    <div className={`text-sm font-bold ${f.eingegangen >= f.forderungBetrag ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {formatCurrency(f.eingegangen)}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-300">—</div>
+                  )}
+                  {f.eingegangen > 0 && f.diferenz !== 0 && (
+                    <div className={`text-[10px] ${f.differenz > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                      {f.differenz > 0 ? '+' : ''}{formatCurrency(f.differenz)}
+                    </div>
+                  )}
                 </div>
-
-                {/* Action buttons */}
-                {!m.istZukunft && !m.istVorKauf && (
-                  <div className="flex gap-1.5 flex-wrap">
-                    {(m.status === 'offen') && !isDauerauftrag && (
-                      <button onClick={() => handleAbhaken(m)}
-                        className="flex-1 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-                        ✓ Abhaken
-                      </button>
-                    )}
-                    {(m.status === 'bezahlt' || m.status === 'dauerauftrag' || m.status === 'teilweise') && (
-                      <button onClick={() => setDetailMonat(isExpanded ? null : m.nr)}
-                        className="flex-1 py-1.5 text-xs font-semibold bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
-                        {isExpanded ? '▲ Schließen' : '▾ Details'}
-                      </button>
-                    )}
-                    <button onClick={() => { setAusnahmeMonat(m); setAusnahmeForm({ typ: 'verspaetet', betrag: '', notiz: '' }); }}
-                      className="py-1.5 px-2 text-xs font-semibold bg-white border border-gray-200 text-gray-500 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
-                      ⚠
-                    </button>
-                    {m.status !== 'offen' && !isDauerauftrag && m.zahlungen.length > 0 && (
-                      <button onClick={() => setDetailMonat(isExpanded ? null : m.nr)}
-                        className="py-1.5 px-2 text-xs font-semibold bg-white border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50 transition-colors">
-                        ▾
-                      </button>
-                    )}
-                  </div>
-                )}
+                {/* Status Badge */}
+                <div className="col-span-2 flex justify-center">
+                  {f.status === 'beglichen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">✓ Beglichen</span>}
+                  {f.status === 'dauerauftrag' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600">⚡ Auto</span>}
+                  {f.status === 'teilweise' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">~ Teilweise</span>}
+                  {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">✗ Offen</span>}
+                </div>
+                {/* Actions */}
+                <div className="col-span-1 flex justify-end gap-1">
+                  <button
+                    onClick={() => setDetailMonat(isExpanded ? null : f.monatKey)}
+                    className="text-gray-400 hover:text-gray-600 text-lg leading-none px-1"
+                    title={isExpanded ? 'Schließen' : 'Details'}
+                  >
+                    {isExpanded ? '▲' : '▼'}
+                  </button>
+                </div>
               </div>
 
-              {/* Expanded detail view */}
+              {/* Expanded Detail */}
               {isExpanded && (
-                <div className="border-t border-gray-200 px-4 pb-4">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mt-3 mb-2">Einträge</p>
-                  <div className="space-y-1.5">
-                    {m.monatEingaenge.length === 0 ? (
-                      <p className="text-xs text-gray-400 italic">Keine Einträge</p>
-                    ) : m.monatEingaenge.map(e => (
-                      <div key={e.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 text-sm border border-gray-100">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-1.5 py-0.5 rounded font-semibold ${e.typ === 'ausnahme' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {e.typ === 'ausnahme' ? (e.ausnahmeTyp === 'verspaetet' ? '⏰' : e.ausnahmeTyp === 'nicht_bezahlt' ? '✗' : '⚠') : '✓'}
-                          </span>
-                          <span className="text-gray-600">{new Date(e.datum).toLocaleDateString('de-DE')}</span>
-                          {e.notiz && <span className="text-gray-400 text-xs">— {e.notiz}</span>}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-bold ${e.typ === 'ausnahme' ? 'text-red-600' : 'text-emerald-600'}`}>
-                            {e.betrag > 0 ? formatCurrency(e.betrag) : '—'}
-                          </span>
-                          <button onClick={() => handleDeleteEingang(e.id)} className="text-gray-300 hover:text-red-500 text-base">×</button>
-                        </div>
+                <div className="px-4 pb-4 space-y-3 border-t border-blue-100">
+                  {/* Bestehende Zahlungen */}
+                  {f.zahlungen.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gebuchte Zahlungen</p>
+                      <div className="space-y-1.5">
+                        {f.zahlungen.map(z => (
+                          <div key={z.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-200 text-sm">
+                            <div>
+                              <span className="font-semibold text-emerald-700">{formatCurrency(z.betrag)}</span>
+                              <span className="text-gray-400 ml-2 text-xs">eingegangen {new Date(z.datum).toLocaleDateString('de-DE')}</span>
+                              {z.notiz && <span className="text-gray-400 ml-2 text-xs">· {z.notiz}</span>}
+                            </div>
+                            <button onClick={() => handleDeleteEingang(z.id)} className="text-red-400 hover:text-red-600 text-xs px-2">✕</button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Neue Zahlung erfassen */}
+                  <ZahlungErfassenForm
+                    monatKey={f.monatKey}
+                    forderungBetrag={f.forderungBetrag}
+                    onSave={(zahlung) => {
+                      saveEingaenge([...mietEingaenge, { id: Date.now(), monat: f.monatKey, ...zahlung }]);
+                      setDetailMonat(null);
+                    }}
+                  />
                 </div>
               )}
             </div>
           );
         })}
-      </div>
 
-      {/* Ausnahme-Modal */}
-      {ausnahmeMonat && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-gray-800">⚠ Ausnahme — {ausnahmeMonat.name} {filterJahr}</h3>
-              <button onClick={() => setAusnahmeMonat(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Art der Ausnahme</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[['verspaetet','⏰ Verspätet'],['falscher_betrag','⚠ Falsch'],['nicht_bezahlt','✗ Nicht bezahlt']].map(([val,label]) => (
-                    <button key={val} onClick={() => setAusnahmeForm(f => ({...f, typ: val}))}
-                      className={`py-2 text-xs font-bold rounded-xl border-2 transition-all ${ausnahmeForm.typ === val ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {ausnahmeForm.typ !== 'nicht_bezahlt' && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">
-                    {ausnahmeForm.typ === 'falscher_betrag' ? 'Eingegangener Betrag (€)' : 'Betrag (optional)'}
-                  </label>
-                  <input type="number" value={ausnahmeForm.betrag}
-                    onChange={e => setAusnahmeForm(f => ({...f, betrag: e.target.value}))}
-                    placeholder={formatCurrency(ausnahmeMonat ? getMieteForMonat(filterJahr, ausnahmeMonat.nr) : erwarteterBetrag)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-red-400" />
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Notiz (optional)</label>
-                <input type="text" value={ausnahmeForm.notiz}
-                  onChange={e => setAusnahmeForm(f => ({...f, notiz: e.target.value}))}
-                  placeholder="z.B. Mieter hat falschen Betrag überwiesen"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-red-400" />
-              </div>
-            </div>
-            <div className="flex gap-2 mt-5">
-              <button onClick={() => setAusnahmeMonat(null)}
-                className="flex-1 py-2 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50">
-                Abbrechen
-              </button>
-              <button onClick={handleAusnahmeSpeichern}
-                className="flex-1 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700">
-                Ausnahme speichern
-              </button>
-            </div>
+        {forderungen.filter(f => f.jahr === filterJahr).length === 0 && (
+          <div className="px-4 py-8 text-center text-gray-400 text-sm">
+            Kein Kaufdatum hinterlegt oder keine Monate in diesem Jahr.
           </div>
-        </div>
-      )}
-
-      {/* Legende */}
-      <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-600 font-bold text-[10px]">✓</span> Bezahlt</span>
-        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-500 font-bold text-[10px]">⚡</span> Dauerauftrag</span>
-        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-600 font-bold text-[10px]">~</span> Teilzahlung</span>
-        <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-red-100 border border-red-300 flex items-center justify-center text-red-500 font-bold text-[10px]">✗</span> Offen / Ausnahme</span>
+        )}
       </div>
     </div>
   );
 };
+
+// Inline-Formular zum Erfassen einer Zahlung für einen Monat
+const ZahlungErfassenForm = ({ monatKey, forderungBetrag, onSave }) => {
+  const [betrag, setBetrag] = useState(forderungBetrag);
+  const [datum, setDatum] = useState(() => {
+    const heute = new Date();
+    return heute.toISOString().split('T')[0];
+  });
+  const [notiz, setNotiz] = useState('');
+
+  return (
+    <div className="bg-white rounded-xl border-2 border-blue-200 p-3 mt-2">
+      <p className="text-xs font-semibold text-blue-700 mb-2">💰 Zahlung erfassen</p>
+      <div className="grid grid-cols-3 gap-2 mb-2">
+        <div>
+          <label className="block text-[10px] text-gray-500 mb-1">Betrag eingegangen</label>
+          <div className="flex items-center gap-1">
+            <input type="number" value={betrag} onChange={e => setBetrag(parseFloat(e.target.value)||0)}
+              className="w-full px-2 py-1.5 border-2 border-blue-300 rounded text-sm text-right font-bold" />
+            <span className="text-xs text-gray-400">€</span>
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] text-gray-500 mb-1">Datum Eingang</label>
+          <input type="date" value={datum} onChange={e => setDatum(e.target.value)}
+            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
+        </div>
+        <div>
+          <label className="block text-[10px] text-gray-500 mb-1">Notiz (optional)</label>
+          <input type="text" value={notiz} onChange={e => setNotiz(e.target.value)} placeholder="z.B. verspätet"
+            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        {betrag !== forderungBetrag && (
+          <span className={`text-xs font-semibold ${betrag > forderungBetrag ? 'text-emerald-600' : 'text-amber-600'}`}>
+            {betrag > forderungBetrag ? `+${formatCurrency(betrag-forderungBetrag)} Überzahlung` : `${formatCurrency(betrag-forderungBetrag)} Differenz zur Forderung`}
+          </span>
+        )}
+        <button onClick={() => onSave({ datum, betrag, notiz, typ: 'kaltmiete' })}
+          className="ml-auto px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">
+          Zahlung buchen
+        </button>
+      </div>
+    </div>
+  );
+};
+
 
 // Mietimmobilie-Detail Komponente (Arbitrage-Modell)
 const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
@@ -5060,49 +5083,6 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
           {/* Tab-Inhalte */}
           {activeTab === 'uebersicht' && (
             <div className="space-y-5">
-              {/* Vermögensentwicklung Chart */}
-              <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Vermögensentwicklung</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={ergebnis.entwicklung}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="jahr" />
-                    <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => formatCurrency(v)} />
-                    <Legend />
-                    <Area type="monotone" dataKey="immobilienwert" name="Immobilienwert" stroke="#2563eb" fill="#93c5fd" />
-                    <Area type="monotone" dataKey="eigenkapital" name="Eigenkapital" stroke="#10b981" fill="#6ee7b7" />
-                    <Area type="monotone" dataKey="restschuld" name="Restschuld" stroke="#ef4444" fill="#fca5a5" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Leverage-Effekt Visualisierung */}
-              <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Leverage-Effekt</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={[
-                    { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
-                    { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
-                    { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
-                    <Tooltip formatter={(v) => `${v.toFixed(2)}%`} />
-                    <Bar dataKey="wert" name="Rendite">
-                      {[
-                        { name: 'Nettorendite', wert: ergebnis.nettorendite, fill: '#10b981' },
-                        { name: 'EK-Rendite', wert: ergebnis.eigenkapitalRendite, fill: '#8b5cf6' },
-                        { name: 'Leverage', wert: ergebnis.leverageEffekt, fill: ergebnis.leverageEffekt >= 0 ? '#2563eb' : '#ef4444' }
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
               {/* Prognose */}
               <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Prognose</h3>
