@@ -5101,71 +5101,109 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             const berechneterKredit = Math.max(0, gesamtinvestition - gesamtEK);
             const kreditbetrag = params.finanzierungsbetrag ?? berechneterKredit;
 
-            // Finanzierungsphasen
+            // Finanzierungsphasen — Default: Annuitätendarlehen
             const finanzierungsphasen = params.finanzierungsphasen || [{
-              id: 1, name: 'Erstfinanzierung', zinsbindung: 10, sollzinsbindung: 10,
-              zinssatz: params.zinssatz ?? 4.0, monatlicherBetrag: null,
-              finanzierungsModus: 'festRate', sondertilgungJaehrlich: 0, restschuldOverride: null,
+              id: 1, name: 'Erstfinanzierung', darlehensTyp: 'annuitaet',
+              sollzinssatz: params.zinssatz ?? 4.0, anfangstilgung: params.tilgung ?? 2.0,
+              monatlicherBetrag: null, zinsbindung: 10,
+              monatlicheTilgung: null, tilgungssatz: 2.0, laufzeit: 10,
+              sondertilgungJaehrlich: 0, restschuldOverride: null,
             }];
 
-            // Hilfsfunktion: Gesamtlaufzeit berechnen (Monate bis Schulden = 0)
-            const berechneGesamtlaufzeit = (kredit, monatszins, rate) => {
-              if (rate <= 0 || kredit <= 0) return null;
-              const erstZinsen = kredit * monatszins;
-              if (rate <= erstZinsen) return null; // Rate deckt nicht mal Zinsen
-              // n = log(rate / (rate - k*i)) / log(1+i)
-              return Math.ceil(Math.log(rate / (rate - kredit * monatszins)) / Math.log(1 + monatszins));
+            // Berechnung je Darlehenstyp
+            const berechnePhase = (phase, startKredit) => {
+              const monatszins = (phase.sollzinssatz || 0) / 100 / 12;
+              const typ = phase.darlehensTyp || 'annuitaet';
+
+              if (typ === 'annuitaet') {
+                // Rate: manuell oder berechnet aus Anfangstilgung
+                const rate = phase.monatlicherBetrag > 0
+                  ? phase.monatlicherBetrag
+                  : startKredit * (monatszins + (phase.anfangstilgung || 2) / 100 / 12);
+                const zinsbindungMonate = (phase.zinsbindung || 10) * 12;
+                let restschuld = startKredit, gesamtZinsen = 0, gesamtTilgung = 0;
+                const erstZinsen = startKredit * monatszins;
+                const erstTilgung = Math.max(0, rate - erstZinsen);
+                for (let m = 0; m < zinsbindungMonate && restschuld > 0; m++) {
+                  const mz = restschuld * monatszins;
+                  const t = Math.min(Math.max(0, rate - mz), restschuld);
+                  gesamtZinsen += mz; gesamtTilgung += t; restschuld -= t;
+                  if ((m+1) % 12 === 0 && phase.sondertilgungJaehrlich > 0)
+                    restschuld = Math.max(0, restschuld - phase.sondertilgungJaehrlich);
+                }
+                // Gesamtlaufzeit (ohne Sondertilgung für einfache Formel)
+                let gesamtlaufzeitJahre = null;
+                if (monatszins > 0 && rate > startKredit * monatszins) {
+                  const n = Math.ceil(Math.log(rate / (rate - startKredit * monatszins)) / Math.log(1 + monatszins));
+                  gesamtlaufzeitJahre = (n / 12).toFixed(1);
+                }
+                const anfangstilgungProzent = startKredit > 0 ? (erstTilgung / startKredit * 100 * 12) : 0;
+                return { rate: Math.round(rate), erstZinsen: Math.round(erstZinsen), erstTilgung: Math.round(erstTilgung),
+                  anfangstilgungProzent, restschuldNachZinsbindung: Math.round(restschuld),
+                  gesamtZinsen: Math.round(gesamtZinsen), gesamtTilgung: Math.round(gesamtTilgung), gesamtlaufzeitJahre };
+              }
+
+              if (typ === 'tilgung') {
+                const monatsTilgung = phase.monatlicheTilgung > 0
+                  ? phase.monatlicheTilgung
+                  : startKredit * (phase.tilgungssatz || 2) / 100 / 12;
+                const zinsbindungMonate = (phase.zinsbindung || 10) * 12;
+                let restschuld = startKredit, gesamtZinsen = 0;
+                const erstZinsen = startKredit * monatszins;
+                const erstRate = erstZinsen + monatsTilgung;
+                for (let m = 0; m < zinsbindungMonate && restschuld > 0; m++) {
+                  const mz = restschuld * monatszins;
+                  const t = Math.min(monatsTilgung, restschuld);
+                  gesamtZinsen += mz; restschuld -= t;
+                  if ((m+1) % 12 === 0 && phase.sondertilgungJaehrlich > 0)
+                    restschuld = Math.max(0, restschuld - phase.sondertilgungJaehrlich);
+                }
+                const letzteZinsen = restschuld * monatszins;
+                const letzteRate = letzteZinsen + Math.min(monatsTilgung, restschuld);
+                return { monatsTilgung: Math.round(monatsTilgung), erstRate: Math.round(erstRate),
+                  letzteRate: Math.round(letzteRate), erstZinsen: Math.round(erstZinsen),
+                  restschuldNachZinsbindung: Math.round(restschuld), gesamtZinsen: Math.round(gesamtZinsen) };
+              }
+
+              if (typ === 'endfaellig') {
+                const laufzeitMonate = (phase.laufzeit || 10) * 12;
+                const monatlicherZins = Math.round(startKredit * monatszins);
+                return { monatlicherZins, gesamtZinsen: Math.round(monatlicherZins * laufzeitMonate),
+                  restschuldNachZinsbindung: Math.round(startKredit), rueckzahlungEnde: Math.round(startKredit) };
+              }
+              return {};
             };
 
-            // Phasen mit Berechnungen anreichern
             const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : new Date().getFullYear();
             let aktuelleRestschuld = kreditbetrag;
             let aktuellesStartjahr = kaufjahr;
             const phasenMitBerechnung = finanzierungsphasen.map((phase, i) => {
               const startKredit = (i > 0 && phase.restschuldOverride != null)
                 ? phase.restschuldOverride : aktuelleRestschuld;
-              const monatszins = (phase.zinssatz || 0) / 100 / 12;
-              const rate = phase.monatlicherBetrag || 0;
-
-              // Restschuld nach Sollzinsbindung iterieren
-              const sollzinsbindungMonate = (phase.sollzinsbindung || 10) * 12;
-              let restschuld = startKredit;
-              for (let m = 0; m < sollzinsbindungMonate && restschuld > 0 && rate > 0; m++) {
-                const mz = restschuld * monatszins;
-                restschuld = Math.max(0, restschuld - (rate - mz));
-              }
-
-              // Monatliche Aufteilung (Monat 1)
-              const erstZinsen = startKredit * monatszins;
-              const erstTilgung = Math.max(0, rate - erstZinsen);
-              const anfangstilgungProzent = startKredit > 0 ? (erstTilgung / startKredit) * 100 * 12 : 0;
-              const gesamtlaufzeitMonate = berechneGesamtlaufzeit(startKredit, monatszins, rate);
-              const gesamtlaufzeitJahre = gesamtlaufzeitMonate ? (gesamtlaufzeitMonate / 12).toFixed(1) : null;
-
-              const result = {
-                ...phase, startjahr: aktuellesStartjahr, startKredit: Math.round(startKredit),
-                restschuldNachZinsbindung: Math.round(restschuld),
-                erstZinsen: Math.round(erstZinsen), erstTilgung: Math.round(erstTilgung),
-                anfangstilgungProzent, gesamtlaufzeitMonate, gesamtlaufzeitJahre,
-              };
-              aktuelleRestschuld = restschuld;
-              aktuellesStartjahr += (phase.sollzinsbindung || 10);
+              const berechnung = berechnePhase(phase, startKredit);
+              const laufzeit = phase.darlehensTyp === 'endfaellig' ? (phase.laufzeit || 10) : (phase.zinsbindung || 10);
+              const result = { ...phase, startjahr: aktuellesStartjahr, startKredit: Math.round(startKredit), ...berechnung };
+              aktuelleRestschuld = berechnung.restschuldNachZinsbindung ?? startKredit;
+              aktuellesStartjahr += laufzeit;
               return result;
             });
 
             const updatePhase = (id, updates) => {
               const updated = finanzierungsphasen.map(p => p.id === id ? { ...p, ...updates } : p);
               updateParams({ ...params, finanzierungsphasen: updated,
-                zinssatz: updated[0]?.zinssatz ?? params.zinssatz,
+                zinssatz: updated[0]?.sollzinssatz ?? params.zinssatz,
               });
             };
             const addPhase = () => {
               const letzte = phasenMitBerechnung[phasenMitBerechnung.length - 1];
               updateParams({ ...params, finanzierungsphasen: [...finanzierungsphasen, {
                 id: Date.now(), name: `Anschlussfinanzierung ${finanzierungsphasen.length}`,
-                zinsbindung: 10, sollzinsbindung: 10, zinssatz: (letzte?.zinssatz ?? 4) + 0.5,
-                monatlicherBetrag: letzte?.monatlicherBetrag || null,
-                finanzierungsModus: 'festRate', sondertilgungJaehrlich: 0,
+                darlehensTyp: letzte?.darlehensTyp || 'annuitaet',
+                sollzinssatz: (letzte?.sollzinssatz ?? 4) + 0.5,
+                anfangstilgung: letzte?.anfangstilgung ?? 2,
+                monatlicherBetrag: null, zinsbindung: 10,
+                monatlicheTilgung: null, tilgungssatz: letzte?.tilgungssatz ?? 2, laufzeit: 10,
+                sondertilgungJaehrlich: 0,
                 restschuldOverride: letzte?.restschuldNachZinsbindung ?? null,
               }] });
             };
@@ -5265,35 +5303,43 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
 
                 {/* Finanzierungsphasen */}
                 <div className="space-y-4">
-                  {phasenMitBerechnung.map((phase, idx) => (
+                  {phasenMitBerechnung.map((phase, idx) => {
+                    const typ = phase.darlehensTyp || 'annuitaet';
+                    const typLabels = { annuitaet: '📊 Annuitätendarlehen', tilgung: '📉 Tilgungsdarlehen', endfaellig: '🔚 Endfälliges Darlehen' };
+                    return (
                     <div key={phase.id} className={`bg-white border-2 rounded-2xl p-5 shadow-sm ${idx === 0 ? 'border-blue-200' : 'border-gray-200'}`}>
+                      {/* Header */}
                       <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${idx === 0 ? 'bg-blue-600 text-white' : 'bg-gray-400 text-white'}`}>
-                            Phase {idx + 1}
-                          </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${idx === 0 ? 'bg-blue-600 text-white' : 'bg-gray-400 text-white'}`}>Phase {idx + 1}</span>
                           <input type="text" value={phase.name}
                             onChange={e => updatePhase(phase.id, { name: e.target.value })}
-                            className="font-bold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none text-base"
-                          />
+                            className="font-bold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none text-base" />
                           {phase.startjahr && <span className="text-xs text-gray-400">ab {phase.startjahr}</span>}
                         </div>
-                        {idx > 0 && (
-                          <button onClick={() => deletePhase(phase.id)} className="text-red-400 hover:text-red-600 text-sm">Entfernen</button>
-                        )}
+                        {idx > 0 && <button onClick={() => deletePhase(phase.id)} className="text-red-400 hover:text-red-600 text-sm">Entfernen</button>}
                       </div>
 
-                      {/* Restschuld Override für Anschluss */}
+                      {/* Darlehenstyp-Auswahl */}
+                      <div className="flex gap-2 mb-4 flex-wrap">
+                        {Object.entries(typLabels).map(([val, label]) => (
+                          <button key={val} type="button"
+                            onClick={() => updatePhase(phase.id, { darlehensTyp: val })}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${typ === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Restschuld-Override für Anschlussfinanzierung */}
                       {idx > 0 && (
                         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                           <label className="block text-xs font-semibold text-amber-800 mb-1">🏦 Tatsächliche Restschuld (Startbetrag laut Bank)</label>
                           <div className="flex items-center gap-2">
-                            <input type="number" step={1000}
-                              value={phase.restschuldOverride ?? ''}
+                            <input type="number" step={1000} value={phase.restschuldOverride ?? ''}
                               placeholder={`Berechnet: ${formatCurrency(phasenMitBerechnung[idx-1]?.restschuldNachZinsbindung ?? 0)}`}
                               onChange={e => updatePhase(phase.id, { restschuldOverride: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
-                              className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm"
-                            />
+                              className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm" />
                             <span className="text-sm text-gray-500">€</span>
                             {phase.restschuldOverride != null && (
                               <button onClick={() => updatePhase(phase.id, { restschuldOverride: null })} className="text-xs text-amber-600 hover:underline">Auto</button>
@@ -5302,84 +5348,177 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                         </div>
                       )}
 
-                      {/* Haupteingaben */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">Zinssatz</label>
-                          <div className="flex items-center gap-1">
-                            <input type="number" min={0} max={15} step={0.01} value={phase.zinssatz}
-                              onChange={e => updatePhase(phase.id, { zinssatz: parseFloat(e.target.value) || 0 })}
-                              className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-blue-400"
-                            />
-                            <span className="text-xs text-gray-400">%</span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">Monatliche Rate</label>
-                          <div className="flex items-center gap-1">
-                            <input type="number" min={0} step={10} value={phase.monatlicherBetrag || ''}
-                              placeholder="z.B. 650"
-                              onChange={e => updatePhase(phase.id, { monatlicherBetrag: parseFloat(e.target.value) || null })}
-                              className="w-full px-2 py-2 border-2 border-blue-300 bg-blue-50 rounded-lg text-right font-bold focus:border-blue-500"
-                            />
-                            <span className="text-xs text-gray-400">€</span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">Sollzinsbindung</label>
-                          <div className="flex items-center gap-1">
-                            <input type="number" min={1} max={30} step={1} value={phase.sollzinsbindung || 10}
-                              onChange={e => updatePhase(phase.id, { sollzinsbindung: parseInt(e.target.value) || 10 })}
-                              className="w-full px-2 py-2 border border-gray-200 rounded-lg text-right text-sm focus:border-gray-400"
-                            />
-                            <span className="text-xs text-gray-400">J.</span>
-                          </div>
-                          <p className="text-[10px] text-gray-400 mt-0.5">ⓘ nur Information</p>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">Sondertilgung/Jahr</label>
-                          <div className="flex items-center gap-1">
-                            <input type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
-                              onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
-                              className="w-full px-2 py-2 border border-gray-200 rounded-lg text-right text-sm focus:border-gray-400"
-                            />
-                            <span className="text-xs text-gray-400">€</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Berechnete Werte */}
-                      {phase.monatlicherBetrag > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-gray-50 rounded-xl">
-                          <div className="text-center">
-                            <div className="text-xs text-gray-400 mb-1">Startbetrag</div>
-                            <div className="font-bold text-gray-800">{formatCurrency(phase.startKredit)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-gray-400 mb-1">Davon Zinsen (1. Monat)</div>
-                            <div className="font-bold text-orange-600">{formatCurrency(phase.erstZinsen)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-gray-400 mb-1">Davon Tilgung (1. Monat)</div>
-                            <div className="font-bold text-emerald-600">{formatCurrency(phase.erstTilgung)}</div>
-                            <div className="text-[10px] text-gray-400">{phase.anfangstilgungProzent.toFixed(2)}% p.a.</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-gray-400 mb-1">Restschuld nach {phase.sollzinsbindung || 10}J.</div>
-                            <div className={`font-bold ${phase.restschuldNachZinsbindung === 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
-                              {phase.restschuldNachZinsbindung === 0 ? '✓ Abbezahlt' : formatCurrency(phase.restschuldNachZinsbindung)}
+                      {/* ── ANNUITÄTENDARLEHEN ── */}
+                      {typ === 'annuitaet' && (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Sollzinssatz p.a.</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
+                                  onChange={e => updatePhase(phase.id, { sollzinssatz: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-blue-400" />
+                                <span className="text-xs text-gray-400">%</span>
+                              </div>
                             </div>
-                            {phase.gesamtlaufzeitJahre && (
-                              <div className="text-[10px] text-gray-400">Gesamt: {phase.gesamtlaufzeitJahre} Jahre</div>
-                            )}
-                            {!phase.gesamtlaufzeitJahre && phase.monatlicherBetrag > 0 && (
-                              <div className="text-[10px] text-red-400">Rate zu niedrig!</div>
-                            )}
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Anfangstilgung p.a.</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} max={20} step={0.1} value={phase.anfangstilgung ?? 2}
+                                  onChange={e => updatePhase(phase.id, { anfangstilgung: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm focus:border-blue-400" />
+                                <span className="text-xs text-gray-400">%</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Monatl. Rate (optional)</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} step={10} value={phase.monatlicherBetrag || ''}
+                                  placeholder={phase.rate ? String(phase.rate) : 'Berechnet'}
+                                  onChange={e => updatePhase(phase.id, { monatlicherBetrag: e.target.value === '' ? null : parseFloat(e.target.value) || null })}
+                                  className="w-full px-2 py-2 border-2 border-blue-200 bg-blue-50 rounded-lg text-right font-bold focus:border-blue-500" />
+                                <span className="text-xs text-gray-400">€</span>
+                              </div>
+                              <p className="text-[10px] text-blue-500 mt-0.5">Leer = aus Zinssatz + Tilgung berechnet</p>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Zinsbindung</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
+                                  onChange={e => updatePhase(phase.id, { zinsbindung: parseInt(e.target.value) || 10 })}
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm" />
+                                <span className="text-xs text-gray-400">J.</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Sondertilgung/Jahr</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
+                                  onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm" />
+                                <span className="text-xs text-gray-400">€</span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 bg-blue-50 rounded-xl text-center text-sm">
+                            <div><div className="text-xs text-gray-400 mb-1">Startbetrag</div><div className="font-bold">{formatCurrency(phase.startKredit)}</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Monatl. Rate</div><div className="font-bold text-blue-700">{formatCurrency(phase.rate)}</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Zinsen (Monat 1)</div><div className="font-bold text-orange-600">{formatCurrency(phase.erstZinsen)}</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Tilgung (Monat 1)</div><div className="font-bold text-emerald-600">{formatCurrency(phase.erstTilgung)}<div className="text-[10px] text-gray-400">{(phase.anfangstilgungProzent||0).toFixed(2)}% p.a.</div></div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Restschuld nach {phase.zinsbindung||10}J.</div>
+                              <div className={`font-bold ${phase.restschuldNachZinsbindung===0?'text-emerald-600':'text-orange-600'}`}>{phase.restschuldNachZinsbindung===0?'✓ Abbezahlt':formatCurrency(phase.restschuldNachZinsbindung)}</div>
+                              {phase.gesamtlaufzeitJahre && <div className="text-[10px] text-gray-400">Gesamtlaufzeit: {phase.gesamtlaufzeitJahre}J.</div>}
+                            </div>
+                          </div>
+                          {phase.gesamtZinsen > 0 && (
+                            <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                              <span>Gezahlte Zinsen in {phase.zinsbindung||10}J.: <strong className="text-orange-600">{formatCurrency(phase.gesamtZinsen)}</strong></span>
+                              <span>Getilgt: <strong className="text-emerald-600">{formatCurrency(phase.gesamtTilgung)}</strong></span>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* ── TILGUNGSDARLEHEN ── */}
+                      {typ === 'tilgung' && (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Sollzinssatz p.a.</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
+                                  onChange={e => updatePhase(phase.id, { sollzinssatz: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-blue-400" />
+                                <span className="text-xs text-gray-400">%</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Tilgungssatz p.a.</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} max={20} step={0.1} value={phase.tilgungssatz ?? 2}
+                                  onChange={e => updatePhase(phase.id, { tilgungssatz: parseFloat(e.target.value) || 0, monatlicheTilgung: null })}
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm" />
+                                <span className="text-xs text-gray-400">%</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Oder: feste monatl. Tilgung</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} step={10} value={phase.monatlicheTilgung || ''}
+                                  placeholder="Berechnet"
+                                  onChange={e => updatePhase(phase.id, { monatlicheTilgung: e.target.value === '' ? null : parseFloat(e.target.value) || null })}
+                                  className="w-full px-2 py-2 border-2 border-blue-200 bg-blue-50 rounded-lg text-right font-bold focus:border-blue-500" />
+                                <span className="text-xs text-gray-400">€</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Zinsbindung</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
+                                  onChange={e => updatePhase(phase.id, { zinsbindung: parseInt(e.target.value) || 10 })}
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm" />
+                                <span className="text-xs text-gray-400">J.</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Sondertilgung/Jahr</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
+                                  onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm" />
+                                <span className="text-xs text-gray-400">€</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-purple-50 rounded-xl text-center text-sm">
+                            <div><div className="text-xs text-gray-400 mb-1">Startbetrag</div><div className="font-bold">{formatCurrency(phase.startKredit)}</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Feste Tilgung/Monat</div><div className="font-bold text-purple-700">{formatCurrency(phase.monatsTilgung)}</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Rate Monat 1 → Ende</div><div className="font-bold text-blue-700">{formatCurrency(phase.erstRate)} → {formatCurrency(phase.letzteRate)}</div><div className="text-[10px] text-gray-400">Rate sinkt über Zeit</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Restschuld nach {phase.zinsbindung||10}J.</div>
+                              <div className={`font-bold ${phase.restschuldNachZinsbindung===0?'text-emerald-600':'text-orange-600'}`}>{phase.restschuldNachZinsbindung===0?'✓ Abbezahlt':formatCurrency(phase.restschuldNachZinsbindung)}</div>
+                            </div>
+                          </div>
+                          {phase.gesamtZinsen > 0 && (
+                            <div className="text-xs text-gray-500 mt-2">
+                              Gezahlte Zinsen in {phase.zinsbindung||10}J.: <strong className="text-orange-600">{formatCurrency(phase.gesamtZinsen)}</strong>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* ── ENDFÄLLIGES DARLEHEN ── */}
+                      {typ === 'endfaellig' && (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Sollzinssatz p.a.</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
+                                  onChange={e => updatePhase(phase.id, { sollzinssatz: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-blue-400" />
+                                <span className="text-xs text-gray-400">%</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Laufzeit</label>
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={1} max={30} step={1} value={phase.laufzeit ?? 10}
+                                  onChange={e => updatePhase(phase.id, { laufzeit: parseInt(e.target.value) || 10 })}
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm" />
+                                <span className="text-xs text-gray-400">J.</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-red-50 rounded-xl text-center text-sm">
+                            <div><div className="text-xs text-gray-400 mb-1">Darlehensbetrag</div><div className="font-bold">{formatCurrency(phase.startKredit)}</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Monatl. Zinszahlung</div><div className="font-bold text-orange-600">{formatCurrency(phase.monatlicherZins)}</div><div className="text-[10px] text-gray-400">keine Tilgung!</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Gesamtzinskosten</div><div className="font-bold text-red-600">{formatCurrency(phase.gesamtZinsen)}</div></div>
+                            <div><div className="text-xs text-gray-400 mb-1">Rückzahlung nach {phase.laufzeit||10}J.</div><div className="font-bold text-red-700">{formatCurrency(phase.rueckzahlungEnde)}</div><div className="text-[10px] text-gray-400">voller Betrag auf einmal</div></div>
+                          </div>
+                        </>
                       )}
                     </div>
-                  ))}
+                  );})}
                 </div>
 
                 {/* Anschlussfinanzierung hinzufügen */}
