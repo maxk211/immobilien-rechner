@@ -5177,10 +5177,65 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             return (
               <div className="space-y-5">
 
+                {/* Kaufnebenkosten */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                  <KaufnebenkostenManager
+                    params={params}
+                    updateParams={updateParams}
+                    kaufpreis={params.kaufpreis}
+                  />
+                </div>
+
+                {/* Eigenkapital */}
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-sm font-bold text-green-700 uppercase tracking-wide mb-4">💰 Eigenkapitaleinsatz</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-sm font-medium text-gray-700">EK für Kaufnebenkosten</label>
+                        <span className="text-xs text-gray-400">max. {formatCurrency(kaufnebenkostenAbsolut)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="range" min={0} max={kaufnebenkostenAbsolut} step={1000}
+                          value={ekFuerNebenkosten}
+                          onChange={e => updateParams({ ...params, ekFuerNebenkosten: parseFloat(e.target.value) })}
+                          className="flex-1" />
+                        <input type="number" value={Math.round(ekFuerNebenkosten)}
+                          onChange={e => updateParams({ ...params, ekFuerNebenkosten: Math.min(kaufnebenkostenAbsolut, parseFloat(e.target.value) || 0) })}
+                          className="w-28 px-2 py-1 border rounded text-right text-sm" />
+                        <span className="text-sm text-gray-500">€</span>
+                      </div>
+                      {ekFuerNebenkosten < kaufnebenkostenAbsolut && (
+                        <p className="text-xs text-orange-600 mt-1">⚠ {formatCurrency(kaufnebenkostenAbsolut - ekFuerNebenkosten)} Nebenkosten werden mitfinanziert</p>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-sm font-medium text-gray-700">EK für Kaufpreis</label>
+                        <span className="text-xs text-gray-400">{params.kaufpreis > 0 ? ((ekFuerKaufpreis / params.kaufpreis) * 100).toFixed(1) : 0}%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="range" min={0} max={params.kaufpreis} step={5000}
+                          value={ekFuerKaufpreis}
+                          onChange={e => updateParams({ ...params, ekFuerKaufpreis: parseFloat(e.target.value) })}
+                          className="flex-1" />
+                        <input type="number" value={Math.round(ekFuerKaufpreis)}
+                          onChange={e => updateParams({ ...params, ekFuerKaufpreis: Math.min(params.kaufpreis, parseFloat(e.target.value) || 0) })}
+                          className="w-28 px-2 py-1 border rounded text-right text-sm" />
+                        <span className="text-sm text-gray-500">€</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-green-200 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-green-800">Gesamt-EK: {formatCurrency(gesamtEK)}</span>
+                    <span className="text-xs text-gray-500">{gesamtinvestition > 0 ? ((gesamtEK / gesamtinvestition) * 100).toFixed(1) : 0}% der Gesamtinvestition</span>
+                  </div>
+                </div>
+
                 {/* Kreditbetrag */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">🏦 Kredit</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-1">
                       <label className="block text-xs text-gray-500 mb-1">Kreditbetrag</label>
                       <div className="flex items-center gap-2">
@@ -5196,14 +5251,14 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                         ↺ Auto ({formatCurrency(berechneterKredit)})
                       </button>
                     </div>
-                    <div className="md:col-span-2 bg-gray-50 rounded-xl p-3 flex items-center gap-4 text-sm text-gray-600">
-                      <div><span className="text-gray-400">Kaufpreis</span><br/><strong>{formatCurrency(params.kaufpreis)}</strong></div>
+                    <div className="md:col-span-2 bg-gray-50 rounded-xl p-3 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                      <div><span className="text-gray-400 text-xs">Kaufpreis</span><br/><strong>{formatCurrency(params.kaufpreis)}</strong></div>
                       <div className="text-gray-300">+</div>
-                      <div><span className="text-gray-400">Nebenkosten ({params.kaufnebenkosten ?? 10}%)</span><br/><strong>{formatCurrency(kaufnebenkostenAbsolut)}</strong></div>
+                      <div><span className="text-gray-400 text-xs">Nebenkosten</span><br/><strong>{formatCurrency(kaufnebenkostenAbsolut)}</strong></div>
                       <div className="text-gray-300">−</div>
-                      <div><span className="text-gray-400">Eigenkapital</span><br/><strong>{formatCurrency(gesamtEK)}</strong></div>
+                      <div><span className="text-gray-400 text-xs">Eigenkapital</span><br/><strong>{formatCurrency(gesamtEK)}</strong></div>
                       <div className="text-gray-300">=</div>
-                      <div><span className="text-gray-400">Kredit (berechnet)</span><br/><strong className="text-blue-700">{formatCurrency(berechneterKredit)}</strong></div>
+                      <div><span className="text-gray-400 text-xs">Kredit (berechnet)</span><br/><strong className="text-blue-700">{formatCurrency(berechneterKredit)}</strong></div>
                     </div>
                   </div>
                 </div>
