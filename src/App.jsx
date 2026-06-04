@@ -4113,11 +4113,28 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
                   {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">✗ Offen</span>}
                 </div>
                 {/* Actions */}
-                <div className="col-span-1 flex justify-end gap-1">
+                <div className="col-span-1 flex justify-end items-center gap-1">
+                  {/* Schnell-Abhaken: nur bei offenen/teilweisen Forderungen */}
+                  {(f.status === 'offen' || f.status === 'teilweise') && !isDauerauftrag && (
+                    <button
+                      onClick={() => {
+                        const heute = new Date().toISOString().split('T')[0];
+                        saveEingaenge([...mietEingaenge, {
+                          id: Date.now(), monat: f.monatKey,
+                          datum: heute, betrag: f.forderungBetrag, notiz: '', typ: 'kaltmiete'
+                        }]);
+                      }}
+                      className="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors"
+                      title={`${formatCurrency(f.forderungBetrag)} als eingegangen markieren`}
+                    >
+                      ✓
+                    </button>
+                  )}
+                  {/* Dropdown für Detailansicht / Korrektur */}
                   <button
                     onClick={() => setDetailMonat(isExpanded ? null : f.monatKey)}
-                    className="text-gray-400 hover:text-gray-600 text-lg leading-none px-1"
-                    title={isExpanded ? 'Schließen' : 'Details'}
+                    className="text-gray-300 hover:text-gray-500 text-sm leading-none px-1"
+                    title={isExpanded ? 'Schließen' : 'Details / Korrektur'}
                   >
                     {isExpanded ? '▲' : '▼'}
                   </button>
