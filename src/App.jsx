@@ -3842,29 +3842,35 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   ];
 
   const isDauerauftrag = params.dauerauftrag || false;
-  const aktuelleMiete = getAktuelleMiete(params); // aktuell gültige Miete
-  const dauerauftragBetrag = params.dauerauftragBetrag || aktuelleMiete || 0;
-  const erwarteterBetrag = aktuelleMiete || 0;
+  const vermietungsmodell = params.vermietungsmodell || 'kaltmiete';
+  const nkVomMieter = vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
 
-  // Ermittelt die gültige Miete für einen bestimmten Monat anhand der Mietanpassungen
+  const aktuelleMiete = getAktuelleMiete(params); // aktuell gültige Kaltmiete/Warmmiete
+  const dauerauftragBetrag = params.dauerauftragBetrag || aktuelleMiete || 0;
+
+  // Erwarteter Gesamtbetrag vom Mieter je nach Mietmodell:
+  // kaltmiete   → nur Kaltmiete
+  // kaltmiete_nk → Kaltmiete + NK-Vorauszahlung
+  // warmmiete   → Warmmiete (= kaltmiete-Feld enthält Warmmiete)
+  const erwarteterBetrag = (aktuelleMiete || 0) + nkVomMieter;
+
+  // Ermittelt den erwarteten Gesamtbetrag für einen bestimmten Monat (historisch korrekt)
   const getMieteForMonat = (jahr, monatNr) => {
+    // Kaltmiete/Warmmiete historisch korrekt aus mietAnpassungen
     const anpassungen = (params.mietAnpassungen || []).filter(a => a.kaltmiete != null);
-    if (anpassungen.length === 0) return erwarteterBetrag;
-    // Sortiere nach Datum aufsteigend
     const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
-    // Finde die letzte Anpassung, die vor oder in diesem Monat liegt
     const monatsDatum = new Date(jahr, monatNr - 1, 1);
     let gueltig = null;
     for (const anp of sorted) {
-      const anpDatum = new Date(anp.datum);
-      if (anpDatum <= monatsDatum) gueltig = anp;
+      if (new Date(anp.datum) <= monatsDatum) gueltig = anp;
       else break;
     }
-    // Wenn Dauerauftrag aktiv: nutze dauerauftragBetrag als Override für aktuelle Miete,
-    // aber historische Mietanpassungen schlagen Dauerauftrag-Betrag
-    if (gueltig) return gueltig.kaltmiete;
-    // Kein Eintrag vor diesem Monat → Basiskaltmiete
-    return isDauerauftrag ? dauerauftragBetrag : erwarteterBetrag;
+    // Basiskaltmiete: letzte gültige Anpassung oder Fallback
+    const kaltmieteForMonat = gueltig
+      ? gueltig.kaltmiete
+      : (isDauerauftrag ? dauerauftragBetrag : (aktuelleMiete || 0));
+    // NK-Vorauszahlung addieren (nur bei kaltmiete_nk, aktueller Wert)
+    return kaltmieteForMonat + nkVomMieter;
   };
 
   const saveEingaenge = (neueEingaenge) => {
