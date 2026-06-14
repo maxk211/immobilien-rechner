@@ -2198,127 +2198,172 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
       </div>
 
       {modus === 'automatisch' ? (
-        <div>
-          {/* Vermietungsmodell Selector */}
-          <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-            <p className="text-xs font-semibold text-blue-800 mb-2">🏠 Vermietungsmodell</p>
-            <div className="grid grid-cols-3 gap-1.5 mb-2">
+        <div className="space-y-3">
+          {/* Vermietungsmodell */}
+          <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+            <p className="text-xs font-bold text-blue-800 mb-2">🏠 Vermietungsmodell</p>
+            <div className="grid grid-cols-3 gap-1.5">
               {[
                 { value: 'kaltmiete', label: 'Kaltmiete', desc: 'NK via Abrechnung' },
-                { value: 'kaltmiete_nk', label: 'Kaltmiete + NK', desc: 'Mieter zahlt Vorauszahlung' },
+                { value: 'kaltmiete_nk', label: 'Kaltmiete + NK', desc: 'Mieter zahlt NK-VZ' },
                 { value: 'warmmiete', label: 'Warmmiete', desc: 'Inklusivmiete' },
               ].map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
+                <button key={opt.value} type="button"
                   onClick={() => updateParams({ ...params, vermietungsmodell: opt.value })}
                   className={`p-1.5 rounded-lg border-2 text-xs transition-all text-left ${
                     (params.vermietungsmodell || 'kaltmiete') === opt.value
                       ? 'border-blue-500 bg-white text-blue-700 font-semibold'
                       : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                  }`}
-                >
+                  }`}>
                   <div className="font-semibold">{opt.label}</div>
                   <div className="text-gray-400 text-[10px]">{opt.desc}</div>
                 </button>
               ))}
             </div>
-            {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete' && (
-              <p className="text-[10px] text-blue-600">Betriebskosten werden via Nebenkostenabrechnung auf Mieter umgelegt</p>
-            )}
-            {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' && (
-              <div className="mt-1">
-                <p className="text-[10px] text-blue-600 mb-1">Mieter zahlt NK-Vorauszahlung direkt an dich</p>
-                <InputSliderCombo label="NK-Vorauszahlung vom Mieter" value={params.nebenkostenVomMieter || 0} onChange={(v) => updateParams({...params, nebenkostenVomMieter: v})} min={0} max={600} step={10} unit="€" info="Monatliche Nebenkostenvorauszahlung vom Mieter (erhöht deine Einnahmen)" />
-              </div>
-            )}
-            {(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' && (
-              <p className="text-[10px] text-blue-600">Vermieter zahlt alle Betriebskosten aus der Warmmiete</p>
-            )}
+            <p className="text-[10px] text-blue-600 mt-1.5">
+              {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete' ? 'Betriebskosten via NK-Abrechnung auf Mieter umgelegt'
+                : (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? 'Mieter zahlt Nebenkostenvorauszahlung direkt an dich'
+                : 'Vermieter zahlt alle Betriebskosten aus der Warmmiete'}
+            </p>
           </div>
 
-          <p className="text-xs text-gray-500 mb-3">Basiswerte mit jährlicher Steigerung</p>
-          <InputSliderCombo
-            label={(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete (Basis)' : 'Kaltmiete (Basis)'}
-            value={params.kaltmiete}
-            onChange={(v) => updateParams({...params, kaltmiete: v})}
-            min={200} max={5000} step={50} unit="€"
-          />
-          <InputSliderCombo label="Mietsteigerung p.a." value={params.mietsteigerung} onChange={(v) => updateParams({...params, mietsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
+          {/* Einnahmen */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">📈 Einnahmen</p>
+            </div>
+            <div className="divide-y divide-gray-100 px-4">
+              {[
+                { label: (params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete (Basis)' : 'Kaltmiete (Basis)', key: 'kaltmiete', unit: '€', step: 25, hint: 'Monatliche Grundmiete' },
+                { label: 'Mietsteigerung p.a.', key: 'mietsteigerung', unit: '%', step: 0.1, hint: 'Jährliche Erhöhung' },
+                ...((params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? [{ label: 'NK-Vorauszahlung (Mieter)', key: 'nebenkostenVomMieter', unit: '€', step: 10, hint: 'Monatliche NK-Vorauszahlung' }] : []),
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
+                    <div className="text-[10px] text-gray-400">{item.hint}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input type="number"
+                      value={params[item.key] ?? 0}
+                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
+                      step={item.step || 1} min={0} max={item.max || 99999}
+                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tabular-nums" />
+                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          {/* Mietanpassungen / Miethistorie */}
-          <div className="border-t pt-3 mt-3">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-semibold text-gray-600">📅 Mietanpassungen</p>
-              <button
-                type="button"
+          {/* Mietanpassungen */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">📅 Mietanpassungen</p>
+              <button type="button"
                 onClick={() => {
                   const neueAnpassung = { datum: new Date().toISOString().split('T')[0], kaltmiete: params.kaltmiete || 0 };
                   updateParams({ ...params, mietAnpassungen: [...(params.mietAnpassungen || []), neueAnpassung] });
                 }}
-                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-              >
+                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded-lg font-medium">
                 + Anpassung
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 mb-2">Trage Mietänderungen mit Datum ein – wird für den korrekten Steuerexport verwendet.</p>
-            {(params.mietAnpassungen || []).length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic bg-gray-100 p-2 rounded">Keine Anpassungen → Kaltmiete (Basis) gilt durchgehend</p>
-            ) : (
-              <div className="space-y-1.5">
-                {(params.mietAnpassungen || [])
-                  .map((anp, originalIdx) => ({ ...anp, originalIdx }))
-                  .sort((a, b) => new Date(a.datum) - new Date(b.datum))
-                  .map((anp) => (
-                    <div key={anp.originalIdx} className="flex items-center gap-2 bg-white border border-gray-200 rounded p-1.5">
-                      <input
-                        type="date"
-                        value={anp.datum}
-                        onChange={(e) => {
-                          const neu = [...(params.mietAnpassungen || [])];
-                          neu[anp.originalIdx] = { ...neu[anp.originalIdx], datum: e.target.value };
-                          updateParams({ ...params, mietAnpassungen: neu });
-                        }}
-                        className="text-xs border border-gray-300 rounded px-1 py-0.5 flex-1 min-w-0"
-                      />
-                      <input
-                        type="number"
-                        value={anp.kaltmiete}
-                        onChange={(e) => {
-                          const neu = [...(params.mietAnpassungen || [])];
-                          neu[anp.originalIdx] = { ...neu[anp.originalIdx], kaltmiete: parseFloat(e.target.value) || 0 };
-                          updateParams({ ...params, mietAnpassungen: neu });
-                        }}
-                        className="w-20 text-xs border border-gray-300 rounded px-1 py-0.5 text-right"
-                      />
-                      <span className="text-[10px] text-gray-400 whitespace-nowrap">€/Mon</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const neu = (params.mietAnpassungen || []).filter((_, i) => i !== anp.originalIdx);
-                          updateParams({ ...params, mietAnpassungen: neu });
-                        }}
-                        className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            )}
+            <div className="px-4 py-3">
+              <p className="text-[10px] text-gray-400 mb-2">Mietänderungen mit Datum – für Steuerexport</p>
+              {(params.mietAnpassungen || []).length === 0 ? (
+                <p className="text-[10px] text-gray-400 italic bg-gray-50 border border-gray-100 p-2 rounded-lg">Keine Anpassungen → Kaltmiete (Basis) gilt durchgehend</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {(params.mietAnpassungen || [])
+                    .map((anp, originalIdx) => ({ ...anp, originalIdx }))
+                    .sort((a, b) => new Date(a.datum) - new Date(b.datum))
+                    .map(anp => (
+                      <div key={anp.originalIdx} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-1.5">
+                        <input type="date" value={anp.datum}
+                          onChange={e => {
+                            const neu = [...(params.mietAnpassungen || [])];
+                            neu[anp.originalIdx] = { ...neu[anp.originalIdx], datum: e.target.value };
+                            updateParams({ ...params, mietAnpassungen: neu });
+                          }}
+                          className="text-xs border border-gray-300 rounded px-1 py-0.5 flex-1 min-w-0" />
+                        <input type="number" value={anp.kaltmiete}
+                          onChange={e => {
+                            const neu = [...(params.mietAnpassungen || [])];
+                            neu[anp.originalIdx] = { ...neu[anp.originalIdx], kaltmiete: parseFloat(e.target.value) || 0 };
+                            updateParams({ ...params, mietAnpassungen: neu });
+                          }}
+                          className="w-20 text-xs border border-gray-300 rounded px-1 py-0.5 text-right" />
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">€/Mon</span>
+                        <button type="button"
+                          onClick={() => {
+                            const neu = (params.mietAnpassungen || []).filter((_, i) => i !== anp.originalIdx);
+                            updateParams({ ...params, mietAnpassungen: neu });
+                          }}
+                          className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0">✕</button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="border-t pt-3 mt-3">
-            <p className="text-xs text-gray-500 mb-2">🧾 Vermieter-Kosten (monatlich)</p>
-            <InputSliderCombo label="Instandhaltung" value={params.instandhaltung} onChange={(v) => updateParams({...params, instandhaltung: v})} min={0} max={500} step={10} unit="€" />
-            <InputSliderCombo label="Verwaltung" value={params.verwaltung} onChange={(v) => updateParams({...params, verwaltung: v})} min={0} max={200} step={5} unit="€" />
+          {/* Vermieterkosten */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">🧾 Vermieterkosten</p>
+            </div>
+            <div className="divide-y divide-gray-100 px-4">
+              {[
+                { label: 'Instandhaltung', key: 'instandhaltung', unit: '€', step: 10, hint: 'Rücklagen für Reparaturen & Instandhaltung' },
+                { label: 'Verwaltung', key: 'verwaltung', unit: '€', step: 5, hint: 'Hausverwaltung, Buchführung etc.' },
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
+                    <div className="text-[10px] text-gray-400">{item.hint}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input type="number"
+                      value={params[item.key] ?? 0}
+                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
+                      step={item.step || 1} min={0} max={9999}
+                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tabular-nums" />
+                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="border-t pt-3 mt-3">
-            <p className="text-xs text-gray-500 mb-2">🏢 WEG & Betriebskosten (vom Vermieter getragen)</p>
-            <InputSliderCombo label="WEG / Hausgeld" value={params.hausgeld} onChange={(v) => updateParams({...params, hausgeld: v})} min={0} max={500} step={10} unit="€" info="Monatliches Hausgeld an die WEG" />
-            <InputSliderCombo label="Strom" value={params.strom} onChange={(v) => updateParams({...params, strom: v})} min={0} max={300} step={5} unit="€" info="Stromkosten (wenn vom Vermieter getragen)" />
-            <InputSliderCombo label="Internet" value={params.internet} onChange={(v) => updateParams({...params, internet: v})} min={0} max={100} step={5} unit="€" info="Internetkosten (wenn vom Vermieter getragen)" />
-            <InputSliderCombo label="Sonstige Nebenkosten" value={params.nebenkosten || 0} onChange={(v) => updateParams({...params, nebenkosten: v})} min={0} max={500} step={10} unit="€" info="Weitere monatliche Kosten (z.B. Versicherungen, Grundsteuer anteilig)" />
+
+          {/* WEG & Betriebskosten */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">🏢 WEG & Betriebskosten</p>
+            </div>
+            <div className="divide-y divide-gray-100 px-4">
+              {[
+                { label: 'WEG / Hausgeld', key: 'hausgeld', unit: '€', step: 10, hint: 'Monatliches Hausgeld an die WEG' },
+                { label: 'Strom', key: 'strom', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
+                { label: 'Internet', key: 'internet', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
+                { label: 'Sonstige Nebenkosten', key: 'nebenkosten', unit: '€', step: 10, hint: 'Versicherungen, Grundsteuer anteilig etc.' },
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
+                    <div className="text-[10px] text-gray-400">{item.hint}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input type="number"
+                      value={params[item.key] ?? 0}
+                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
+                      step={item.step || 1} min={0} max={9999}
+                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tabular-nums" />
+                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : (
@@ -5113,7 +5158,7 @@ const KautionsManager = ({ params, updateParams }) => {
 };
 
 // Mietimmobilie-Detail Komponente (Arbitrage-Modell)
-const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
+const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
   const [params, setParams] = useState({
     eigeneWarmmiete: immobilie.eigeneWarmmiete || 1500,
     anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 3,
@@ -5133,6 +5178,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
     mietAnpassungen: immobilie.mietAnpassungen || []
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState('uebersicht');
 
   const updateParams = (newParams) => {
     setParams(prev => ({ ...prev, ...newParams }));
@@ -5225,9 +5271,34 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
               <div className="text-xs text-gray-400">{monateSeitStart} Monate</div>
             </div>
           </div>
+          {/* Tab-Navigation */}
+          <div className="flex gap-1 bg-slate-100 p-1">
+            {[
+              { id: 'uebersicht', label: '📊 Übersicht' },
+              { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
+            ].map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-4 text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="p-6">
+          {/* Mieter Tab */}
+          {activeTab === 'mieter' && (
+            <MieterDashboard
+              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+              portfolio={[immobilie]}
+              onDelete={onDeleteMieter}
+              onSave={onSaveMieter}
+              nkAbrechnungen={nkAbrechnungen}
+              onSaveNK={onSaveNK}
+              onDeleteNK={onDeleteNK}
+            />
+          )}
+          {activeTab === 'uebersicht' && <>
           {/* Cashflow-Aufschlüsselung */}
           <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 mb-6">
             <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide mb-4">Cashflow-Aufschlüsselung</h3>
@@ -5549,6 +5620,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
               ))}
             </div>
           </div>
+          </>}
         </div>
       </div>
     </div>
@@ -5850,7 +5922,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
 };
 
 // Immobilien-Detail Komponente
-const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
+const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
   const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
   const isMFH = immobilie.immobilienTyp === 'mehrfamilienhaus';
 
@@ -5861,6 +5933,13 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
         immobilie={immobilie}
         onClose={onClose}
         onSave={onSave}
+        mieterListe={mieterListe}
+        onSaveMieter={onSaveMieter}
+        onDeleteMieter={onDeleteMieter}
+        nkAbrechnungen={nkAbrechnungen}
+        onSaveNK={onSaveNK}
+        onDeleteNK={onDeleteNK}
+        portfolio={portfolio}
       />
     );
   }
@@ -6277,6 +6356,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               { id: 'investitionen', label: '🔧 Investitionen' },
               { id: 'nkabrechnung', label: '🧾 NK-Abrechnung' },
               { id: 'kaution', label: '🔑 Kaution' },
+              { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
               { id: 'zaehler', label: '📟 Zähler' }
             ].map(tab => (
               <button
@@ -6855,6 +6935,18 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             <KautionsManager
               params={params}
               updateParams={updateParams}
+            />
+          )}
+
+          {activeTab === 'mieter' && (
+            <MieterDashboard
+              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+              portfolio={[immobilie]}
+              onDelete={onDeleteMieter}
+              onSave={onSaveMieter}
+              nkAbrechnungen={nkAbrechnungen}
+              onSaveNK={onSaveNK}
+              onDeleteNK={onDeleteNK}
             />
           )}
 
@@ -9677,15 +9769,6 @@ function App() {
               🏠 Immobilien
               {portfolio.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'portfolio' ? 'bg-white/20' : 'bg-gray-100'}`}>{aktiveImmobilien.length}</span>}
             </button>
-            <button
-              onClick={() => setActiveView('mieter')}
-              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all ${activeView === 'mieter' ? 'bg-slate-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-            >
-              👥 Mieter
-              {mieterListe.filter(m => m.aktiv !== false).length > 0 && (
-                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'mieter' ? 'bg-white/20' : 'bg-gray-100'}`}>{mieterListe.filter(m => m.aktiv !== false).length}</span>
-              )}
-            </button>
           </div>
 
           {/* Action Buttons */}
@@ -9782,19 +9865,6 @@ function App() {
           </>
         ))}
 
-        {activeView === 'mieter' && (
-          <MieterDashboard
-            mieterListe={mieterListe}
-            portfolio={portfolio}
-            onAdd={() => setShowMieterForm(true)}
-            onEdit={(m) => setEditMieter(m)}
-            onDelete={handleDeleteMieter}
-            onSave={handleSaveMieter}
-            nkAbrechnungen={nkAbrechnungen}
-            onSaveNK={handleSaveNK}
-            onDeleteNK={handleDeleteNK}
-          />
-        )}
       </main>
 
       {showForm && (
@@ -9826,6 +9896,13 @@ function App() {
               alert('Fehler beim Speichern: ' + error.message);
             }
           }}
+          mieterListe={mieterListe}
+          onSaveMieter={handleSaveMieter}
+          onDeleteMieter={handleDeleteMieter}
+          nkAbrechnungen={nkAbrechnungen}
+          onSaveNK={handleSaveNK}
+          onDeleteNK={handleDeleteNK}
+          portfolio={portfolio}
         />
       )}
 
