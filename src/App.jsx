@@ -698,35 +698,46 @@ const berechneRendite = (params) => {
   const nettoEinnahmen = jahresEinnahmen - jahresVermieterKosten;
   const nettorendite = (nettoEinnahmen / kaufpreis) * 100;
 
-  // Aktive Finanzierungsphase bestimmen (basierend auf Kaufdatum + heute)
+  // Aktive Finanzierungsphase bestimmen (basierend auf Kreditstartdatum + heute)
   // Wenn finanzierungsphasen vorhanden: nimm die aktuell laufende Phase
   const aktivePhaseDaten = (() => {
     const phasen = params.finanzierungsphasen;
-    if (!phasen || phasen.length <= 1 || !kaufdatum) return null;
-    const startJahr = new Date(kaufdatum).getFullYear();
+    if (!phasen || phasen.length === 0) return null;
+    // Kreditstart: aus Phase 1 oder Kaufdatum
+    const kreditStart = phasen[0]?.kreditStartDatum || kaufdatum;
+    if (!kreditStart) return null;
+    const startJahr = new Date(kreditStart).getFullYear();
     const aktuellesJahr = new Date().getFullYear();
     let jahrOffset = 0;
     let aktuelleRestschuld = fremdkapital;
     for (let i = 0; i < phasen.length; i++) {
       const phase = phasen[i];
+      // Zinssatz: sollzinssatz bevorzugen (neues Feld), Fallback auf zinssatz (Legacy), dann params-Wert
+      const phasenzins = phase.sollzinssatz ?? phase.zinssatz ?? zinssatz;
       const startKreditPhase = (i > 0 && phase.restschuldOverride != null) ? phase.restschuldOverride : aktuelleRestschuld;
-      const endjahr = startJahr + jahrOffset + phase.zinsbindung;
-      // Restschuld für diese Phase berechnen
-      const mzins = phase.zinssatz / 100 / 12;
-      const lmonate = phase.zinsbindung * 12;
-      let ann = 0;
-      if (mzins > 0 && startKreditPhase > 0) {
-        ann = startKreditPhase * (mzins * Math.pow(1 + mzins, lmonate)) / (Math.pow(1 + mzins, lmonate) - 1);
-      }
+      const phaseLaufzeit = phase.darlehensTyp === 'endfaellig' ? (phase.laufzeit || 10) : (phase.zinsbindung || 10);
+      const endjahr = startJahr + jahrOffset + phaseLaufzeit;
+      // Rate für diese Phase: direkt aus monatlicherBetrag oder berechnet
+      const mzins = phasenzins / 100 / 12;
+      const lmonate = phaseLaufzeit * 12;
+      const phasenRate = (phase.monatlicherBetrag > 0)
+        ? phase.monatlicherBetrag
+        : (mzins > 0 && startKreditPhase > 0 ? startKreditPhase * (mzins * Math.pow(1 + mzins, lmonate)) / (Math.pow(1 + mzins, lmonate) - 1) : 0);
+      // Restschuld nach dieser Phase berechnen
       let rs = startKreditPhase;
       for (let m = 0; m < lmonate && rs > 0; m++) {
         const mz = rs * mzins;
-        rs = Math.max(0, rs - Math.min(ann - mz, rs));
+        rs = Math.max(0, rs - Math.min(phasenRate - mz, rs));
       }
       aktuelleRestschuld = rs;
-      jahrOffset += phase.zinsbindung;
+      jahrOffset += phaseLaufzeit;
       if (aktuellesJahr < endjahr || i === phasen.length - 1) {
-        return { zinssatz: phase.zinssatz, restschuld: startKreditPhase, laufzeit: phase.zinsbindung, monatlicherBetrag: phase.finanzierungsModus === 'festRate' ? phase.monatlicherBetrag : null };
+        return {
+          zinssatz: phasenzins,
+          restschuld: startKreditPhase,
+          laufzeit: phaseLaufzeit,
+          monatlicherBetrag: phase.monatlicherBetrag > 0 ? phase.monatlicherBetrag : null,
+        };
       }
     }
     return null;
@@ -790,7 +801,10 @@ const berechneRendite = (params) => {
     gesamtTilgung,
     gesamtZinsen,
     fremdkapital,
-    kaufnebenkostenAbsolut
+    kaufnebenkostenAbsolut,
+    // Aktive Phase für CashflowUebersicht
+    effZinssatz,
+    effRestschuld: effKredit,
   };
 };
 
@@ -2485,7 +2499,15 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
       const basisMiete = getAktuelleMiete(params); // aktuelle Miete als Basis für Prognose
       const jahresMiete = basisMiete * 12 * mieteFaktor;
       const nkVomMieter = (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) * 12 : 0;
-      const jahresKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0) + (params.strom || 0) + (params.internet || 0) + (params.nebenkosten || 0)) * 12;
+      // Vermieterkosten: historische Werte aus mietHistorie[Jahr] bevorzugen (manuell eingetragen)
+      const histKosten = (params.mietHistorie || {})[`${jahr}`] || {};
+      const jInstandhaltung = histKosten.instandhaltung ?? params.instandhaltung;
+      const jVerwaltung = histKosten.verwaltung ?? params.verwaltung;
+      const jHausgeld = histKosten.hausgeld ?? (params.hausgeld || 0);
+      const jStrom = histKosten.strom ?? (params.strom || 0);
+      const jInternet = histKosten.internet ?? (params.internet || 0);
+      const jNebenkosten = histKosten.nebenkosten ?? (params.nebenkosten || 0);
+      const jahresKosten = (jInstandhaltung + jVerwaltung + jHausgeld + jStrom + jInternet + jNebenkosten) * 12;
       const jahresKreditrate = ergebnis.monatlicheRate * 12;
 
       // Investitionen für dieses Jahr
@@ -2510,38 +2532,39 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
   }, [params, ergebnis, kaufjahr, investitionen]);
 
   // Berechne Zins- und Tilgungsanteil
+  // Verwendet effZinssatz + effRestschuld aus berechneRendite (aktive Phase, korrekte Restschuld)
   const berechneZinsTilgung = () => {
-    const zinssatz = params.zinssatz ?? 4.0;
-    const kaufnebenkosten = params.kaufnebenkosten ?? 10;
-    const kaufnebenkostenAbsolut = params.kaufpreis * (kaufnebenkosten / 100);
-    const gesamtinvestition = params.kaufpreis + kaufnebenkostenAbsolut;
-    const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
-      ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
-      : (params.eigenkapital ?? params.kaufpreis * 0.2);
-    const fremdkapital = params.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-
-    // Aktuelle Restschuld berechnen (vereinfacht: nehme anfängliche Restschuld)
-    const restschuld = fremdkapital; // Für genauere Berechnung müsste man die tatsächliche Restschuld nehmen
-    const monatsZinsen = restschuld * (zinssatz / 100 / 12);
+    const effZinssatz = ergebnis.effZinssatz ?? (params.zinssatz ?? 4.0);
+    const effRestschuld = ergebnis.effRestschuld ?? (() => {
+      const kaufnebenkosten = params.kaufnebenkosten ?? 10;
+      const kaufnebenkostenAbsolut = params.kaufpreis * (kaufnebenkosten / 100);
+      const gesamtinvestition = params.kaufpreis + kaufnebenkostenAbsolut;
+      const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
+        ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
+        : (params.eigenkapital ?? params.kaufpreis * 0.2);
+      return params.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
+    })();
+    const monatsZinsen = effRestschuld * (effZinssatz / 100 / 12);
     const monatsTilgung = ergebnis.monatlicheRate - monatsZinsen;
-
     return {
-      zinsen: Math.max(0, monatsZinsen),
-      tilgung: Math.max(0, monatsTilgung),
+      zinsen: Math.max(0, Math.round(monatsZinsen)),
+      tilgung: Math.max(0, Math.round(monatsTilgung)),
       gesamt: ergebnis.monatlicheRate
     };
   };
 
   const kreditDetails = berechneZinsTilgung();
 
+  // Vermieterkosten für aktuelles Jahr aus mietHistorie (falls manuell eingetragen)
+  const aktuellesJahrHistKosten = (params.mietHistorie || {})[`${aktuellesJahr}`] || {};
   const monatsDaten = {
     einnahmen: getAktuelleMiete(params), // aktuelle Miete lt. mietAnpassungen
-    nebenkosten: params.nebenkosten,
-    instandhaltung: params.instandhaltung,
-    verwaltung: params.verwaltung,
-    hausgeld: params.hausgeld || 0,
-    strom: params.strom || 0,
-    internet: params.internet || 0,
+    nebenkosten: aktuellesJahrHistKosten.nebenkosten ?? params.nebenkosten,
+    instandhaltung: aktuellesJahrHistKosten.instandhaltung ?? params.instandhaltung,
+    verwaltung: aktuellesJahrHistKosten.verwaltung ?? params.verwaltung,
+    hausgeld: aktuellesJahrHistKosten.hausgeld ?? (params.hausgeld || 0),
+    strom: aktuellesJahrHistKosten.strom ?? (params.strom || 0),
+    internet: aktuellesJahrHistKosten.internet ?? (params.internet || 0),
     kreditrate: ergebnis.monatlicheRate,
     zinsen: kreditDetails.zinsen,
     tilgung: kreditDetails.tilgung,
@@ -8105,14 +8128,14 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
 
 // Haupt-App Komponente
 // Changelog — Version hier hochzählen um das Popup auszulösen
-const CHANGELOG_VERSION = '2.6.0';
+const CHANGELOG_VERSION = '2.7.0';
 const CHANGELOG_EINTRAEGE = [
+  { emoji: '🐛', text: 'Rate-Bug behoben: Zinsen/Tilgung im Cashflow-Tab stimmen jetzt mit dem Finanzierungstab überein' },
+  { emoji: '🐛', text: 'Cashflow-Berechnung nutzt jetzt die korrekte aktive Finanzierungsphase (auch bei Einzelphasen)' },
+  { emoji: '📊', text: 'Vermieterkosten können jetzt rückwirkend per Jahr angepasst werden (Manuell-Modus im Cashflow-Tab)' },
   { emoji: '🐛', text: 'Fixe Kreditrate wird jetzt korrekt im Cashflow-Tab angezeigt' },
-  { emoji: '🐛', text: 'Finanzierungswerte (Zinssatz, Tilgung) beim Anlegen einer neuen Immobilie korrekt übernommen' },
-  { emoji: '🐛', text: 'Offene und teilbezahlte Forderungen in Mieteingängen werden jetzt korrekt angezeigt' },
   { emoji: '📅', text: 'Kreditstartdatum: Kann vom Kaufdatum abweichen (z.B. Valutierung 2 Monate später)' },
   { emoji: '⚠️', text: 'Zinsbindungs-Warnung: Roter Hinweis wenn Zinsbindung in < 12 Monaten ausläuft' },
-  { emoji: '💵', text: 'Jahressumme Mieteingänge: Kaltmiete und NK-Anteil separat ausgewiesen' },
   { emoji: '📄', text: 'NK-Abrechnung: Erstattung/Nachzahlung mit optionaler Ratenzahlung erfassen' },
   { emoji: '🧾', text: 'Neuer Tab "NK-Abrechnung": Jährliche Betriebskostenabrechnung mit dem Mieter' },
 ];
