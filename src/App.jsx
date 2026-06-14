@@ -520,13 +520,18 @@ const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
   };
 };
 
-// Restschuld berechnen basierend auf Kaufdatum und Finanzierung
+// Restschuld berechnen basierend auf Kreditstartdatum (oder Kaufdatum) und Finanzierung
 const berechneRestschuld = (immobilie) => {
-  if (!immobilie.kaufdatum || !immobilie.kaufpreis) return null;
+  if (!immobilie.kaufpreis) return null;
 
-  const kaufdatum = new Date(immobilie.kaufdatum);
+  // Kreditstartdatum: aus erster Finanzierungsphase oder Fallback auf Kaufdatum
+  const erstePhaseRS = (immobilie.finanzierungsphasen || [])[0];
+  const startDatumStr = erstePhaseRS?.kreditStartDatum || immobilie.kaufdatum;
+  if (!startDatumStr) return null;
+
+  const startDatum = new Date(startDatumStr);
   const heute = new Date();
-  const monateSeitKauf = Math.floor((heute - kaufdatum) / (1000 * 60 * 60 * 24 * 30.44));
+  const monateSeitKauf = Math.floor((heute - startDatum) / (1000 * 60 * 60 * 24 * 30.44));
 
   if (monateSeitKauf <= 0) return null;
 
@@ -1435,18 +1440,21 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
             </button>
             <button
               onClick={() => {
-                // Finanzierungskonditionen in erste Phase übertragen
+                // Finanzierungskonditionen in erste Phase übertragen (Feldnamen müssen zur Finanzierungstab-Logik passen)
                 const erstePhase = {
                   id: 1,
                   name: 'Erstfinanzierung',
+                  darlehensTyp: 'annuitaet',
+                  sollzinssatz: formData.zinssatz ?? 4.0,
+                  anfangstilgung: formData.tilgung ?? 2.0,
                   zinsbindung: formData.zinsbindung || 10,
-                  zinssatz: formData.zinssatz ?? 4.0,
-                  tilgung: formData.tilgung ?? 2.0,
+                  monatlicherBetrag: formData.finanzierungsModus === 'festRate' ? (formData.monatlicherBetrag || null) : null,
+                  monatlicheTilgung: null,
+                  tilgungssatz: 2.0,
+                  laufzeit: 10,
                   sondertilgungJaehrlich: 0,
-                  aktiv: true,
-                  finanzierungsModus: formData.finanzierungsModus || 'berechnet',
-                  monatlicherBetrag: formData.monatlicherBetrag || null,
                   restschuldOverride: null,
+                  aktiv: true,
                 };
                 onSave({ ...formData, finanzierungsphasen: [erstePhase] });
               }}
@@ -1490,9 +1498,12 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
     const kreditbetrag = immobilie.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
     const monatszinsKauf = zinssatz / 100 / 12;
     const laufzeitKauf = immobilie.laufzeit ?? 25;
-    const monatlicheRate = kreditbetrag > 0 && monatszinsKauf > 0
-      ? kreditbetrag * (monatszinsKauf * Math.pow(1 + monatszinsKauf, laufzeitKauf * 12)) / (Math.pow(1 + monatszinsKauf, laufzeitKauf * 12) - 1)
-      : 0;
+    const ersteFinanzPhase = (immobilie.finanzierungsphasen || [])[0];
+    const monatlicheRate = ersteFinanzPhase?.monatlicherBetrag > 0
+      ? ersteFinanzPhase.monatlicherBetrag
+      : (kreditbetrag > 0 && monatszinsKauf > 0
+        ? kreditbetrag * (monatszinsKauf * Math.pow(1 + monatszinsKauf, laufzeitKauf * 12)) / (Math.pow(1 + monatszinsKauf, laufzeitKauf * 12) - 1)
+        : 0);
     const betriebskosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0) + (immobilie.nebenkosten || 0);
     return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten;
   })() : 0;
@@ -3823,6 +3834,8 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
   const [ausnahmeMonat, setAusnahmeMonat] = useState(null); // {nr, name} for exception modal
   const [ausnahmeForm, setAusnahmeForm] = useState({ typ: 'verspaetet', betrag: '', notiz: '' });
   const [detailMonat, setDetailMonat] = useState(null); // nr of expanded month
+  const [showNKModal, setShowNKModal] = useState(false); // NK-Abrechnung erfassen
+  const [nkAbrechnungen, setNkAbrechnungen] = useState(params.nkAbrechnungen || []);
 
   const kaufDatumObj = immobilie.kaufdatum ? new Date(immobilie.kaufdatum) : null;
   const kaufjahr = kaufDatumObj ? kaufDatumObj.getFullYear() : new Date().getFullYear();
@@ -3994,10 +4007,22 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
 
   const MONATE_NAMEN = ['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 
-  const offenGesamt = forderungen.filter(f => f.status === 'offen').reduce((s,f) => s + f.forderungBetrag, 0);
-  const offenAnzahl = forderungen.filter(f => f.status === 'offen').length;
+  // Offene Forderungen: komplett offen + Restbetrag bei Teilzahlungen
+  const offenGesamt = forderungen
+    .filter(f => f.status === 'offen' || f.status === 'teilweise')
+    .reduce((s, f) => s + Math.max(0, f.forderungBetrag - f.eingegangen), 0);
+  const offenAnzahl = forderungen.filter(f => f.status === 'offen' || f.status === 'teilweise').length;
   const jahresForderungen = forderungen.filter(f => f.jahr === filterJahr);
   const jahresEinnahmen = jahresForderungen.reduce((s,f) => s + (f.status === 'dauerauftrag' ? f.forderungBetrag : f.eingegangen), 0);
+  // Jahressumme aufgeteilt nach Kalt und NK
+  const jahresKalt = jahresForderungen.reduce((s, f) => {
+    if (f.status === 'vor_kauf' || f.status === 'zukunft') return s;
+    const kaltAnteil = f.forderungBetrag - nkVomMieter;
+    if (f.status === 'dauerauftrag') return s + kaltAnteil;
+    const ratio = f.forderungBetrag > 0 ? kaltAnteil / f.forderungBetrag : 1;
+    return s + f.eingegangen * ratio;
+  }, 0);
+  const jahresNKEingegangen = nkVomMieter > 0 ? jahresEinnahmen - jahresKalt : 0;
 
   return (
     <div className="space-y-5">
@@ -4041,9 +4066,15 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
       {offenAnzahl > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-4">
           <div className="text-3xl font-black text-red-500">{offenAnzahl}</div>
-          <div>
-            <div className="font-bold text-red-700">Offene Forderung{offenAnzahl !== 1 ? 'en' : ''}</div>
-            <div className="text-sm text-red-600">Ausstehend: {formatCurrency(offenGesamt)}</div>
+          <div className="flex-1">
+            <div className="font-bold text-red-700">
+              {forderungen.filter(f => f.status === 'offen').length > 0 && forderungen.filter(f => f.status === 'teilweise').length > 0
+                ? `${forderungen.filter(f => f.status === 'offen').length} offen, ${forderungen.filter(f => f.status === 'teilweise').length} teilbezahlt`
+                : forderungen.filter(f => f.status === 'offen').length > 0
+                  ? `${offenAnzahl} offene Forderung${offenAnzahl !== 1 ? 'en' : ''}`
+                  : `${offenAnzahl} Forderung${offenAnzahl !== 1 ? 'en' : ''} teilbezahlt`}
+            </div>
+            <div className="text-sm text-red-600">Ausstehend gesamt: <strong>{formatCurrency(offenGesamt)}</strong></div>
           </div>
         </div>
       )}
@@ -4058,8 +4089,14 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
             </button>
           ))}
         </div>
-        <div className="text-sm text-gray-500">
-          Einnahmen {filterJahr}: <span className="font-bold text-indigo-700">{formatCurrency(jahresEinnahmen)}</span>
+        <div className="text-right text-sm text-gray-500">
+          <span>Einnahmen {filterJahr}: <span className="font-bold text-indigo-700">{formatCurrency(jahresEinnahmen)}</span></span>
+          {nkVomMieter > 0 && (
+            <div className="text-xs text-gray-400 mt-0.5">
+              davon Kaltmiete: <span className="font-semibold text-gray-600">{formatCurrency(jahresKalt)}</span>
+              {' · '}NK: <span className="font-semibold text-gray-600">{formatCurrency(jahresNKEingegangen)}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -4099,9 +4136,16 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
                   ) : (
                     <div className="text-sm text-gray-300">—</div>
                   )}
-                  {f.eingegangen > 0 && f.diferenz !== 0 && (
-                    <div className={`text-[10px] ${f.differenz > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                  {/* Differenz: Typo-Fix (f.differenz statt f.diferenz) */}
+                  {f.eingegangen > 0 && f.differenz !== 0 && (
+                    <div className={`text-[10px] font-semibold ${f.differenz > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                       {f.differenz > 0 ? '+' : ''}{formatCurrency(f.differenz)}
+                    </div>
+                  )}
+                  {/* Restforderung bei Teilzahlung */}
+                  {f.status === 'teilweise' && (
+                    <div className="text-[10px] text-red-500 font-semibold">
+                      noch {formatCurrency(f.forderungBetrag - f.eingegangen)} offen
                     </div>
                   )}
                 </div>
@@ -4184,6 +4228,97 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie }) => {
           </div>
         )}
       </div>
+
+      {/* NK-Abrechnungen */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide">📄 NK-Abrechnungen</h3>
+          <button onClick={() => setShowNKModal(true)}
+            className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
+            + NK-Abrechnung
+          </button>
+        </div>
+
+        {nkAbrechnungen.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-3">Noch keine NK-Abrechnungen erfasst</p>
+        ) : (
+          <div className="space-y-3">
+            {nkAbrechnungen.map(abr => {
+              const offeneRaten = abr.raten.filter(r => !r.bezahlt);
+              const bezahlteRaten = abr.raten.filter(r => r.bezahlt);
+              const bezahltBetrag = bezahlteRaten.reduce((s, r) => s + r.betrag, 0);
+              const istVollstaendigBezahlt = offeneRaten.length === 0;
+              const toggleRate = (rateId) => {
+                const heute = new Date().toISOString().split('T')[0];
+                const updatedAbr = { ...abr, raten: abr.raten.map(r =>
+                  r.id === rateId ? { ...r, bezahlt: !r.bezahlt, bezahltAm: !r.bezahlt ? heute : null } : r
+                )};
+                const updated = nkAbrechnungen.map(a => a.id === abr.id ? updatedAbr : a);
+                setNkAbrechnungen(updated);
+                updateParams({ ...params, nkAbrechnungen: updated });
+              };
+              const deleteAbr = () => {
+                const updated = nkAbrechnungen.filter(a => a.id !== abr.id);
+                setNkAbrechnungen(updated);
+                updateParams({ ...params, nkAbrechnungen: updated });
+              };
+              return (
+                <div key={abr.id} className={`rounded-xl border p-4 ${istVollstaendigBezahlt ? 'bg-emerald-50 border-emerald-200' : abr.typ === 'nachzahlung' ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${abr.typ === 'nachzahlung' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {abr.typ === 'nachzahlung' ? '💸 Nachzahlung' : '💰 Erstattung'}
+                        </span>
+                        <span className="text-xs text-gray-500">NK {abr.abrechnungsjahr}</span>
+                        {istVollstaendigBezahlt && <span className="text-xs font-bold text-emerald-600">✓ Abgeschlossen</span>}
+                      </div>
+                      <div className="text-lg font-black text-gray-800 mt-1">{formatCurrency(abr.gesamtbetrag)}</div>
+                      {abr.notiz && <div className="text-xs text-gray-500">{abr.notiz}</div>}
+                    </div>
+                    <button onClick={deleteAbr} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                  </div>
+                  {/* Raten */}
+                  <div className="space-y-1.5">
+                    {abr.raten.map(rate => (
+                      <div key={rate.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border text-sm ${rate.bezahlt ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200'}`}>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => toggleRate(rate.id)}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center text-xs font-bold transition-colors ${rate.bezahlt ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 hover:border-emerald-400'}`}>
+                            {rate.bezahlt ? '✓' : ''}
+                          </button>
+                          <span className={`font-semibold ${rate.bezahlt ? '' : 'text-gray-800'}`}>{formatCurrency(rate.betrag)}</span>
+                          <span className="text-xs text-gray-400">
+                            {rate.bezahlt ? `bezahlt ${rate.bezahltAm ? new Date(rate.bezahltAm).toLocaleDateString('de-DE') : ''}` : `fällig ${new Date(rate.faelligDatum).toLocaleDateString('de-DE')}`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {!istVollstaendigBezahlt && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Noch offen: <strong>{formatCurrency(abr.gesamtbetrag - bezahltBetrag)}</strong> ({offeneRaten.length} Rate{offeneRaten.length !== 1 ? 'n' : ''})
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {showNKModal && (
+        <NKAbrechnungModal
+          abrechnungsjahr={filterJahr - 1}
+          onClose={() => setShowNKModal(false)}
+          onSave={(abr) => {
+            const updated = [...nkAbrechnungen, abr];
+            setNkAbrechnungen(updated);
+            updateParams({ ...params, nkAbrechnungen: updated });
+            setShowNKModal(false);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -4235,6 +4370,409 @@ const ZahlungErfassenForm = ({ monatKey, forderungBetrag, onSave }) => {
   );
 };
 
+
+// NK-Abrechnung Tab: Jährliche Betriebskostenabrechnung zwischen Vermieter und Mieter
+const NK_KOSTENPOSITIONEN_DEFAULTS = [
+  { key: 'heizung', label: 'Heizkosten', icon: '🔥' },
+  { key: 'wasser', label: 'Wasser/Abwasser', icon: '💧' },
+  { key: 'muell', label: 'Müllentsorgung', icon: '🗑️' },
+  { key: 'gebaeude_versicherung', label: 'Gebäudeversicherung', icon: '🛡️' },
+  { key: 'hausmeister', label: 'Hausmeister', icon: '🔧' },
+  { key: 'aufzug', label: 'Aufzug', icon: '🏢' },
+  { key: 'treppenhausreinigung', label: 'Treppenhausreinigung', icon: '🧹' },
+  { key: 'gartenpflege', label: 'Gartenpflege', icon: '🌿' },
+  { key: 'strassenbeitrag', label: 'Straßenreinigung', icon: '🛤️' },
+  { key: 'kabelfernsehen', label: 'Kabelfernsehen', icon: '📺' },
+  { key: 'sonstiges', label: 'Sonstiges', icon: '📦' },
+];
+
+const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
+  const aktuellesJahr = new Date().getFullYear();
+  const [filterJahr, setFilterJahr] = useState(aktuellesJahr - 1);
+  const [showForm, setShowForm] = useState(false);
+  const [editAbrechnung, setEditAbrechnung] = useState(null); // null = neu, sonst Objekt
+
+  const nkAbrechnungen = params.nkAbrechnungen || [];
+  const jahresAbrechnungen = nkAbrechnungen.filter(a => a.abrechnungsjahr === filterJahr && a.typ === 'nk_abrechnung_detail');
+
+  // Vorauszahlungen aus Mieteingängen für das Jahr berechnen
+  const nkVomMieter = params.nebenkostenVomMieter || 0;
+  const vorauszahlungenGesamt = nkVomMieter * 12;
+
+  const saveAbrechnung = (abrechnung) => {
+    let updated;
+    if (abrechnung.id && nkAbrechnungen.find(a => a.id === abrechnung.id)) {
+      updated = nkAbrechnungen.map(a => a.id === abrechnung.id ? abrechnung : a);
+    } else {
+      updated = [...nkAbrechnungen, { ...abrechnung, id: Date.now(), typ: 'nk_abrechnung_detail', erstellt: new Date().toISOString() }];
+    }
+    updateParams({ ...params, nkAbrechnungen: updated });
+    setShowForm(false);
+    setEditAbrechnung(null);
+  };
+
+  const deleteAbrechnung = (id) => {
+    updateParams({ ...params, nkAbrechnungen: nkAbrechnungen.filter(a => a.id !== id) });
+  };
+
+  // Neue leere Abrechnung
+  const neueAbrechnung = {
+    abrechnungsjahr: filterJahr,
+    mieterName: '',
+    wohnflaeche: params.wohnflaeche || 0,
+    gesamtflaeche: params.wohnflaeche || 0,
+    vorauszahlungen: vorauszahlungenGesamt,
+    kostenpositionen: NK_KOSTENPOSITIONEN_DEFAULTS.map(pos => ({ ...pos, gesamtkosten: 0, mieteranteil: 100 })),
+    notizen: '',
+  };
+
+  const jahre = [];
+  const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : aktuellesJahr - 3;
+  for (let j = kaufjahr; j <= aktuellesJahr; j++) jahre.push(j);
+
+  if (showForm) {
+    const abr = editAbrechnung || neueAbrechnung;
+    return <NKAbrechnungForm abrechnung={abr} onSave={saveAbrechnung} onCancel={() => { setShowForm(false); setEditAbrechnung(null); }} />;
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="text-base font-bold text-gray-800">🧾 NK-Abrechnungen</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Jährliche Betriebskostenabrechnung mit dem Mieter</p>
+          </div>
+          <button onClick={() => setShowForm(true)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors">
+            + Neue Abrechnung
+          </button>
+        </div>
+        {/* Jahresauswahl */}
+        <div className="flex gap-1 mt-4 flex-wrap">
+          {jahre.map(j => (
+            <button key={j} onClick={() => setFilterJahr(j)}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              {j}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* NK-Vorauszahlungen Info */}
+      {nkVomMieter > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm">
+          <div className="font-semibold text-blue-800">💡 Vorauszahlungen {filterJahr}</div>
+          <div className="text-blue-700 mt-1">
+            {nkVomMieter > 0 ? `${formatCurrency(nkVomMieter)}/Monat × 12 = ` : ''}<strong>{formatCurrency(vorauszahlungenGesamt)}</strong> Vorauszahlungen erhalten
+          </div>
+        </div>
+      )}
+
+      {/* Abrechnungsliste */}
+      {jahresAbrechnungen.length === 0 ? (
+        <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-10 text-center">
+          <div className="text-4xl mb-3">📄</div>
+          <div className="text-gray-500 font-semibold">Noch keine NK-Abrechnung für {filterJahr}</div>
+          <div className="text-gray-400 text-sm mt-1">Erstelle die jährliche Betriebskostenabrechnung für den Mieter</div>
+          <button onClick={() => setShowForm(true)}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700">
+            Abrechnung erstellen
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {jahresAbrechnungen.map(abr => {
+            const gesamtkosten = (abr.kostenpositionen || []).reduce((s, k) => s + (k.gesamtkosten * (k.mieteranteil / 100) || 0), 0);
+            const saldo = (abr.vorauszahlungen || 0) - gesamtkosten;
+            const istErstattung = saldo > 0;
+            return (
+              <div key={abr.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="font-bold text-gray-800">NK-Abrechnung {abr.abrechnungsjahr}</div>
+                    {abr.mieterName && <div className="text-sm text-gray-500">Mieter: {abr.mieterName}</div>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setEditAbrechnung(abr); setShowForm(true); }} className="text-blue-500 hover:text-blue-700 text-xs font-semibold">Bearbeiten</button>
+                    <button onClick={() => deleteAbrechnung(abr.id)} className="text-red-400 hover:text-red-600 text-xs">Löschen</button>
+                  </div>
+                </div>
+                {/* Kostenpositionen */}
+                <div className="space-y-1.5 mb-4">
+                  {(abr.kostenpositionen || []).filter(k => k.gesamtkosten > 0).map(pos => (
+                    <div key={pos.key} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">{pos.icon} {pos.label}</span>
+                      <div className="text-right">
+                        <span className="font-semibold text-gray-800">{formatCurrency(pos.gesamtkosten * (pos.mieteranteil / 100))}</span>
+                        {pos.mieteranteil !== 100 && <span className="text-xs text-gray-400 ml-1">({pos.mieteranteil}% von {formatCurrency(pos.gesamtkosten)})</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Saldo */}
+                <div className="border-t border-gray-200 pt-3 space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Tatsächliche Kosten (Mieteranteil)</span>
+                    <span className="font-semibold">{formatCurrency(gesamtkosten)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Vorauszahlungen</span>
+                    <span className="font-semibold text-blue-600">−{formatCurrency(abr.vorauszahlungen || 0)}</span>
+                  </div>
+                  <div className={`flex justify-between text-sm font-bold p-2 rounded-lg ${istErstattung ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'}`}>
+                    <span>{istErstattung ? '💰 Erstattung an Mieter' : '💸 Nachzahlung vom Mieter'}</span>
+                    <span>{formatCurrency(Math.abs(saldo))}</span>
+                  </div>
+                </div>
+                {abr.notizen && <p className="text-xs text-gray-500 mt-2">{abr.notizen}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// NK-Abrechnung Formular
+const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
+  const [form, setForm] = useState({
+    ...abrechnung,
+    kostenpositionen: abrechnung.kostenpositionen?.length > 0
+      ? abrechnung.kostenpositionen
+      : NK_KOSTENPOSITIONEN_DEFAULTS.map(pos => ({ ...pos, gesamtkosten: 0, mieteranteil: 100 })),
+  });
+
+  const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const updatePos = (key, field, value) => setForm(prev => ({
+    ...prev,
+    kostenpositionen: prev.kostenpositionen.map(p => p.key === key ? { ...p, [field]: value } : p)
+  }));
+
+  const gesamtkosten = form.kostenpositionen.reduce((s, k) => s + (parseFloat(k.gesamtkosten) * (parseFloat(k.mieteranteil) / 100) || 0), 0);
+  const saldo = (parseFloat(form.vorauszahlungen) || 0) - gesamtkosten;
+  const istErstattung = saldo > 0;
+
+  return (
+    <div className="space-y-5">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-gray-800">NK-Abrechnung {form.abrechnungsjahr}</h3>
+          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 text-sm">✕ Abbrechen</button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Mieter Name</label>
+            <input type="text" value={form.mieterName || ''} onChange={e => update('mieterName', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Name des Mieters" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Vorauszahlungen (€)</label>
+            <input type="number" step="0.01" value={form.vorauszahlungen || ''} onChange={e => update('vorauszahlungen', parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 border-2 border-blue-300 rounded-lg text-sm font-bold text-right" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Mieterfläche (m²)</label>
+            <input type="number" value={form.wohnflaeche || ''} onChange={e => update('wohnflaeche', parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-right" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Gesamtfläche (m²)</label>
+            <input type="number" value={form.gesamtflaeche || ''} onChange={e => update('gesamtflaeche', parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-right" />
+          </div>
+        </div>
+
+        {/* Kostenpositionen */}
+        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Kostenpositionen</h4>
+        <div className="space-y-2">
+          {form.kostenpositionen.map(pos => (
+            <div key={pos.key} className="grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-5 text-sm text-gray-700 flex items-center gap-1">
+                <span>{pos.icon}</span>
+                <span className="truncate">{pos.label}</span>
+              </div>
+              <div className="col-span-3">
+                <div className="flex items-center gap-1">
+                  <input type="number" step="0.01" value={pos.gesamtkosten || ''} placeholder="0"
+                    onChange={e => updatePos(pos.key, 'gesamtkosten', parseFloat(e.target.value) || 0)}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-right" />
+                  <span className="text-[10px] text-gray-400">€</span>
+                </div>
+              </div>
+              <div className="col-span-3">
+                <div className="flex items-center gap-1">
+                  <input type="number" min={0} max={100} value={pos.mieteranteil}
+                    onChange={e => updatePos(pos.key, 'mieteranteil', parseFloat(e.target.value) || 0)}
+                    className="w-full px-2 py-1.5 border border-gray-200 bg-gray-50 rounded text-xs text-right" />
+                  <span className="text-[10px] text-gray-400">%</span>
+                </div>
+              </div>
+              <div className="col-span-1 text-right text-xs font-semibold text-gray-600">
+                {pos.gesamtkosten > 0 ? formatCurrency(pos.gesamtkosten * pos.mieteranteil / 100) : '—'}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Saldo */}
+        <div className="mt-5 border-t border-gray-200 pt-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Gesamtkosten Mieteranteil</span>
+            <span className="font-bold">{formatCurrency(gesamtkosten)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">− Vorauszahlungen</span>
+            <span className="font-bold text-blue-600">−{formatCurrency(form.vorauszahlungen || 0)}</span>
+          </div>
+          <div className={`flex justify-between font-bold text-sm p-3 rounded-xl ${istErstattung ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'}`}>
+            <span>{istErstattung ? '💰 Erstattung an Mieter' : '💸 Nachzahlung vom Mieter'}</span>
+            <span>{formatCurrency(Math.abs(saldo))}</span>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-xs text-gray-500 mb-1">Notizen</label>
+          <textarea value={form.notizen || ''} onChange={e => update('notizen', e.target.value)} rows={2}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none" />
+        </div>
+
+        <div className="flex gap-2 mt-4">
+          <button onClick={onCancel} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
+          <button onClick={() => onSave(form)} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">
+            Abrechnung speichern
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// NK-Abrechnung Erfassen: Erstattung oder Nachzahlung mit optionaler Ratenzahlung
+const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
+  const [typ, setTyp] = useState('nachzahlung'); // 'nachzahlung' = Mieter zahlt nach, 'erstattung' = Vermieter erstattet
+  const [gesamtbetrag, setGesamtbetrag] = useState('');
+  const [abjahr, setAbjahr] = useState(abrechnungsjahr || new Date().getFullYear() - 1);
+  const [zahlungsmodus, setZahlungsmodus] = useState('sofort'); // 'sofort' | 'raten'
+  const [anzahlRaten, setAnzahlRaten] = useState(3);
+  const [ersteFaelligkeit, setErsteFaelligkeit] = useState(() => {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [notiz, setNotiz] = useState('');
+
+  const betrag = parseFloat(gesamtbetrag) || 0;
+  const ratenBetrag = anzahlRaten > 0 ? Math.round((betrag / anzahlRaten) * 100) / 100 : betrag;
+
+  const handleSave = () => {
+    if (!betrag) return;
+    let raten = [];
+    if (zahlungsmodus === 'sofort') {
+      raten = [{ id: 1, faelligDatum: ersteFaelligkeit, betrag, bezahlt: false, bezahltAm: null }];
+    } else {
+      const startDatum = new Date(ersteFaelligkeit);
+      for (let i = 0; i < anzahlRaten; i++) {
+        const faellig = new Date(startDatum);
+        faellig.setMonth(faellig.getMonth() + i);
+        const istLetzte = i === anzahlRaten - 1;
+        const ratBetrag = istLetzte ? Math.round((betrag - ratenBetrag * (anzahlRaten - 1)) * 100) / 100 : ratenBetrag;
+        raten.push({ id: i + 1, faelligDatum: faellig.toISOString().split('T')[0], betrag: ratBetrag, bezahlt: false, bezahltAm: null });
+      }
+    }
+    onSave({ id: Date.now(), typ, gesamtbetrag: betrag, abrechnungsjahr: abjahr, zahlungsmodus, raten, notiz, erstellt: new Date().toISOString() });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-gray-800">📄 NK-Abrechnung erfassen</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+
+        {/* Typ */}
+        <div className="mb-4">
+          <label className="block text-xs font-semibold text-gray-600 mb-2">Abrechnungsergebnis</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[['nachzahlung', '💸 Nachzahlung', 'Mieter muss nachzahlen'], ['erstattung', '💰 Erstattung', 'Du erstattest dem Mieter']].map(([val, label, desc]) => (
+              <button key={val} type="button" onClick={() => setTyp(val)}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${typ === val ? (val === 'nachzahlung' ? 'border-green-500 bg-green-50' : 'border-orange-400 bg-orange-50') : 'border-gray-200'}`}>
+                <div className="font-semibold text-sm">{label}</div>
+                <div className="text-xs text-gray-500">{desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Abrechnungsjahr + Betrag */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Abrechnungsjahr</label>
+            <input type="number" value={abjahr} onChange={e => setAbjahr(parseInt(e.target.value) || abrechnungsjahr)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Gesamtbetrag (€)</label>
+            <input type="number" step="0.01" value={gesamtbetrag} onChange={e => setGesamtbetrag(e.target.value)}
+              placeholder="z.B. 350"
+              className="w-full px-3 py-2 border-2 border-blue-300 rounded-lg text-sm font-bold text-right" />
+          </div>
+        </div>
+
+        {/* Zahlungsmodus */}
+        <div className="mb-4">
+          <label className="block text-xs font-semibold text-gray-600 mb-2">Zahlungsart</label>
+          <div className="flex gap-2">
+            {[['sofort', 'Einmalzahlung'], ['raten', 'Ratenzahlung']].map(([val, label]) => (
+              <button key={val} type="button" onClick={() => setZahlungsmodus(val)}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold border-2 transition-all ${zahlungsmodus === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Erste Fälligkeit */}
+        <div className={`grid gap-3 mb-4 ${zahlungsmodus === 'raten' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">{zahlungsmodus === 'raten' ? '1. Fälligkeit' : 'Fälligkeit'}</label>
+            <input type="date" value={ersteFaelligkeit} onChange={e => setErsteFaelligkeit(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+          </div>
+          {zahlungsmodus === 'raten' && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Anzahl Raten</label>
+              <input type="number" min={2} max={24} value={anzahlRaten} onChange={e => setAnzahlRaten(parseInt(e.target.value) || 2)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold" />
+            </div>
+          )}
+        </div>
+        {zahlungsmodus === 'raten' && betrag > 0 && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
+            {anzahlRaten}× {formatCurrency(ratenBetrag)} monatlich (Fälligkeit jeden 1.)
+          </div>
+        )}
+
+        {/* Notiz */}
+        <div className="mb-5">
+          <label className="block text-xs text-gray-500 mb-1">Notiz (optional)</label>
+          <input type="text" value={notiz} onChange={e => setNotiz(e.target.value)} placeholder="z.B. NK-Abrechnung 2024"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
+          <button onClick={handleSave} disabled={!betrag}
+            className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-40">
+            Speichern
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Mietimmobilie-Detail Komponente (Arbitrage-Modell)
 const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
@@ -5087,6 +5625,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               { id: 'cashflow', label: '💰 Cashflow' },
               { id: 'steuern', label: '📋 Steuern' },
               { id: 'investitionen', label: '🔧 Investitionen' },
+              { id: 'nkabrechnung', label: '🧾 NK-Abrechnung' },
               { id: 'zaehler', label: '📟 Zähler' }
             ].map(tab => (
               <button
@@ -5197,7 +5736,9 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               return {};
             };
 
-            const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : new Date().getFullYear();
+            // Kreditstartdatum: aus Phase 1 oder Kaufdatum
+            const erstePhaseStartDatum = finanzierungsphasen[0]?.kreditStartDatum || params.kaufdatum;
+            const kaufjahr = erstePhaseStartDatum ? new Date(erstePhaseStartDatum).getFullYear() : new Date().getFullYear();
             let aktuelleRestschuld = kreditbetrag;
             let aktuellesStartjahr = kaufjahr;
             const phasenMitBerechnung = finanzierungsphasen.map((phase, i) => {
@@ -5329,8 +5870,42 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                   {phasenMitBerechnung.map((phase, idx) => {
                     const typ = phase.darlehensTyp || 'annuitaet';
                     const typLabels = { annuitaet: '📊 Annuitätendarlehen', tilgung: '📉 Tilgungsdarlehen', endfaellig: '🔚 Endfälliges Darlehen' };
+                    // Zinsbindungs-Warnung: Ablauf berechnen (vor return)
+                    const pStartDatum = idx === 0
+                      ? (phase.kreditStartDatum || params.kaufdatum)
+                      : null;
+                    let zinsbindungsWarnung = null;
+                    if (pStartDatum && typ !== 'endfaellig') {
+                      const ablaufDatum = new Date(pStartDatum);
+                      ablaufDatum.setFullYear(ablaufDatum.getFullYear() + (phase.zinsbindung || 10));
+                      const heute2 = new Date();
+                      const monateZumAblauf = (ablaufDatum - heute2) / (1000 * 60 * 60 * 24 * 30.44);
+                      if (monateZumAblauf <= 12 && monateZumAblauf >= 0) {
+                        zinsbindungsWarnung = { ablaufDatum, monateZumAblauf: Math.ceil(monateZumAblauf), kritisch: monateZumAblauf <= 3 };
+                      } else if (monateZumAblauf < 0) {
+                        zinsbindungsWarnung = { ablaufDatum, monateZumAblauf: 0, abgelaufen: true, kritisch: true };
+                      }
+                    }
                     return (
                     <div key={phase.id} className={`bg-white border-2 rounded-2xl p-5 shadow-sm ${idx === 0 ? 'border-blue-200' : 'border-gray-200'}`}>
+                      {/* Zinsbindungs-Warnung */}
+                      {zinsbindungsWarnung && (
+                        <div className={`mb-4 p-3 rounded-xl flex items-start gap-3 ${zinsbindungsWarnung.abgelaufen ? 'bg-red-100 border border-red-300' : zinsbindungsWarnung.kritisch ? 'bg-orange-100 border border-orange-300' : 'bg-amber-50 border border-amber-200'}`}>
+                          <span className="text-xl">{zinsbindungsWarnung.abgelaufen ? '🚨' : '⚠️'}</span>
+                          <div>
+                            <p className={`text-sm font-bold ${zinsbindungsWarnung.abgelaufen ? 'text-red-800' : zinsbindungsWarnung.kritisch ? 'text-orange-800' : 'text-amber-800'}`}>
+                              {zinsbindungsWarnung.abgelaufen
+                                ? 'Zinsbindung bereits abgelaufen!'
+                                : `Zinsbindung läuft in ${zinsbindungsWarnung.monateZumAblauf} Monat${zinsbindungsWarnung.monateZumAblauf !== 1 ? 'en' : ''} aus`}
+                            </p>
+                            <p className={`text-xs mt-0.5 ${zinsbindungsWarnung.abgelaufen ? 'text-red-700' : 'text-amber-700'}`}>
+                              {zinsbindungsWarnung.abgelaufen
+                                ? `Ablauf war am ${zinsbindungsWarnung.ablaufDatum.toLocaleDateString('de-DE')} — Anschlussfinanzierung notwendig!`
+                                : `Ablauf am ${zinsbindungsWarnung.ablaufDatum.toLocaleDateString('de-DE')} — Anschlussfinanzierung vorbereiten!`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {/* Header */}
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -5342,6 +5917,24 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                         </div>
                         {idx > 0 && <button onClick={() => deletePhase(phase.id)} className="text-red-400 hover:text-red-600 text-sm">Entfernen</button>}
                       </div>
+                      {/* Kreditstartdatum (nur Phase 1) */}
+                      {idx === 0 && (
+                        <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">📅 Kreditstartdatum <span className="font-normal text-slate-400">(falls abweichend vom Kaufdatum)</span></label>
+                          <div className="flex items-center gap-2">
+                            <input type="date" value={phase.kreditStartDatum || ''}
+                              placeholder={params.kaufdatum || ''}
+                              onChange={e => updatePhase(phase.id, { kreditStartDatum: e.target.value || null })}
+                              className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400" />
+                            {phase.kreditStartDatum && (
+                              <button onClick={() => updatePhase(phase.id, { kreditStartDatum: null })} className="text-xs text-slate-500 hover:underline">↺ Kaufdatum verwenden</button>
+                            )}
+                            {!phase.kreditStartDatum && params.kaufdatum && (
+                              <span className="text-xs text-slate-400">Aktuell: {new Date(params.kaufdatum).toLocaleDateString('de-DE')}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Darlehenstyp-Auswahl */}
                       <div className="flex gap-2 mb-4 flex-wrap">
@@ -5541,7 +6134,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
                         </>
                       )}
                     </div>
-                  );})}
+                  );
+                  })}
                 </div>
 
                 {/* Anschlussfinanzierung hinzufügen */}
@@ -5595,6 +6189,14 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               onUpdate={(updated) => {
                 updateParams({...params, investitionen: updated.investitionen});
               }}
+            />
+          )}
+
+          {activeTab === 'nkabrechnung' && (
+            <NKAbrechnungTab
+              params={params}
+              updateParams={updateParams}
+              immobilie={immobilie}
             />
           )}
 
@@ -7502,6 +8104,19 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
 };
 
 // Haupt-App Komponente
+// Changelog — Version hier hochzählen um das Popup auszulösen
+const CHANGELOG_VERSION = '2.6.0';
+const CHANGELOG_EINTRAEGE = [
+  { emoji: '🐛', text: 'Fixe Kreditrate wird jetzt korrekt im Cashflow-Tab angezeigt' },
+  { emoji: '🐛', text: 'Finanzierungswerte (Zinssatz, Tilgung) beim Anlegen einer neuen Immobilie korrekt übernommen' },
+  { emoji: '🐛', text: 'Offene und teilbezahlte Forderungen in Mieteingängen werden jetzt korrekt angezeigt' },
+  { emoji: '📅', text: 'Kreditstartdatum: Kann vom Kaufdatum abweichen (z.B. Valutierung 2 Monate später)' },
+  { emoji: '⚠️', text: 'Zinsbindungs-Warnung: Roter Hinweis wenn Zinsbindung in < 12 Monaten ausläuft' },
+  { emoji: '💵', text: 'Jahressumme Mieteingänge: Kaltmiete und NK-Anteil separat ausgewiesen' },
+  { emoji: '📄', text: 'NK-Abrechnung: Erstattung/Nachzahlung mit optionaler Ratenzahlung erfassen' },
+  { emoji: '🧾', text: 'Neuer Tab "NK-Abrechnung": Jährliche Betriebskostenabrechnung mit dem Mieter' },
+];
+
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -7517,6 +8132,17 @@ function App() {
   const [editMieter, setEditMieter] = useState(null);
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [nkAbrechnungen, setNkAbrechnungen] = useState([]);
+  const [showChangelog, setShowChangelog] = useState(false);
+
+  // Changelog einmalig anzeigen wenn neue Version
+  useEffect(() => {
+    try {
+      const seenVersion = localStorage.getItem('changelogVersion');
+      if (seenVersion !== CHANGELOG_VERSION) {
+        setShowChangelog(true);
+      }
+    } catch(e) { /* localStorage nicht verfügbar */ }
+  }, []);
 
   // Auth State überwachen
   useEffect(() => {
@@ -8312,6 +8938,38 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Changelog Popup */}
+      {showChangelog && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="text-3xl">🎉</div>
+              <div>
+                <h2 className="text-lg font-black text-gray-900">Was ist neu?</h2>
+                <p className="text-xs text-gray-400">Version {CHANGELOG_VERSION}</p>
+              </div>
+            </div>
+            <ul className="space-y-2.5 mb-6">
+              {CHANGELOG_EINTRAEGE.map((e, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm">
+                  <span className="text-base leading-snug">{e.emoji}</span>
+                  <span className="text-gray-700 leading-snug">{e.text}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => {
+                try { localStorage.setItem('changelogVersion', CHANGELOG_VERSION); } catch(e) {}
+                setShowChangelog(false);
+              }}
+              className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors"
+            >
+              Alles klar!
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-slate-900 text-white px-4 shadow-xl">
         <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
