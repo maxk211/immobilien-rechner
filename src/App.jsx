@@ -2365,6 +2365,112 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               ))}
             </div>
           </div>
+
+          {/* Kostenanpassungen — year-based overrides for all cost fields */}
+          {(() => {
+            const COST_FELDER = [
+              { key: 'instandhaltung', label: 'Instandhaltung' },
+              { key: 'verwaltung', label: 'Verwaltung' },
+              { key: 'hausgeld', label: 'WEG / Hausgeld' },
+              { key: 'strom', label: 'Strom' },
+              { key: 'internet', label: 'Internet' },
+              { key: 'nebenkosten', label: 'Sonstige NK' },
+            ];
+            const hasCostData = (val) => COST_FELDER.some(f => val[f.key] !== undefined);
+            const kostenjahre = Object.entries(mietHistorie)
+              .filter(([key, val]) => /^\d{4}$/.test(key) && hasCostData(val))
+              .sort(([a], [b]) => Number(a) - Number(b));
+
+            const addJahr = () => {
+              const existingYears = new Set(kostenjahre.map(([y]) => Number(y)));
+              let neuesJahr = new Date().getFullYear();
+              while (existingYears.has(neuesJahr)) neuesJahr++;
+              const neueHistorie = {
+                ...mietHistorie,
+                [`${neuesJahr}`]: {
+                  ...(mietHistorie[`${neuesJahr}`] || {}),
+                  instandhaltung: params.instandhaltung ?? 0,
+                  verwaltung: params.verwaltung ?? 0,
+                  hausgeld: params.hausgeld ?? 0,
+                  strom: params.strom ?? 0,
+                  internet: params.internet ?? 0,
+                  nebenkosten: params.nebenkosten ?? 0,
+                }
+              };
+              setMietHistorie(neueHistorie);
+              updateParams({ ...params, mietHistorie: neueHistorie, mietModus: modus });
+            };
+
+            const removeJahr = (jahrKey) => {
+              const neueHistorie = { ...mietHistorie };
+              const entry = { ...(neueHistorie[jahrKey] || {}) };
+              COST_FELDER.forEach(f => delete entry[f.key]);
+              if (Object.keys(entry).length === 0) delete neueHistorie[jahrKey];
+              else neueHistorie[jahrKey] = entry;
+              setMietHistorie(neueHistorie);
+              updateParams({ ...params, mietHistorie: neueHistorie, mietModus: modus });
+            };
+
+            const updateKostenJahr = (jahrKey, feldKey, wert) => {
+              const neueHistorie = {
+                ...mietHistorie,
+                [jahrKey]: { ...(mietHistorie[jahrKey] || {}), [feldKey]: parseFloat(wert) || 0 }
+              };
+              setMietHistorie(neueHistorie);
+              updateParams({ ...params, mietHistorie: neueHistorie, mietModus: modus });
+            };
+
+            return (
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">📅 Kostenanpassungen</p>
+                    <p className="text-[10px] text-gray-400">Basiswerte gelten für alle Jahre — hier einzelne Jahre überschreiben</p>
+                  </div>
+                  <button type="button" onClick={addJahr}
+                    className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded-lg font-medium shrink-0 ml-3">
+                    + Jahr
+                  </button>
+                </div>
+                <div className="px-4 py-3">
+                  {kostenjahre.length === 0 ? (
+                    <p className="text-[10px] text-gray-400 italic bg-gray-50 border border-gray-100 p-2 rounded-lg">Keine Anpassungen → Basiswerte gelten für alle Jahre</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {kostenjahre.map(([jahrKey, val]) => {
+                        const isAktuell = jahrKey === String(new Date().getFullYear());
+                        return (
+                          <div key={jahrKey} className={`border rounded-xl p-3 ${isAktuell ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                            <div className="flex items-center justify-between mb-2.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-800 text-sm">{jahrKey}</span>
+                                {isAktuell && <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded">Aktuell</span>}
+                              </div>
+                              <button type="button" onClick={() => removeJahr(jahrKey)}
+                                className="text-red-400 hover:text-red-600 text-xs px-1">✕</button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                              {COST_FELDER.map(item => (
+                                <div key={item.key} className="flex items-center gap-1">
+                                  <label className="text-[10px] text-gray-500 w-[70px] shrink-0">{item.label}</label>
+                                  <input type="number"
+                                    value={val[item.key] ?? ''}
+                                    placeholder={`${params[item.key] ?? 0}`}
+                                    onChange={e => updateKostenJahr(jahrKey, item.key, e.target.value)}
+                                    className="flex-1 text-xs text-right border border-gray-200 rounded px-1.5 py-1 min-w-0 bg-white focus:ring-1 focus:ring-blue-400" />
+                                  <span className="text-[10px] text-gray-400">€</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       ) : (
         <div>
