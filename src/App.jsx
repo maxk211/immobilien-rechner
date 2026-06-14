@@ -646,6 +646,40 @@ const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }
 const formatCurrency = (value) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
 const formatPercent = (value) => new Intl.NumberFormat('de-DE', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 100);
 
+// Gibt die monatliche Kreditrate für ein bestimmtes Kalenderjahr zurück,
+// anhand der Finanzierungsphasen (Anschlussfinanzierung berücksichtigt)
+const berechneJahresRateFuerPhasen = (phasen, fremdkapital, kreditStartJahr, targetJahr, fallbackRate) => {
+  if (!phasen || phasen.length === 0 || fremdkapital <= 0) return fallbackRate;
+  let jahrOffset = 0;
+  let aktuelleRestschuld = fremdkapital;
+  for (let i = 0; i < phasen.length; i++) {
+    const phase = phasen[i];
+    const phasenzins = phase.sollzinssatz ?? phase.zinssatz ?? 4.0;
+    const startKreditPhase = (i > 0 && phase.restschuldOverride != null) ? phase.restschuldOverride : aktuelleRestschuld;
+    const phaseLaufzeit = phase.darlehensTyp === 'endfaellig' ? (phase.laufzeit || 10) : (phase.zinsbindung || 10);
+    const phaseEndJahr = kreditStartJahr + jahrOffset + phaseLaufzeit;
+    const mzins = phasenzins / 100 / 12;
+    const lmonate = phaseLaufzeit * 12;
+    const phasenRate = (phase.monatlicherBetrag > 0)
+      ? phase.monatlicherBetrag
+      : (mzins > 0 && startKreditPhase > 0
+          ? startKreditPhase * (mzins * Math.pow(1 + mzins, lmonate)) / (Math.pow(1 + mzins, lmonate) - 1)
+          : 0);
+    if (targetJahr < phaseEndJahr || i === phasen.length - 1) {
+      return phasenRate;
+    }
+    // Restschuld nach dieser Phase für die nächste Phase
+    let rs = startKreditPhase;
+    for (let m = 0; m < lmonate && rs > 0; m++) {
+      const mz = rs * mzins;
+      rs = Math.max(0, rs - Math.min(phasenRate - mz, rs));
+    }
+    aktuelleRestschuld = rs;
+    jahrOffset += phaseLaufzeit;
+  }
+  return fallbackRate;
+};
+
 // Rendite-Berechnung
 const berechneRendite = (params) => {
   const {
@@ -690,13 +724,13 @@ const berechneRendite = (params) => {
   const jahresInternet = internet * 12;
 
   // Bruttorendite auf Basis der Mieteinnahmen (ohne NK-Vorauszahlung da Durchlaufposten bei kaltmiete_nk)
-  const bruttorendite = (jahresmieteKalt / kaufpreis) * 100;
+  const bruttorendite = kaufpreis > 0 ? (jahresmieteKalt / kaufpreis) * 100 : 0;
 
   // Nettorendite: Vermieter-Kosten von den Gesamteinnahmen abziehen
   const jahresNebenkosten = (params.nebenkosten || 0) * 12;
   const jahresVermieterKosten = jahresinstandhaltung + jahresverwaltung + jahresHausgeld + jahresStrom + jahresInternet + jahresNebenkosten;
   const nettoEinnahmen = jahresEinnahmen - jahresVermieterKosten;
-  const nettorendite = (nettoEinnahmen / kaufpreis) * 100;
+  const nettorendite = kaufpreis > 0 ? (nettoEinnahmen / kaufpreis) * 100 : 0;
 
   // Aktive Finanzierungsphase bestimmen (basierend auf Kreditstartdatum + heute)
   // Wenn finanzierungsphasen vorhanden: nimm die aktuell laufende Phase
@@ -828,6 +862,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     keller: false,
     kaufpreis: 300000,
     eigenkapital: 60000,
+    geschenkt: false,               // Immobilie als Schenkung erhalten (kein Kaufpreis, kein Kredit)
     kaltmiete: 1000,
     vermietungsmodell: 'kaltmiete', // 'kaltmiete', 'kaltmiete_nk', 'warmmiete'
     nebenkostenVomMieter: 0,        // Monatliche NK-Vorauszahlung vom Mieter
@@ -875,7 +910,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
             {/* Immobilientyp Auswahl */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-100">
               <label className="block text-sm font-medium text-gray-700 mb-2">Immobilientyp</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => handleChange('immobilienTyp', 'kaufimmobilie')}
@@ -886,8 +921,21 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   }`}
                 >
                   <div className="text-lg mb-1">🏠</div>
-                  <div className="font-semibold">Kaufimmobilie</div>
+                  <div className="font-semibold text-sm">Kaufimmobilie</div>
                   <div className="text-xs text-gray-500">Eigene Immobilie vermieten</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'mehrfamilienhaus')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'mehrfamilienhaus'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-lg mb-1">🏘️</div>
+                  <div className="font-semibold text-sm">Mehrfamilienhaus</div>
+                  <div className="text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
                 </button>
                 <button
                   type="button"
@@ -899,7 +947,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   }`}
                 >
                   <div className="text-lg mb-1">🔄</div>
-                  <div className="font-semibold">Mietimmobilie</div>
+                  <div className="font-semibold text-sm">Mietimmobilie</div>
                   <div className="text-xs text-gray-500">Arbitrage: Anmieten & Untervermieten</div>
                 </button>
               </div>
@@ -952,8 +1000,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               </div>
             </div>
 
-            {/* Objektdetails - nur für Kaufimmobilie */}
-            {formData.immobilienTyp === 'kaufimmobilie' && (
+            {/* Objektdetails - nur für Kaufimmobilie / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">Objektdetails</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -1105,8 +1153,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               </div>
             )}
 
-            {/* Marktwert - nur für Kaufimmobilie */}
-            {formData.immobilienTyp === 'kaufimmobilie' && (
+            {/* Marktwert - nur für Kaufimmobilie / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold mb-2 text-blue-800">Aktueller Marktwert</h3>
                 <div className="mb-3">
@@ -1133,20 +1181,50 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               </div>
             )}
 
-            {/* Finanzdaten für Kaufimmobilie */}
-            {formData.immobilienTyp === 'kaufimmobilie' && (
+            {/* Finanzdaten für Kaufimmobilie / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">Finanzdaten</h3>
+                {/* Schenkung Toggle */}
+                <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.geschenkt || false}
+                      onChange={(e) => {
+                        const g = e.target.checked;
+                        handleChange('geschenkt', g);
+                        if (g) {
+                          // Kein EK/Fremdkapital-Input bei Schenkung – Eigenkapital = kaufpreis
+                          handleChange('eigenkapital', formData.kaufpreis);
+                          handleChange('finanzierungsModus', 'berechnet');
+                        }
+                      }}
+                      className="w-4 h-4 rounded accent-amber-500"
+                    />
+                    <div>
+                      <span className="font-semibold text-amber-800">🎁 Als Schenkung / Erbschaft erhalten</span>
+                      <p className="text-xs text-amber-600 mt-0.5">Kein Kaufpreis — trage den Verkehrswert ein. Kein Kredit nötig.</p>
+                    </div>
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kaufpreis (€)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {formData.geschenkt ? 'Verkehrswert / Schenkungswert (€)' : 'Kaufpreis (€)'}
+                    </label>
                     <input
                       type="number"
                       value={formData.kaufpreis}
-                      onChange={(e) => handleChange('kaufpreis', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value) || 0;
+                        handleChange('kaufpreis', v);
+                        if (formData.geschenkt) handleChange('eigenkapital', v);
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  {!formData.geschenkt && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Eigenkapital (€)</label>
                     <input
@@ -1156,8 +1234,9 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                {/* Finanzierungskonditionen */}
-                <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  )}
+                {/* Finanzierungskonditionen — nur wenn nicht geschenkt */}
+                {!formData.geschenkt && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="text-sm font-semibold text-blue-800 mb-3">🏦 Finanzierung</h4>
                   {/* Modus Toggle */}
                   <div className="flex gap-2 mb-3">
@@ -1237,7 +1316,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       ) : null;
                     })()
                   )}
-                </div>
+                </div>}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1470,7 +1549,11 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   restschuldOverride: null,
                   aktiv: true,
                 };
-                onSave({ ...formData, finanzierungsphasen: [erstePhase] });
+                onSave({
+                  ...formData,
+                  finanzierungsphasen: [erstePhase],
+                  wohnungen: formData.wohnungen || [],
+                });
               }}
               className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
             >
@@ -1486,9 +1569,13 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
 // Immobilien-Karte Komponente
 const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
+  const isMFH = immobilie.immobilienTyp === 'mehrfamilienhaus';
   const aktuellerWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
-  const wertsteigerung = !isMietimmobilie ? berechneWertsteigerungSeitKauf(immobilie, aktuellerWert) : null;
-  const restschuldInfo = !isMietimmobilie ? berechneRestschuld(immobilie) : null;
+  const wertsteigerung = (!isMietimmobilie && !isMFH) ? berechneWertsteigerungSeitKauf(immobilie, aktuellerWert) : null;
+  const restschuldInfo = (!isMietimmobilie && !isMFH) ? berechneRestschuld(immobilie) : null;
+
+  // MFH: Aggregation aller Wohnungen
+  const mfhGesamtMiete = isMFH ? (immobilie.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0) : 0;
 
   const arbitrageCashflow = isMietimmobilie ? (() => {
     const ende = immobilie.mietvertragEnde ? new Date(immobilie.mietvertragEnde) : null;
@@ -1522,15 +1609,30 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
     return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten;
   })() : 0;
 
-  const cashflow = isMietimmobilie ? arbitrageCashflow : kaufCashflow;
+  // MFH cashflow: aggregierte Miete − geteilte Kosten − Kreditrate
+  const mfhCashflow = isMFH ? (() => {
+    const kosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0);
+    const phase = (immobilie.finanzierungsphasen || [])[0];
+    const fk = immobilie.finanzierungsbetrag ?? Math.max(0, immobilie.kaufpreis - (immobilie.eigenkapital || 0));
+    const mz = (phase?.sollzinssatz ?? immobilie.zinssatz ?? 4) / 100 / 12;
+    const lm = (phase?.zinsbindung || 25) * 12;
+    const rate = phase?.monatlicherBetrag > 0
+      ? phase.monatlicherBetrag
+      : (mz > 0 && fk > 0 ? fk * (mz * Math.pow(1+mz,lm)) / (Math.pow(1+mz,lm)-1) : 0);
+    return mfhGesamtMiete - kosten - rate;
+  })() : 0;
+
+  const cashflow = isMietimmobilie ? arbitrageCashflow : isMFH ? mfhCashflow : kaufCashflow;
   const cashflowPositiv = cashflow >= 0;
 
   // Tile accent color
   const accentClass = isMietimmobilie
     ? 'from-violet-500 to-purple-600'
-    : 'from-blue-500 to-indigo-600';
+    : isMFH
+      ? 'from-orange-500 to-amber-500'
+      : 'from-blue-500 to-indigo-600';
 
-  const eigenkapital = !isMietimmobilie && restschuldInfo
+  const eigenkapital = (!isMietimmobilie && !isMFH) && restschuldInfo
     ? aktuellerWert - restschuldInfo.restschuld
     : null;
 
@@ -1544,10 +1646,10 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isMietimmobilie ? 'bg-white/20 text-white' : 'bg-white/20 text-white'}`}>
-                {isMietimmobilie ? '🔄 Arbitrage' : '🏠 Kaufimmobilie'}
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
+                {isMietimmobilie ? '🔄 Arbitrage' : isMFH ? `🏘️ MFH · ${(immobilie.wohnungen || []).length} WE` : '🏠 Kaufimmobilie'}
               </span>
-              {!isMietimmobilie && immobilie.vermietungsmodell && immobilie.vermietungsmodell !== 'kaltmiete' && (
+              {!isMietimmobilie && !isMFH && immobilie.vermietungsmodell && immobilie.vermietungsmodell !== 'kaltmiete' && (
                 <span className="text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">
                   {immobilie.vermietungsmodell === 'kaltmiete_nk' ? 'NK inkl.' : 'Warmmiete'}
                 </span>
@@ -1594,7 +1696,26 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
       <div className="px-5 pb-5 space-y-3">
         {/* Eckdaten */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-          {!isMietimmobilie ? (
+          {isMFH ? (
+            <>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Kaufpreis</div>
+                <div className="text-sm font-semibold text-gray-800">{formatCurrency(immobilie.kaufpreis)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Wohneinheiten</div>
+                <div className="text-sm font-semibold text-orange-600">{(immobilie.wohnungen || []).length} WE</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Gesamtfläche</div>
+                <div className="text-sm font-semibold text-gray-800">{(immobilie.wohnungen || []).reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0)} m²</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Gesamtmiete</div>
+                <div className="text-sm font-semibold text-emerald-600">{formatCurrency(mfhGesamtMiete)}/Monat</div>
+              </div>
+            </>
+          ) : !isMietimmobilie ? (
             <>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Kaufpreis</div>
@@ -2492,6 +2613,19 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
     const daten = [];
     let kumulierterCashflow = 0;
 
+    // Für Anschlussfinanzierung: Fremdkapital und Phasen ermitteln
+    const phasen = params.finanzierungsphasen;
+    const kreditStartStr = phasen?.[0]?.kreditStartDatum || params.kaufdatum;
+    const kreditStartJahr = kreditStartStr ? new Date(kreditStartStr).getFullYear() : kaufjahr;
+    const cfFremdkapital = (() => {
+      const kauf = params.kaufnebenkosten ?? 10;
+      const kNKAbs = params.kaufpreis * (kauf / 100);
+      const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
+        ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
+        : (params.eigenkapital ?? 0);
+      return params.finanzierungsbetrag ?? Math.max(0, params.kaufpreis + kNKAbs - gesamtEK);
+    })();
+
     for (let jahr = kaufjahr; jahr <= aktuellesJahr + 5; jahr++) {
       const jahreIndex = jahr - kaufjahr;
       const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
@@ -2508,7 +2642,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
       const jInternet = histKosten.internet ?? (params.internet || 0);
       const jNebenkosten = histKosten.nebenkosten ?? (params.nebenkosten || 0);
       const jahresKosten = (jInstandhaltung + jVerwaltung + jHausgeld + jStrom + jInternet + jNebenkosten) * 12;
-      const jahresKreditrate = ergebnis.monatlicheRate * 12;
+      // Anschlussfinanzierung: korrekte Rate pro Jahr aus aktiver Phase
+      const monatsRate = berechneJahresRateFuerPhasen(phasen, cfFremdkapital, kreditStartJahr, jahr, ergebnis.monatlicheRate);
+      const jahresKreditrate = monatsRate * 12;
 
       // Investitionen für dieses Jahr
       const jahresInvestitionen = investitionen
@@ -4797,6 +4933,185 @@ const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
   );
 };
 
+// ─── Kautionsmanagement ───────────────────────────────────────────────────────
+const KautionsManager = ({ params, updateParams }) => {
+  const kautionen = params.kautionen || [];
+  const [showForm, setShowForm] = useState(false);
+  const [editIdx, setEditIdx] = useState(null);
+  const [form, setForm] = useState({
+    mieterName: '', mietbeginn: '', mietende: '',
+    vereinbartBetrag: 0, eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
+    zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
+  });
+
+  const totalGehalten = kautionen
+    .filter(k => k.eingegangen && !k.zurueckgegeben)
+    .reduce((s, k) => s + (Number(k.eingegangenBetrag) || 0), 0);
+  const anzahlOffen = kautionen.filter(k => !k.eingegangen).length;
+
+  const openForm = (idx = null) => {
+    setEditIdx(idx);
+    setForm(idx !== null ? { ...kautionen[idx] } : {
+      mieterName: '', mietbeginn: '', mietende: '',
+      vereinbartBetrag: 0, eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
+      zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
+    });
+    setShowForm(true);
+  };
+
+  const saveForm = () => {
+    const neu = [...kautionen];
+    if (editIdx !== null) neu[editIdx] = { ...form };
+    else neu.push({ id: Date.now(), ...form });
+    updateParams({ ...params, kautionen: neu });
+    setShowForm(false);
+  };
+
+  const deleteKaution = (idx) => {
+    updateParams({ ...params, kautionen: kautionen.filter((_, i) => i !== idx) });
+  };
+
+  const statusBadge = (k) => {
+    if (k.zurueckgegeben) return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">↩️ Zurückgegeben</span>;
+    if (k.eingegangen) return <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">✅ Eingegangen</span>;
+    return <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">🔴 Ausstehend</span>;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Übersicht */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+          <p className="text-xs text-emerald-600 font-semibold uppercase mb-1">Kaution gehalten</p>
+          <p className="text-2xl font-black text-emerald-700">{totalGehalten.toLocaleString('de-DE')} €</p>
+        </div>
+        <div className={`${anzahlOffen > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 text-center`}>
+          <p className="text-xs text-gray-600 font-semibold uppercase mb-1">Ausstehend</p>
+          <p className={`text-2xl font-black ${anzahlOffen > 0 ? 'text-red-600' : 'text-gray-400'}`}>{anzahlOffen}</p>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+          <p className="text-xs text-blue-600 font-semibold uppercase mb-1">Gesamt Einträge</p>
+          <p className="text-2xl font-black text-blue-700">{kautionen.length}</p>
+        </div>
+      </div>
+
+      <button
+        onClick={() => openForm()}
+        className="w-full py-2 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 text-sm font-semibold hover:bg-blue-50"
+      >
+        + Kaution hinzufügen
+      </button>
+
+      {/* Liste */}
+      {kautionen.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-6">Noch keine Kautionen erfasst.</p>
+      ) : (
+        <div className="space-y-3">
+          {kautionen.map((k, idx) => (
+            <div key={k.id || idx} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="font-semibold text-gray-900">{k.mieterName || 'Unbekannter Mieter'}</p>
+                  <p className="text-xs text-gray-500">
+                    {k.mietbeginn && `Mietbeginn: ${k.mietbeginn}`}
+                    {k.mietende && ` · Ende: ${k.mietende}`}
+                  </p>
+                </div>
+                {statusBadge(k)}
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+                <div>
+                  <span className="text-gray-500 text-xs">Vereinbart</span>
+                  <p className="font-semibold">{(Number(k.vereinbartBetrag) || 0).toLocaleString('de-DE')} €</p>
+                </div>
+                <div>
+                  <span className="text-gray-500 text-xs">Eingegangen</span>
+                  <p className="font-semibold">{k.eingegangen ? `${(Number(k.eingegangenBetrag) || 0).toLocaleString('de-DE')} €` : '—'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500 text-xs">Abzug</span>
+                  <p className="font-semibold text-red-600">{k.abzugBetrag > 0 ? `-${Number(k.abzugBetrag).toLocaleString('de-DE')} €` : '—'}</p>
+                </div>
+              </div>
+              {k.abzugGrund && <p className="text-xs text-gray-500 mb-2">Abzugsgrund: {k.abzugGrund}</p>}
+              <div className="flex gap-2">
+                <button onClick={() => openForm(idx)} className="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-gray-200">✏️ Bearbeiten</button>
+                <button onClick={() => deleteKaution(idx)} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100">🗑️ Löschen</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Formular Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{editIdx !== null ? '✏️ Kaution bearbeiten' : '+ Kaution erfassen'}</h3>
+            <div className="space-y-3">
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
+                <input value={form.mieterName} onChange={e => setForm({...form, mieterName: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Name" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mietbeginn</label>
+                  <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                </div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mietende</label>
+                  <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                </div>
+              </div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1">Vereinbarter Kautionsbetrag (€)</label>
+                <input type="number" value={form.vereinbartBetrag} onChange={e => setForm({...form, vereinbartBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+              </div>
+              <div className="border-t pt-3">
+                <label className="flex items-center gap-2 cursor-pointer mb-2">
+                  <input type="checkbox" checked={form.eingegangen} onChange={e => setForm({...form, eingegangen: e.target.checked})} className="w-4 h-4 rounded accent-emerald-500" />
+                  <span className="text-sm font-semibold text-emerald-700">✅ Kaution eingegangen</span>
+                </label>
+                {form.eingegangen && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="block text-xs text-gray-600 mb-1">Eingegangen am</label>
+                      <input type="date" value={form.eingegangenAm} onChange={e => setForm({...form, eingegangenAm: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
+                    <div><label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
+                      <input type="number" value={form.eingegangenBetrag} onChange={e => setForm({...form, eingegangenBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="border-t pt-3">
+                <label className="flex items-center gap-2 cursor-pointer mb-2">
+                  <input type="checkbox" checked={form.zurueckgegeben} onChange={e => setForm({...form, zurueckgegeben: e.target.checked})} className="w-4 h-4 rounded" />
+                  <span className="text-sm font-semibold text-gray-700">↩️ Kaution zurückgegeben</span>
+                </label>
+                {form.zurueckgegeben && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="block text-xs text-gray-600 mb-1">Zurückgegeben am</label>
+                        <input type="date" value={form.zurueckgegebenAm} onChange={e => setForm({...form, zurueckgegebenAm: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                      </div>
+                      <div><label className="block text-xs text-gray-600 mb-1">Abzug (€)</label>
+                        <input type="number" value={form.abzugBetrag} onChange={e => setForm({...form, abzugBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                      </div>
+                    </div>
+                    <div><label className="block text-xs text-gray-600 mb-1">Abzugsgrund</label>
+                      <input value={form.abzugGrund} onChange={e => setForm({...form, abzugGrund: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="z.B. Schäden, ausst. Nebenkosten..." />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowForm(false)} className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Abbrechen</button>
+              <button onClick={saveForm} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Mietimmobilie-Detail Komponente (Arbitrage-Modell)
 const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
   const [params, setParams] = useState({
@@ -5240,14 +5555,320 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave }) => {
   );
 };
 
+// ─── Mehrfamilienhaus Detail ──────────────────────────────────────────────────
+const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
+  const [activeTab, setActiveTab] = useState('wohnungen');
+  const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
+  const [showWohnungForm, setShowWohnungForm] = useState(false);
+  const [editWohnungIdx, setEditWohnungIdx] = useState(null);
+  const [wohnungForm, setWohnungForm] = useState({ name: '', wohnflaeche: 0, kaltmiete: 0, mieterName: '', mietbeginn: '', mietende: '', kautionBetrag: 0, kautionBezahlt: false });
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Aggregierte Werte aller Wohnungen
+  const gesamtKaltmiete = wohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
+  const gesamtFlaeche = wohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
+  const aktiveMieter = wohnungen.filter(w => w.mieterName && !w.mietende);
+  const leerstandQuote = wohnungen.length > 0 ? Math.round((wohnungen.length - aktiveMieter.length) / wohnungen.length * 100) : 0;
+
+  const saveWohnung = () => {
+    const neu = [...wohnungen];
+    if (editWohnungIdx !== null) neu[editWohnungIdx] = { ...neu[editWohnungIdx], ...wohnungForm };
+    else neu.push({ id: Date.now(), ...wohnungForm, forderungen: [], mietAnpassungen: [] });
+    setWohnungen(neu);
+    setShowWohnungForm(false);
+    setHasChanges(true);
+  };
+
+  const deleteWohnung = (idx) => {
+    if (!confirm('Wohnung wirklich löschen?')) return;
+    setWohnungen(wohnungen.filter((_, i) => i !== idx));
+    setHasChanges(true);
+  };
+
+  const openWohnungForm = (idx = null) => {
+    setEditWohnungIdx(idx);
+    setWohnungForm(idx !== null ? { ...wohnungen[idx] } : { name: '', wohnflaeche: 0, kaltmiete: 0, mieterName: '', mietbeginn: '', mietende: '', kautionBetrag: 0, kautionBezahlt: false });
+    setShowWohnungForm(true);
+  };
+
+  const handleSave = () => {
+    onSave({ ...immobilie, wohnungen });
+    setHasChanges(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-2">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white flex-shrink-0">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">🏘️</span>
+                <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">MFH · {wohnungen.length} WE</span>
+              </div>
+              <h2 className="text-xl font-black">{immobilie.name}</h2>
+              {immobilie.adresse && <p className="text-sm text-white/80">{immobilie.adresse}</p>}
+            </div>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl">&times;</button>
+          </div>
+          {/* KPI Strip */}
+          <div className="grid grid-cols-4 gap-3 mt-4">
+            <div className="bg-white/20 rounded-xl p-3 text-center">
+              <p className="text-xs text-white/70">Gesamtmiete</p>
+              <p className="text-lg font-black">{formatCurrency(gesamtKaltmiete)}/mo</p>
+            </div>
+            <div className="bg-white/20 rounded-xl p-3 text-center">
+              <p className="text-xs text-white/70">Gesamtfläche</p>
+              <p className="text-lg font-black">{gesamtFlaeche} m²</p>
+            </div>
+            <div className="bg-white/20 rounded-xl p-3 text-center">
+              <p className="text-xs text-white/70">Vermietet</p>
+              <p className="text-lg font-black">{aktiveMieter.length}/{wohnungen.length} WE</p>
+            </div>
+            <div className={`${leerstandQuote > 0 ? 'bg-red-400/30' : 'bg-white/20'} rounded-xl p-3 text-center`}>
+              <p className="text-xs text-white/70">Leerstand</p>
+              <p className="text-lg font-black">{leerstandQuote} %</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 bg-slate-100 p-1 flex-shrink-0">
+          {[
+            { id: 'wohnungen', label: '🏠 Wohnungen' },
+            { id: 'kaution', label: '🔑 Kaution' },
+            { id: 'cashflow', label: '💰 Cashflow' },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`py-2 px-4 text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+              {tab.label}
+            </button>
+          ))}
+          {hasChanges && (
+            <button onClick={handleSave} className="ml-auto py-2 px-4 bg-orange-500 text-white text-sm font-bold rounded-lg">
+              💾 Speichern
+            </button>
+          )}
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {/* Wohnungen Tab */}
+          {activeTab === 'wohnungen' && (
+            <div className="space-y-4">
+              <button onClick={() => openWohnungForm()} className="w-full py-3 border-2 border-dashed border-orange-300 rounded-xl text-orange-600 font-semibold hover:bg-orange-50">
+                + Wohnung hinzufügen
+              </button>
+              {wohnungen.length === 0 && (
+                <p className="text-center text-gray-400 text-sm py-8">Noch keine Wohnungen angelegt. Füge jetzt die erste Wohneinheit hinzu.</p>
+              )}
+              {wohnungen.map((w, idx) => (
+                <div key={w.id || idx} className="bg-white border-2 border-gray-100 rounded-2xl p-4 shadow-sm hover:border-orange-200 transition-all">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-bold text-gray-900 text-lg">{w.name || `Wohnung ${idx + 1}`}</p>
+                      <div className="flex items-center gap-3 text-sm text-gray-500">
+                        {w.wohnflaeche > 0 && <span>📐 {w.wohnflaeche} m²</span>}
+                        {w.mieterName ? (
+                          <span className="text-emerald-600">👤 {w.mieterName}</span>
+                        ) : (
+                          <span className="text-red-500">🔴 Leerstand</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-black text-orange-600">{formatCurrency(Number(w.kaltmiete) || 0)}</p>
+                      <p className="text-xs text-gray-400">/ Monat</p>
+                    </div>
+                  </div>
+                  {/* Kaution Kurzinfo */}
+                  {w.kautionBetrag > 0 && (
+                    <div className={`text-xs px-2 py-1 rounded-lg inline-flex items-center gap-1 mb-2 ${w.kautionBezahlt ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                      {w.kautionBezahlt ? '✅' : '🔴'} Kaution: {Number(w.kautionBetrag).toLocaleString('de-DE')} €
+                    </div>
+                  )}
+                  {/* Mietinfos */}
+                  {(w.mietbeginn || w.mietende) && (
+                    <p className="text-xs text-gray-400 mb-2">
+                      {w.mietbeginn && `Seit: ${w.mietbeginn}`}
+                      {w.mietende && ` · Bis: ${w.mietende}`}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <button onClick={() => openWohnungForm(idx)} className="px-3 py-1.5 text-xs bg-gray-100 rounded-lg hover:bg-gray-200">✏️ Bearbeiten</button>
+                    <button onClick={() => deleteWohnung(idx)} className="px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100">🗑️ Löschen</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Kaution Tab — MFH nutzt KautionsManager auf Basis der Wohnungen */}
+          {activeTab === 'kaution' && (
+            <div className="space-y-3">
+              {wohnungen.map((w, idx) => {
+                const kStatus = !w.kautionBetrag ? 'keine' : w.kautionBezahlt ? 'bezahlt' : 'offen';
+                return (
+                  <div key={w.id || idx} className="bg-white border border-gray-200 rounded-xl p-4 flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-gray-800">{w.name || `Wohnung ${idx + 1}`}</p>
+                      <p className="text-sm text-gray-500">{w.mieterName || 'kein Mieter'}</p>
+                    </div>
+                    <div className="text-right">
+                      {kStatus === 'keine' && <span className="text-xs text-gray-400">Keine Kaution</span>}
+                      {kStatus === 'offen' && <span className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded-full">🔴 {Number(w.kautionBetrag).toLocaleString('de-DE')} € offen</span>}
+                      {kStatus === 'bezahlt' && <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full">✅ {Number(w.kautionBetrag).toLocaleString('de-DE')} € bezahlt</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              {wohnungen.length === 0 && <p className="text-center text-gray-400 py-6">Erst Wohnungen anlegen, dann Kaution verwalten.</p>}
+              <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-700">
+                💡 Kaution je Wohnung bearbeiten: Wohnungen-Tab → Wohnung bearbeiten
+              </div>
+            </div>
+          )}
+
+          {/* Cashflow Tab — aggregiert über alle Wohnungen */}
+          {activeTab === 'cashflow' && (
+            <div className="space-y-4">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <h3 className="font-bold text-gray-800 mb-4">💰 Gesamtcashflow (alle Wohnungen)</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-green-600">+ Gesamtmieteinnahmen</span>
+                    <span className="font-semibold text-green-600">{formatCurrency(gesamtKaltmiete)}/mo</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-red-500">− Instandhaltung</span>
+                    <span className="font-semibold text-red-500">−{formatCurrency(immobilie.instandhaltung || 0)}/mo</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-red-500">− Verwaltung</span>
+                    <span className="font-semibold text-red-500">−{formatCurrency(immobilie.verwaltung || 0)}/mo</span>
+                  </div>
+                  {immobilie.hausgeld > 0 && (
+                    <div className="flex justify-between py-1 border-b">
+                      <span className="text-red-500">− Hausgeld</span>
+                      <span className="font-semibold text-red-500">−{formatCurrency(immobilie.hausgeld)}/mo</span>
+                    </div>
+                  )}
+                  {(() => {
+                    const ergebnis = berechneRendite({ ...immobilie, kaltmiete: gesamtKaltmiete });
+                    const kreditrate = ergebnis.monatlicheRate;
+                    const kosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0);
+                    const cashflow = gesamtKaltmiete - kosten - kreditrate;
+                    return (
+                      <>
+                        {kreditrate > 0 && (
+                          <div className="flex justify-between py-1 border-b">
+                            <span className="text-red-500">− Kreditrate</span>
+                            <span className="font-semibold text-red-500">−{formatCurrency(kreditrate)}/mo</span>
+                          </div>
+                        )}
+                        <div className={`flex justify-between py-2 mt-1 rounded-lg px-2 ${cashflow >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                          <span className={`font-bold ${cashflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>= Netto-Cashflow</span>
+                          <span className={`font-black text-lg ${cashflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}/mo</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Wohnung Form Modal */}
+      {showWohnungForm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{editWohnungIdx !== null ? '✏️ Wohnung bearbeiten' : '+ Wohnung hinzufügen'}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Bezeichnung</label>
+                <input value={wohnungForm.name} onChange={e => setWohnungForm({...wohnungForm, name: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="z.B. EG links, OG rechts, Dachgeschoss" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Wohnfläche (m²)</label>
+                  <input type="number" value={wohnungForm.wohnflaeche} onChange={e => setWohnungForm({...wohnungForm, wohnflaeche: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Kaltmiete (€/mo)</label>
+                  <input type="number" value={wohnungForm.kaltmiete} onChange={e => setWohnungForm({...wohnungForm, kaltmiete: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
+                <input value={wohnungForm.mieterName} onChange={e => setWohnungForm({...wohnungForm, mieterName: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Name des Mieters" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Mietbeginn</label>
+                  <input type="date" value={wohnungForm.mietbeginn} onChange={e => setWohnungForm({...wohnungForm, mietbeginn: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Mietende</label>
+                  <input type="date" value={wohnungForm.mietende} onChange={e => setWohnungForm({...wohnungForm, mietende: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg text-sm" />
+                </div>
+              </div>
+              <div className="border-t pt-3">
+                <p className="text-xs font-semibold text-gray-700 mb-2">🔑 Kaution</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
+                    <input type="number" value={wohnungForm.kautionBetrag} onChange={e => setWohnungForm({...wohnungForm, kautionBetrag: parseFloat(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                  </div>
+                  <div className="flex items-end pb-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={wohnungForm.kautionBezahlt} onChange={e => setWohnungForm({...wohnungForm, kautionBezahlt: e.target.checked})} className="w-4 h-4 rounded accent-emerald-500" />
+                      <span className="text-sm text-gray-700">Bezahlt</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowWohnungForm(false)} className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Abbrechen</button>
+              <button onClick={saveWohnung} className="flex-1 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold">Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Immobilien-Detail Komponente
 const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
   const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
+  const isMFH = immobilie.immobilienTyp === 'mehrfamilienhaus';
 
   // Für Mietimmobilien: Vereinfachte Ansicht
   if (isMietimmobilie) {
     return (
       <MietimmobilieDetail
+        immobilie={immobilie}
+        onClose={onClose}
+        onSave={onSave}
+      />
+    );
+  }
+
+  // Für Mehrfamilienhaus: eigene Ansicht mit Wohnungsmanagement
+  if (isMFH) {
+    return (
+      <MehrfamilienhausDetail
         immobilie={immobilie}
         onClose={onClose}
         onSave={onSave}
@@ -5464,26 +6085,32 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
             </div>
           </div>
           {/* KPI Strip */}
-          <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
-            <div className="px-4 py-3">
-              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bruttorendite</div>
-              <div className="text-xl font-black text-indigo-600">{ergebnis.bruttorendite.toFixed(2)} %</div>
-            </div>
-            <div className="px-4 py-3">
-              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Nettorendite</div>
-              <div className="text-xl font-black text-emerald-600">{ergebnis.nettorendite.toFixed(2)} %</div>
-            </div>
-            <div className="px-4 py-3">
-              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
-              <div className="text-xl font-black text-violet-600">{ergebnis.eigenkapitalRendite.toFixed(2)} %</div>
-            </div>
-            <div className="px-4 py-3">
-              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Leverage</div>
-              <div className={`text-xl font-black ${ergebnis.leverageEffekt >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                {ergebnis.leverageEffekt >= 0 ? '+' : ''}{ergebnis.leverageEffekt.toFixed(2)} %
+          {(() => {
+            const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
+            const fmtKPISigned = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(2)} %`;
+            return (
+              <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
+                <div className="px-4 py-3">
+                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bruttorendite</div>
+                  <div className="text-xl font-black text-indigo-600">{fmtKPI(ergebnis.bruttorendite)}</div>
+                </div>
+                <div className="px-4 py-3">
+                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Nettorendite</div>
+                  <div className="text-xl font-black text-emerald-600">{fmtKPI(ergebnis.nettorendite)}</div>
+                </div>
+                <div className="px-4 py-3">
+                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
+                  <div className="text-xl font-black text-violet-600">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                </div>
+                <div className="px-4 py-3">
+                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Cash-on-Cash</div>
+                  <div className={`text-xl font-black ${(ergebnis.cashOnCash || 0) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                    {fmtKPISigned(ergebnis.cashOnCash)}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         <div className="p-6">
@@ -5649,6 +6276,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               { id: 'steuern', label: '📋 Steuern' },
               { id: 'investitionen', label: '🔧 Investitionen' },
               { id: 'nkabrechnung', label: '🧾 NK-Abrechnung' },
+              { id: 'kaution', label: '🔑 Kaution' },
               { id: 'zaehler', label: '📟 Zähler' }
             ].map(tab => (
               <button
@@ -6220,6 +6848,13 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave }) => {
               params={params}
               updateParams={updateParams}
               immobilie={immobilie}
+            />
+          )}
+
+          {activeTab === 'kaution' && (
+            <KautionsManager
+              params={params}
+              updateParams={updateParams}
             />
           )}
 
@@ -8128,16 +8763,16 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
 
 // Haupt-App Komponente
 // Changelog — Version hier hochzählen um das Popup auszulösen
-const CHANGELOG_VERSION = '2.7.0';
+const CHANGELOG_VERSION = '2.8.0';
 const CHANGELOG_EINTRAEGE = [
+  { emoji: '🏘️', text: 'Mehrfamilienhaus: Neuer Immobilientyp mit Wohnungsmanagement – alle Wohnungen separat erfassen, Gesamtwerte automatisch aggregiert' },
+  { emoji: '🔑', text: 'Kautionsmanagement: Kautionen pro Mieter erfassen, Status verfolgen (ausstehend / erhalten / zurückgegeben)' },
+  { emoji: '📈', text: 'Anschlussfinanzierung im Cashflow: Jede Finanzierungsphase nutzt ihre eigene Rate in der jährlichen Cashflow-Vorschau' },
+  { emoji: '🎁', text: 'Schenkung / Erbschaft: Immobilien mit Kaufpreis 0 € anlegen – KPIs zeigen sinnvolle Werte statt Infinity' },
+  { emoji: '💰', text: 'Cash-on-Cash Rendite ersetzt Leverage-KPI im Kennzahlenstreifen' },
   { emoji: '🐛', text: 'Rate-Bug behoben: Zinsen/Tilgung im Cashflow-Tab stimmen jetzt mit dem Finanzierungstab überein' },
   { emoji: '🐛', text: 'Cashflow-Berechnung nutzt jetzt die korrekte aktive Finanzierungsphase (auch bei Einzelphasen)' },
   { emoji: '📊', text: 'Vermieterkosten können jetzt rückwirkend per Jahr angepasst werden (Manuell-Modus im Cashflow-Tab)' },
-  { emoji: '🐛', text: 'Fixe Kreditrate wird jetzt korrekt im Cashflow-Tab angezeigt' },
-  { emoji: '📅', text: 'Kreditstartdatum: Kann vom Kaufdatum abweichen (z.B. Valutierung 2 Monate später)' },
-  { emoji: '⚠️', text: 'Zinsbindungs-Warnung: Roter Hinweis wenn Zinsbindung in < 12 Monaten ausläuft' },
-  { emoji: '📄', text: 'NK-Abrechnung: Erstattung/Nachzahlung mit optionaler Ratenzahlung erfassen' },
-  { emoji: '🧾', text: 'Neuer Tab "NK-Abrechnung": Jährliche Betriebskostenabrechnung mit dem Mieter' },
 ];
 
 function App() {
