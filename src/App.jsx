@@ -2235,7 +2235,6 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             <div className="divide-y divide-gray-100 px-4">
               {[
                 { label: (params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete (Basis)' : 'Kaltmiete (Basis)', key: 'kaltmiete', unit: '€', step: 25, hint: 'Monatliche Grundmiete' },
-                { label: 'Mietsteigerung p.a.', key: 'mietsteigerung', unit: '%', step: 0.1, hint: 'Jährliche Erhöhung' },
                 ...((params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? [{ label: 'NK-Vorauszahlung (Mieter)', key: 'nebenkostenVomMieter', unit: '€', step: 10, hint: 'Monatliche NK-Vorauszahlung' }] : []),
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between py-2.5">
@@ -2779,10 +2778,11 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
 
     for (let jahr = kaufjahr; jahr <= aktuellesJahr + 5; jahr++) {
       const jahreIndex = jahr - kaufjahr;
-      const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
 
+      // Miete per-year: mietHistorie[Jahr].kaltmiete falls händisch eingetragen, sonst Basismiete
+      const histMiete = (params.mietHistorie || {})[`${jahr}`];
       const basisMiete = getAktuelleMiete(params); // aktuelle Miete als Basis für Prognose
-      const jahresMiete = basisMiete * 12 * mieteFaktor;
+      const jahresMiete = (histMiete?.kaltmiete != null ? histMiete.kaltmiete : basisMiete) * 12;
       const nkVomMieter = (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) * 12 : 0;
       // Vermieterkosten: historische Werte aus mietHistorie[Jahr] bevorzugen (manuell eingetragen)
       const histKosten = (params.mietHistorie || {})[`${jahr}`] || {};
@@ -3094,9 +3094,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
     const jahreIndex = jahr - kaufjahr;
     if (jahreIndex < 0) return null;
 
-    // Mieteinnahmen mit Steigerung (Basis: aktuelle Miete lt. mietAnpassungen)
-    const mieteFaktor = Math.pow(1 + (params.mietsteigerung || 0) / 100, jahreIndex);
-    const jahresMiete = getAktuelleMiete(params) * 12 * mieteFaktor;
+    // Mieteinnahmen: mietHistorie[Jahr].kaltmiete falls händisch, sonst Basismiete
+    const histMieteSteuer = (params.mietHistorie || {})[`${jahr}`];
+    const jahresMiete = (histMieteSteuer?.kaltmiete != null ? histMieteSteuer.kaltmiete : getAktuelleMiete(params)) * 12;
 
     // Laufende Kosten (Werbungskosten)
     const laufendeKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0)) * 12;
