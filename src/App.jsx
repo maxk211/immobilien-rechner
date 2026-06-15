@@ -1788,8 +1788,79 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   );
 };
 
+// ─── Vermögenswerte-Helper ───────────────────────────────────────────────────
+// Berechnet Restschuld, Jahres-Tilgung und freies Vermögen für eine Kaufimmobilie
+const berechneImmoVermoegenswerte = (immo) => {
+  if (immo.immobilienTyp !== 'kaufimmobilie') return null;
+  const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
+  const kaufnebenkostenAbsolut = (immo.kaufpreis || 0) * (kaufnebenkosten / 100);
+  const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
+    ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
+    : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);
+  const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, (immo.kaufpreis || 0) + kaufnebenkostenAbsolut - gesamtEK);
+  const marktwert = immo.geschaetzterWert || immo.kaufpreis || 0;
+
+  if (fremdkapital <= 0) return { fremdkapital: 0, restschuld: 0, tilgungJahr: 0, freiVermoegen: marktwert, marktwert };
+
+  const simuliere = (startKredit, mzins, rate, monate) => {
+    let rs = startKredit;
+    for (let m = 0; m < monate && rs > 0; m++) rs = Math.max(0, rs - Math.max(0, rate - rs * mzins));
+    return rs;
+  };
+
+  const phasen = immo.finanzierungsphasen;
+  const jetzt = new Date();
+  const aktuellesJahr = jetzt.getFullYear();
+
+  if (phasen && phasen.length > 0 && immo.kaufdatum) {
+    const kreditStartDatum = new Date(phasen[0]?.kreditStartDatum || immo.kaufdatum);
+    let jahrOffset = 0;
+    let aktuelleRestschuld = fremdkapital;
+
+    for (let i = 0; i < phasen.length; i++) {
+      const phase = phasen[i];
+      const phasenzins = phase.sollzinssatz ?? phase.zinssatz ?? (immo.zinssatz ?? 4.0);
+      const startK = (i > 0 && phase.restschuldOverride != null) ? phase.restschuldOverride : aktuelleRestschuld;
+      const laufzeit = phase.darlehensTyp === 'endfaellig' ? (phase.laufzeit || 10) : (phase.zinsbindung || 10);
+      const mzins = phasenzins / 100 / 12;
+      const pAT = phase.anfangstilgung || (phase.darlehensTyp === 'endfaellig' ? 0 : 2.0);
+      const rate = (phase.monatlicherBetrag > 0) ? phase.monatlicherBetrag : (startK > 0 ? startK * (mzins + pAT / 100 / 12) : 0);
+
+      const phaseStartJahr = kreditStartDatum.getFullYear() + jahrOffset;
+      const phaseEndJahr = phaseStartJahr + laufzeit;
+      const isLast = i === phasen.length - 1;
+
+      if (aktuellesJahr < phaseEndJahr || isLast) {
+        const phaseStartDatum = new Date(kreditStartDatum);
+        phaseStartDatum.setFullYear(phaseStartJahr);
+        const monateGesamt = Math.max(0, (jetzt.getFullYear() - phaseStartDatum.getFullYear()) * 12 + jetzt.getMonth() - phaseStartDatum.getMonth());
+        const restschuld = simuliere(startK, mzins, rate, monateGesamt);
+        const monateJan1 = Math.max(0, (aktuellesJahr - phaseStartDatum.getFullYear()) * 12 - phaseStartDatum.getMonth());
+        const rsJan1 = simuliere(startK, mzins, rate, monateJan1);
+        const rsJan1Next = simuliere(rsJan1, mzins, rate, 12);
+        return { fremdkapital, restschuld, tilgungJahr: Math.max(0, rsJan1 - rsJan1Next), freiVermoegen: Math.max(0, marktwert - restschuld), marktwert };
+      }
+      aktuelleRestschuld = simuliere(startK, mzins, rate, laufzeit * 12);
+      jahrOffset += laufzeit;
+    }
+  }
+
+  // Fallback ohne Phasen
+  if (!immo.kaufdatum) return { fremdkapital, restschuld: fremdkapital, tilgungJahr: 0, freiVermoegen: Math.max(0, marktwert - fremdkapital), marktwert };
+  const mzins = (immo.zinssatz ?? 4.0) / 100 / 12;
+  const rate = fremdkapital * (mzins + (immo.tilgung ?? 2.0) / 100 / 12);
+  const kaufDatum = new Date(immo.kaufdatum);
+  const monateGesamt = Math.max(0, (jetzt.getFullYear() - kaufDatum.getFullYear()) * 12 + jetzt.getMonth() - kaufDatum.getMonth());
+  const restschuld = simuliere(fremdkapital, mzins, rate, monateGesamt);
+  const monateJan1 = Math.max(0, (aktuellesJahr - kaufDatum.getFullYear()) * 12 - kaufDatum.getMonth());
+  const rsJan1 = simuliere(fremdkapital, mzins, rate, monateJan1);
+  const rsJan1Next = simuliere(rsJan1, mzins, rate, 12);
+  return { fremdkapital, restschuld, tilgungJahr: Math.max(0, rsJan1 - rsJan1Next), freiVermoegen: Math.max(0, marktwert - restschuld), marktwert };
+};
+
 // Portfolio-Übersicht Komponente
 const PortfolioOverview = ({ portfolio }) => {
+  const [showVermoegenDetail, setShowVermoegenDetail] = React.useState(false);
   const stats = useMemo(() => {
     let gesamtKaufpreis = 0;
     let gesamtWert = 0;
@@ -1801,6 +1872,10 @@ const PortfolioOverview = ({ portfolio }) => {
     let gesamtEigenkapital = 0;
     let anzahlKaufimmobilien = 0;
     let anzahlMietimmobilien = 0;
+    let gesamtRestschuld = 0;
+    let gesamtTilgungJahr = 0;
+    let gesamtFreiesVermoegen = 0;
+    const vermoegenProImmo = [];
 
     portfolio.forEach(immo => {
       const isMietimmobilie = immo.immobilienTyp === 'mietimmobilie';
@@ -1824,6 +1899,14 @@ const PortfolioOverview = ({ portfolio }) => {
         anzahlKaufimmobilien++;
         gesamtKaufpreis += immo.kaufpreis || 0;
         gesamtWert += immo.geschaetzterWert || immo.kaufpreis || 0;
+        // Vermögenswerte berechnen
+        const vw = berechneImmoVermoegenswerte(immo);
+        if (vw) {
+          gesamtRestschuld += vw.restschuld;
+          gesamtTilgungJahr += vw.tilgungJahr;
+          gesamtFreiesVermoegen += vw.freiVermoegen;
+          vermoegenProImmo.push({ id: immo.id, name: immo.name || immo.adresse || 'Immobilie', kaufpreis: immo.kaufpreis || 0, ...vw });
+        }
         const nkMieterJahr = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) * 12 : 0;
         gesamtMiete += (getAktuelleMiete(immo) + (nkMieterJahr / 12)) * 12;
 
@@ -1886,6 +1969,10 @@ const PortfolioOverview = ({ portfolio }) => {
       gesamtFlaeche,
       gesamtEigenkapital,
       ekRendite: gesamtEigenkapital > 0 ? (gesamtCashflow / gesamtEigenkapital) * 100 : null,
+      gesamtRestschuld,
+      gesamtTilgungJahr,
+      gesamtFreiesVermoegen,
+      vermoegenProImmo,
     };
   }, [portfolio]);
 
@@ -1956,6 +2043,82 @@ const PortfolioOverview = ({ portfolio }) => {
           )}
         </div>
       </div>
+
+      {/* Vermögens-KPI Zeile */}
+      {stats.anzahlKaufimmobilien > 0 && (
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Freies Vermögen */}
+          <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 p-5 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-wider text-violet-500 mb-1">Freies Vermögen (EK)</div>
+            <div className="text-2xl font-black text-violet-700">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
+            <div className="text-xs text-violet-400 mt-1 font-medium">Marktwert − Restschuld</div>
+            {stats.gesamtRestschuld > 0 && (
+              <div className="text-xs text-gray-400 mt-0.5">Restschuld: {formatCurrency(stats.gesamtRestschuld)}</div>
+            )}
+          </div>
+          {/* Tilgung p.a. */}
+          <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 p-5 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-wider text-teal-500 mb-1">Tilgung p.a. (Vermögensaufbau)</div>
+            <div className="text-2xl font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</div>
+            <div className="text-xs text-teal-400 mt-1 font-medium">Schuldenabbau in {new Date().getFullYear()}</div>
+            <div className="text-xs text-gray-400 mt-0.5">≈ {formatCurrency(stats.gesamtTilgungJahr / 12)}/Monat</div>
+          </div>
+        </div>
+      )}
+
+      {/* Vermögensdetails pro Objekt */}
+      {stats.vermoegenProImmo.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
+          <button
+            onClick={() => setShowVermoegenDetail(v => !v)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-gray-700 text-sm">📊 Vermögensaufbau pro Objekt</span>
+              <span className="text-xs text-gray-400">{stats.vermoegenProImmo.length} Kaufobjekt{stats.vermoegenProImmo.length !== 1 ? 'e' : ''}</span>
+            </div>
+            <span className="text-gray-400 text-sm">{showVermoegenDetail ? '▲' : '▼'}</span>
+          </button>
+          {showVermoegenDetail && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-y border-gray-100">
+                  <tr>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Objekt</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Kaufpreis</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Marktwert</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Restschuld</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-violet-600 uppercase">Freies EK</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-teal-600 uppercase">Tilgung {new Date().getFullYear()}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {stats.vermoegenProImmo.map(v => (
+                    <tr key={v.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-800 truncate max-w-[160px]">{v.name}</td>
+                      <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(v.kaufpreis)}</td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-semibold">{formatCurrency(v.marktwert)}</td>
+                      <td className="px-4 py-3 text-right text-red-500">{formatCurrency(v.restschuld)}</td>
+                      <td className="px-4 py-3 text-right text-violet-700 font-bold">{formatCurrency(v.freiVermoegen)}</td>
+                      <td className="px-4 py-3 text-right text-teal-700 font-bold">+{formatCurrency(v.tilgungJahr)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-slate-100 border-t-2 border-slate-200">
+                  <tr>
+                    <td className="px-4 py-3 font-black text-gray-800 text-xs uppercase">Gesamt</td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-600">{formatCurrency(stats.gesamtKaufpreis)}</td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-800">{formatCurrency(stats.gesamtWert)}</td>
+                    <td className="px-4 py-3 text-right font-bold text-red-600">{formatCurrency(stats.gesamtRestschuld)}</td>
+                    <td className="px-4 py-3 text-right font-black text-violet-700">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
+                    <td className="px-4 py-3 text-right font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -8290,6 +8453,7 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
 };
 
 const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
+  const [activeTab, setActiveTab] = useState('stammdaten');
   const [form, setForm] = useState({
     id: mieter?.id || null,
     immobilieId: mieter?.immobilie_id || (portfolio[0]?.id || ''),
@@ -8307,8 +8471,20 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
     letzteMahnungAm: mieter?.letzte_mahnung_am || '',
     notizen: mieter?.notizen || '',
     aktiv: mieter?.aktiv !== false,
+    // Neue Mietvertrag-Felder
+    vertragstyp: mieter?.vertragstyp || 'unbefristet',
+    kuendigungsfrist: mieter?.kuendigungsfrist || '3 Monate',
+    naechsteAnpassungDatum: mieter?.naechsteAnpassungDatum || '',
+    mietanpassungenMieter: mieter?.mietanpassungen_mieter || [],
   });
   const [saving, setSaving] = useState(false);
+  const [newAnpassung, setNewAnpassung] = useState({ datum: '', betrag: '', grund: '' });
+
+  // Wohnfläche aus gewählter Immobilie für €/qm Berechnung
+  const gewaehltesObjekt = portfolio.find(i => String(i.id) === String(form.immobilieId));
+  const wohnflaeche = gewaehltesObjekt?.wohnflaeche || 0;
+  const kaltmieteNum = parseFloat(form.kaltmiete) || 0;
+  const preisProQm = wohnflaeche > 0 && kaltmieteNum > 0 ? (kaltmieteNum / wohnflaeche).toFixed(2) : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -8318,6 +8494,18 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
     try { await onSave(form); } finally { setSaving(false); }
   };
 
+  const addMietanpassung = () => {
+    if (!newAnpassung.datum || !newAnpassung.betrag) return;
+    const entry = { id: Date.now(), datum: newAnpassung.datum, betrag: parseFloat(newAnpassung.betrag), grund: newAnpassung.grund };
+    const sorted = [...form.mietanpassungenMieter, entry].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+    setForm(f => ({ ...f, mietanpassungenMieter: sorted }));
+    setNewAnpassung({ datum: '', betrag: '', grund: '' });
+  };
+
+  const removeMietanpassung = (id) => {
+    setForm(f => ({ ...f, mietanpassungenMieter: f.mietanpassungenMieter.filter(a => a.id !== id) }));
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
@@ -8325,8 +8513,23 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
           <h2 className="text-xl font-bold">{form.id ? 'Mieter bearbeiten' : 'Neuer Mieter'}</h2>
           <button onClick={onClose} className="text-white text-2xl hover:text-blue-200">&times;</button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Immobilie */}
+
+        {/* Tab-Navigation */}
+        <div className="flex border-b border-gray-200 bg-gray-50 px-4">
+          {[
+            { id: 'stammdaten', label: '👤 Stammdaten' },
+            { id: 'mietvertrag', label: '📄 Mietvertrag' },
+            { id: 'mietanpassungen', label: '📈 Mietanpassungen' },
+          ].map(tab => (
+            <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Immobilie (immer sichtbar) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Immobilie *</label>
             <select value={form.immobilieId} onChange={e => setForm({...form, immobilieId: e.target.value})}
@@ -8336,115 +8539,261 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
             </select>
           </div>
 
-          {/* Stammdaten */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm font-semibold text-gray-700 mb-3">👤 Stammdaten</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="block text-xs text-gray-600 mb-1">Name *</label>
-                <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
+          {/* === TAB: STAMMDATEN === */}
+          {activeTab === 'stammdaten' && (
+            <>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3">👤 Stammdaten</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-600 mb-1">Name *</label>
+                    <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Email</label>
+                    <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Telefon</label>
+                    <input type="tel" value={form.telefon} onChange={e => setForm({...form, telefon: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-600 mb-1">Zimmer / Einheit</label>
+                    <input type="text" value={form.zimmerBezeichnung} onChange={e => setForm({...form, zimmerBezeichnung: e.target.value})}
+                      placeholder="z.B. Zimmer 2, Ganze Wohnung, EG links"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Email</label>
-                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Telefon</label>
-                <input type="tel" value={form.telefon} onChange={e => setForm({...form, telefon: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs text-gray-600 mb-1">Zimmer / Einheit</label>
-                <input type="text" value={form.zimmerBezeichnung} onChange={e => setForm({...form, zimmerBezeichnung: e.target.value})}
-                  placeholder="z.B. Zimmer 2, Ganze Wohnung, EG links"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-              </div>
-            </div>
-          </div>
 
-          {/* Vertrag */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-sm font-semibold text-blue-800 mb-3">📄 Mietvertrag</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Mietbeginn</label>
-                <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              {/* Mahnwesen */}
+              <div className="bg-orange-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-orange-800 mb-3">⚠️ Mahnwesen</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Mahnstufe</label>
+                    <select value={form.mahnstufe} onChange={e => setForm({...form, mahnstufe: parseInt(e.target.value)})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      <option value={0}>Keine Mahnung</option>
+                      <option value={1}>1. Mahnung</option>
+                      <option value={2}>2. Mahnung</option>
+                      <option value={3}>Letzte Mahnung</option>
+                    </select>
+                  </div>
+                  {form.mahnstufe > 0 && (
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Letzte Mahnung am</label>
+                      <input type="date" value={form.letzteMahnungAm} onChange={e => setForm({...form, letzteMahnungAm: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Mietende (optional)</label>
-                <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Monat)</label>
-                <input type="number" value={form.kaltmiete} onChange={e => setForm({...form, kaltmiete: parseFloat(e.target.value) || ''})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" step="10" />
-              </div>
-            </div>
-          </div>
 
-          {/* Kaution */}
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <p className="text-sm font-semibold text-yellow-800 mb-3">🔑 Kaution</p>
-            <div className="grid grid-cols-2 gap-3">
+              {/* Notizen */}
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Kautionshöhe (€)</label>
-                <input type="number" value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-xs text-gray-600 mb-1">Notizen</label>
+                <textarea value={form.notizen} onChange={e => setForm({...form, notizen: e.target.value})}
+                  rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="Besonderheiten, Vereinbarungen, etc." />
               </div>
-              <div className="flex items-end gap-3 pb-0.5">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.kautionBezahlt} onChange={e => setForm({...form, kautionBezahlt: e.target.checked})}
-                    className="w-4 h-4 rounded accent-blue-600" />
-                  <span className="text-sm text-gray-700">Bezahlt</span>
-                </label>
+            </>
+          )}
+
+          {/* === TAB: MIETVERTRAG === */}
+          {activeTab === 'mietvertrag' && (
+            <>
+              {/* Vertragstyp */}
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-blue-800 mb-3">📋 Vertragsart</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-600 mb-1">Vertragstyp</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { val: 'unbefristet', label: '♾️ Unbefristet' },
+                        { val: 'befristet', label: '📅 Befristet' },
+                        { val: 'staffel', label: '📈 Staffelmiete' },
+                        { val: 'index', label: '📊 Indexmiete' },
+                      ].map(opt => (
+                        <button key={opt.val} type="button"
+                          onClick={() => setForm(f => ({ ...f, vertragstyp: opt.val }))}
+                          className={`px-3 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${form.vertragstyp === opt.val ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Kündigungsfrist</label>
+                    <select value={form.kuendigungsfrist} onChange={e => setForm({...form, kuendigungsfrist: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                      <option value="3 Monate">3 Monate</option>
+                      <option value="6 Monate">6 Monate</option>
+                      <option value="12 Monate">12 Monate</option>
+                      <option value="individuell">Individuell</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Nächste Anpassung</label>
+                    <input type="date" value={form.naechsteAnpassungDatum} onChange={e => setForm({...form, naechsteAnpassungDatum: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  </div>
+                </div>
               </div>
-              {form.kautionBezahlt && (
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Bezahlt am</label>
-                  <input type="date" value={form.kautionBezahltAm} onChange={e => setForm({...form, kautionBezahltAm: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+
+              {/* Mietdetails */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3">💶 Mietkonditionen</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Mietbeginn</label>
+                    <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Mietende (opt.)</label>
+                    <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Mon.)</label>
+                    <input type="number" value={form.kaltmiete} onChange={e => setForm({...form, kaltmiete: parseFloat(e.target.value) || ''})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" step="10" />
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    {preisProQm ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                        <div className="text-xl font-black text-emerald-700">{preisProQm} €/m²</div>
+                        <div className="text-xs text-emerald-500 mt-0.5">bei {wohnflaeche} m² Wohnfläche</div>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-3 text-center text-xs text-gray-400">
+                        €/m² erscheint wenn Kaltmiete + Fläche bekannt
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Kaution */}
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-yellow-800 mb-3">🔑 Kaution</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Kautionshöhe (€)</label>
+                    <input type="number" value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  </div>
+                  <div className="flex items-end pb-0.5">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={form.kautionBezahlt} onChange={e => setForm({...form, kautionBezahlt: e.target.checked})}
+                        className="w-4 h-4 rounded accent-blue-600" />
+                      <span className="text-sm text-gray-700">Bezahlt</span>
+                    </label>
+                  </div>
+                  {form.kautionBezahlt && (
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Bezahlt am</label>
+                      <input type="date" value={form.kautionBezahltAm} onChange={e => setForm({...form, kautionBezahltAm: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* === TAB: MIETANPASSUNGEN === */}
+          {activeTab === 'mietanpassungen' && (
+            <>
+              {/* Aktuelle Miete + €/qm */}
+              {kaltmieteNum > 0 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-black text-blue-700">{formatCurrency(kaltmieteNum)}</div>
+                    <div className="text-xs text-blue-500 font-semibold mt-1">Aktuelle Kaltmiete/Mo.</div>
+                  </div>
+                  {preisProQm && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-black text-emerald-700">{preisProQm} €/m²</div>
+                      <div className="text-xs text-emerald-500 font-semibold mt-1">bei {wohnflaeche} m² Wohnfläche</div>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Mahnwesen */}
-          <div className="bg-orange-50 rounded-lg p-4">
-            <p className="text-sm font-semibold text-orange-800 mb-3">⚠️ Mahnwesen</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Mahnstufe</label>
-                <select value={form.mahnstufe} onChange={e => setForm({...form, mahnstufe: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                  <option value={0}>Keine Mahnung</option>
-                  <option value={1}>1. Mahnung</option>
-                  <option value={2}>2. Mahnung</option>
-                  <option value={3}>Letzte Mahnung</option>
-                </select>
-              </div>
-              {form.mahnstufe > 0 && (
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Letzte Mahnung am</label>
-                  <input type="date" value={form.letzteMahnungAm} onChange={e => setForm({...form, letzteMahnungAm: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              {/* Anpassungs-Historie */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                  <p className="text-sm font-semibold text-gray-700">📅 Mietanpassungen Historie</p>
                 </div>
-              )}
-            </div>
-          </div>
+                {form.mietanpassungenMieter.length === 0 ? (
+                  <div className="p-6 text-center text-gray-400 text-sm">Noch keine Mietanpassungen erfasst</div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {[...form.mietanpassungenMieter].reverse().map(a => {
+                      const qmPreis = wohnflaeche > 0 ? (a.betrag / wohnflaeche).toFixed(2) : null;
+                      return (
+                        <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-800">{formatCurrency(a.betrag)}/Mo.
+                              {qmPreis && <span className="ml-2 text-xs text-gray-400 font-normal">({qmPreis} €/m²)</span>}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {new Date(a.datum).toLocaleDateString('de-DE')}
+                              {a.grund && <span className="ml-2 text-gray-400">· {a.grund}</span>}
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => removeMietanpassung(a.id)}
+                            className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded hover:bg-red-50">✕</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
-          {/* Notizen */}
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Notizen</label>
-            <textarea value={form.notizen} onChange={e => setForm({...form, notizen: e.target.value})}
-              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="Besonderheiten, Vereinbarungen, etc." />
-          </div>
+              {/* Neue Anpassung hinzufügen */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-xs font-bold text-gray-600 uppercase mb-3">+ Neue Mietanpassung</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Gültig ab</label>
+                    <input type="date" value={newAnpassung.datum} onChange={e => setNewAnpassung(a => ({ ...a, datum: e.target.value }))}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Neue Kaltmiete (€)</label>
+                    <input type="number" value={newAnpassung.betrag} onChange={e => setNewAnpassung(a => ({ ...a, betrag: e.target.value }))}
+                      placeholder="0" step="10"
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-400 text-right" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Grund (opt.)</label>
+                    <input type="text" value={newAnpassung.grund} onChange={e => setNewAnpassung(a => ({ ...a, grund: e.target.value }))}
+                      placeholder="z.B. Mietspiegel"
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-400" />
+                  </div>
+                </div>
+                {newAnpassung.betrag && wohnflaeche > 0 && (
+                  <div className="mt-2 text-xs text-emerald-600 font-semibold">
+                    = {(parseFloat(newAnpassung.betrag) / wohnflaeche).toFixed(2)} €/m²
+                  </div>
+                )}
+                <button type="button" onClick={addMietanpassung}
+                  disabled={!newAnpassung.datum || !newAnpassung.betrag}
+                  className="mt-3 w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40">
+                  Anpassung hinzufügen
+                </button>
+              </div>
+            </>
+          )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2 border-t border-gray-100">
             <button type="button" onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
               Abbrechen
@@ -9394,6 +9743,136 @@ function App() {
   };
 
   // Export Portfolio als JSON
+  // ─── PDF Selbstauskunft ──────────────────────────────────────────────────────
+  const handleSelbstauskunft = () => {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const W = 210; const H = 297;
+    const heute = new Date().toLocaleDateString('de-DE');
+    let y = 0;
+
+    // Header-Banner
+    pdf.setFillColor(30, 41, 59); // slate-900
+    pdf.rect(0, 0, W, 45, 'F');
+    pdf.setFontSize(22); pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold');
+    pdf.text('Immobilien Selbstauskunft', W / 2, 18, { align: 'center' });
+    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(148, 163, 184);
+    pdf.text(`Erstellt am: ${heute}  ·  ${session?.user?.email || ''}`, W / 2, 27, { align: 'center' });
+    pdf.setFontSize(9); pdf.setTextColor(100, 116, 139);
+    pdf.text(`${portfolio.length} Objekte im Portfolio`, W / 2, 35, { align: 'center' });
+    y = 55;
+
+    // Portfolio Gesamt-KPIs
+    const kaufimmos = portfolio.filter(i => i.immobilienTyp !== 'mietimmobilie');
+    const gesamtMarktwert = kaufimmos.reduce((s, i) => s + (i.geschaetzterWert || i.kaufpreis || 0), 0);
+    const gesamtTilgung = kaufimmos.reduce((s, i) => { const v = berechneImmoVermoegenswerte(i); return s + (v?.tilgungJahr || 0); }, 0);
+    const gesamtFreiesEK = kaufimmos.reduce((s, i) => { const v = berechneImmoVermoegenswerte(i); return s + (v?.freiVermoegen || 0); }, 0);
+    const gesamtRestschuld = kaufimmos.reduce((s, i) => { const v = berechneImmoVermoegenswerte(i); return s + (v?.restschuld || 0); }, 0);
+    const gesamtKaltmiete = kaufimmos.reduce((s, i) => s + (getAktuelleMiete(i) || 0), 0);
+    const kreditrate = kaufimmos.reduce((s, i) => {
+      const v = berechneImmoVermoegenswerte(i);
+      const mzins = (i.zinssatz ?? 4) / 100 / 12;
+      const pAT = (i.tilgung ?? 2) / 100 / 12;
+      const fk = v?.fremdkapital || 0;
+      return s + (fk > 0 ? fk * (mzins + pAT) : 0);
+    }, 0);
+
+    // KPI-Boxen
+    const kpis = [
+      { label: 'Gesamtmarktwert', value: `${(gesamtMarktwert/1000).toFixed(0)}T €`, color: [99, 102, 241] },
+      { label: 'Freies Eigenkapital', value: `${(gesamtFreiesEK/1000).toFixed(0)}T €`, color: [124, 58, 237] },
+      { label: 'Restschuld gesamt', value: `${(gesamtRestschuld/1000).toFixed(0)}T €`, color: [239, 68, 68] },
+      { label: 'Tilgung p.a.', value: `${(gesamtTilgung/1000).toFixed(0)}T €`, color: [20, 184, 166] },
+      { label: 'Kaltmiete/Mon.', value: `${gesamtKaltmiete.toLocaleString('de-DE')} €`, color: [16, 185, 129] },
+      { label: 'Kreditrate/Mon.', value: `${kreditrate.toLocaleString('de-DE', {maximumFractionDigits:0})} €`, color: [245, 158, 11] },
+    ];
+    const bw = (W - 28) / 3; const bh = 18;
+    kpis.forEach((k, i) => {
+      const bx = 14 + (i % 3) * (bw + 4);
+      const by = y + Math.floor(i / 3) * (bh + 3);
+      pdf.setFillColor(...k.color, 15);
+      pdf.roundedRect(bx, by, bw, bh, 2, 2, 'F');
+      pdf.setDrawColor(...k.color); pdf.setLineWidth(0.4);
+      pdf.roundedRect(bx, by, bw, bh, 2, 2, 'S');
+      pdf.setFontSize(7); pdf.setTextColor(100, 100, 120); pdf.setFont('helvetica', 'normal');
+      pdf.text(k.label, bx + bw / 2, by + 6, { align: 'center' });
+      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...k.color);
+      pdf.text(k.value, bx + bw / 2, by + 13, { align: 'center' });
+    });
+    y += bh * 2 + 10;
+
+    // Objekt-Tabelle
+    pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 41, 59);
+    pdf.text('Objektübersicht', 14, y); y += 5;
+
+    const rows = kaufimmos.map(immo => {
+      const v = berechneImmoVermoegenswerte(immo);
+      const mzins = (immo.zinssatz ?? 4) / 100 / 12;
+      const pAT = (immo.tilgung ?? 2) / 100 / 12;
+      const rate = v?.fremdkapital > 0 ? v.fremdkapital * (mzins + pAT) : 0;
+      const miete = getAktuelleMiete(immo);
+      const cf = miete - rate - ((immo.instandhaltung||100) + (immo.verwaltung||30) + (immo.hausgeld||0));
+      return [
+        immo.name || immo.adresse || '–',
+        `${((immo.kaufpreis||0)/1000).toFixed(0)}T`,
+        `${((v?.marktwert||0)/1000).toFixed(0)}T`,
+        `${((v?.restschuld||0)/1000).toFixed(0)}T`,
+        `${((v?.freiVermoegen||0)/1000).toFixed(0)}T`,
+        `${rate.toFixed(0)} €`,
+        `${miete.toFixed(0)} €`,
+        `${cf >= 0 ? '+' : ''}${cf.toFixed(0)} €`,
+      ];
+    });
+
+    pdf.autoTable({
+      startY: y,
+      head: [['Objekt', 'Kaufpr.', 'Marktwert', 'Restschuld', 'Freies EK', 'Rate/Mo.', 'Miete/Mo.', 'CF/Mo.']],
+      body: rows,
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { halign: 'right', cellWidth: 18 },
+        2: { halign: 'right', cellWidth: 22 },
+        3: { halign: 'right', cellWidth: 22 },
+        4: { halign: 'right', cellWidth: 20, textColor: [124, 58, 237], fontStyle: 'bold' },
+        5: { halign: 'right', cellWidth: 20 },
+        6: { halign: 'right', cellWidth: 20 },
+        7: { halign: 'right', cellWidth: 20, fontStyle: 'bold' },
+      },
+      margin: { left: 14, right: 14 },
+    });
+    y = pdf.lastAutoTable.finalY + 8;
+
+    // Monatliche Übersicht Gesamt
+    const monatsCF = gesamtKaltmiete - kreditrate - kaufimmos.reduce((s,i) => s + ((i.instandhaltung||100)+(i.verwaltung||30)+(i.hausgeld||0)), 0);
+    pdf.autoTable({
+      startY: y,
+      head: [['Monatliche Zusammenfassung (alle Kaufobjekte)', '']],
+      body: [
+        ['Gesamte Kaltmieten', `${gesamtKaltmiete.toLocaleString('de-DE')} €`],
+        ['Gesamte Kreditraten', `${kreditrate.toLocaleString('de-DE', {maximumFractionDigits:0})} €`],
+        ['Monatl. Cashflow (nach Kredit & Kosten)', `${monatsCF >= 0 ? '+' : ''}${monatsCF.toLocaleString('de-DE', {maximumFractionDigits:0})} €`],
+        ['Tilgung p.a. (Vermögensaufbau)', `${gesamtTilgung.toLocaleString('de-DE', {maximumFractionDigits:0})} €`],
+      ],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 0: { cellWidth: 120 }, 1: { halign: 'right', fontStyle: 'bold' } },
+      margin: { left: 14, right: 14 },
+    });
+
+    // Footer
+    const pageCount = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(7); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(150, 150, 150);
+      pdf.text(`Seite ${i} von ${pageCount}  ·  Immobilien Portfolio App  ·  ${heute}`, W / 2, H - 8, { align: 'center' });
+      pdf.text('Diese Aufstellung dient zur internen Übersicht und stellt keine offizielle Bankauskunft dar.', W / 2, H - 4, { align: 'center' });
+    }
+
+    pdf.save(`Selbstauskunft_Immobilien_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   const handleExport = () => {
     const exportData = {
       version: '1.0',
@@ -10120,6 +10599,12 @@ function App() {
           <div className="flex flex-wrap gap-2">
             {portfolio.length > 0 && (
               <>
+                <button
+                  onClick={handleSelbstauskunft}
+                  className="px-3 py-2 bg-white border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
+                >
+                  📋 Selbstauskunft
+                </button>
                 <button
                   onClick={handleExport}
                   className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors"

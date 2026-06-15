@@ -28,6 +28,7 @@ export async function loadImmobilien() {
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
 const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege'];
+const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter'];
 
 // Immobilie speichern (neu oder update)
 export async function saveImmobilie(immobilie) {
@@ -273,25 +274,34 @@ export async function saveMieter(mieter) {
     letzte_mahnung_am: mieter.letzteMahnungAm || null,
     aktiv: mieter.aktiv !== false,
     notizen: mieter.notizen || null,
+    vertragstyp: mieter.vertragstyp || 'unbefristet',
+    kuendigungsfrist: mieter.kuendigungsfrist || null,
+    naechste_anpassung_datum: mieter.naechsteAnpassungDatum || null,
+    mietanpassungen_mieter: mieter.mietanpassungenMieter || [],
   };
 
-  if (mieter.id) {
-    const { data, error } = await supabase
-      .from('mieter')
-      .update(dbData)
-      .eq('id', mieter.id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  } else {
-    const { data, error } = await supabase
-      .from('mieter')
-      .insert({ ...dbData, user_id: user.id })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+  const doMieterSave = async (data) => {
+    if (mieter.id) {
+      const { data: result, error } = await supabase.from('mieter').update(data).eq('id', mieter.id).select().single();
+      if (error) throw error;
+      return result;
+    } else {
+      const { data: result, error } = await supabase.from('mieter').insert({ ...data, user_id: user.id }).select().single();
+      if (error) throw error;
+      return result;
+    }
+  };
+
+  try {
+    return await doMieterSave(dbData);
+  } catch (error) {
+    const isSchemaProblem = error.message && (error.message.includes('column') || error.message.includes('schema cache'));
+    if (isSchemaProblem) {
+      const fallback = { ...dbData };
+      MIETER_MIGRATION_FIELDS.forEach(f => delete fallback[f]);
+      return await doMieterSave(fallback);
+    }
+    throw error;
   }
 }
 
