@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege'];
 
 // Immobilie speichern (neu oder update)
 export async function saveImmobilie(immobilie) {
@@ -154,7 +154,8 @@ function dbToApp(db) {
     mietvertragEnde: db.mietvertrag_ende || '',
     dauerauftrag: db.dauerauftrag || false,
     dauerauftragBetrag: Number(db.dauerauftrag_betrag) || 0,
-    zaehler: db.zaehler || []
+    zaehler: db.zaehler || [],
+    bausparvertraege: db.bausparvertraege || []
   };
 }
 
@@ -226,7 +227,8 @@ function appToDb(app) {
     mietvertrag_ende: app.mietvertragEnde || null,
     dauerauftrag: app.dauerauftrag || false,
     dauerauftrag_betrag: app.dauerauftragBetrag || null,
-    zaehler: app.zaehler || []
+    zaehler: app.zaehler || [],
+    bausparvertraege: app.bausparvertraege || []
   };
 }
 

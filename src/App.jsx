@@ -6372,7 +6372,8 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
     mietAnpassungen: immobilie.mietAnpassungen || [],
     dauerauftrag: immobilie.dauerauftrag || false,
     dauerauftragBetrag: immobilie.dauerauftragBetrag || immobilie.kaltmiete || 0,
-    zaehler: immobilie.zaehler || []
+    zaehler: immobilie.zaehler || [],
+    bausparvertraege: immobilie.bausparvertraege || []
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
