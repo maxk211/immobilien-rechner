@@ -6513,7 +6513,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
             const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
             const fmtKPISigned = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(2)} %`;
             return (
-              <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
+              <div className="grid grid-cols-3 bg-white border-b border-gray-200 divide-x divide-gray-100">
                 <div className="px-4 py-3">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bruttorendite</div>
                   <div className="text-xl font-black text-indigo-600">{fmtKPI(ergebnis.bruttorendite)}</div>
@@ -6526,20 +6526,14 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
                   <div className="text-xl font-black text-violet-600">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
                 </div>
-                <div className="px-4 py-3">
-                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Cash-on-Cash</div>
-                  <div className={`text-xl font-black ${(ergebnis.cashOnCash || 0) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                    {fmtKPISigned(ergebnis.cashOnCash)}
-                  </div>
-                </div>
               </div>
             );
           })()}
         </div>
 
         <div className="p-6">
-          {/* Wertschätzung & Wertsteigerung */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Wertschätzung & Wertsteigerung — nur im Übersicht-Tab */}
+          {activeTab === 'uebersicht' && <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
               <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
               <div className="mb-3">
@@ -6639,10 +6633,10 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
                 )}
               </div>
             )}
-          </div>
+          </div>}
 
-          {/* Objektdetails bearbeiten */}
-          <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl mb-6">
+          {/* Objektdetails bearbeiten — nur im Übersicht-Tab */}
+          {activeTab === 'uebersicht' && <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl mb-6">
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">Objektdetails</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -6688,7 +6682,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
                 />
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Tab-Navigation */}
           <div className="flex flex-wrap gap-1 bg-slate-100 rounded-xl p-1 mb-6">
