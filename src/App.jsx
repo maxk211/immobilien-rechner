@@ -660,11 +660,11 @@ const berechneJahresRateFuerPhasen = (phasen, fremdkapital, kreditStartJahr, tar
     const phaseEndJahr = kreditStartJahr + jahrOffset + phaseLaufzeit;
     const mzins = phasenzins / 100 / 12;
     const lmonate = phaseLaufzeit * 12;
+    // Vereinfachte deutsche Formel: K × (Z/12 + T/12) — identisch mit Finanzierung-Tab
+    const anfangstilgung = phase.anfangstilgung || (phase.darlehensTyp === 'endfaellig' ? 0 : 2.0);
     const phasenRate = (phase.monatlicherBetrag > 0)
       ? phase.monatlicherBetrag
-      : (mzins > 0 && startKreditPhase > 0
-          ? startKreditPhase * (mzins * Math.pow(1 + mzins, lmonate)) / (Math.pow(1 + mzins, lmonate) - 1)
-          : 0);
+      : (startKreditPhase > 0 ? startKreditPhase * (mzins + anfangstilgung / 100 / 12) : 0);
     if (targetJahr < phaseEndJahr || i === phasen.length - 1) {
       return phasenRate;
     }
@@ -751,12 +751,13 @@ const berechneRendite = (params) => {
       const startKreditPhase = (i > 0 && phase.restschuldOverride != null) ? phase.restschuldOverride : aktuelleRestschuld;
       const phaseLaufzeit = phase.darlehensTyp === 'endfaellig' ? (phase.laufzeit || 10) : (phase.zinsbindung || 10);
       const endjahr = startJahr + jahrOffset + phaseLaufzeit;
-      // Rate für diese Phase: direkt aus monatlicherBetrag oder berechnet
+      // Rate für diese Phase: vereinfachte deutsche Formel K × (Z/12 + T/12) — identisch mit Finanzierung-Tab
       const mzins = phasenzins / 100 / 12;
       const lmonate = phaseLaufzeit * 12;
+      const pAT = phase.anfangstilgung || (phase.darlehensTyp === 'endfaellig' ? 0 : 2.0);
       const phasenRate = (phase.monatlicherBetrag > 0)
         ? phase.monatlicherBetrag
-        : (mzins > 0 && startKreditPhase > 0 ? startKreditPhase * (mzins * Math.pow(1 + mzins, lmonate)) / (Math.pow(1 + mzins, lmonate) - 1) : 0);
+        : (startKreditPhase > 0 ? startKreditPhase * (mzins + pAT / 100 / 12) : 0);
       // Restschuld nach dieser Phase berechnen
       let rs = startKreditPhase;
       for (let m = 0; m < lmonate && rs > 0; m++) {
@@ -770,7 +771,7 @@ const berechneRendite = (params) => {
           zinssatz: phasenzins,
           restschuld: startKreditPhase,
           laufzeit: phaseLaufzeit,
-          monatlicherBetrag: phase.monatlicherBetrag > 0 ? phase.monatlicherBetrag : null,
+          monatlicherBetrag: phasenRate,
         };
       }
     }
