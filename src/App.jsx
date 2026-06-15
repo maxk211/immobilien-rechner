@@ -1860,7 +1860,7 @@ const berechneImmoVermoegenswerte = (immo) => {
 
 // Portfolio-Übersicht Komponente
 const PortfolioOverview = ({ portfolio }) => {
-  const [showVermoegenDetail, setShowVermoegenDetail] = React.useState(false);
+  const [showVermoegenDetail, setShowVermoegenDetail] = useState(false);
   const stats = useMemo(() => {
     let gesamtKaufpreis = 0;
     let gesamtWert = 0;
