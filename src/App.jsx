@@ -6532,159 +6532,7 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
         </div>
 
         <div className="p-6">
-          {/* Wertschätzung & Wertsteigerung — nur im Übersicht-Tab */}
-          {activeTab === 'uebersicht' && <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
-              <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={qmPreis}
-                    onChange={(e) => handleQmPreisChange(e.target.value)}
-                    className="w-32 px-3 py-2 text-lg font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                    placeholder="4000"
-                  />
-                  <span className="text-sm font-bold text-blue-600">€/m²</span>
-                  <span className="text-gray-400">×</span>
-                  <span className="text-sm text-gray-600">{params.wohnflaeche} m²</span>
-                  <span className="text-gray-400">=</span>
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Berechneter Gesamtwert</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={params.geschaetzterWert || ''}
-                    onChange={(e) => handleGesamtwertChange(e.target.value)}
-                    className="w-40 px-3 py-2 text-xl font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                    placeholder="350000"
-                  />
-                  <span className="text-xl font-bold text-blue-600">€</span>
-                </div>
-              </div>
-              <a
-                href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-              >
-                <span>🔍</span> Preis bei Homeday recherchieren
-              </a>
-              <p className="text-xs text-gray-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
-            </div>
-
-            {wertsteigerungSeitKauf && (
-              <div className={`p-5 rounded-2xl border ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
-                <h3 className={`text-sm font-bold uppercase tracking-wide mb-3 ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                  Wertsteigerung seit Kauf
-                </h3>
-                <div className={`text-3xl font-bold ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerungSeitKauf.absoluteSteigerung)}
-                </div>
-                <div className={`text-sm ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {wertsteigerungSeitKauf.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)}% in {wertsteigerungSeitKauf.jahreSeitKauf.toFixed(1)} Jahren
-                </div>
-                <div className="text-xs text-gray-500 mt-1 mb-3">
-                  Jährliche Rendite: {wertsteigerungSeitKauf.jaehrlicheRendite.toFixed(2)}% p.a.
-                </div>
-                {/* Chart direkt in der Box */}
-                {wertentwicklungDaten.length > 0 && (
-                  <>
-                    <div className="flex gap-3 text-[10px] text-gray-400 mb-1">
-                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-blue-500"></span>Historisch</span>
-                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-green-400"></span>Projektion ({params.wertsteigerung ?? 2}% p.a.)</span>
-                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-amber-400"></span>Kaufpreis</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <AreaChart data={wertentwicklungDaten} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="gradWert" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                          </linearGradient>
-                          <linearGradient id="gradProj" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.12}/>
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
-                        <XAxis dataKey="jahr" tick={{ fontSize: 9 }} />
-                        <YAxis tickFormatter={(v) => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : (v/1000).toFixed(0)+'k'} tick={{ fontSize: 9 }} width={42} />
-                        <Tooltip
-                          formatter={(value, name) => [
-                            value ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value) : '–',
-                            name === 'wert' ? 'Marktwert' : name === 'projektion' ? 'Projektion' : 'Kaufpreis'
-                          ]}
-                          labelFormatter={(label) => `Jahr ${label}`}
-                        />
-                        <Area type="monotone" dataKey="wert" stroke="#2563eb" strokeWidth={2} fill="url(#gradWert)" dot={false} name="wert" connectNulls={false} />
-                        <Area type="monotone" dataKey="projektion" stroke="#10b981" strokeWidth={2} strokeDasharray="5 3" fill="url(#gradProj)" dot={false} name="projektion" connectNulls={false} />
-                        <ReferenceLine y={immobilie.kaufpreis} stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" label={{ value: formatCurrency(immobilie.kaufpreis), position: 'insideTopLeft', fontSize: 9, fill: '#f59e0b' }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                    <div className="flex justify-between text-xs mt-2 pt-2 border-t border-green-100">
-                      <div><span className="text-gray-400">Kaufpreis </span><span className="font-semibold text-gray-700">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(immobilie.kaufpreis)}</span></div>
-                      <div><span className="text-gray-400">In 10 Jahren </span><span className="font-semibold text-green-600">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(aktuellerWert * Math.pow(1 + (params.wertsteigerung || 2) / 100, 10)))}</span></div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>}
-
-          {/* Objektdetails bearbeiten — nur im Übersicht-Tab */}
-          {activeTab === 'uebersicht' && <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl mb-6">
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">Objektdetails</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Wohnfläche</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={params.wohnflaeche}
-                    onChange={(e) => {
-                      const neueFlaeche = parseFloat(e.target.value) || 0;
-                      updateParams({...params, wohnflaeche: neueFlaeche});
-                      // qm-Preis aktualisieren wenn Fläche sich ändert
-                      if (neueFlaeche > 0 && params.geschaetzterWert > 0) {
-                        setQmPreis(Math.round(params.geschaetzterWert / neueFlaeche).toString());
-                      }
-                    }}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
-                    min={1}
-                  />
-                  <span className="text-gray-500">m²</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Zimmer</label>
-                <input
-                  type="number"
-                  value={params.zimmer}
-                  onChange={(e) => updateParams({...params, zimmer: parseFloat(e.target.value) || 0})}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
-                  min={1}
-                  step={0.5}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Baujahr</label>
-                <input
-                  type="number"
-                  value={params.baujahr}
-                  onChange={(e) => updateParams({...params, baujahr: parseInt(e.target.value) || 2000})}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
-                  min={1800}
-                  max={new Date().getFullYear()}
-                />
-              </div>
-            </div>
-          </div>}
-
-          {/* Tab-Navigation */}
+          {/* Tab-Navigation — ganz oben */}
           <div className="flex flex-wrap gap-1 bg-slate-100 rounded-xl p-1 mb-6">
             {[
               { id: 'uebersicht', label: '📊 Übersicht' },
@@ -6716,6 +6564,156 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
           {/* Tab-Inhalte */}
           {activeTab === 'uebersicht' && (
             <div className="space-y-5">
+              {/* Marktwert & Wertsteigerung */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
+                  <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={qmPreis}
+                        onChange={(e) => handleQmPreisChange(e.target.value)}
+                        className="w-32 px-3 py-2 text-lg font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                        placeholder="4000"
+                      />
+                      <span className="text-sm font-bold text-blue-600">€/m²</span>
+                      <span className="text-gray-400">×</span>
+                      <span className="text-sm text-gray-600">{params.wohnflaeche} m²</span>
+                      <span className="text-gray-400">=</span>
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Berechneter Gesamtwert</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={params.geschaetzterWert || ''}
+                        onChange={(e) => handleGesamtwertChange(e.target.value)}
+                        className="w-40 px-3 py-2 text-xl font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                        placeholder="350000"
+                      />
+                      <span className="text-xl font-bold text-blue-600">€</span>
+                    </div>
+                  </div>
+                  <a
+                    href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  >
+                    <span>🔍</span> Preis bei Homeday recherchieren
+                  </a>
+                  <p className="text-xs text-gray-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
+                </div>
+
+                {wertsteigerungSeitKauf && (
+                  <div className={`p-5 rounded-2xl border ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                    <h3 className={`text-sm font-bold uppercase tracking-wide mb-3 ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                      Wertsteigerung seit Kauf
+                    </h3>
+                    <div className={`text-3xl font-bold ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerungSeitKauf.absoluteSteigerung)}
+                    </div>
+                    <div className={`text-sm ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {wertsteigerungSeitKauf.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)}% in {wertsteigerungSeitKauf.jahreSeitKauf.toFixed(1)} Jahren
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 mb-3">
+                      Jährliche Rendite: {wertsteigerungSeitKauf.jaehrlicheRendite.toFixed(2)}% p.a.
+                    </div>
+                    {wertentwicklungDaten.length > 0 && (
+                      <>
+                        <div className="flex gap-3 text-[10px] text-gray-400 mb-1">
+                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-blue-500"></span>Historisch</span>
+                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-green-400"></span>Projektion ({params.wertsteigerung ?? 2}% p.a.)</span>
+                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-amber-400"></span>Kaufpreis</span>
+                        </div>
+                        <ResponsiveContainer width="100%" height={160}>
+                          <AreaChart data={wertentwicklungDaten} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="gradWert" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="gradProj" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.12}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
+                            <XAxis dataKey="jahr" tick={{ fontSize: 9 }} />
+                            <YAxis tickFormatter={(v) => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : (v/1000).toFixed(0)+'k'} tick={{ fontSize: 9 }} width={42} />
+                            <Tooltip
+                              formatter={(value, name) => [
+                                value ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value) : '–',
+                                name === 'wert' ? 'Marktwert' : name === 'projektion' ? 'Projektion' : 'Kaufpreis'
+                              ]}
+                              labelFormatter={(label) => `Jahr ${label}`}
+                            />
+                            <Area type="monotone" dataKey="wert" stroke="#2563eb" strokeWidth={2} fill="url(#gradWert)" dot={false} name="wert" connectNulls={false} />
+                            <Area type="monotone" dataKey="projektion" stroke="#10b981" strokeWidth={2} strokeDasharray="5 3" fill="url(#gradProj)" dot={false} name="projektion" connectNulls={false} />
+                            <ReferenceLine y={immobilie.kaufpreis} stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" label={{ value: formatCurrency(immobilie.kaufpreis), position: 'insideTopLeft', fontSize: 9, fill: '#f59e0b' }} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                        <div className="flex justify-between text-xs mt-2 pt-2 border-t border-green-100">
+                          <div><span className="text-gray-400">Kaufpreis </span><span className="font-semibold text-gray-700">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(immobilie.kaufpreis)}</span></div>
+                          <div><span className="text-gray-400">In 10 Jahren </span><span className="font-semibold text-green-600">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(aktuellerWert * Math.pow(1 + (params.wertsteigerung || 2) / 100, 10)))}</span></div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Objektdetails */}
+              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl">
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">Objektdetails</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Wohnfläche</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={params.wohnflaeche}
+                        onChange={(e) => {
+                          const neueFlaeche = parseFloat(e.target.value) || 0;
+                          updateParams({...params, wohnflaeche: neueFlaeche});
+                          if (neueFlaeche > 0 && params.geschaetzterWert > 0) {
+                            setQmPreis(Math.round(params.geschaetzterWert / neueFlaeche).toString());
+                          }
+                        }}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                        min={1}
+                      />
+                      <span className="text-gray-500">m²</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Zimmer</label>
+                    <input
+                      type="number"
+                      value={params.zimmer}
+                      onChange={(e) => updateParams({...params, zimmer: parseFloat(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                      min={1}
+                      step={0.5}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Baujahr</label>
+                    <input
+                      type="number"
+                      value={params.baujahr}
+                      onChange={(e) => updateParams({...params, baujahr: parseInt(e.target.value) || 2000})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                      min={1800}
+                      max={new Date().getFullYear()}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Prognose */}
               <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Prognose</h3>
