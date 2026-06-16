@@ -6718,34 +6718,71 @@ const ImmobilienDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSave
         </div>
 
         <div className="p-6">
-          {/* Tab-Navigation — ganz oben */}
-          <div className="flex flex-wrap gap-1 bg-slate-100 rounded-xl p-1 mb-6">
-            {[
-              { id: 'uebersicht', label: '📊 Übersicht' },
-              { id: 'finanzierung', label: '🏦 Finanzierung' },
-              { id: 'bauspar', label: '🏗 Bauspar' },
-              { id: 'mieteinnahmen', label: '💵 Mieteinnahmen' },
-              { id: 'cashflow', label: '💰 Cashflow' },
-              { id: 'steuern', label: '📋 Steuern' },
-              { id: 'investitionen', label: '🔧 Investitionen' },
-              { id: 'nkabrechnung', label: '🧾 NK-Abrechnung' },
-              { id: 'kaution', label: '🔑 Kaution' },
-              { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
-              { id: 'zaehler', label: '📟 Zähler' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-3 text-sm font-semibold rounded-lg transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-white text-indigo-700 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {/* Tab-Navigation — 2-stufig: 4 Haupt-Tabs + kontextuelle Sub-Tabs */}
+          {(() => {
+            const aktiveMieterAnzahl = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
+            const GRUPPEN = [
+              { id: 'uebersicht', label: '📊 Übersicht',  first: 'uebersicht', subs: null },
+              { id: 'finanzen',   label: '💰 Finanzen',    first: 'cashflow',
+                subs: [
+                  { id: 'cashflow',    label: 'Cashflow' },
+                  { id: 'finanzierung',label: 'Finanzierung' },
+                  { id: 'bauspar',     label: 'Bauspar' },
+                  { id: 'steuern',     label: 'Steuern' },
+                ]
+              },
+              { id: 'vermietung', label: '👥 Vermietung',  first: 'mieteinnahmen',
+                subs: [
+                  { id: 'mieteinnahmen', label: 'Einnahmen' },
+                  { id: 'mieter',        label: aktiveMieterAnzahl > 0 ? `Mieter (${aktiveMieterAnzahl})` : 'Mieter' },
+                  { id: 'nkabrechnung',  label: 'NK-Abrechnung' },
+                  { id: 'kaution',       label: 'Kaution' },
+                ]
+              },
+              { id: 'objekt', label: '🔧 Objekt', first: 'investitionen',
+                subs: [
+                  { id: 'investitionen', label: 'Investitionen' },
+                  { id: 'zaehler',       label: 'Zähler' },
+                ]
+              },
+            ];
+            const aktiveGruppe = GRUPPEN.find(g =>
+              g.id === 'uebersicht' ? activeTab === 'uebersicht' : g.subs?.some(s => s.id === activeTab)
+            ) || GRUPPEN[0];
+
+            return (
+              <div className="mb-5">
+                {/* Haupt-Tabs */}
+                <div className="grid grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1">
+                  {GRUPPEN.map(g => (
+                    <button key={g.id} onClick={() => setActiveTab(g.first)}
+                      className={`py-2 px-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-center ${
+                        aktiveGruppe.id === g.id
+                          ? 'bg-white text-indigo-700 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}>
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Sub-Tabs */}
+                {aktiveGruppe.subs && (
+                  <div className="flex gap-1 mt-1 px-1 border-l-2 border-indigo-200 ml-1 pl-2">
+                    {aktiveGruppe.subs.map(s => (
+                      <button key={s.id} onClick={() => setActiveTab(s.id)}
+                        className={`py-1 px-3 text-xs font-semibold rounded-md transition-all ${
+                          activeTab === s.id
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                        }`}>
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Tab-Inhalte */}
           {activeTab === 'uebersicht' && (
