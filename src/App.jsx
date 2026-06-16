@@ -1607,7 +1607,10 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
         ? kreditbetrag * (monatszinsKauf * Math.pow(1 + monatszinsKauf, laufzeitKauf * 12)) / (Math.pow(1 + monatszinsKauf, laufzeitKauf * 12) - 1)
         : 0);
     const betriebskosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0) + (immobilie.nebenkosten || 0);
-    return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten;
+    const monatlicheBauspar = (immobilie.bausparvertraege || [])
+      .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
+      .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
+    return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten - monatlicheBauspar;
   })() : 0;
 
   // MFH cashflow: aggregierte Miete − geteilte Kosten − Kreditrate
@@ -1943,8 +1946,13 @@ const PortfolioOverview = ({ portfolio }) => {
         // NK-Vorauszahlung vom Mieter (nur bei Modell kaltmiete_nk)
         const nkVomMieter = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) : 0;
 
+        // Bauspar-Sparraten (monatlich, bis Zuteilungsreife)
+        const monatlicheBauspar = (immo.bausparvertraege || [])
+          .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
+          .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
+
         // Monatlicher Cashflow (aktuelle Miete lt. mietAnpassungen)
-        const monatsCashflow = getAktuelleMiete(immo) + nkVomMieter - monatlicheRate - monatlicheKosten;
+        const monatsCashflow = getAktuelleMiete(immo) + nkVomMieter - monatlicheRate - monatlicheKosten - monatlicheBauspar;
 
         gesamtCashflow += monatsCashflow * 12;
         gesamtKreditrate += monatlicheRate * 12;
