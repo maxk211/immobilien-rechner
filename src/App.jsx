@@ -40,6 +40,30 @@ import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
 
 
+// Temporäre Error Boundary für Debugging
+class ErrorBoundary extends (class { render() {} }) {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{position:'fixed',inset:0,background:'#1e1b4b',color:'white',padding:'2rem',zIndex:9999,overflow:'auto',fontFamily:'monospace'}}>
+          <h2 style={{color:'#f87171',fontSize:'1.25rem',marginBottom:'1rem'}}>🐛 React Render Error</h2>
+          <pre style={{background:'#312e81',padding:'1rem',borderRadius:'0.5rem',whiteSpace:'pre-wrap',fontSize:'0.8rem'}}>
+            {this.state.error?.message}
+            {'\n\n'}
+            {this.state.error?.stack?.split('\n').slice(0,15).join('\n')}
+          </pre>
+          <button onClick={() => this.setState({error:null})} style={{marginTop:'1rem',background:'#4f46e5',border:'none',color:'white',padding:'0.5rem 1rem',borderRadius:'0.5rem',cursor:'pointer'}}>
+            Schließen
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1195,6 +1219,7 @@ function App() {
       )}
 
       {selectedImmobilie && (
+        <ErrorBoundary>
         <ImmobilienDetail
           immobilie={selectedImmobilie}
           onClose={() => setSelectedImmobilie(null)}
@@ -1219,6 +1244,7 @@ function App() {
           onDeleteNK={handleDeleteNK}
           portfolio={portfolio}
         />
+        </ErrorBoundary>
       )}
 
       <footer className="bg-gray-800 text-gray-400 py-6 mt-12">
