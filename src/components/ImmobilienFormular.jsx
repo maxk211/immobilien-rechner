@@ -1,0 +1,730 @@
+import { useState, useMemo } from 'react';
+import { formatCurrency } from '../utils/format.js';
+import { schaetzeImmobilienwert } from '../utils/berechnung.js';
+
+const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
+  const [formData, setFormData] = useState(initialData || {
+    name: '',
+    plz: '',
+    adresse: '',
+    immobilienTyp: 'kaufimmobilie', // NEU: kaufimmobilie oder mietimmobilie
+    objektart: 'eigentumswohnung',
+    zustand: 'gut',
+    wohnflaeche: 80,
+    grundstueck: 0,
+    zimmer: 3,
+    baujahr: 2000,
+    stockwerk: 1,
+    energieeffizienz: 'C',
+    balkon: false,
+    garage: false,
+    keller: false,
+    kaufpreis: 300000,
+    eigenkapital: 60000,
+    geschenkt: false,               // Immobilie als Schenkung erhalten (kein Kaufpreis, kein Kredit)
+    kaltmiete: 1000,
+    vermietungsmodell: 'kaltmiete', // 'kaltmiete', 'kaltmiete_nk', 'warmmiete'
+    nebenkostenVomMieter: 0,        // Monatliche NK-Vorauszahlung vom Mieter
+    kaufdatum: '',
+    zinssatz: 4.0,
+    tilgung: 2.0,
+    laufzeit: 25,
+    zinsbindung: 10,
+    finanzierungsModus: 'berechnet', // 'berechnet' oder 'festRate'
+    monatlicherBetrag: null,
+    // Mietimmobilie / Arbitrage spezifische Felder
+    eigeneWarmmiete: 1500,        // Was man selbst zahlt (warm)
+    anzahlZimmerVermietet: 3,     // Anzahl Zimmer die untervermietet werden
+    untermieteProZimmer: 600,     // Warmmiete pro Zimmer von Untermietern
+    // Aufgeschlüsselte Kosten für Steuerberater
+    arbitrageStrom: 0,            // Stromkosten monatlich
+    arbitrageInternet: 0,         // Internetkosten monatlich
+    arbitrageGEZ: 18.36,          // GEZ/Rundfunkbeitrag monatlich (Standard: 18,36€)
+    mietvertragStart: '',         // Startdatum des Mietvertrags
+    aktiv: true,                  // Immobilie aktiv oder aufgegeben
+    aufgabedatum: '',             // Datum der Aufgabe/Verkauf
+    mietAnpassungen: []           // [{datum, kaltmiete}] Miethistorie mit Datum
+  });
+
+  const schaetzung = useMemo(() => schaetzeImmobilienwert(formData), [formData]);
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {initialData ? 'Immobilie bearbeiten' : 'Neue Immobilie'}
+            </h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          </div>
+        </div>
+
+        <div className="p-6 overflow-y-auto flex-grow">
+          <div className="space-y-6">
+            {/* Immobilientyp Auswahl */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-100">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Immobilientyp</label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'kaufimmobilie')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'kaufimmobilie'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-lg mb-1">🏠</div>
+                  <div className="font-semibold text-sm">Kaufimmobilie</div>
+                  <div className="text-xs text-gray-500">Eigene Immobilie vermieten</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'mehrfamilienhaus')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'mehrfamilienhaus'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-lg mb-1">🏘️</div>
+                  <div className="font-semibold text-sm">Mehrfamilienhaus</div>
+                  <div className="text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'mietimmobilie')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'mietimmobilie'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-lg mb-1">🔄</div>
+                  <div className="font-semibold text-sm">Mietimmobilie</div>
+                  <div className="text-xs text-gray-500">Arbitrage: Anmieten & Untervermieten</div>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-3 text-gray-700">Grunddaten</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name/Bezeichnung</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder={formData.immobilienTyp === 'mietimmobilie' ? 'z.B. Mitarbeiter-WG München' : 'z.B. Wohnung München'}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PLZ</label>
+                  <input
+                    type="text"
+                    value={formData.plz}
+                    onChange={(e) => handleChange('plz', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="z.B. 80331"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                  <input
+                    type="text"
+                    value={formData.adresse}
+                    onChange={(e) => handleChange('adresse', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="z.B. Musterstraße 123"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.immobilienTyp === 'mietimmobilie' ? 'Mietvertrag seit' : 'Kaufdatum'}
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.immobilienTyp === 'mietimmobilie' ? formData.mietvertragStart : formData.kaufdatum}
+                    onChange={(e) => handleChange(formData.immobilienTyp === 'mietimmobilie' ? 'mietvertragStart' : 'kaufdatum', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Objektdetails - nur für Kaufimmobilie / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Objektdetails</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Objektart</label>
+                    <select
+                      value={formData.objektart}
+                      onChange={(e) => handleChange('objektart', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="eigentumswohnung">Eigentumswohnung</option>
+                      <option value="einfamilienhaus">Einfamilienhaus</option>
+                      <option value="doppelhaushälfte">Doppelhaushälfte</option>
+                      <option value="reihenhaus">Reihenhaus</option>
+                      <option value="mehrfamilienhaus">Mehrfamilienhaus</option>
+                      <option value="grundstück">Grundstück</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zustand</label>
+                    <select
+                      value={formData.zustand}
+                      onChange={(e) => handleChange('zustand', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="neuwertig">Neuwertig</option>
+                      <option value="sehr gut">Sehr gut</option>
+                      <option value="gut">Gut</option>
+                      <option value="normal">Normal</option>
+                      <option value="renovierungsbedürftig">Renovierungsbedürftig</option>
+                      <option value="sanierungsbedürftig">Sanierungsbedürftig</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Wohnfläche (m²)</label>
+                    <input
+                      type="number"
+                      value={formData.wohnflaeche}
+                      onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Grundstück (m²)</label>
+                    <input
+                      type="number"
+                      value={formData.grundstueck}
+                      onChange={(e) => handleChange('grundstueck', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zimmer</label>
+                    <input
+                      type="number"
+                      value={formData.zimmer}
+                      onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Baujahr</label>
+                    <input
+                      type="number"
+                      value={formData.baujahr}
+                      onChange={(e) => handleChange('baujahr', parseInt(e.target.value) || 2000)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stockwerk</label>
+                    <input
+                      type="number"
+                      value={formData.stockwerk}
+                      onChange={(e) => handleChange('stockwerk', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Energieeffizienz</label>
+                    <select
+                      value={formData.energieeffizienz}
+                      onChange={(e) => handleChange('energieeffizienz', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (
+                        <option key={e} value={e}>{e}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 mt-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.balkon}
+                      onChange={(e) => handleChange('balkon', e.target.checked)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Balkon/Terrasse</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.garage}
+                      onChange={(e) => handleChange('garage', e.target.checked)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Garage/Stellplatz</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.keller}
+                      onChange={(e) => handleChange('keller', e.target.checked)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Keller</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Objektdetails für Mietimmobilie - vereinfacht */}
+            {formData.immobilienTyp === 'mietimmobilie' && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Objektdetails</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Wohnfläche (m²)</label>
+                    <input
+                      type="number"
+                      value={formData.wohnflaeche}
+                      onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gesamtzahl Zimmer</label>
+                    <input
+                      type="number"
+                      value={formData.zimmer}
+                      onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Marktwert - nur für Kaufimmobilie / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-2 text-blue-800">Aktueller Marktwert</h3>
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Geschätzter Wert (€)</label>
+                  <input
+                    type="number"
+                    value={formData.geschaetzterWert || ''}
+                    onChange={(e) => handleChange('geschaetzterWert', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="z.B. 350000"
+                  />
+                </div>
+                <a
+                  href={`https://www.homeday.de/de/preisatlas/${formData.plz ? '?search=' + formData.plz : ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                >
+                  <span>🔍</span> Preis bei Homeday recherchieren
+                </a>
+                <p className="text-xs text-blue-600 mt-2">
+                  Recherchiere den aktuellen Marktwert und trage ihn oben ein.
+                </p>
+              </div>
+            )}
+
+            {/* Finanzdaten für Kaufimmobilie / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Finanzdaten</h3>
+                {/* Schenkung Toggle */}
+                <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.geschenkt || false}
+                      onChange={(e) => {
+                        const g = e.target.checked;
+                        handleChange('geschenkt', g);
+                        if (g) {
+                          // Kein EK/Fremdkapital-Input bei Schenkung – Eigenkapital = kaufpreis
+                          handleChange('eigenkapital', formData.kaufpreis);
+                          handleChange('finanzierungsModus', 'berechnet');
+                        }
+                      }}
+                      className="w-4 h-4 rounded accent-amber-500"
+                    />
+                    <div>
+                      <span className="font-semibold text-amber-800">🎁 Als Schenkung / Erbschaft erhalten</span>
+                      <p className="text-xs text-amber-600 mt-0.5">Kein Kaufpreis — trage den Verkehrswert ein. Kein Kredit nötig.</p>
+                    </div>
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {formData.geschenkt ? 'Verkehrswert / Schenkungswert (€)' : 'Kaufpreis (€)'}
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.kaufpreis}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value) || 0;
+                        handleChange('kaufpreis', v);
+                        if (formData.geschenkt) handleChange('eigenkapital', v);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {!formData.geschenkt && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Eigenkapital (€)</label>
+                    <input
+                      type="number"
+                      value={formData.eigenkapital}
+                      onChange={(e) => handleChange('eigenkapital', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  )}
+                {/* Finanzierungskonditionen — nur wenn nicht geschenkt */}
+                {!formData.geschenkt && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-3">🏦 Finanzierung</h4>
+                  {/* Modus Toggle */}
+                  <div className="flex gap-2 mb-3">
+                    {[['berechnet','📐 Rate berechnen'],['festRate','🏦 Feste Rate (Bankvertrag)']].map(([val, label]) => (
+                      <button key={val} type="button"
+                        onClick={() => handleChange('finanzierungsModus', val)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${formData.finanzierungsModus === val ? 'border-blue-500 bg-white text-blue-700' : 'border-gray-200 bg-white text-gray-500'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Zinssatz</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" min={0} max={15} step={0.1} value={formData.zinssatz}
+                          onChange={(e) => handleChange('zinssatz', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                        <span className="text-xs text-gray-500">%</span>
+                      </div>
+                    </div>
+                    {formData.finanzierungsModus === 'berechnet' ? (
+                      <>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Anfangstilgung</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" min={0} max={10} step={0.5} value={formData.tilgung}
+                              onChange={(e) => handleChange('tilgung', parseFloat(e.target.value) || 0)}
+                              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                            <span className="text-xs text-gray-500">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Gesamtlaufzeit</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" min={5} max={40} step={1} value={formData.laufzeit}
+                              onChange={(e) => handleChange('laufzeit', parseInt(e.target.value) || 25)}
+                              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                            <span className="text-xs text-gray-500">J.</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Monatl. Rate (fest)</label>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min={0} step={10} value={formData.monatlicherBetrag || ''}
+                            placeholder="z.B. 650"
+                            onChange={(e) => handleChange('monatlicherBetrag', parseFloat(e.target.value) || null)}
+                            className="w-full px-2 py-1.5 border-2 border-blue-400 bg-white rounded text-sm text-right font-semibold" />
+                          <span className="text-xs text-gray-500">€</span>
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Zinsbindung</label>
+                      <div className="flex items-center gap-1">
+                        <input type="number" min={1} max={30} step={1} value={formData.zinsbindung}
+                          onChange={(e) => handleChange('zinsbindung', parseInt(e.target.value) || 10)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
+                        <span className="text-xs text-gray-500">J.</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Rate-Vorschau */}
+                  {formData.finanzierungsModus === 'berechnet' && formData.zinssatz > 0 && formData.eigenkapital >= 0 && (
+                    (() => {
+                      const kredit = Math.max(0, formData.kaufpreis * 1.1 - formData.eigenkapital);
+                      const mz = formData.zinssatz / 100 / 12;
+                      const lm = (formData.laufzeit || 25) * 12;
+                      const rate = kredit > 0 && mz > 0 ? kredit * (mz * Math.pow(1+mz,lm)) / (Math.pow(1+mz,lm)-1) : 0;
+                      return rate > 0 ? (
+                        <p className="text-xs text-blue-700 mt-2 font-semibold">
+                          ≈ Monatliche Rate: {new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(rate)}
+                          <span className="font-normal text-blue-500 ml-1">(bei ca. {new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(kredit)} Kredit)</span>
+                        </p>
+                      ) : null;
+                    })()
+                  )}
+                </div>}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {formData.vermietungsmodell === 'warmmiete' ? 'Warmmiete (€/Monat)' : 'Kaltmiete (€/Monat)'}
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.kaltmiete}
+                      onChange={(e) => handleChange('kaltmiete', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Vermietungsmodell */}
+                <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                  <label className="block text-sm font-semibold text-blue-800 mb-2">🏠 Vermietungsmodell</label>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {[
+                      { value: 'kaltmiete', label: 'Kaltmiete', desc: 'Mieter zahlt nur Kaltmiete' },
+                      { value: 'kaltmiete_nk', label: 'Kaltmiete + NK', desc: 'Mieter zahlt NK-Vorauszahlung' },
+                      { value: 'warmmiete', label: 'Warmmiete', desc: 'Inklusivmiete, alles drin' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleChange('vermietungsmodell', opt.value)}
+                        className={`p-2 rounded-lg border-2 text-xs transition-all text-left ${
+                          formData.vermietungsmodell === opt.value
+                            ? 'border-blue-500 bg-white text-blue-700 font-semibold'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="font-semibold mb-0.5">{opt.label}</div>
+                        <div className="text-gray-400">{opt.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {formData.vermietungsmodell === 'kaltmiete' && (
+                    <p className="text-xs text-blue-600">📋 Betriebskosten werden via Nebenkostenabrechnung auf Mieter umgelegt (cashflow-neutral)</p>
+                  )}
+                  {formData.vermietungsmodell === 'kaltmiete_nk' && (
+                    <div>
+                      <p className="text-xs text-blue-600 mb-2">📋 Mieter zahlt NK-Vorauszahlung direkt an dich</p>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">NK-Vorauszahlung vom Mieter (€/Monat)</label>
+                      <input
+                        type="number"
+                        value={formData.nebenkostenVomMieter || 0}
+                        onChange={(e) => handleChange('nebenkostenVomMieter', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="z.B. 200"
+                      />
+                    </div>
+                  )}
+                  {formData.vermietungsmodell === 'warmmiete' && (
+                    <p className="text-xs text-blue-600">📋 Vermieter trägt alle Betriebskosten (Hausgeld, Strom etc.) aus der Warmmiete</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Arbitrage-Daten für Mietimmobilie */}
+            {formData.immobilienTyp === 'mietimmobilie' && (
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <h3 className="text-lg font-semibold mb-3 text-purple-800">🔄 Arbitrage-Kalkulation</h3>
+                <p className="text-sm text-purple-600 mb-4">
+                  Berechne deinen Cashflow aus der Untervermietung an Mitarbeiter oder Gäste (Warmmiete).
+                </p>
+
+                <div className="space-y-4">
+                  <div className="bg-white p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">💸 Deine Mietkosten</h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Eigene Warmmiete (€/Monat)</label>
+                      <input
+                        type="number"
+                        value={formData.eigeneWarmmiete}
+                        onChange={(e) => handleChange('eigeneWarmmiete', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="z.B. 1500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Die Miete, die du an den Vermieter zahlst (inkl. Nebenkosten)</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">🛏️ Untervermietung</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Vermietete Zimmer</label>
+                        <input
+                          type="number"
+                          value={formData.anzahlZimmerVermietet}
+                          onChange={(e) => handleChange('anzahlZimmerVermietet', parseInt(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          min="0"
+                          max={formData.zimmer}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Miete pro Zimmer (€)</label>
+                        <input
+                          type="number"
+                          value={formData.untermieteProZimmer}
+                          onChange={(e) => handleChange('untermieteProZimmer', parseFloat(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="z.B. 600"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Warmmiete pro Zimmer, die deine Untermieter zahlen</p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">📊 Zusätzliche Kosten (für Steuerberater)</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">⚡ Strom (€/Mon.)</label>
+                        <input
+                          type="number"
+                          value={formData.arbitrageStrom || 0}
+                          onChange={(e) => handleChange('arbitrageStrom', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">🌐 Internet (€/Mon.)</label>
+                        <input
+                          type="number"
+                          value={formData.arbitrageInternet || 0}
+                          onChange={(e) => handleChange('arbitrageInternet', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">📺 GEZ (€/Mon.)</label>
+                        <input
+                          type="number"
+                          value={formData.arbitrageGEZ ?? 18.36}
+                          onChange={(e) => handleChange('arbitrageGEZ', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="18.36"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Summe: {formatCurrency((formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36))}/Monat
+                    </p>
+                  </div>
+
+                  {/* Vorschau-Berechnung */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="text-sm font-semibold text-green-800 mb-3">📈 Cashflow-Vorschau</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Einnahmen ({formData.anzahlZimmerVermietet || 0} × {formatCurrency(formData.untermieteProZimmer || 0)}):</span>
+                        <span className="font-semibold text-green-600">+{formatCurrency((formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0))}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Eigene Miete:</span>
+                        <span className="font-semibold text-red-600">-{formatCurrency(formData.eigeneWarmmiete || 0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Strom / Internet / GEZ:</span>
+                        <span className="font-semibold text-red-600">-{formatCurrency((formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36))}</span>
+                      </div>
+                      <div className="border-t border-green-300 pt-2 mt-2">
+                        <div className="flex justify-between text-base">
+                          <span className="font-semibold text-gray-700">Monatlicher Cashflow:</span>
+                          {(() => {
+                            const einnahmen = (formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0);
+                            const zusatzkosten = (formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36);
+                            const ausgaben = (formData.eigeneWarmmiete || 0) + zusatzkosten;
+                            const cashflow = einnahmen - ausgaben;
+                            return (
+                              <span className={`font-bold ${cashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="flex justify-between text-sm mt-1">
+                          <span className="text-gray-500">Jährlicher Cashflow:</span>
+                          {(() => {
+                            const einnahmen = (formData.anzahlZimmerVermietet || 0) * (formData.untermieteProZimmer || 0);
+                            const zusatzkosten = (formData.arbitrageStrom || 0) + (formData.arbitrageInternet || 0) + (formData.arbitrageGEZ ?? 18.36);
+                            const ausgaben = (formData.eigeneWarmmiete || 0) + zusatzkosten;
+                            const cashflow = (einnahmen - ausgaben) * 12;
+                            return (
+                              <span className={`font-semibold ${cashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex-shrink-0">
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={() => {
+                // Finanzierungskonditionen in erste Phase übertragen (Feldnamen müssen zur Finanzierungstab-Logik passen)
+                const erstePhase = {
+                  id: 1,
+                  name: 'Erstfinanzierung',
+                  darlehensTyp: 'annuitaet',
+                  sollzinssatz: formData.zinssatz ?? 4.0,
+                  anfangstilgung: formData.tilgung ?? 2.0,
+                  zinsbindung: formData.zinsbindung || 10,
+                  monatlicherBetrag: formData.finanzierungsModus === 'festRate' ? (formData.monatlicherBetrag || null) : null,
+                  monatlicheTilgung: null,
+                  tilgungssatz: 2.0,
+                  laufzeit: 10,
+                  sondertilgungJaehrlich: 0,
+                  restschuldOverride: null,
+                  aktiv: true,
+                };
+                onSave({
+                  ...formData,
+                  finanzierungsphasen: [erstePhase],
+                  wohnungen: formData.wohnungen || [],
+                });
+              }}
+              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            >
+              Speichern
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Immobilien-Karte Komponente
+
+export default ImmobilienFormular;
