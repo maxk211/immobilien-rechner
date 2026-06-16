@@ -3025,10 +3025,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
     kreditrate: ergebnis.monatlicheRate,
     zinsen: kreditDetails.zinsen,
     tilgung: kreditDetails.tilgung,
-    // Cashflow neu berechnen mit allen Kosten
+    // Bauspar: monatliche Sparraten aller noch nicht zuteilungsreifen Verträge
+    bauspar: (params.bausparvertraege || [])
+      .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
+      .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0),
+    // Cashflow neu berechnen mit allen Kosten inkl. Bauspar
     get gesamtKosten() { return this.nebenkosten + this.instandhaltung + this.verwaltung + this.hausgeld + this.strom + this.internet; },
-    get cashflowMitTilgung() { return this.einnahmen - this.gesamtKosten - this.kreditrate; },
-    get cashflowOhneTilgung() { return this.einnahmen - this.gesamtKosten - this.zinsen; }
+    get cashflowMitTilgung() { return this.einnahmen - this.gesamtKosten - this.kreditrate - this.bauspar; },
+    get cashflowOhneTilgung() { return this.einnahmen - this.gesamtKosten - this.zinsen - this.bauspar; }
   };
 
   return (
@@ -3104,6 +3108,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
               </div>
             </div>
 
+            {/* Bausparvertrag Sparrate */}
+            {monatsDaten.bauspar > 0 && (
+              <div className="flex justify-between items-center py-1 text-sm">
+                <span className="text-orange-500">- Bauspar-Sparrate <span className="text-xs text-gray-400">(Ansparphase)</span></span>
+                <span className="text-orange-500">{formatCurrency(monatsDaten.bauspar)}</span>
+              </div>
+            )}
+
             {/* Cashflow-Vergleich */}
             <div className="space-y-2 mt-3">
               {/* Cashflow OHNE Tilgung (nur Zinsen) */}
@@ -3163,6 +3175,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
                   <th className="text-right p-2 text-red-500">Kosten</th>
                   <th className="text-right p-2 text-red-600">Kredit</th>
                   <th className="text-right p-2 text-orange-500">Invest.</th>
+                  <th className="text-right p-2 text-orange-600">Bauspar</th>
                   <th className="text-right p-2 font-semibold">Cashflow</th>
                   <th className="text-right p-2 text-blue-600">Kumuliert</th>
                 </tr>
@@ -3175,6 +3188,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
                     <td className="p-2 text-right text-red-500">{formatCurrency(d.kosten)}</td>
                     <td className="p-2 text-right text-red-600">{formatCurrency(d.kreditrate)}</td>
                     <td className="p-2 text-right text-orange-500">{d.investitionen > 0 ? formatCurrency(d.investitionen) : '-'}</td>
+                    <td className="p-2 text-right text-orange-600">{d.bauspar > 0 ? formatCurrency(d.bauspar) : '-'}</td>
                     <td className={`p-2 text-right font-semibold ${d.cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                       {d.cashflow >= 0 ? '+' : ''}{formatCurrency(d.cashflow)}
                     </td>
