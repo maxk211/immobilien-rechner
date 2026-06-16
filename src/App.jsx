@@ -843,6 +843,57 @@ const berechneRendite = (params) => {
   };
 };
 
+/**
+ * berechneMtlCashflow — EINHEITLICHE Cashflow-Berechnung für alle Immobilientypen.
+ * Gibt den aktuellen monatlichen Netto-Cashflow zurück.
+ * Wird genutzt in: ImmobilienKarte, PortfolioOverview, Selbstauskunft-PDF.
+ * (CashflowUebersicht hat eigene monatsDaten-Logik mit Jahres-Overrides + Zinsen/Tilgung-Detail.)
+ */
+const berechneMtlCashflow = (immo) => {
+  const typ = immo.immobilienTyp;
+
+  // ── Mietimmobilie (Arbitrage-Modell) ──────────────────────────────
+  if (typ === 'mietimmobilie') {
+    const vertragsEnde = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
+    if (vertragsEnde && vertragsEnde < new Date()) return 0;
+    const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo);
+    const ausgaben = getAktuelleWarmmiete(immo)
+      + (immo.arbitrageStrom || 0)
+      + (immo.arbitrageInternet || 0)
+      + (immo.arbitrageGEZ ?? 18.36);
+    return einnahmen - ausgaben;
+  }
+
+  // ── MFH / Kaufimmobilie ────────────────────────────────────────────
+  // Gesamtmiete: bei MFH Summe aller Wohnungen, sonst mietAnpassungen-aware
+  const gesamtMiete = typ === 'mehrfamilienhaus'
+    ? (immo.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0)
+    : getAktuelleMiete(immo);
+
+  // Phase-aware Kreditrate via berechneRendite — berücksichtigt finanzierungsphasen korrekt
+  const ergebnis = berechneRendite({ ...immo, kaltmiete: gesamtMiete });
+
+  // NK-Vorauszahlung vom Mieter (nur bei kaltmiete_nk Modell, nicht bei MFH)
+  const nkVomMieter = (typ !== 'mehrfamilienhaus' && (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk')
+    ? (immo.nebenkostenVomMieter || 0)
+    : 0;
+
+  // Laufende Betriebskosten des Vermieters
+  const betriebskosten = (immo.instandhaltung || 0)
+    + (immo.verwaltung || 0)
+    + (immo.hausgeld || 0)
+    + (immo.strom || 0)
+    + (immo.internet || 0)
+    + (immo.nebenkosten || 0);
+
+  // Bauspar-Sparraten aller noch aktiven Verträge (vor Zuteilungsreife)
+  const bauspar = (immo.bausparvertraege || [])
+    .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
+    .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
+
+  return gesamtMiete + nkVomMieter - ergebnis.monatlicheRate - betriebskosten - bauspar;
+};
+
 // Immobilien-Formular Komponente
 const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
   const [formData, setFormData] = useState(initialData || {
@@ -1575,58 +1626,11 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   const wertsteigerung = (!isMietimmobilie && !isMFH) ? berechneWertsteigerungSeitKauf(immobilie, aktuellerWert) : null;
   const restschuldInfo = (!isMietimmobilie && !isMFH) ? berechneRestschuld(immobilie) : null;
 
-  // MFH: Aggregation aller Wohnungen
+  // MFH: Gesamtmiete aller Wohnungen (auch für Anzeige in der Karte genutzt)
   const mfhGesamtMiete = isMFH ? (immobilie.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0) : 0;
 
-  const arbitrageCashflow = isMietimmobilie ? (() => {
-    const ende = immobilie.mietvertragEnde ? new Date(immobilie.mietvertragEnde) : null;
-    if (ende && ende < new Date()) return 0;
-    // aktuelle Werte aus mietAnpassungen (historisch korrekt)
-    const einnahmen = (immobilie.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immobilie);
-    const zusatzkosten = (immobilie.arbitrageStrom || 0) + (immobilie.arbitrageInternet || 0) + (immobilie.arbitrageGEZ ?? 18.36);
-    const ausgaben = getAktuelleWarmmiete(immobilie) + zusatzkosten;
-    return einnahmen - ausgaben;
-  })() : 0;
-
-  const kaufCashflow = !isMietimmobilie ? (() => {
-    const kaltmiete = getAktuelleMiete(immobilie); // aktuelle Miete lt. mietAnpassungen
-    const nkVomMieter = (immobilie.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immobilie.nebenkostenVomMieter || 0) : 0;
-    const zinssatz = immobilie.zinssatz ?? 4.0;
-    const tilgung = immobilie.tilgung ?? 2.0;
-    const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
-    const kaufnebenkostenAbsolut = (immobilie.kaufpreis || 0) * (kaufnebenkosten / 100);
-    const gesamtinvestition = (immobilie.kaufpreis || 0) + kaufnebenkostenAbsolut;
-    const gesamtEK = (immobilie.ekFuerNebenkosten || 0) + (immobilie.ekFuerKaufpreis || 0) || (immobilie.eigenkapital || 0);
-    const kreditbetrag = immobilie.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-    const monatszinsKauf = zinssatz / 100 / 12;
-    const laufzeitKauf = immobilie.laufzeit ?? 25;
-    const ersteFinanzPhase = (immobilie.finanzierungsphasen || [])[0];
-    const monatlicheRate = ersteFinanzPhase?.monatlicherBetrag > 0
-      ? ersteFinanzPhase.monatlicherBetrag
-      : (kreditbetrag > 0 && monatszinsKauf > 0
-        ? kreditbetrag * (monatszinsKauf * Math.pow(1 + monatszinsKauf, laufzeitKauf * 12)) / (Math.pow(1 + monatszinsKauf, laufzeitKauf * 12) - 1)
-        : 0);
-    const betriebskosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0) + (immobilie.strom || 0) + (immobilie.internet || 0) + (immobilie.nebenkosten || 0);
-    const monatlicheBauspar = (immobilie.bausparvertraege || [])
-      .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
-      .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
-    return kaltmiete + nkVomMieter - monatlicheRate - betriebskosten - monatlicheBauspar;
-  })() : 0;
-
-  // MFH cashflow: aggregierte Miete − geteilte Kosten − Kreditrate
-  const mfhCashflow = isMFH ? (() => {
-    const kosten = (immobilie.instandhaltung || 0) + (immobilie.verwaltung || 0) + (immobilie.hausgeld || 0);
-    const phase = (immobilie.finanzierungsphasen || [])[0];
-    const fk = immobilie.finanzierungsbetrag ?? Math.max(0, immobilie.kaufpreis - (immobilie.eigenkapital || 0));
-    const mz = (phase?.sollzinssatz ?? immobilie.zinssatz ?? 4) / 100 / 12;
-    const lm = (phase?.zinsbindung || 25) * 12;
-    const rate = phase?.monatlicherBetrag > 0
-      ? phase.monatlicherBetrag
-      : (mz > 0 && fk > 0 ? fk * (mz * Math.pow(1+mz,lm)) / (Math.pow(1+mz,lm)-1) : 0);
-    return mfhGesamtMiete - kosten - rate;
-  })() : 0;
-
-  const cashflow = isMietimmobilie ? arbitrageCashflow : isMFH ? mfhCashflow : kaufCashflow;
+  // Monatlicher Cashflow — einheitliche Berechnung via berechneMtlCashflow
+  const cashflow = berechneMtlCashflow(immobilie);
   const cashflowPositiv = cashflow >= 0;
 
   // Tile accent color
@@ -1946,13 +1950,8 @@ const PortfolioOverview = ({ portfolio }) => {
         // NK-Vorauszahlung vom Mieter (nur bei Modell kaltmiete_nk)
         const nkVomMieter = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) : 0;
 
-        // Bauspar-Sparraten (monatlich, bis Zuteilungsreife)
-        const monatlicheBauspar = (immo.bausparvertraege || [])
-          .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
-          .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
-
-        // Monatlicher Cashflow (aktuelle Miete lt. mietAnpassungen)
-        const monatsCashflow = getAktuelleMiete(immo) + nkVomMieter - monatlicheRate - monatlicheKosten - monatlicheBauspar;
+        // Monatlicher Cashflow — einheitlich via berechneMtlCashflow (inkl. Bauspar, Phase-aware Rate)
+        const monatsCashflow = berechneMtlCashflow(immo);
 
         gesamtCashflow += monatsCashflow * 12;
         gesamtKreditrate += monatlicheRate * 12;
@@ -9828,11 +9827,11 @@ function App() {
 
     const rows = kaufimmos.map(immo => {
       const v = berechneImmoVermoegenswerte(immo);
-      const mzins = (immo.zinssatz ?? 4) / 100 / 12;
-      const pAT = (immo.tilgung ?? 2) / 100 / 12;
-      const rate = v?.fremdkapital > 0 ? v.fremdkapital * (mzins + pAT) : 0;
       const miete = getAktuelleMiete(immo);
-      const cf = miete - rate - ((immo.instandhaltung||100) + (immo.verwaltung||30) + (immo.hausgeld||0));
+      // Rate aus berechneRendite (phase-aware) für Anzeige in der Tabelle
+      const rate = berechneRendite({ ...immo, kaltmiete: miete }).monatlicheRate;
+      // Cashflow einheitlich via berechneMtlCashflow (inkl. Bauspar, Phase-aware)
+      const cf = berechneMtlCashflow(immo);
       return [
         immo.name || immo.adresse || '–',
         `${((immo.kaufpreis||0)/1000).toFixed(0)}T`,
