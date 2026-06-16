@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -4006,8 +4007,8 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
     saveZaehler(zaehler.map(z => z.id === id ? { ...z, aktiv: false } : z));
   };
 
-  const handleZaehlerLoeschen = (id) => {
-    if (!window.confirm('Zähler wirklich löschen?')) return;
+  const handleZaehlerLoeschen = async (id) => {
+    if (!(await showConfirm('Zähler wirklich löschen?'))) return;
     saveZaehler(zaehler.filter(z => z.id !== id));
   };
 
@@ -7746,7 +7747,7 @@ const KalkulationsModal = ({ onClose }) => {
           : [saved, ...prev]
       );
     } catch (e) {
-      alert('Fehler beim Speichern: ' + e.message);
+      toast.error('Fehler beim Speichern: ' + e.message);
     }
   };
 
@@ -7760,7 +7761,7 @@ const KalkulationsModal = ({ onClose }) => {
     try {
       await deleteKalkulation(id);
     } catch (e) {
-      alert('Fehler beim Löschen: ' + e.message);
+      toast.error('Fehler beim Löschen: ' + e.message);
       // Rückgängig machen falls API-Fehler
       setSavedCalcs(prev => prev); // bleibt wie es ist
     }
@@ -8546,8 +8547,8 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { alert('Name ist Pflicht'); return; }
-    if (!form.immobilieId) { alert('Immobilie ist Pflicht'); return; }
+    if (!form.name.trim()) { toast.error('Name ist Pflicht'); return; }
+    if (!form.immobilieId) { toast.error('Bitte eine Immobilie auswählen'); return; }
     setSaving(true);
     try { await onSave(form); } finally { setSaving(false); }
   };
@@ -9594,13 +9595,56 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
           abrechnung={viewAbrechnung}
           onEdit={() => { setEditAbrechnung(viewAbrechnung); setViewAbrechnung(null); setShowForm(true); }}
           onDelete={async () => {
-            if (!window.confirm('Abrechnung wirklich löschen?')) return;
+            if (!(await showConfirm('Abrechnung wirklich löschen?'))) return;
             await onDelete(viewAbrechnung.id);
             setViewAbrechnung(null);
           }}
           onClose={() => setViewAbrechnung(null)}
         />
       )}
+    </div>
+  );
+};
+
+// ─── Imperatives Confirm-Dialog (Ersatz für window.confirm) ─────────────────
+let _showConfirmDialog = null;
+const showConfirm = (message, opts = {}) =>
+  new Promise((resolve) => {
+    if (_showConfirmDialog) _showConfirmDialog({ message, resolve, ...opts });
+    else resolve(window.confirm(message)); // Fallback falls Komponente noch nicht gemountet
+  });
+
+const ConfirmDialog = () => {
+  const [state, setState] = useState({ open: false, message: '', resolve: null, danger: true });
+  useEffect(() => {
+    _showConfirmDialog = ({ message, resolve, danger = true }) =>
+      setState({ open: true, message, resolve, danger });
+    return () => { _showConfirmDialog = null; };
+  }, []);
+  const handle = (result) => {
+    state.resolve?.(result);
+    setState(s => ({ ...s, open: false }));
+  };
+  if (!state.open) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4"
+      onClick={() => handle(false)}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6"
+        onClick={e => e.stopPropagation()}>
+        <p className="text-slate-800 font-medium text-center mb-6">{state.message}</p>
+        <div className="flex gap-3 justify-end">
+          <button onClick={() => handle(false)}
+            className="px-4 py-2 text-sm rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-colors">
+            Abbrechen
+          </button>
+          <button onClick={() => handle(true)}
+            className={`px-4 py-2 text-sm rounded-lg font-medium text-white transition-colors ${
+              state.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}>
+            Bestätigen
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -9717,7 +9761,7 @@ function App() {
         setNkAbrechnungen(prev => [saved, ...prev]);
       }
     } catch (error) {
-      alert('Fehler beim Speichern der NK-Abrechnung: ' + error.message);
+      toast.error('Fehler beim Speichern der NK-Abrechnung: ' + error.message);
     }
   };
 
@@ -9726,7 +9770,7 @@ function App() {
       await deleteNKAbrechnung(id);
       setNkAbrechnungen(prev => prev.filter(a => a.id !== id));
     } catch (error) {
-      alert('Fehler beim Löschen: ' + error.message);
+      toast.error('Fehler beim Löschen: ' + error.message);
     }
   };
 
@@ -9743,18 +9787,18 @@ function App() {
       setEditMieter(null);
       setSyncStatus('idle');
     } catch (error) {
-      alert('Fehler beim Speichern: ' + error.message);
+      toast.error('Fehler beim Speichern: ' + error.message);
       setSyncStatus('error');
     }
   };
 
   const handleDeleteMieter = async (id) => {
-    if (!window.confirm('Mieter wirklich löschen?')) return;
+    if (!(await showConfirm('Mieter wirklich löschen?'))) return;
     try {
       await deleteMieter(id);
       setMieterListe(prev => prev.filter(m => m.id !== id));
     } catch (error) {
-      alert('Fehler beim Löschen: ' + error.message);
+      toast.error('Fehler beim Löschen: ' + error.message);
     }
   };
 
@@ -9776,22 +9820,21 @@ function App() {
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
       setSyncStatus('error');
-      alert('Fehler beim Speichern: ' + error.message);
+      toast.error('Fehler beim Speichern: ' + error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Möchten Sie diese Immobilie wirklich löschen?')) {
-      try {
-        setSyncStatus('syncing');
-        await deleteImmobilie(id);
-        setPortfolio(prev => prev.filter(i => i.id !== id));
-        setSyncStatus('idle');
-      } catch (error) {
-        console.error('Fehler beim Löschen:', error);
-        setSyncStatus('error');
-        alert('Fehler beim Löschen: ' + error.message);
-      }
+    if (!(await showConfirm('Immobilie wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'))) return;
+    try {
+      setSyncStatus('syncing');
+      await deleteImmobilie(id);
+      setPortfolio(prev => prev.filter(i => i.id !== id));
+      setSyncStatus('idle');
+    } catch (error) {
+      console.error('Fehler beim Löschen:', error);
+      setSyncStatus('error');
+      toast.error('Fehler beim Löschen: ' + error.message);
     }
   };
 
@@ -9960,16 +10003,14 @@ function App() {
 
         // Validierung
         if (!importData.portfolio || !Array.isArray(importData.portfolio)) {
-          alert('Ungültiges Dateiformat. Bitte wählen Sie eine gültige Export-Datei.');
+          toast.error('Ungültiges Dateiformat — bitte eine gültige Export-Datei wählen.');
           return;
         }
 
-        // Frage ob ersetzen oder hinzufügen
-        const choice = confirm(
-          `${importData.portfolio.length} Immobilie(n) gefunden.\n\n` +
-          `OK = Zu bestehenden hinzufügen\n` +
-          `Abbrechen = Import abbrechen\n\n` +
-          `(Um alle zu ersetzen, löschen Sie zuerst das bestehende Portfolio)`
+        // Frage ob hinzufügen
+        const choice = await showConfirm(
+          `${importData.portfolio.length} Immobilie(n) gefunden. Zum bestehenden Portfolio hinzufügen?`,
+          { danger: false }
         );
 
         if (choice) {
@@ -9990,10 +10031,10 @@ function App() {
           }
 
           setSyncStatus('idle');
-          alert(`${importedCount} Immobilie(n) erfolgreich importiert!`);
+          toast.success(`${importedCount} Immobilie(n) erfolgreich importiert!`);
         }
       } catch (error) {
-        alert('Fehler beim Importieren: ' + error.message);
+        toast.error('Fehler beim Importieren: ' + error.message);
         setSyncStatus('error');
       }
     };
@@ -10539,7 +10580,7 @@ function App() {
 
     pdf.save(`Steuer-Uebersicht-${jahr}.pdf`);
 
-    alert(`Steuer-Export für ${jahr} erstellt!\n\n✓ Excel-Datei: Steuer-Export-${jahr}.xlsx\n✓ PDF-Datei: Steuer-Uebersicht-${jahr}.pdf`);
+    toast.success(`Steuer-Export ${jahr} erstellt: Excel + PDF heruntergeladen ✓`);
   };
 
   // Loading Screen
@@ -10570,6 +10611,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Toast Notifications */}
+      <Toaster position="top-right" toastOptions={{
+        duration: 4000,
+        style: { borderRadius: '12px', fontSize: '14px', fontWeight: '500' },
+        success: { iconTheme: { primary: '#4f46e5', secondary: '#fff' } },
+        error: { duration: 5000 }
+      }} />
+      {/* Custom Confirm Dialog */}
+      <ConfirmDialog />
       {/* Changelog Popup */}
       {showChangelog && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
@@ -10781,7 +10831,7 @@ function App() {
             } catch (error) {
               console.error('Fehler beim Speichern:', error);
               setSyncStatus('error');
-              alert('Fehler beim Speichern: ' + error.message);
+              toast.error('Fehler beim Speichern: ' + error.message);
             }
           }}
           mieterListe={mieterListe}
