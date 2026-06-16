@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { TabErrorBoundary } from './ErrorBoundary';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
@@ -306,7 +307,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
             );
           })()}
 
-          {/* Tab-Inhalte */}
+          {/* Tab-Inhalte — in TabErrorBoundary eingewickelt:
+              resetKey=activeTab setzt die Boundary automatisch zurück wenn
+              der User auf einen anderen Tab wechselt */}
+          <TabErrorBoundary resetKey={activeTab}>
           {activeTab === 'uebersicht' && (
             <div className="space-y-5">
               {/* Marktwert & Wertsteigerung */}
@@ -1031,6 +1035,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               updateParams={(neu) => updateParams(neu)}
             />
           )}
+          </TabErrorBoundary>
         </div>
       </div>
     </div>

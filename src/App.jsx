@@ -34,6 +34,7 @@ import NKAbrechnungForm from './components/NKAbrechnungForm';
 import NKAbrechnungModal from './components/NKAbrechnungModal';
 import KautionsManager from './components/KautionsManager';
 import ImmobilienDetail from './components/ImmobilienDetail';
+import { ModalErrorBoundary } from './components/ErrorBoundary';
 import KalkulationsModal from './components/KalkulationsModal';
 import ImmobilienFormular from './components/ImmobilienFormular';
 import ImmobilienKarte from './components/ImmobilienKarte';
@@ -1184,42 +1185,51 @@ function App() {
       </main>
 
       {showForm && (
-        <ImmobilienFormular
-          onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditImmobilie(null); }}
-          initialData={editImmobilie}
-        />
+        <ModalErrorBoundary onClose={() => { setShowForm(false); setEditImmobilie(null); }}>
+          <ImmobilienFormular
+            onSave={handleSave}
+            onClose={() => { setShowForm(false); setEditImmobilie(null); }}
+            initialData={editImmobilie}
+          />
+        </ModalErrorBoundary>
       )}
 
       {showKalkulation && (
-        <KalkulationsModal onClose={() => setShowKalkulation(false)} />
+        <ModalErrorBoundary onClose={() => setShowKalkulation(false)}>
+          <KalkulationsModal onClose={() => setShowKalkulation(false)} />
+        </ModalErrorBoundary>
       )}
 
       {selectedImmobilie && (
-        <ImmobilienDetail
-          immobilie={selectedImmobilie}
+        <ModalErrorBoundary
           onClose={() => setSelectedImmobilie(null)}
-          onSave={async (data) => {
-            try {
-              setSyncStatus('syncing');
-              const updated = await saveImmobilie({ ...data, id: selectedImmobilie.id });
-              setPortfolio(prev => prev.map(i => i.id === selectedImmobilie.id ? updated : i));
-              setSelectedImmobilie(updated);
-              setSyncStatus('idle');
-            } catch (error) {
-              console.error('Fehler beim Speichern:', error);
-              setSyncStatus('error');
-              toast.error('Fehler beim Speichern: ' + error.message);
-            }
-          }}
-          mieterListe={mieterListe}
-          onSaveMieter={handleSaveMieter}
-          onDeleteMieter={handleDeleteMieter}
-          nkAbrechnungen={nkAbrechnungen}
-          onSaveNK={handleSaveNK}
-          onDeleteNK={handleDeleteNK}
-          portfolio={portfolio}
-        />
+          resetKey={selectedImmobilie?.id}
+        >
+          <ImmobilienDetail
+            immobilie={selectedImmobilie}
+            onClose={() => setSelectedImmobilie(null)}
+            onSave={async (data) => {
+              try {
+                setSyncStatus('syncing');
+                const updated = await saveImmobilie({ ...data, id: selectedImmobilie.id });
+                setPortfolio(prev => prev.map(i => i.id === selectedImmobilie.id ? updated : i));
+                setSelectedImmobilie(updated);
+                setSyncStatus('idle');
+              } catch (error) {
+                console.error('Fehler beim Speichern:', error);
+                setSyncStatus('error');
+                toast.error('Fehler beim Speichern: ' + error.message);
+              }
+            }}
+            mieterListe={mieterListe}
+            onSaveMieter={handleSaveMieter}
+            onDeleteMieter={handleDeleteMieter}
+            nkAbrechnungen={nkAbrechnungen}
+            onSaveNK={handleSaveNK}
+            onDeleteNK={handleDeleteNK}
+            portfolio={portfolio}
+          />
+        </ModalErrorBoundary>
       )}
 
       <footer className="bg-gray-800 text-gray-400 py-6 mt-12">
