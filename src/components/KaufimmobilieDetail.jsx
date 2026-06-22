@@ -176,13 +176,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 rounded-t-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 pt-5 pb-4">
+          <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-6 pt-5 pb-4">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">🏠 Kaufimmobilie</span>
                   {isGbR && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/80 text-white">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
                       🏛 GbR · {params.userAnteil}% Ihr Anteil
                     </span>
                   )}
@@ -194,13 +194,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 </div>
                 <h2 className="text-2xl font-black text-white truncate">{immobilie.name}</h2>
                 {(immobilie.plz || immobilie.adresse) && (
-                  <p className="text-indigo-200 text-sm mt-0.5">📍 {immobilie.plz} {immobilie.adresse}</p>
+                  <p className="text-slate-300 text-sm mt-0.5">📍 {immobilie.plz} {immobilie.adresse}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
                 {params.aktiv === false ? (
                   <button onClick={() => { updateParams({...params, aktiv: true, aufgabedatum: ''}); }}
-                    className="px-3 py-1.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-colors">
+                    className="px-3 py-1.5 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors">
                     ✓ Reaktivieren
                   </button>
                 ) : (
@@ -223,7 +223,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 )}
                 {hasChanges && (
                   <button onClick={handleSave}
-                    className="px-4 py-2 bg-white text-indigo-700 rounded-xl hover:bg-indigo-50 font-bold text-sm shadow-sm transition-colors">
+                    className="px-4 py-2 bg-white text-slate-700 rounded-xl hover:bg-slate-50 font-bold text-sm shadow-sm transition-colors">
                     Speichern
                   </button>
                 )}
@@ -238,7 +238,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               <div className="grid grid-cols-3 bg-white border-b border-gray-200 divide-x divide-gray-100">
                 <div className="px-4 py-3">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bruttorendite</div>
-                  <div className="text-xl font-black text-indigo-600">{fmtKPI(ergebnis.bruttorendite)}</div>
+                  <div className="text-xl font-black text-slate-700">{fmtKPI(ergebnis.bruttorendite)}</div>
                 </div>
                 <div className="px-4 py-3">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Nettorendite</div>
@@ -246,10 +246,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 </div>
                 <div className="px-4 py-3">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
-                  <div className="text-xl font-black text-violet-600">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                  <div className="text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
                 </div>
                 {isGbR && (
-                  <div className="col-span-3 px-4 py-2 bg-violet-50 border-t border-violet-100 flex items-center gap-2 text-xs text-violet-700">
+                  <div className="col-span-3 px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-600">
                     <span className="font-semibold">🏛 GbR-Modus:</span>
                     <span>Alle Euro-Beträge zeigen Ihren {params.userAnteil}%-Anteil</span>
                     <span className="ml-auto text-violet-400">Rendite-% bleiben unverändert (berechnet auf Ihren EK-Anteil)</span>

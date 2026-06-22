@@ -66,7 +66,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 rounded-t-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-6 pt-5 pb-4">
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-700 px-6 pt-5 pb-4">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -80,13 +80,13 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 </div>
                 <h2 className="text-2xl font-black text-white truncate">{params.name || 'Mietimmobilie'}</h2>
                 {(params.plz || params.adresse) && (
-                  <p className="text-violet-200 text-sm mt-0.5">📍 {params.plz} {params.adresse}</p>
+                  <p className="text-emerald-100 text-sm mt-0.5">📍 {params.plz} {params.adresse}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
                 {hasChanges && (
                   <button onClick={handleSave}
-                    className="px-4 py-2 bg-white text-violet-700 rounded-xl hover:bg-violet-50 font-bold text-sm shadow-sm transition-colors">
+                    className="px-4 py-2 bg-white text-emerald-700 rounded-xl hover:bg-emerald-50 font-bold text-sm shadow-sm transition-colors">
                     Speichern
                   </button>
                 )}

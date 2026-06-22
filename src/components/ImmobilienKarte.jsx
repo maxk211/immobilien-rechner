@@ -18,7 +18,7 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
 
   // Tile accent color — psychologisch: Slate=Vertrauen/Premium, Teal=Cashflow/Wachstum, Amber=Ertrag
   const accentClass = isMietimmobilie
-    ? 'from-teal-700 to-teal-900'
+    ? 'from-emerald-500 to-emerald-700'
     : isMFH
       ? 'from-amber-600 to-orange-700'
       : 'from-slate-700 to-slate-900';
