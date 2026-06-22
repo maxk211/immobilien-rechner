@@ -63,9 +63,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="sticky top-0 z-10 rounded-t-2xl overflow-hidden">
+        <div className="flex-shrink-0 rounded-t-2xl overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-700 px-6 pt-5 pb-4">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
@@ -130,7 +130,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6">
           {/* Mieter Tab */}
           {activeTab === 'mieter' && (
             <MieterDashboard

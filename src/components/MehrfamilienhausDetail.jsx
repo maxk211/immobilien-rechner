@@ -44,7 +44,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-2">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-5 text-white flex-shrink-0">
           <div className="flex justify-between items-start">
