@@ -172,11 +172,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
   const anteil = (v) => Math.round(v * anteilFaktor);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[95vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
+      <div className="bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-2xl sm:max-w-6xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
+          <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
+        </div>
         {/* Header */}
-        <div className="flex-shrink-0 rounded-t-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-6 pt-5 pb-4">
+        <div className="flex-shrink-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -192,7 +196,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                     </span>
                   )}
                 </div>
-                <h2 className="text-2xl font-black text-white truncate">{immobilie.name}</h2>
+                <h2 className="text-lg sm:text-2xl font-black text-white truncate">{immobilie.name}</h2>
                 {(immobilie.plz || immobilie.adresse) && (
                   <p className="text-slate-300 text-sm mt-0.5">📍 {immobilie.plz} {immobilie.adresse}</p>
                 )}
@@ -236,17 +240,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
             const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
             return (
               <div className="grid grid-cols-3 bg-white border-b border-gray-200 divide-x divide-gray-100">
-                <div className="px-4 py-3">
-                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bruttorendite</div>
-                  <div className="text-xl font-black text-slate-700">{fmtKPI(ergebnis.bruttorendite)}</div>
+                <div className="px-2 sm:px-4 py-2 sm:py-3">
+                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Brutto</div>
+                  <div className="text-base sm:text-xl font-black text-slate-700">{fmtKPI(ergebnis.bruttorendite)}</div>
                 </div>
-                <div className="px-4 py-3">
-                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Nettorendite</div>
-                  <div className="text-xl font-black text-emerald-600">{fmtKPI(ergebnis.nettorendite)}</div>
+                <div className="px-2 sm:px-4 py-2 sm:py-3">
+                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Netto</div>
+                  <div className="text-base sm:text-xl font-black text-emerald-600">{fmtKPI(ergebnis.nettorendite)}</div>
                 </div>
-                <div className="px-4 py-3">
-                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
-                  <div className="text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                <div className="px-2 sm:px-4 py-2 sm:py-3">
+                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
+                  <div className="text-base sm:text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
                 </div>
                 {isGbR && (
                   <div className="col-span-3 px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-600">
@@ -260,7 +264,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
           })()}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 p-6">
+        <div className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
           {/* Tab-Navigation — 2-stufig: 4 Haupt-Tabs + kontextuelle Sub-Tabs */}
           {(() => {
             const aktiveMieterAnzahl = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -299,7 +303,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 <div className="grid grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1">
                   {GRUPPEN.map(g => (
                     <button key={g.id} onClick={() => setActiveTab(g.first)}
-                      className={`py-2 px-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-center ${
+                      className={`py-2 px-1 text-[11px] sm:text-sm font-semibold rounded-lg transition-all text-center leading-tight ${
                         aktiveGruppe.id === g.id
                           ? 'bg-white text-indigo-700 shadow-sm'
                           : 'text-slate-500 hover:text-slate-800'

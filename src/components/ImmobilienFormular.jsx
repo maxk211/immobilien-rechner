@@ -57,8 +57,12 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
+      <div className="bg-white w-full rounded-t-3xl sm:rounded-xl shadow-2xl sm:max-w-2xl h-[93vh] sm:max-h-[90vh] flex flex-col">
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
+          <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
+        </div>
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800">

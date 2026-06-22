@@ -125,64 +125,58 @@ const PortfolioOverview = ({ portfolio }) => {
   const cfPositiv = stats.gesamtCashflowMonat >= 0;
 
   return (
-    <div className="mb-8">
+    <div className="mb-6 sm:mb-8">
       {/* Top KPI Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
         {/* Cashflow — most important, gets visual prominence */}
-        <div className={`col-span-2 md:col-span-1 rounded-2xl p-5 border ${cfPositiv ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Monatl. Cashflow</div>
-          <div className={`text-3xl font-black ${cfPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+        <div className={`col-span-2 md:col-span-1 rounded-2xl p-3 sm:p-5 border ${cfPositiv ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Monatl. Cashflow</div>
+          <div className={`text-2xl sm:text-3xl font-black ${cfPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
             {stats.gesamtCashflowMonat >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowMonat)}
           </div>
           <div className={`text-xs mt-1 font-medium ${cfPositiv ? 'text-emerald-500' : 'text-red-400'}`}>
             {stats.gesamtCashflowJahr >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowJahr)} p.a.
           </div>
-          <div className="text-xs text-gray-400 mt-0.5">nach Kredit &amp; Kosten</div>
+          <div className="text-xs text-gray-400 mt-0.5 hidden sm:block">nach Kredit &amp; Kosten</div>
         </div>
 
         {/* Mieteinnahmen */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Mieteinnahmen</div>
-          <div className="text-2xl font-black text-gray-800">{formatCurrency(stats.gesamtMieteMonat)}</div>
+        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Mieteinnahmen</div>
+          <div className="text-xl sm:text-2xl font-black text-gray-800">{formatCurrency(stats.gesamtMieteMonat)}</div>
           <div className="text-xs text-gray-400 mt-1 font-medium">{formatCurrency(stats.gesamtMieteJahr)} p.a.</div>
-          {stats.anzahlKaufimmobilien > 0 && stats.anzahlMietimmobilien > 0 && (
-            <div className="text-xs text-gray-400 mt-0.5">Kaltmiete + Untermiete</div>
-          )}
         </div>
 
         {/* Gesamtwert */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Portfoliowert</div>
-          <div className="text-2xl font-black text-slate-800">{formatCurrency(stats.gesamtWert)}</div>
+        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Portfoliowert</div>
+          <div className="text-xl sm:text-2xl font-black text-slate-800">{formatCurrency(stats.gesamtWert)}</div>
           {stats.wertsteigerung !== 0 && (
             <div className={`text-xs mt-1 font-semibold ${stats.wertsteigerung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {stats.wertsteigerung >= 0 ? '▲' : '▼'} {formatCurrency(Math.abs(stats.wertsteigerung))} Wertgewinn
+              {stats.wertsteigerung >= 0 ? '▲' : '▼'} {formatCurrency(Math.abs(stats.wertsteigerung))}
             </div>
           )}
           <div className="text-xs text-gray-400 mt-0.5">
-            {stats.anzahl} Immobilie{stats.anzahl !== 1 ? 'n' : ''}
-            {stats.anzahlKaufimmobilien > 0 && stats.anzahlMietimmobilien > 0 && ` · ${stats.anzahlKaufimmobilien} Kauf, ${stats.anzahlMietimmobilien} Arb.`}
+            {stats.anzahl} Objekt{stats.anzahl !== 1 ? 'e' : ''}
           </div>
         </div>
 
         {/* EK-Rendite */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">EK-Rendite</div>
+        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">EK-Rendite</div>
           {stats.ekRendite !== null ? (
             <>
-              <div className={`text-2xl font-black ${stats.ekRendite >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+              <div className={`text-xl sm:text-2xl font-black ${stats.ekRendite >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
                 {stats.ekRendite >= 0 ? '+' : ''}{stats.ekRendite.toFixed(1)} %
               </div>
               <div className="text-xs text-gray-400 mt-1 font-medium">
                 EK: {formatCurrency(stats.gesamtEigenkapital)}
               </div>
-              <div className="text-xs text-gray-400 mt-0.5">Cashflow / einges. EK p.a.</div>
             </>
           ) : (
             <>
-              <div className="text-2xl font-black text-gray-300">–</div>
+              <div className="text-xl sm:text-2xl font-black text-gray-300">–</div>
               <div className="text-xs text-gray-400 mt-1">Kein EK erfasst</div>
-              <div className="text-xs text-gray-400 mt-0.5">{formatCurrency(stats.gesamtFlaeche)} m² gesamt</div>
             </>
           )}
         </div>

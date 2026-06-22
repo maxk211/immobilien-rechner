@@ -62,11 +62,15 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     : 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
+      <div className="bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-2xl sm:max-w-4xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
+          <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
+        </div>
         {/* Header */}
-        <div className="flex-shrink-0 rounded-t-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-emerald-500 to-emerald-700 px-6 pt-5 pb-4">
+        <div className="flex-shrink-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-700 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -78,7 +82,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-400/80 text-amber-900">⏳ Endet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
                   )}
                 </div>
-                <h2 className="text-2xl font-black text-white truncate">{params.name || 'Mietimmobilie'}</h2>
+                <h2 className="text-lg sm:text-2xl font-black text-white truncate">{params.name || 'Mietimmobilie'}</h2>
                 {(params.plz || params.adresse) && (
                   <p className="text-emerald-100 text-sm mt-0.5">📍 {params.plz} {params.adresse}</p>
                 )}
@@ -130,7 +134,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 p-6">
+        <div className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
           {/* Mieter Tab */}
           {activeTab === 'mieter' && (
             <MieterDashboard

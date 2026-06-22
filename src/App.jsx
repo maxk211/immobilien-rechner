@@ -1066,7 +1066,7 @@ function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-8 px-4">
+      <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
         <PortfolioOverview portfolio={portfolio} />
 
         {/* Navigation & Actions Bar */}
@@ -1084,21 +1084,22 @@ function App() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
+            {/* Desktop-only: Export-Funktionen (File-Downloads) */}
             {portfolio.length > 0 && (
               <>
                 <button
                   onClick={handleSelbstauskunft}
-                  className="px-3 py-2 bg-white border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
+                  className="hidden sm:flex px-3 py-2 bg-white border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-50 items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
                 >
                   📋 Selbstauskunft
                 </button>
                 <button
                   onClick={handleExport}
-                  className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors"
+                  className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors"
                 >
                   📤 Export
                 </button>
-                <div className="relative group">
+                <div className="relative group hidden sm:block">
                   <button className="px-3 py-2 bg-white border border-gray-200 text-emerald-700 rounded-xl hover:bg-emerald-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
                     📊 Steuer-Export
                   </button>
@@ -1114,21 +1115,21 @@ function App() {
                     })}
                   </div>
                 </div>
+                <label className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors cursor-pointer">
+                  📥 Import
+                  <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                </label>
               </>
             )}
-            <label className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors cursor-pointer">
-              📥 Import
-              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-            </label>
             <button
               onClick={() => setShowKalkulation(true)}
-              className="px-3 py-2 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-100 flex items-center gap-1.5 text-sm shadow-sm transition-colors"
+              className="hidden sm:flex px-3 py-2 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-100 items-center gap-1.5 text-sm shadow-sm transition-colors"
             >
               🧮 Kalkulation
             </button>
             <button
               onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
+              className="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
             >
               + Neue Immobilie
             </button>
@@ -1136,7 +1137,7 @@ function App() {
         </div>
 
         {activeView === 'portfolio' && (portfolio.length === 0 ? (
-          <div className="bg-white rounded-2xl p-16 text-center shadow-sm border border-gray-200">
+          <div className="bg-white rounded-2xl p-8 sm:p-16 text-center shadow-sm border border-gray-200">
             <div className="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5">🏡</div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Noch keine Immobilien</h3>
             <p className="text-gray-400 mb-6 max-w-sm mx-auto">Füge deine erste Immobilie hinzu, um Rendite und Cashflow zu berechnen.</p>

@@ -43,17 +43,21 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-2">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
+      <div className="bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-2xl sm:max-w-4xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
+          <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
+        </div>
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-5 text-white flex-shrink-0">
+        <div className="bg-gradient-to-r from-amber-600 to-orange-700 px-4 sm:p-5 pt-3 pb-4 text-white flex-shrink-0">
           <div className="flex justify-between items-start">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-2xl">🏘️</span>
                 <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">MFH · {wohnungen.length} WE</span>
               </div>
-              <h2 className="text-xl font-black">{immobilie.name}</h2>
+              <h2 className="text-base sm:text-xl font-black">{immobilie.name}</h2>
               {immobilie.adresse && <p className="text-sm text-white/80">{immobilie.adresse}</p>}
             </div>
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl">&times;</button>
