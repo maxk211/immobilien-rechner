@@ -88,7 +88,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     dauerauftragBetrag: immobilie.dauerauftragBetrag || immobilie.kaltmiete || 0,
     zaehler: immobilie.zaehler || [],
     bausparvertraege: immobilie.bausparvertraege || [],
-    afaAnpassungen: immobilie.afaAnpassungen || []
+    afaAnpassungen: immobilie.afaAnpassungen || [],
+    eigentumsform: immobilie.eigentumsform || 'allein',
+    userAnteil: immobilie.userAnteil ?? 100,
+    gbrPartner: immobilie.gbrPartner || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -164,6 +167,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
   const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : new Date().getFullYear();
   const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
+  const isGbR = params.eigentumsform === 'gbr';
+  const anteilFaktor = isGbR ? (params.userAnteil ?? 100) / 100 : 1;
+  const anteil = (v) => Math.round(v * anteilFaktor);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
@@ -174,6 +181,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">🏠 Kaufimmobilie</span>
+                  {isGbR && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/80 text-white">
+                      🏛 GbR · {params.userAnteil}% Ihr Anteil
+                    </span>
+                  )}
                   {params.aktiv === false && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500/60 text-white">
                       Aufgegeben {params.aufgabedatum ? new Date(params.aufgabedatum).toLocaleDateString('de-DE') : ''}
@@ -236,6 +248,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
                   <div className="text-xl font-black text-violet-600">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
                 </div>
+                {isGbR && (
+                  <div className="col-span-3 px-4 py-2 bg-violet-50 border-t border-violet-100 flex items-center gap-2 text-xs text-violet-700">
+                    <span className="font-semibold">🏛 GbR-Modus:</span>
+                    <span>Alle Euro-Beträge zeigen Ihren {params.userAnteil}%-Anteil</span>
+                    <span className="ml-auto text-violet-400">Rendite-% bleiben unverändert (berechnet auf Ihren EK-Anteil)</span>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -366,6 +385,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                     <div className={`text-3xl font-bold ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerungSeitKauf.absoluteSteigerung)}
                     </div>
+                    {isGbR && (
+                      <div className="text-xs text-indigo-600 font-semibold mt-1">
+                        Ihr Anteil: {formatCurrency(anteil(wertsteigerungSeitKauf.absoluteSteigerung))}
+                      </div>
+                    )}
                     <div className={`text-sm ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {wertsteigerungSeitKauf.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)}% in {wertsteigerungSeitKauf.jahreSeitKauf.toFixed(1)} Jahren
                     </div>
@@ -468,6 +492,115 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Prognose</h3>
                 <InputSliderCombo label="Wertsteigerung p.a." value={params.wertsteigerung} onChange={(v) => updateParams({...params, wertsteigerung: v})} min={0} max={5} step={0.1} unit="%" />
+              </div>
+
+              {/* Eigentumsstruktur / GbR */}
+              <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">🏛 Eigentumsstruktur</h3>
+
+                {/* Toggle */}
+                <div className="flex gap-2 mb-4">
+                  {[['allein','👤 Alleineigentümer'],['gbr','🏛 GbR / Gemeinschaft']].map(([val, label]) => (
+                    <button key={val} onClick={() => {
+                      const updates = { eigentumsform: val };
+                      if (val === 'gbr' && (params.gbrPartner || []).length === 0) {
+                        updates.gbrPartner = [{ id: Date.now(), name: 'Ich', anteil: 100, isUser: true }];
+                        updates.userAnteil = 100;
+                      }
+                      updateParams({ ...params, ...updates });
+                    }}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                        params.eigentumsform === val
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {params.eigentumsform === 'gbr' && (() => {
+                  const partner = params.gbrPartner || [];
+                  const summe = partner.reduce((s, p) => s + (parseFloat(p.anteil) || 0), 0);
+                  const userPartner = partner.find(p => p.isUser);
+
+                  const updatePartner = (id, changes) => {
+                    const updated = partner.map(p => p.id === id ? { ...p, ...changes } : p);
+                    const userP = updated.find(p => p.isUser);
+                    updateParams({ ...params, gbrPartner: updated, userAnteil: userP ? (parseFloat(userP.anteil) || 0) : params.userAnteil });
+                  };
+                  const addPartner = () => {
+                    const restanteil = Math.max(0, 100 - summe);
+                    updateParams({ ...params, gbrPartner: [...partner, { id: Date.now(), name: '', anteil: restanteil, isUser: false }] });
+                  };
+                  const removePartner = (id) => {
+                    const updated = partner.filter(p => p.id !== id);
+                    const userP = updated.find(p => p.isUser);
+                    updateParams({ ...params, gbrPartner: updated, userAnteil: userP ? (parseFloat(userP.anteil) || 0) : 0 });
+                  };
+
+                  return (
+                    <div>
+                      {/* Gesellschafter-Liste */}
+                      <div className="space-y-2 mb-3">
+                        {partner.map(p => (
+                          <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border ${p.isUser ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-200'}`}>
+                            {p.isUser && <span className="text-xs font-bold px-2 py-0.5 bg-indigo-600 text-white rounded-full shrink-0">Ich</span>}
+                            <input
+                              type="text"
+                              value={p.name}
+                              placeholder={p.isUser ? 'Ihr Name' : 'Name Gesellschafter'}
+                              onChange={e => updatePartner(p.id, { name: e.target.value })}
+                              className={`flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white ${p.isUser ? 'border-indigo-300 font-semibold' : 'border-gray-300'}`}
+                            />
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <input
+                                type="number" min="0" max="100" step="0.5"
+                                value={p.anteil}
+                                onChange={e => updatePartner(p.id, { anteil: parseFloat(e.target.value) || 0 })}
+                                className={`w-16 px-2 py-1.5 border rounded-lg text-sm text-right font-bold ${p.isUser ? 'border-indigo-400 bg-white text-indigo-700' : 'border-gray-300'}`}
+                              />
+                              <span className="text-sm text-gray-500">%</span>
+                            </div>
+                            {!p.isUser && (
+                              <button onClick={() => removePartner(p.id)} className="text-gray-300 hover:text-red-500 text-lg leading-none transition-colors">×</button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Summen-Validierung */}
+                      <div className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm mb-3 ${Math.abs(summe - 100) < 0.1 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                        <span>Summe aller Anteile</span>
+                        <span className="font-bold">{summe.toFixed(1)}% {Math.abs(summe - 100) < 0.1 ? '✓' : '≠ 100%'}</span>
+                      </div>
+
+                      {/* + Gesellschafter */}
+                      <button onClick={addPartner}
+                        className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all mb-4">
+                        + Gesellschafter hinzufügen
+                      </button>
+
+                      {/* Ihr Anteil Highlight */}
+                      {userPartner && (
+                        <div className="p-4 bg-indigo-600 rounded-2xl text-white">
+                          <div className="text-xs font-semibold uppercase tracking-wide opacity-75 mb-1">Ihr Anteil an dieser Immobilie</div>
+                          <div className="flex items-baseline gap-3">
+                            <div className="text-3xl font-black">{userPartner.anteil}%</div>
+                            <div className="text-sm opacity-80">
+                              ≙ {formatCurrency(Math.round(immobilie.kaufpreis * (parseFloat(userPartner.anteil) || 0) / 100))} Kaufpreis-Anteil
+                            </div>
+                          </div>
+                          <div className="text-xs mt-2 opacity-70">Alle Cashflow-, Steuer- und Vermögenswerte werden mit diesem Faktor berechnet.</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {params.eigentumsform === 'allein' && (
+                  <p className="text-sm text-gray-400">Du bist alleiniger Eigentümer. Alle Werte gelten zu 100%.</p>
+                )}
               </div>
             </div>
           )}
@@ -981,6 +1114,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 ergebnis={ergebnis}
                 immobilie={immobilie}
                 investitionen={params.investitionen}
+                anteilFaktor={anteilFaktor}
               />
             </>
           )}
@@ -991,6 +1125,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               ergebnis={ergebnis}
               immobilie={{...immobilie, ...params}}
               onUpdateParams={updateParams}
+              anteilFaktor={anteilFaktor}
             />
           )}
 

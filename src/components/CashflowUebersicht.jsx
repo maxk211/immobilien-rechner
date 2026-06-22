@@ -4,7 +4,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import { berechneJahresRateFuerPhasen, berechneRendite } from '../utils/berechnung.js';
 
-const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] }) => {
+const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], anteilFaktor = 1 }) => {
   const [ansicht, setAnsicht] = useState('monat'); // 'monat' oder 'jahr'
 
   const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
@@ -99,6 +99,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
   };
 
   const kreditDetails = berechneZinsTilgung();
+  const a = (v) => Math.round(v * anteilFaktor); // Anteil-Helfer
+  const isGbR = anteilFaktor !== 1;
 
   // Vermieterkosten für aktuelles Jahr aus mietHistorie (falls manuell eingetragen)
   const aktuellesJahrHistKosten = (params.mietHistorie || {})[`${aktuellesJahr}`] || {};
@@ -126,7 +128,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-gray-800">💰 Cashflow-Übersicht</h3>
+        <div>
+          <h3 className="font-semibold text-gray-800">💰 Cashflow-Übersicht</h3>
+          {isGbR && (
+            <div className="mt-1 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">
+              🏛 GbR: Werte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
+            </div>
+          )}
+        </div>
         <div className="flex bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setAnsicht('monat')}
@@ -148,51 +157,51 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
           <div className="space-y-2">
             <div className="flex justify-between items-center py-2 border-b">
               <span className="text-green-600">+ Mieteinnahmen</span>
-              <span className="font-semibold text-green-600">{formatCurrency(monatsDaten.einnahmen)}</span>
+              <span className="font-semibold text-green-600">{formatCurrency(a(monatsDaten.einnahmen))}</span>
             </div>
             <div className="flex justify-between items-center py-1 text-sm">
               <span className="text-red-500">- Nebenkosten</span>
-              <span className="text-red-500">{formatCurrency(monatsDaten.nebenkosten)}</span>
+              <span className="text-red-500">{formatCurrency(a(monatsDaten.nebenkosten))}</span>
             </div>
             <div className="flex justify-between items-center py-1 text-sm">
               <span className="text-red-500">- Instandhaltung</span>
-              <span className="text-red-500">{formatCurrency(monatsDaten.instandhaltung)}</span>
+              <span className="text-red-500">{formatCurrency(a(monatsDaten.instandhaltung))}</span>
             </div>
             <div className="flex justify-between items-center py-1 text-sm">
               <span className="text-red-500">- Verwaltung</span>
-              <span className="text-red-500">{formatCurrency(monatsDaten.verwaltung)}</span>
+              <span className="text-red-500">{formatCurrency(a(monatsDaten.verwaltung))}</span>
             </div>
             {monatsDaten.hausgeld > 0 && (
               <div className="flex justify-between items-center py-1 text-sm">
                 <span className="text-red-500">- WEG / Hausgeld</span>
-                <span className="text-red-500">{formatCurrency(monatsDaten.hausgeld)}</span>
+                <span className="text-red-500">{formatCurrency(a(monatsDaten.hausgeld))}</span>
               </div>
             )}
             {monatsDaten.strom > 0 && (
               <div className="flex justify-between items-center py-1 text-sm">
                 <span className="text-red-500">- Strom</span>
-                <span className="text-red-500">{formatCurrency(monatsDaten.strom)}</span>
+                <span className="text-red-500">{formatCurrency(a(monatsDaten.strom))}</span>
               </div>
             )}
             {monatsDaten.internet > 0 && (
               <div className="flex justify-between items-center py-1 text-sm">
                 <span className="text-red-500">- Internet</span>
-                <span className="text-red-500">{formatCurrency(monatsDaten.internet)}</span>
+                <span className="text-red-500">{formatCurrency(a(monatsDaten.internet))}</span>
               </div>
             )}
             {/* Kreditrate aufgeschlüsselt */}
             <div className="border-t border-b py-2 my-1">
               <div className="flex justify-between items-center py-1 text-sm">
                 <span className="text-red-500">- Zinsen</span>
-                <span className="text-red-500">{formatCurrency(monatsDaten.zinsen)}</span>
+                <span className="text-red-500">{formatCurrency(a(monatsDaten.zinsen))}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm">
                 <span className="text-blue-500">- Tilgung <span className="text-xs text-gray-400">(Vermögensaufbau)</span></span>
-                <span className="text-blue-500">{formatCurrency(monatsDaten.tilgung)}</span>
+                <span className="text-blue-500">{formatCurrency(a(monatsDaten.tilgung))}</span>
               </div>
               <div className="flex justify-between items-center pt-1 text-sm border-t border-dashed">
                 <span className="text-gray-600">= Kreditrate gesamt</span>
-                <span className="font-semibold text-gray-600">{formatCurrency(monatsDaten.kreditrate)}</span>
+                <span className="font-semibold text-gray-600">{formatCurrency(a(monatsDaten.kreditrate))}</span>
               </div>
             </div>
 
@@ -200,7 +209,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
             {monatsDaten.bauspar > 0 && (
               <div className="flex justify-between items-center py-1 text-sm">
                 <span className="text-orange-500">- Bauspar-Sparrate <span className="text-xs text-gray-400">(Ansparphase)</span></span>
-                <span className="text-orange-500">{formatCurrency(monatsDaten.bauspar)}</span>
+                <span className="text-orange-500">{formatCurrency(a(monatsDaten.bauspar))}</span>
               </div>
             )}
 
@@ -213,7 +222,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
                   <span className="text-xs text-gray-500 block">Miete - Kosten - Zinsen</span>
                 </div>
                 <span className={`text-lg font-bold ${monatsDaten.cashflowOhneTilgung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {monatsDaten.cashflowOhneTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowOhneTilgung)}
+                  {monatsDaten.cashflowOhneTilgung >= 0 ? '+' : ''}{formatCurrency(a(monatsDaten.cashflowOhneTilgung))}
                 </span>
               </div>
 
@@ -224,7 +233,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
                   <span className="text-xs text-gray-500 block">Miete - Kosten - Kreditrate</span>
                 </div>
                 <span className={`text-xl font-bold ${monatsDaten.cashflowMitTilgung >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                  {monatsDaten.cashflowMitTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowMitTilgung)}
+                  {monatsDaten.cashflowMitTilgung >= 0 ? '+' : ''}{formatCurrency(a(monatsDaten.cashflowMitTilgung))}
                 </span>
               </div>
             </div>
@@ -235,13 +244,13 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
             <div>
               <div className="text-gray-500 text-xs">Jährlich vor Tilgung</div>
               <div className={`font-semibold ${monatsDaten.cashflowOhneTilgung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {monatsDaten.cashflowOhneTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowOhneTilgung * 12)}
+                {monatsDaten.cashflowOhneTilgung >= 0 ? '+' : ''}{formatCurrency(a(monatsDaten.cashflowOhneTilgung * 12))}
               </div>
             </div>
             <div>
               <div className="text-gray-500 text-xs">Jährlich nach Tilgung</div>
               <div className={`font-semibold ${monatsDaten.cashflowMitTilgung >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                {monatsDaten.cashflowMitTilgung >= 0 ? '+' : ''}{formatCurrency(monatsDaten.cashflowMitTilgung * 12)}
+                {monatsDaten.cashflowMitTilgung >= 0 ? '+' : ''}{formatCurrency(a(monatsDaten.cashflowMitTilgung * 12))}
               </div>
             </div>
           </div>
@@ -249,7 +258,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
           {/* Hinweis */}
           <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
             💡 <strong>Vor Tilgung</strong> zeigt den tatsächlichen Geldfluss ohne Vermögensaufbau.
-            Die Tilgung ({formatCurrency(monatsDaten.tilgung)}/Monat) baut Eigenkapital auf.
+            Die Tilgung ({formatCurrency(a(monatsDaten.tilgung))}/Monat) baut Eigenkapital auf.
           </div>
         </div>
       ) : (
@@ -272,16 +281,16 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [] })
                 {cashflowDaten.map(d => (
                   <tr key={d.jahr} className={d.jahr === aktuellesJahr ? 'bg-blue-50' : ''}>
                     <td className="p-2 font-semibold">{d.jahr}</td>
-                    <td className="p-2 text-right text-green-600">{formatCurrency(d.einnahmen)}</td>
-                    <td className="p-2 text-right text-red-500">{formatCurrency(d.kosten)}</td>
-                    <td className="p-2 text-right text-red-600">{formatCurrency(d.kreditrate)}</td>
-                    <td className="p-2 text-right text-orange-500">{d.investitionen > 0 ? formatCurrency(d.investitionen) : '-'}</td>
-                    <td className="p-2 text-right text-orange-600">{d.bauspar > 0 ? formatCurrency(d.bauspar) : '-'}</td>
+                    <td className="p-2 text-right text-green-600">{formatCurrency(Math.round(d.einnahmen * anteilFaktor))}</td>
+                    <td className="p-2 text-right text-red-500">{formatCurrency(Math.round(d.kosten * anteilFaktor))}</td>
+                    <td className="p-2 text-right text-red-600">{formatCurrency(Math.round(d.kreditrate * anteilFaktor))}</td>
+                    <td className="p-2 text-right text-orange-500">{d.investitionen > 0 ? formatCurrency(Math.round(d.investitionen * anteilFaktor)) : '-'}</td>
+                    <td className="p-2 text-right text-orange-600">{d.bauspar > 0 ? formatCurrency(Math.round(d.bauspar * anteilFaktor)) : '-'}</td>
                     <td className={`p-2 text-right font-semibold ${d.cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                      {d.cashflow >= 0 ? '+' : ''}{formatCurrency(d.cashflow)}
+                      {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * anteilFaktor))}
                     </td>
                     <td className={`p-2 text-right ${d.kumuliert >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                      {formatCurrency(d.kumuliert)}
+                      {formatCurrency(Math.round(d.kumuliert * anteilFaktor))}
                     </td>
                   </tr>
                 ))}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 
-const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
+const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilFaktor = 1 }) => {
   const aktuellesJahr = new Date().getFullYear();
   const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : aktuellesJahr;
 
@@ -36,6 +36,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
       .sort((a, b) => b.vonJahr - a.vonJahr);
     return gueltig.length > 0 ? gueltig[0].afaSatz : afaSatz;
   };
+
+  const a = (v) => Math.round(v * anteilFaktor);
+  const isGbR = anteilFaktor !== 1;
 
   const fahrtGruende = ['Wohnungsbesichtigung', 'Mieterkontakt', 'Reparatur/Handwerker', 'Zählerablesung', 'Übergabe/Abnahme', 'Kontrolle', 'Sonstiges'];
 
@@ -207,6 +210,11 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
           <h3 className="font-bold text-lg text-gray-800">📋 Steuerberechnung</h3>
+          {isGbR && (
+            <div className="mt-2 mb-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">
+              🏛 GbR: Steuerwerte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Steuerjahr:</span>
             <div className="flex flex-wrap gap-1">
@@ -268,55 +276,60 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
       {selectedDaten && (
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-800 mb-3">📊 Steuerliche Berechnung {selectedJahr}</h4>
+          {isGbR && (
+            <div className="mb-3 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">
+              🏛 GbR: Steuerwerte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
+            </div>
+          )}
 
           <div className="space-y-2 text-sm">
             {/* Einnahmen */}
             <div className="flex justify-between items-center py-2 border-b border-green-200 bg-green-50 px-3 rounded">
               <span className="text-green-700 font-medium">+ Mieteinnahmen</span>
-              <span className="font-semibold text-green-700">{formatCurrency(selectedDaten.einnahmen)}</span>
+              <span className="font-semibold text-green-700">{formatCurrency(a(selectedDaten.einnahmen))}</span>
             </div>
 
             {/* Kosten */}
             <div className="flex justify-between items-center py-1 px-3">
               <span className="text-red-600">− Laufende Kosten <span className="text-xs text-gray-400">(Inst., Verw., Hausgeld)</span></span>
-              <span className="text-red-600">{formatCurrency(selectedDaten.laufendeKosten)}</span>
+              <span className="text-red-600">{formatCurrency(a(selectedDaten.laufendeKosten))}</span>
             </div>
 
             <div className="flex justify-between items-center py-1 px-3">
               <span className="text-red-600">− Schuldzinsen <span className="text-xs text-gray-400">(nicht Tilgung!)</span></span>
-              <span className="text-red-600">{formatCurrency(selectedDaten.zinsen)}</span>
+              <span className="text-red-600">{formatCurrency(a(selectedDaten.zinsen))}</span>
             </div>
 
             {selectedDaten.fahrtkosten > 0 && (
               <div className="flex justify-between items-center py-1 px-3">
                 <span className="text-red-600">− Fahrtkosten</span>
-                <span className="text-red-600">{formatCurrency(selectedDaten.fahrtkosten)}</span>
+                <span className="text-red-600">{formatCurrency(a(selectedDaten.fahrtkosten))}</span>
               </div>
             )}
 
             {selectedDaten.investitionenSofort > 0 && (
               <div className="flex justify-between items-center py-1 px-3 bg-orange-50 rounded">
                 <span className="text-orange-600">− Erhaltungsaufwand <span className="text-xs">⚠️ Einmaleffekt</span></span>
-                <span className="text-orange-600">{formatCurrency(selectedDaten.investitionenSofort)}</span>
+                <span className="text-orange-600">{formatCurrency(a(selectedDaten.investitionenSofort))}</span>
               </div>
             )}
 
             <div className="flex justify-between items-center py-1 px-3">
               <span className="text-red-600">
                 − AfA
-                <span className="text-xs text-gray-400"> ({selectedDaten.gueltigerAfaSatz}% von {formatCurrency(selectedDaten.afaBemessungsgrundlage)})</span>
+                <span className="text-xs text-gray-400"> ({selectedDaten.gueltigerAfaSatz}% von {formatCurrency(a(selectedDaten.afaBemessungsgrundlage))})</span>
                 {selectedDaten.gueltigerAfaSatz !== afaSatz && (
                   <span className="ml-1 text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full font-semibold">angepasst</span>
                 )}
               </span>
-              <span className="text-red-600">{formatCurrency(selectedDaten.afa)}</span>
+              <span className="text-red-600">{formatCurrency(a(selectedDaten.afa))}</span>
             </div>
 
             {/* Ergebnis */}
             <div className="flex justify-between items-center py-2 px-3 border-t-2 border-gray-300 mt-2">
               <span className="font-semibold">= Steuerlicher Überschuss/Verlust</span>
               <span className={`font-bold ${selectedDaten.zuVersteuern >= 0 ? 'text-gray-800' : 'text-green-600'}`}>
-                {formatCurrency(selectedDaten.zuVersteuern)}
+                {formatCurrency(a(selectedDaten.zuVersteuern))}
               </span>
             </div>
 
@@ -327,7 +340,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                 <span className="text-xs text-gray-500 block">bei {steuersatz}% Steuersatz</span>
               </div>
               <span className={`text-xl font-bold ${selectedDaten.steuerEffekt > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {selectedDaten.steuerEffekt > 0 ? '−' : '+'}{formatCurrency(Math.abs(selectedDaten.steuerEffekt))}
+                {selectedDaten.steuerEffekt > 0 ? '−' : '+'}{formatCurrency(Math.abs(a(selectedDaten.steuerEffekt)))}
               </span>
             </div>
           </div>
@@ -419,14 +432,14 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                 <span className="font-medium text-red-700">Schuldzinsen</span>
                 <span className="text-xs text-red-600 block">steuerlich absetzbar</span>
               </div>
-              <span className="font-bold text-red-700">{formatCurrency(selectedDaten.zinsen)}</span>
+              <span className="font-bold text-red-700">{formatCurrency(a(selectedDaten.zinsen))}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
               <div>
                 <span className="font-medium text-gray-600">Tilgung</span>
                 <span className="text-xs text-gray-500 block">nur Cashflow, keine Steuerwirkung</span>
               </div>
-              <span className="font-bold text-gray-500">{formatCurrency((ergebnis.monatlicheRate * 12) - selectedDaten.zinsen)}</span>
+              <span className="font-bold text-gray-500">{formatCurrency(a((ergebnis.monatlicheRate * 12) - selectedDaten.zinsen))}</span>
             </div>
           </div>
         )}
@@ -462,6 +475,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
               <span className="text-sm text-gray-500">€</span>
             </div>
             <span className="text-xs text-gray-400">(Prozent oder €-Betrag, beides synchronisiert sich)</span>
+            {isGbR && <span className="text-xs text-violet-600">Ihr Anteil: {formatCurrency(a(Math.round(params.kaufpreis * (gebaeudeAnteilProzent / 100))))}</span>}
           </div>
         </div>
 
