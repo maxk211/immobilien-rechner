@@ -263,7 +263,40 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         </div>
       ) : (
         <div>
-          <div className="overflow-x-auto">
+          {/* Mobile: kompakte Jahreskarten */}
+          <div className="sm:hidden space-y-2">
+            {cashflowDaten.map(d => (
+              <div key={d.jahr} className={`rounded-xl border p-3 ${d.jahr === aktuellesJahr ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100'}`}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className={`font-bold text-sm ${d.jahr === aktuellesJahr ? 'text-blue-700' : 'text-gray-700'}`}>
+                    {d.jahr} {d.jahr === aktuellesJahr && <span className="text-[10px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded-full ml-1">Aktuell</span>}
+                  </span>
+                  <span className={`font-black text-base ${d.cashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * anteilFaktor))}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <div className="text-gray-400 mb-0.5">Einnahmen</div>
+                    <div className="text-emerald-600 font-semibold">{formatCurrency(Math.round(d.einnahmen * anteilFaktor))}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400 mb-0.5">Kredit + Kosten</div>
+                    <div className="text-red-500 font-semibold">{formatCurrency(Math.round((d.kreditrate + d.kosten) * anteilFaktor))}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400 mb-0.5">Kumuliert</div>
+                    <div className={`font-semibold ${d.kumuliert >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {formatCurrency(Math.round(d.kumuliert * anteilFaktor))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: vollständige Tabelle */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-gray-100">
                 <tr>

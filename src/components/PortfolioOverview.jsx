@@ -222,34 +222,34 @@ const PortfolioOverview = ({ portfolio }) => {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-y border-gray-100">
                   <tr>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Objekt</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Kaufpreis</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Marktwert</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Restschuld</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-amber-700 uppercase">Freies EK</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-teal-600 uppercase">Tilgung {new Date().getFullYear()}</th>
+                    <th className="text-left px-3 sm:px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Objekt</th>
+                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Kaufpreis</th>
+                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Marktwert</th>
+                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Restschuld</th>
+                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-amber-700 uppercase">Freies EK</th>
+                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-teal-600 uppercase">Tilgung {new Date().getFullYear()}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {stats.vermoegenProImmo.map(v => (
                     <tr key={v.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-800 truncate max-w-[160px]">{v.name}</td>
-                      <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(v.kaufpreis)}</td>
-                      <td className="px-4 py-3 text-right text-gray-700 font-semibold">{formatCurrency(v.marktwert)}</td>
-                      <td className="px-4 py-3 text-right text-red-500">{formatCurrency(v.restschuld)}</td>
-                      <td className="px-4 py-3 text-right text-amber-800 font-bold">{formatCurrency(v.freiVermoegen)}</td>
-                      <td className="px-4 py-3 text-right text-teal-700 font-bold">+{formatCurrency(v.tilgungJahr)}</td>
+                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-gray-800 truncate max-w-[120px] sm:max-w-[160px] text-sm">{v.name}</td>
+                      <td className="hidden sm:table-cell px-4 py-3 text-right text-gray-500">{formatCurrency(v.kaufpreis)}</td>
+                      <td className="hidden sm:table-cell px-4 py-3 text-right text-gray-700 font-semibold">{formatCurrency(v.marktwert)}</td>
+                      <td className="hidden sm:table-cell px-4 py-3 text-right text-red-500">{formatCurrency(v.restschuld)}</td>
+                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-amber-800 font-bold text-sm">{formatCurrency(v.freiVermoegen)}</td>
+                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-teal-700 font-bold text-sm">+{formatCurrency(v.tilgungJahr)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-slate-100 border-t-2 border-slate-200">
                   <tr>
-                    <td className="px-4 py-3 font-black text-gray-800 text-xs uppercase">Gesamt</td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-600">{formatCurrency(stats.gesamtKaufpreis)}</td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-800">{formatCurrency(stats.gesamtWert)}</td>
-                    <td className="px-4 py-3 text-right font-bold text-red-600">{formatCurrency(stats.gesamtRestschuld)}</td>
-                    <td className="px-4 py-3 text-right font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
-                    <td className="px-4 py-3 text-right font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</td>
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-black text-gray-800 text-xs uppercase">Gesamt</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-gray-600">{formatCurrency(stats.gesamtKaufpreis)}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-gray-800">{formatCurrency(stats.gesamtWert)}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-red-600">{formatCurrency(stats.gesamtRestschuld)}</td>
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</td>
                   </tr>
                 </tfoot>
               </table>

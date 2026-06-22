@@ -129,7 +129,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     placeholder={formData.immobilienTyp === 'mietimmobilie' ? 'z.B. Mitarbeiter-WG München' : 'z.B. Wohnung München'}
                   />
                 </div>
@@ -139,7 +139,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="text"
                     value={formData.plz}
                     onChange={(e) => handleChange('plz', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     placeholder="z.B. 80331"
                   />
                 </div>
@@ -149,7 +149,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="text"
                     value={formData.adresse}
                     onChange={(e) => handleChange('adresse', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     placeholder="z.B. Musterstraße 123"
                   />
                 </div>
@@ -161,7 +161,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="date"
                     value={formData.immobilienTyp === 'mietimmobilie' ? formData.mietvertragStart : formData.kaufdatum}
                     onChange={(e) => handleChange(formData.immobilienTyp === 'mietimmobilie' ? 'mietvertragStart' : 'kaufdatum', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                   />
                 </div>
               </div>
@@ -177,7 +177,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <select
                       value={formData.objektart}
                       onChange={(e) => handleChange('objektart', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     >
                       <option value="eigentumswohnung">Eigentumswohnung</option>
                       <option value="einfamilienhaus">Einfamilienhaus</option>
@@ -192,7 +192,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <select
                       value={formData.zustand}
                       onChange={(e) => handleChange('zustand', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     >
                       <option value="neuwertig">Neuwertig</option>
                       <option value="sehr gut">Sehr gut</option>
@@ -208,7 +208,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.wohnflaeche}
                       onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -217,7 +217,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.grundstueck}
                       onChange={(e) => handleChange('grundstueck', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -226,7 +226,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.zimmer}
                       onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -235,7 +235,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.baujahr}
                       onChange={(e) => handleChange('baujahr', parseInt(e.target.value) || 2000)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -244,7 +244,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.stockwerk}
                       onChange={(e) => handleChange('stockwerk', parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -252,7 +252,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <select
                       value={formData.energieeffizienz}
                       onChange={(e) => handleChange('energieeffizienz', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     >
                       {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (
                         <option key={e} value={e}>{e}</option>
@@ -304,7 +304,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.wohnflaeche}
                       onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -313,7 +313,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.zimmer}
                       onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
@@ -330,7 +330,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="number"
                     value={formData.geschaetzterWert || ''}
                     onChange={(e) => handleChange('geschaetzterWert', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     placeholder="z.B. 350000"
                   />
                 </div>
@@ -388,7 +388,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         handleChange('kaufpreis', v);
                         if (formData.geschenkt) handleChange('eigenkapital', v);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   {!formData.geschenkt && (
@@ -398,7 +398,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.eigenkapital}
                       onChange={(e) => handleChange('eigenkapital', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   )}
@@ -493,7 +493,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.kaltmiete}
                       onChange={(e) => handleChange('kaltmiete', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
@@ -533,7 +533,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         type="number"
                         value={formData.nebenkostenVomMieter || 0}
                         onChange={(e) => handleChange('nebenkostenVomMieter', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                         placeholder="z.B. 200"
                       />
                     </div>
