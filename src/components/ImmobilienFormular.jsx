@@ -43,7 +43,11 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     mietvertragStart: '',         // Startdatum des Mietvertrags
     aktiv: true,                  // Immobilie aktiv oder aufgegeben
     aufgabedatum: '',             // Datum der Aufgabe/Verkauf
-    mietAnpassungen: []           // [{datum, kaltmiete}] Miethistorie mit Datum
+    mietAnpassungen: [],          // [{datum, kaltmiete}] Miethistorie mit Datum
+    // Eigentumsstruktur
+    eigentumsform: 'allein',      // 'allein' oder 'gbr'
+    userAnteil: 100,              // Anteil des Users in % (bei GbR)
+    gbrPartner: [],               // [{name, anteil}] weitere GbR-Gesellschafter
   });
 
   const schaetzung = useMemo(() => schaetzeImmobilienwert(formData), [formData]);
@@ -534,6 +538,153 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <p className="text-xs text-blue-600">📋 Vermieter trägt alle Betriebskosten (Hausgeld, Strom etc.) aus der Warmmiete</p>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* GbR Eigentumsstruktur - nur für Kaufimmobilie / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Eigentumsstruktur</h3>
+
+                {/* Toggle Alleineigentümer / GbR */}
+                <div className="flex gap-2 mb-4">
+                  {[
+                    { value: 'allein', label: '👤 Alleineigentümer', desc: 'Du bist alleiniger Eigentümer' },
+                    { value: 'gbr',    label: '🤝 GbR',              desc: 'Gesellschaft bürgerlichen Rechts' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        handleChange('eigentumsform', opt.value);
+                        if (opt.value === 'allein') {
+                          handleChange('userAnteil', 100);
+                          handleChange('gbrPartner', []);
+                        } else if (formData.eigentumsform === 'allein') {
+                          // Beim ersten Wechsel zu GbR: einen leeren Partner vorschlagen
+                          handleChange('userAnteil', 50);
+                          handleChange('gbrPartner', [{ name: '', anteil: 50 }]);
+                        }
+                      }}
+                      className={`flex-1 p-3 rounded-xl border-2 text-left transition-all ${
+                        formData.eigentumsform === opt.value
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`font-semibold text-sm ${formData.eigentumsform === opt.value ? 'text-indigo-700' : 'text-gray-700'}`}>
+                        {opt.label}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* GbR Konfiguration */}
+                {formData.eigentumsform === 'gbr' && (() => {
+                  const gesamtAnteil = (formData.userAnteil ?? 0) + (formData.gbrPartner || []).reduce((s, p) => s + (parseFloat(p.anteil) || 0), 0);
+                  const restAnteil = Math.max(0, 100 - gesamtAnteil);
+                  const anteilOk = Math.abs(gesamtAnteil - 100) < 0.01;
+
+                  return (
+                    <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100 space-y-3">
+                      <p className="text-xs text-indigo-600 font-medium">
+                        Gib die Anteile aller Gesellschafter an. Dein Anteil fließt in alle Berechnungen ein.
+                      </p>
+
+                      {/* User eigener Anteil */}
+                      <div className="bg-white rounded-lg p-3 border border-indigo-200 flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold text-gray-800">Ich</span>
+                            <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full font-semibold">Ich</span>
+                          </div>
+                          <p className="text-xs text-gray-500">Dein persönlicher Anteil</p>
+                        </div>
+                        <div className="flex items-center gap-1 w-28">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            value={formData.userAnteil ?? 100}
+                            onChange={(e) => handleChange('userAnteil', parseFloat(e.target.value) || 0)}
+                            className="w-full px-2 py-1.5 border border-indigo-300 rounded-lg text-sm text-right font-semibold focus:ring-2 focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-gray-500 font-semibold">%</span>
+                        </div>
+                      </div>
+
+                      {/* Weitere Gesellschafter */}
+                      {(formData.gbrPartner || []).map((partner, idx) => (
+                        <div key={idx} className="bg-white rounded-lg p-3 border border-gray-200 flex items-center gap-3">
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={partner.name}
+                              onChange={(e) => {
+                                const updated = [...formData.gbrPartner];
+                                updated[idx] = { ...updated[idx], name: e.target.value };
+                                handleChange('gbrPartner', updated);
+                              }}
+                              placeholder={`Gesellschafter ${idx + 1}`}
+                              className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 w-28">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={partner.anteil}
+                              onChange={(e) => {
+                                const updated = [...formData.gbrPartner];
+                                updated[idx] = { ...updated[idx], anteil: parseFloat(e.target.value) || 0 };
+                                handleChange('gbrPartner', updated);
+                              }}
+                              className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-400"
+                            />
+                            <span className="text-sm text-gray-500 font-semibold">%</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = formData.gbrPartner.filter((_, i) => i !== idx);
+                              handleChange('gbrPartner', updated);
+                            }}
+                            className="text-red-400 hover:text-red-600 text-lg leading-none px-1"
+                            title="Gesellschafter entfernen"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Partner hinzufügen */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleChange('gbrPartner', [
+                            ...(formData.gbrPartner || []),
+                            { name: '', anteil: Math.max(0, Math.round(restAnteil * 10) / 10) },
+                          ]);
+                        }}
+                        className="w-full py-2 rounded-lg border-2 border-dashed border-indigo-300 text-indigo-600 text-sm font-semibold hover:bg-indigo-100 transition-colors"
+                      >
+                        + Gesellschafter hinzufügen
+                      </button>
+
+                      {/* Summen-Anzeige */}
+                      <div className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm font-semibold ${
+                        anteilOk ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        <span>Gesamt:</span>
+                        <span>{anteilOk ? '✓ 100 %' : `${gesamtAnteil.toFixed(1)} % — ${Math.abs(100 - gesamtAnteil).toFixed(1)} % ${gesamtAnteil < 100 ? 'fehlen' : 'zu viel'}`}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
