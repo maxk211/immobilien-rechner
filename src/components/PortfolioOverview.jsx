@@ -153,7 +153,7 @@ const PortfolioOverview = ({ portfolio }) => {
         {/* Gesamtwert */}
         <div className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Portfoliowert</div>
-          <div className="text-2xl font-black text-indigo-600">{formatCurrency(stats.gesamtWert)}</div>
+          <div className="text-2xl font-black text-slate-800">{formatCurrency(stats.gesamtWert)}</div>
           {stats.wertsteigerung !== 0 && (
             <div className={`text-xs mt-1 font-semibold ${stats.wertsteigerung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
               {stats.wertsteigerung >= 0 ? '▲' : '▼'} {formatCurrency(Math.abs(stats.wertsteigerung))} Wertgewinn
@@ -192,10 +192,10 @@ const PortfolioOverview = ({ portfolio }) => {
       {stats.anzahlKaufimmobilien > 0 && (
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* Freies Vermögen */}
-          <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 p-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-wider text-violet-500 mb-1">Freies Vermögen (EK)</div>
-            <div className="text-2xl font-black text-violet-700">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
-            <div className="text-xs text-violet-400 mt-1 font-medium">Marktwert − Restschuld</div>
+          <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 p-5 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600 mb-1">Freies Vermögen (EK)</div>
+            <div className="text-2xl font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
+            <div className="text-xs text-amber-500 mt-1 font-medium">Marktwert − Restschuld</div>
             {stats.gesamtRestschuld > 0 && (
               <div className="text-xs text-gray-400 mt-0.5">Restschuld: {formatCurrency(stats.gesamtRestschuld)}</div>
             )}
@@ -232,7 +232,7 @@ const PortfolioOverview = ({ portfolio }) => {
                     <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Kaufpreis</th>
                     <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Marktwert</th>
                     <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Restschuld</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-violet-600 uppercase">Freies EK</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-amber-700 uppercase">Freies EK</th>
                     <th className="text-right px-4 py-2 text-xs font-semibold text-teal-600 uppercase">Tilgung {new Date().getFullYear()}</th>
                   </tr>
                 </thead>
@@ -243,7 +243,7 @@ const PortfolioOverview = ({ portfolio }) => {
                       <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(v.kaufpreis)}</td>
                       <td className="px-4 py-3 text-right text-gray-700 font-semibold">{formatCurrency(v.marktwert)}</td>
                       <td className="px-4 py-3 text-right text-red-500">{formatCurrency(v.restschuld)}</td>
-                      <td className="px-4 py-3 text-right text-violet-700 font-bold">{formatCurrency(v.freiVermoegen)}</td>
+                      <td className="px-4 py-3 text-right text-amber-800 font-bold">{formatCurrency(v.freiVermoegen)}</td>
                       <td className="px-4 py-3 text-right text-teal-700 font-bold">+{formatCurrency(v.tilgungJahr)}</td>
                     </tr>
                   ))}
@@ -254,7 +254,7 @@ const PortfolioOverview = ({ portfolio }) => {
                     <td className="px-4 py-3 text-right font-bold text-gray-600">{formatCurrency(stats.gesamtKaufpreis)}</td>
                     <td className="px-4 py-3 text-right font-bold text-gray-800">{formatCurrency(stats.gesamtWert)}</td>
                     <td className="px-4 py-3 text-right font-bold text-red-600">{formatCurrency(stats.gesamtRestschuld)}</td>
-                    <td className="px-4 py-3 text-right font-black text-violet-700">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
+                    <td className="px-4 py-3 text-right font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
                     <td className="px-4 py-3 text-right font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</td>
                   </tr>
                 </tfoot>

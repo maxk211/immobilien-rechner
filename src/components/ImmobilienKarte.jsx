@@ -16,12 +16,12 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
   const cashflow = berechneMtlCashflow(immobilie);
   const cashflowPositiv = cashflow >= 0;
 
-  // Tile accent color
+  // Tile accent color — psychologisch: Slate=Vertrauen/Premium, Teal=Cashflow/Wachstum, Amber=Ertrag
   const accentClass = isMietimmobilie
-    ? 'from-violet-500 to-purple-600'
+    ? 'from-teal-700 to-teal-900'
     : isMFH
-      ? 'from-orange-500 to-amber-500'
-      : 'from-blue-500 to-indigo-600';
+      ? 'from-amber-600 to-orange-700'
+      : 'from-slate-700 to-slate-900';
 
   const eigenkapital = (!isMietimmobilie && !isMFH) && restschuldInfo
     ? aktuellerWert - restschuldInfo.restschuld
@@ -114,7 +114,7 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Aktueller Wert</div>
-                <div className="text-sm font-semibold text-indigo-600">{formatCurrency(aktuellerWert)}</div>
+                <div className="text-sm font-semibold text-slate-700">{formatCurrency(aktuellerWert)}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Wohnfläche</div>
@@ -167,7 +167,7 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
                 </div>
                 <div>
                   <div className="text-xs text-gray-400">Netto-Eigenkapital</div>
-                  <div className="text-sm font-semibold text-indigo-600">{formatCurrency(eigenkapital)}</div>
+                  <div className="text-sm font-semibold text-amber-700">{formatCurrency(eigenkapital)}</div>
                 </div>
               </div>
             )}
