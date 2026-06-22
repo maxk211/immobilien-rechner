@@ -19,12 +19,23 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
   const steuersatz = params.steuersatz || 42;
   const gebaeudeAnteilProzent = params.gebaeudeAnteilProzent || 80;
   const afaSatz = params.afaSatz || 2.0;
+  const afaAnpassungen = params.afaAnpassungen || [];
   const fahrtkostenModus = params.fahrtkostenModus || 'pauschal';
   const fahrtenProMonat = params.fahrtenProMonat || 0;
   const entfernungKm = params.entfernungKm || 0;
   const kmPauschale = params.kmPauschale || 0.30;
   const fahrtenListe = params.fahrtenListe || [];
   const investitionen = params.investitionen || [];
+
+  // AfA-Rate für ein bestimmtes Jahr bestimmen
+  // Phasen überschreiben den Basis-afaSatz ab dem jeweiligen vonJahr
+  const getAfaSatzFuerJahr = (jahr) => {
+    if (afaAnpassungen.length === 0) return afaSatz;
+    const gueltig = afaAnpassungen
+      .filter(a => a.vonJahr <= jahr)
+      .sort((a, b) => b.vonJahr - a.vonJahr);
+    return gueltig.length > 0 ? gueltig[0].afaSatz : afaSatz;
+  };
 
   const fahrtGruende = ['Wohnungsbesichtigung', 'Mieterkontakt', 'Reparatur/Handwerker', 'Zählerablesung', 'Übergabe/Abnahme', 'Kontrolle', 'Sonstiges'];
 
@@ -121,7 +132,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
     const zusaetzlicheAfABasis = afaInvestitionenBisJahr.reduce((sum, inv) => sum + inv.betrag, 0);
     afaBemessungsgrundlage += zusaetzlicheAfABasis;
 
-    const jahresAfa = afaBemessungsgrundlage * (afaSatz / 100);
+    const gueltigerAfaSatz = getAfaSatzFuerJahr(jahr);
+    const jahresAfa = afaBemessungsgrundlage * (gueltigerAfaSatz / 100);
 
     // Investitionen dieses Jahres
     const investitionenDiesesJahr = investitionen.filter(inv => new Date(inv.datum).getFullYear() === jahr);
@@ -168,6 +180,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
       zinsen: Math.round(jahresZinsen),
       afa: Math.round(jahresAfa),
       afaBemessungsgrundlage: Math.round(afaBemessungsgrundlage),
+      gueltigerAfaSatz,
       fahrtkosten: Math.round(jahresFahrtkosten),
       investitionenSofort: Math.round(sofortAbsetzbar),
       investitionenAfa: Math.round(afaRelevant),
@@ -289,7 +302,13 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
             )}
 
             <div className="flex justify-between items-center py-1 px-3">
-              <span className="text-red-600">− AfA <span className="text-xs text-gray-400">({afaSatz}% von {formatCurrency(selectedDaten.afaBemessungsgrundlage)})</span></span>
+              <span className="text-red-600">
+                − AfA
+                <span className="text-xs text-gray-400"> ({selectedDaten.gueltigerAfaSatz}% von {formatCurrency(selectedDaten.afaBemessungsgrundlage)})</span>
+                {selectedDaten.gueltigerAfaSatz !== afaSatz && (
+                  <span className="ml-1 text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full font-semibold">angepasst</span>
+                )}
+              </span>
               <span className="text-red-600">{formatCurrency(selectedDaten.afa)}</span>
             </div>
 
@@ -418,16 +437,19 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
 
       {/* AfA Einstellungen */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-800 mb-3">📉 AfA-Einstellungen</h4>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Gebäudeanteil (AfA-Basis)</label>
-            <div className="flex items-center gap-1 mb-1">
+        <h4 className="font-semibold text-gray-800 mb-4">📉 AfA-Einstellungen</h4>
+
+        {/* Gebäudeanteil */}
+        <div className="mb-4 pb-4 border-b border-gray-100">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gebäudeanteil (AfA-Bemessungsgrundlage)</label>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1">
               <input type="number" min="0" max="100" step="0.5" value={gebaeudeAnteilProzent}
                 onChange={(e) => updateSteuerParams({ gebaeudeAnteilProzent: parseFloat(e.target.value) || 0 })}
-                className="w-16 px-2 py-1 border rounded text-sm text-right" />
-              <span className="text-sm text-gray-600">%</span>
+                className="w-16 px-2 py-1.5 border rounded-lg text-sm text-right font-semibold" />
+              <span className="text-sm text-gray-500">%</span>
             </div>
+            <span className="text-gray-300">=</span>
             <div className="flex items-center gap-1">
               <input type="number" min="0" step="1000"
                 value={Math.round(params.kaufpreis * (gebaeudeAnteilProzent / 100))}
@@ -436,24 +458,197 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams }) => {
                   const neuProzent = params.kaufpreis > 0 ? (absWert / params.kaufpreis) * 100 : 0;
                   updateSteuerParams({ gebaeudeAnteilProzent: Math.min(100, Math.round(neuProzent * 10) / 10) });
                 }}
-                className="w-24 px-2 py-1 border border-blue-300 rounded text-sm text-right bg-blue-50" />
-              <span className="text-sm text-gray-600">€</span>
+                className="w-28 px-2 py-1.5 border border-blue-300 rounded-lg text-sm text-right bg-blue-50 font-semibold" />
+              <span className="text-sm text-gray-500">€</span>
             </div>
-            <div className="text-xs text-gray-400 mt-1">Prozent oder €-Betrag eingeben — beides synchronisiert sich</div>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">AfA-Satz</label>
-            <div className="flex items-center gap-1">
-              <input type="number" min="0" max="10" step="0.5" value={afaSatz}
-                onChange={(e) => updateSteuerParams({ afaSatz: parseFloat(e.target.value) || 0 })}
-                className="w-20 px-2 py-1 border rounded text-sm text-right" />
-              <span className="text-sm text-gray-600">%</span>
-            </div>
-            <div className="text-xs text-gray-400 mt-1">{afaJahre} Jahre linear</div>
+            <span className="text-xs text-gray-400">(Prozent oder €-Betrag, beides synchronisiert sich)</span>
           </div>
         </div>
+
+        {/* Basis-AfA + Phasen */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">AfA-Satz</label>
+
+          {/* Basis-Satz (gültig ab Kauf) */}
+          <div className="flex items-start gap-4 mb-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex-1">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-xs font-bold text-slate-600 px-1.5 py-0.5 bg-slate-200 rounded">Ab Kauf ({kaufjahr})</span>
+                <span className="text-xs text-slate-400">Basis-Satz</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1">
+                  <input type="number" min="0" max="10" step="0.1" value={afaSatz}
+                    onChange={(e) => updateSteuerParams({ afaSatz: parseFloat(e.target.value) || 0 })}
+                    className="w-20 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-sm text-right font-bold focus:border-indigo-400" />
+                  <span className="text-sm text-gray-600">% p.a.</span>
+                </div>
+                <span className="text-xs text-gray-400">= {afaSatz > 0 ? Math.round(100/afaSatz) : '∞'} Jahre linear</span>
+                <div className="flex gap-1 ml-auto">
+                  {[[2.0,'2% (Standard, nach 1924)'],[2.5,'2,5% (vor 1925)'],[3.0,'3% (nach 2022)']].map(([v, label]) => (
+                    <button key={v} onClick={() => updateSteuerParams({ afaSatz: v })} title={label}
+                      className={`px-2 py-0.5 text-xs rounded-md border transition-colors ${afaSatz === v ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-600'}`}>
+                      {v}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Phasen */}
+          {afaAnpassungen.length > 0 && (
+            <div className="space-y-2 mb-3">
+              {afaAnpassungen
+                .sort((a, b) => a.vonJahr - b.vonJahr)
+                .map((phase) => {
+                  const isAktiv = getAfaSatzFuerJahr(selectedJahr) === phase.afaSatz && phase.vonJahr <= selectedJahr;
+                  const rndJahre = phase.afaSatz > 0 ? Math.round(100 / phase.afaSatz) : 0;
+                  return (
+                    <div key={phase.id} className={`p-3 rounded-xl border-2 transition-all ${isAktiv ? 'border-violet-300 bg-violet-50' : 'border-gray-200 bg-gray-50'}`}>
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 space-y-2">
+                          {/* Ab Jahr + Satz */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-500 font-medium">Ab Jahr</span>
+                            <input type="number" min={kaufjahr} max={aktuellesJahr + 20} step={1}
+                              value={phase.vonJahr}
+                              onChange={(e) => {
+                                const updated = afaAnpassungen.map(a =>
+                                  a.id === phase.id ? { ...a, vonJahr: parseInt(e.target.value) || kaufjahr } : a
+                                );
+                                updateSteuerParams({ afaAnpassungen: updated });
+                              }}
+                              className="w-20 px-2 py-1 border-2 border-gray-300 rounded-lg text-sm text-right font-bold focus:border-violet-400" />
+                            <span className="text-gray-400">→</span>
+                            <div className="flex items-center gap-1">
+                              <input type="number" min="0" max="20" step="0.1"
+                                value={phase.afaSatz}
+                                onChange={(e) => {
+                                  const updated = afaAnpassungen.map(a =>
+                                    a.id === phase.id ? { ...a, afaSatz: parseFloat(e.target.value) || 0 } : a
+                                  );
+                                  updateSteuerParams({ afaAnpassungen: updated });
+                                }}
+                                className="w-20 px-2 py-1 border-2 border-violet-300 bg-white rounded-lg text-sm text-right font-bold text-violet-700 focus:border-violet-500" />
+                              <span className="text-sm text-gray-600">% p.a.</span>
+                            </div>
+                            <span className="text-xs text-gray-400">= {rndJahre} Jahre</span>
+                            {isAktiv && (
+                              <span className="text-[10px] bg-violet-600 text-white px-1.5 py-0.5 rounded-full font-semibold">Aktiv für {selectedJahr}</span>
+                            )}
+                          </div>
+
+                          {/* Grundlage */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-500">Grundlage</span>
+                            <select
+                              value={phase.grundlage || 'sonstiges'}
+                              onChange={(e) => {
+                                const updated = afaAnpassungen.map(a =>
+                                  a.id === phase.id ? { ...a, grundlage: e.target.value } : a
+                                );
+                                updateSteuerParams({ afaAnpassungen: updated });
+                              }}
+                              className="px-2 py-1 border border-gray-300 rounded-lg text-xs bg-white">
+                              <option value="restnutzungsdauer">Restnutzungsdauergutachten</option>
+                              <option value="denkmal">Denkmal-AfA (§ 7i)</option>
+                              <option value="neubau">Neubau / § 7b</option>
+                              <option value="sonstiges">Sonstiges</option>
+                            </select>
+
+                            {/* Restnutzungsdauer-Helfer */}
+                            {phase.grundlage === 'restnutzungsdauer' && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-gray-400">RND</span>
+                                <input type="number" min="1" max="80" step="1"
+                                  value={phase.restnutzungsdauer || ''}
+                                  placeholder="z.B. 25"
+                                  onChange={(e) => {
+                                    const rnd = parseInt(e.target.value) || 0;
+                                    const neuSatz = rnd > 0 ? Math.round(100 / rnd * 10) / 10 : phase.afaSatz;
+                                    const updated = afaAnpassungen.map(a =>
+                                      a.id === phase.id ? { ...a, restnutzungsdauer: rnd, afaSatz: neuSatz } : a
+                                    );
+                                    updateSteuerParams({ afaAnpassungen: updated });
+                                  }}
+                                  className="w-16 px-2 py-1 border border-amber-300 bg-amber-50 rounded-lg text-xs text-right font-semibold" />
+                                <span className="text-xs text-gray-400">Jahre → {phase.restnutzungsdauer > 0 ? (100/phase.restnutzungsdauer).toFixed(2) : '?'}%</span>
+                              </div>
+                            )}
+
+                            {/* Gutachten-Datum */}
+                            {(phase.grundlage === 'restnutzungsdauer' || phase.grundlage === 'denkmal') && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-gray-400">Gutachten</span>
+                                <input type="date"
+                                  value={phase.gutachtenDatum || ''}
+                                  onChange={(e) => {
+                                    const updated = afaAnpassungen.map(a =>
+                                      a.id === phase.id ? { ...a, gutachtenDatum: e.target.value } : a
+                                    );
+                                    updateSteuerParams({ afaAnpassungen: updated });
+                                  }}
+                                  className="px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Löschen */}
+                        <button
+                          onClick={() => updateSteuerParams({ afaAnpassungen: afaAnpassungen.filter(a => a.id !== phase.id) })}
+                          className="text-gray-300 hover:text-red-500 text-lg leading-none transition-colors mt-0.5">
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Phase hinzufügen */}
+          <button
+            onClick={() => {
+              const letztePhase = afaAnpassungen.sort((a, b) => b.vonJahr - a.vonJahr)[0];
+              const neuesJahr = letztePhase ? letztePhase.vonJahr + 1 : aktuellesJahr;
+              updateSteuerParams({
+                afaAnpassungen: [...afaAnpassungen, {
+                  id: Date.now(),
+                  vonJahr: neuesJahr,
+                  afaSatz: 4.0,
+                  grundlage: 'restnutzungsdauer',
+                  restnutzungsdauer: 25,
+                  gutachtenDatum: '',
+                }]
+              });
+            }}
+            className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-violet-400 hover:text-violet-600 text-xs font-semibold transition-all">
+            + AfA-Änderung hinzufügen (z.B. Restnutzungsdauergutachten)
+          </button>
+
+          {/* Phasen-Übersicht für das gewählte Jahr */}
+          {afaAnpassungen.length > 0 && (
+            <div className="mt-3 p-3 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-800">
+              <div className="font-semibold mb-1.5">📋 Gültiger AfA-Satz je Jahr</div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {verfuegbareJahre.map(j => {
+                  const satz = getAfaSatzFuerJahr(j);
+                  return (
+                    <span key={j} className={`${j === selectedJahr ? 'font-bold text-violet-900' : 'text-violet-600'}`}>
+                      {j}: {satz}%
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="text-xs text-gray-500 mt-3 p-2 bg-blue-50 rounded">
-          💡 <strong>AfA ist ein Recheneffekt, kein Geldabfluss.</strong> Standard: 2% (50 J.) oder 2,5% vor 1925 (40 J.)
+          💡 <strong>AfA ist ein Recheneffekt, kein Geldabfluss.</strong> Standard: 2% (50 J.) | vor 1925: 2,5% (40 J.) | nach 2022: 3% (33 J.)
+          {afaAnpassungen.length > 0 && <span className="block mt-0.5 text-violet-700">💜 Bei Restnutzungsdauergutachten: RND eingeben → AfA-Satz wird automatisch berechnet (100 ÷ RND).</span>}
         </div>
       </div>
 

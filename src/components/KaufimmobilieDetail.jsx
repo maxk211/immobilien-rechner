@@ -87,7 +87,8 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     dauerauftrag: immobilie.dauerauftrag || false,
     dauerauftragBetrag: immobilie.dauerauftragBetrag || immobilie.kaltmiete || 0,
     zaehler: immobilie.zaehler || [],
-    bausparvertraege: immobilie.bausparvertraege || []
+    bausparvertraege: immobilie.bausparvertraege || [],
+    afaAnpassungen: immobilie.afaAnpassungen || []
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
