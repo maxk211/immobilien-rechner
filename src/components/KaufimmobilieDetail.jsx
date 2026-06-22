@@ -291,13 +291,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 </div>
                 {/* Sub-Tabs */}
                 {aktiveGruppe.subs && (
-                  <div className="flex gap-1 mt-1 px-1 border-l-2 border-indigo-200 ml-1 pl-2">
+                  <div className="flex gap-1 mt-2 bg-indigo-50 rounded-xl p-1">
                     {aktiveGruppe.subs.map(s => (
                       <button key={s.id} onClick={() => setActiveTab(s.id)}
-                        className={`py-1 px-3 text-xs font-semibold rounded-md transition-all ${
+                        className={`flex-1 py-2 px-3 text-sm font-semibold rounded-lg transition-all text-center ${
                           activeTab === s.id
-                            ? 'bg-indigo-100 text-indigo-700'
-                            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'text-indigo-400 hover:text-indigo-700 hover:bg-indigo-100'
                         }`}>
                         {s.label}
                       </button>
