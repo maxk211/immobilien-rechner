@@ -31,22 +31,22 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
           <div>
             <label className="block text-xs text-gray-500 mb-1">Mieter Name</label>
             <input type="text" value={form.mieterName || ''} onChange={e => update('mieterName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Name des Mieters" />
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm" placeholder="Name des Mieters" />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Vorauszahlungen (€)</label>
             <input type="number" step="0.01" value={form.vorauszahlungen || ''} onChange={e => update('vorauszahlungen', parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border-2 border-blue-300 rounded-lg text-sm font-bold text-right" />
+              className="w-full px-3 py-2 border-2 border-blue-300 rounded-lg text-base sm:text-sm font-bold text-right" />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Mieterfläche (m²)</label>
             <input type="number" value={form.wohnflaeche || ''} onChange={e => update('wohnflaeche', parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-right" />
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm text-right" />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Gesamtfläche (m²)</label>
             <input type="number" value={form.gesamtflaeche || ''} onChange={e => update('gesamtflaeche', parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-right" />
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm text-right" />
           </div>
         </div>
 
@@ -63,7 +63,7 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
                 <div className="flex items-center gap-1">
                   <input type="number" step="0.01" value={pos.gesamtkosten || ''} placeholder="0"
                     onChange={e => updatePos(pos.key, 'gesamtkosten', parseFloat(e.target.value) || 0)}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-right" />
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-base sm:text-xs text-right" />
                   <span className="text-[10px] text-gray-400">€</span>
                 </div>
               </div>
@@ -71,7 +71,7 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
                 <div className="flex items-center gap-1">
                   <input type="number" min={0} max={100} value={pos.mieteranteil}
                     onChange={e => updatePos(pos.key, 'mieteranteil', parseFloat(e.target.value) || 0)}
-                    className="w-full px-2 py-1.5 border border-gray-200 bg-gray-50 rounded text-xs text-right" />
+                    className="w-full px-2 py-1.5 border border-gray-200 bg-gray-50 rounded text-base sm:text-xs text-right" />
                   <span className="text-[10px] text-gray-400">%</span>
                 </div>
               </div>
@@ -101,7 +101,7 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
         <div className="mt-4">
           <label className="block text-xs text-gray-500 mb-1">Notizen</label>
           <textarea value={form.notizen || ''} onChange={e => update('notizen', e.target.value)} rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none" />
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm resize-none" />
         </div>
 
         <div className="flex gap-2 mt-4">

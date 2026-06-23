@@ -555,14 +555,14 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                               value={p.name}
                               placeholder={p.isUser ? 'Ihr Name' : 'Name Gesellschafter'}
                               onChange={e => updatePartner(p.id, { name: e.target.value })}
-                              className={`flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white ${p.isUser ? 'border-indigo-300 font-semibold' : 'border-gray-300'}`}
+                              className={`flex-1 px-3 py-1.5 border rounded-lg text-base sm:text-sm bg-white ${p.isUser ? 'border-indigo-300 font-semibold' : 'border-gray-300'}`}
                             />
                             <div className="flex items-center gap-1.5 shrink-0">
                               <input
                                 type="number" min="0" max="100" step="0.5"
                                 value={p.anteil}
                                 onChange={e => updatePartner(p.id, { anteil: parseFloat(e.target.value) || 0 })}
-                                className={`w-16 px-2 py-1.5 border rounded-lg text-sm text-right font-bold ${p.isUser ? 'border-indigo-400 bg-white text-indigo-700' : 'border-gray-300'}`}
+                                className={`w-16 px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right font-bold ${p.isUser ? 'border-indigo-400 bg-white text-indigo-700' : 'border-gray-300'}`}
                               />
                               <span className="text-sm text-gray-500">%</span>
                             </div>
@@ -754,7 +754,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                           className="flex-1" />
                         <input type="number" value={Math.round(ekFuerNebenkosten)}
                           onChange={e => updateParams({ ...params, ekFuerNebenkosten: Math.min(kaufnebenkostenAbsolut, parseFloat(e.target.value) || 0) })}
-                          className="w-28 px-2 py-1 border rounded text-right text-sm" />
+                          className="w-28 px-2 py-1 border rounded text-right text-base sm:text-sm" />
                         <span className="text-sm text-gray-500">€</span>
                       </div>
                       {ekFuerNebenkosten < kaufnebenkostenAbsolut && (
@@ -773,7 +773,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                           className="flex-1" />
                         <input type="number" value={Math.round(ekFuerKaufpreis)}
                           onChange={e => updateParams({ ...params, ekFuerKaufpreis: Math.min(params.kaufpreis, parseFloat(e.target.value) || 0) })}
-                          className="w-28 px-2 py-1 border rounded text-right text-sm" />
+                          className="w-28 px-2 py-1 border rounded text-right text-base sm:text-sm" />
                         <span className="text-sm text-gray-500">€</span>
                       </div>
                     </div>
@@ -871,7 +871,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                             <input type="date" value={phase.kreditStartDatum || ''}
                               placeholder={params.kaufdatum || ''}
                               onChange={e => updatePhase(phase.id, { kreditStartDatum: e.target.value || null })}
-                              className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400" />
+                              className="px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-400" />
                             {phase.kreditStartDatum && (
                               <button onClick={() => updatePhase(phase.id, { kreditStartDatum: null })} className="text-xs text-slate-500 hover:underline">↺ Kaufdatum verwenden</button>
                             )}
@@ -899,7 +899,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                             <input type="number" step={1000} value={phase.restschuldOverride ?? ''}
                               placeholder={`Berechnet: ${formatCurrency(phasenMitBerechnung[idx-1]?.restschuldNachZinsbindung ?? 0)}`}
                               onChange={e => updatePhase(phase.id, { restschuldOverride: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
-                              className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm" />
+                              className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-base sm:text-sm" />
                             <span className="text-sm text-gray-500">€</span>
                             {phase.restschuldOverride != null && (
                               <button onClick={() => updatePhase(phase.id, { restschuldOverride: null })} className="text-xs text-amber-600 hover:underline">Auto</button>

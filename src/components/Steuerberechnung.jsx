@@ -459,7 +459,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             <div className="flex items-center gap-1">
               <input type="number" min="0" max="100" step="0.5" value={gebaeudeAnteilProzent}
                 onChange={(e) => updateSteuerParams({ gebaeudeAnteilProzent: parseFloat(e.target.value) || 0 })}
-                className="w-16 px-2 py-1.5 border rounded-lg text-sm text-right font-semibold" />
+                className="w-16 px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right font-semibold" />
               <span className="text-sm text-gray-500">%</span>
             </div>
             <span className="text-gray-300">=</span>
@@ -471,7 +471,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                   const neuProzent = params.kaufpreis > 0 ? (absWert / params.kaufpreis) * 100 : 0;
                   updateSteuerParams({ gebaeudeAnteilProzent: Math.min(100, Math.round(neuProzent * 10) / 10) });
                 }}
-                className="w-28 px-2 py-1.5 border border-blue-300 rounded-lg text-sm text-right bg-blue-50 font-semibold" />
+                className="w-28 px-2 py-1.5 border border-blue-300 rounded-lg text-base sm:text-sm text-right bg-blue-50 font-semibold" />
               <span className="text-sm text-gray-500">€</span>
             </div>
             <span className="text-xs text-gray-400">(Prozent oder €-Betrag, beides synchronisiert sich)</span>
@@ -494,7 +494,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                 <div className="flex items-center gap-1">
                   <input type="number" min="0" max="10" step="0.1" value={afaSatz}
                     onChange={(e) => updateSteuerParams({ afaSatz: parseFloat(e.target.value) || 0 })}
-                    className="w-20 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-sm text-right font-bold focus:border-indigo-400" />
+                    className="w-20 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-base sm:text-sm text-right font-bold focus:border-indigo-400" />
                   <span className="text-sm text-gray-600">% p.a.</span>
                 </div>
                 <span className="text-xs text-gray-400">= {afaSatz > 0 ? Math.round(100/afaSatz) : '∞'} Jahre linear</span>
@@ -533,7 +533,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                                 );
                                 updateSteuerParams({ afaAnpassungen: updated });
                               }}
-                              className="w-20 px-2 py-1 border-2 border-gray-300 rounded-lg text-sm text-right font-bold focus:border-violet-400" />
+                              className="w-20 px-2 py-1 border-2 border-gray-300 rounded-lg text-base sm:text-sm text-right font-bold focus:border-violet-400" />
                             <span className="text-gray-400">→</span>
                             <div className="flex items-center gap-1">
                               <input type="number" min="0" max="20" step="0.1"
@@ -544,7 +544,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                                   );
                                   updateSteuerParams({ afaAnpassungen: updated });
                                 }}
-                                className="w-20 px-2 py-1 border-2 border-violet-300 bg-white rounded-lg text-sm text-right font-bold text-violet-700 focus:border-violet-500" />
+                                className="w-20 px-2 py-1 border-2 border-violet-300 bg-white rounded-lg text-base sm:text-sm text-right font-bold text-violet-700 focus:border-violet-500" />
                               <span className="text-sm text-gray-600">% p.a.</span>
                             </div>
                             <span className="text-xs text-gray-400">= {rndJahre} Jahre</span>
@@ -688,7 +688,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             <div className="flex items-center gap-1">
               <input type="number" min="0" value={entfernungKm}
                 onChange={(e) => updateSteuerParams({ entfernungKm: parseFloat(e.target.value) || 0 })}
-                className="w-full px-2 py-1 border rounded text-sm text-right" />
+                className="w-full px-2 py-1 border rounded text-base sm:text-sm text-right" />
               <span className="text-xs text-gray-500">km</span>
             </div>
           </div>
@@ -697,7 +697,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             <div className="flex items-center gap-1">
               <input type="number" min="0" max="1" step="0.01" value={kmPauschale}
                 onChange={(e) => updateSteuerParams({ kmPauschale: parseFloat(e.target.value) || 0 })}
-                className="w-full px-2 py-1 border rounded text-sm text-right" />
+                className="w-full px-2 py-1 border rounded text-base sm:text-sm text-right" />
               <span className="text-xs text-gray-500">€</span>
             </div>
           </div>
@@ -708,7 +708,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             <label className="block text-xs text-gray-600 mb-1">Fahrten pro Monat</label>
             <input type="number" min="0" max="30" value={fahrtenProMonat}
               onChange={(e) => updateSteuerParams({ fahrtenProMonat: parseFloat(e.target.value) || 0 })}
-              className="w-24 px-2 py-1 border rounded text-sm text-right" />
+              className="w-24 px-2 py-1 border rounded text-base sm:text-sm text-right" />
             {fahrtenProMonat > 0 && (
               <div className="mt-2 text-xs text-gray-600">
                 = {fahrtenProMonat} × 12 × {entfernungKm} km × 2 × {kmPauschale.toFixed(2)} € = <strong>{formatCurrency(fahrtenProMonat * 12 * entfernungKm * 2 * kmPauschale)}</strong>
