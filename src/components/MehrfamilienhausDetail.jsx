@@ -63,22 +63,22 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl">&times;</button>
           </div>
           {/* KPI Strip */}
-          <div className="grid grid-cols-4 gap-3 mt-4">
-            <div className="bg-white/20 rounded-xl p-3 text-center">
-              <p className="text-xs text-white/70">Gesamtmiete</p>
-              <p className="text-lg font-black">{formatCurrency(gesamtKaltmiete)}/mo</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-3 sm:mt-4">
+            <div className="bg-white/20 rounded-xl p-2 sm:p-3 text-center">
+              <p className="text-[10px] sm:text-xs text-white/70">Gesamtmiete</p>
+              <p className="text-sm sm:text-lg font-black">{formatCurrency(gesamtKaltmiete)}/mo</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3 text-center">
-              <p className="text-xs text-white/70">Gesamtfläche</p>
-              <p className="text-lg font-black">{gesamtFlaeche} m²</p>
+            <div className="bg-white/20 rounded-xl p-2 sm:p-3 text-center">
+              <p className="text-[10px] sm:text-xs text-white/70">Gesamtfläche</p>
+              <p className="text-sm sm:text-lg font-black">{gesamtFlaeche} m²</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3 text-center">
-              <p className="text-xs text-white/70">Vermietet</p>
-              <p className="text-lg font-black">{aktiveMieter.length}/{wohnungen.length} WE</p>
+            <div className="bg-white/20 rounded-xl p-2 sm:p-3 text-center">
+              <p className="text-[10px] sm:text-xs text-white/70">Vermietet</p>
+              <p className="text-sm sm:text-lg font-black">{aktiveMieter.length}/{wohnungen.length} WE</p>
             </div>
-            <div className={`${leerstandQuote > 0 ? 'bg-red-400/30' : 'bg-white/20'} rounded-xl p-3 text-center`}>
-              <p className="text-xs text-white/70">Leerstand</p>
-              <p className="text-lg font-black">{leerstandQuote} %</p>
+            <div className={`${leerstandQuote > 0 ? 'bg-red-400/30' : 'bg-white/20'} rounded-xl p-2 sm:p-3 text-center`}>
+              <p className="text-[10px] sm:text-xs text-white/70">Leerstand</p>
+              <p className="text-sm sm:text-lg font-black">{leerstandQuote} %</p>
             </div>
           </div>
         </div>
@@ -91,19 +91,19 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
             { id: 'cashflow', label: '💰 Cashflow' },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-4 text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+              className={`flex-1 py-2 px-2 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
               {tab.label}
             </button>
           ))}
           {hasChanges && (
-            <button onClick={handleSave} className="ml-auto py-2 px-4 bg-orange-500 text-white text-sm font-bold rounded-lg">
+            <button onClick={handleSave} className="ml-auto py-2 px-3 sm:px-4 bg-orange-500 text-white text-xs sm:text-sm font-bold rounded-lg">
               💾 Speichern
             </button>
           )}
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5">
           {/* Wohnungen Tab */}
           {activeTab === 'wohnungen' && (
             <div className="space-y-4">
@@ -231,66 +231,72 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
         </div>
       </div>
 
-      {/* Wohnung Form Modal */}
+      {/* Wohnung Form Modal — Bottom-Sheet on mobile */}
       {showWohnungForm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">{editWohnungIdx !== null ? '✏️ Wohnung bearbeiten' : '+ Wohnung hinzufügen'}</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Bezeichnung</label>
-                <input value={wohnungForm.name} onChange={e => setWohnungForm({...wohnungForm, name: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="z.B. EG links, OG rechts, Dachgeschoss" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+        <div className="fixed inset-0 bg-black/60 z-[60] flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
+          <div className="bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-xl sm:max-w-md max-h-[92vh] sm:max-h-[90vh] flex flex-col">
+            {/* Drag handle */}
+            <div className="sm:hidden flex justify-center pt-2.5 pb-1 flex-shrink-0">
+              <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 p-5">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">{editWohnungIdx !== null ? '✏️ Wohnung bearbeiten' : '+ Wohnung hinzufügen'}</h3>
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Wohnfläche (m²)</label>
-                  <input type="number" value={wohnungForm.wohnflaeche} onChange={e => setWohnungForm({...wohnungForm, wohnflaeche: parseFloat(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Bezeichnung</label>
+                  <input value={wohnungForm.name} onChange={e => setWohnungForm({...wohnungForm, name: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm" placeholder="z.B. EG links, OG rechts, Dachgeschoss" />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Kaltmiete (€/mo)</label>
-                  <input type="number" value={wohnungForm.kaltmiete} onChange={e => setWohnungForm({...wohnungForm, kaltmiete: parseFloat(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
-                <input value={wohnungForm.mieterName} onChange={e => setWohnungForm({...wohnungForm, mieterName: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Name des Mieters" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Mietbeginn</label>
-                  <input type="date" value={wohnungForm.mietbeginn} onChange={e => setWohnungForm({...wohnungForm, mietbeginn: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Mietende</label>
-                  <input type="date" value={wohnungForm.mietende} onChange={e => setWohnungForm({...wohnungForm, mietende: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg text-sm" />
-                </div>
-              </div>
-              <div className="border-t pt-3">
-                <p className="text-xs font-semibold text-gray-700 mb-2">🔑 Kaution</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
-                    <input type="number" value={wohnungForm.kautionBetrag} onChange={e => setWohnungForm({...wohnungForm, kautionBetrag: parseFloat(e.target.value) || 0})}
-                      className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Wohnfläche (m²)</label>
+                    <input type="number" value={wohnungForm.wohnflaeche} onChange={e => setWohnungForm({...wohnungForm, wohnflaeche: parseFloat(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm text-right" />
                   </div>
-                  <div className="flex items-end pb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={wohnungForm.kautionBezahlt} onChange={e => setWohnungForm({...wohnungForm, kautionBezahlt: e.target.checked})} className="w-4 h-4 rounded accent-emerald-500" />
-                      <span className="text-sm text-gray-700">Bezahlt</span>
-                    </label>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Kaltmiete (€/mo)</label>
+                    <input type="number" value={wohnungForm.kaltmiete} onChange={e => setWohnungForm({...wohnungForm, kaltmiete: parseFloat(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm text-right" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
+                  <input value={wohnungForm.mieterName} onChange={e => setWohnungForm({...wohnungForm, mieterName: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm" placeholder="Name des Mieters" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Mietbeginn</label>
+                    <input type="date" value={wohnungForm.mietbeginn} onChange={e => setWohnungForm({...wohnungForm, mietbeginn: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Mietende</label>
+                    <input type="date" value={wohnungForm.mietende} onChange={e => setWohnungForm({...wohnungForm, mietende: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm" />
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">🔑 Kaution</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
+                      <input type="number" value={wohnungForm.kautionBetrag} onChange={e => setWohnungForm({...wohnungForm, kautionBetrag: parseFloat(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm text-right" />
+                    </div>
+                    <div className="flex items-end pb-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={wohnungForm.kautionBezahlt} onChange={e => setWohnungForm({...wohnungForm, kautionBezahlt: e.target.checked})} className="w-4 h-4 rounded accent-emerald-500" />
+                        <span className="text-sm text-gray-700">Bezahlt</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setShowWohnungForm(false)} className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Abbrechen</button>
-              <button onClick={saveWohnung} className="flex-1 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold">Speichern</button>
+            <div className="flex gap-3 p-4 border-t border-gray-100 flex-shrink-0">
+              <button onClick={() => setShowWohnungForm(false)} className="flex-1 py-3 bg-gray-100 rounded-xl text-sm font-semibold">Abbrechen</button>
+              <button onClick={saveWohnung} className="flex-1 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold">Speichern</button>
             </div>
           </div>
         </div>

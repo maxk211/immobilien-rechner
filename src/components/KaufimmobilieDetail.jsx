@@ -314,10 +314,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 </div>
                 {/* Sub-Tabs */}
                 {aktiveGruppe.subs && (
-                  <div className="flex gap-1 mt-2 bg-indigo-50 rounded-xl p-1">
+                  <div className="flex gap-0.5 sm:gap-1 mt-2 bg-indigo-50 rounded-xl p-1">
                     {aktiveGruppe.subs.map(s => (
                       <button key={s.id} onClick={() => setActiveTab(s.id)}
-                        className={`flex-1 py-2 px-3 text-sm font-semibold rounded-lg transition-all text-center ${
+                        className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-3 text-[10px] sm:text-sm font-semibold rounded-lg transition-all text-center leading-tight ${
                           activeTab === s.id
                             ? 'bg-indigo-600 text-white shadow-sm'
                             : 'text-indigo-400 hover:text-indigo-700 hover:bg-indigo-100'
@@ -348,7 +348,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                         type="number"
                         value={qmPreis}
                         onChange={(e) => handleQmPreisChange(e.target.value)}
-                        className="w-32 px-3 py-2 text-lg font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                        className="w-32 px-3 py-2 text-base sm:text-lg font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                         placeholder="4000"
                       />
                       <span className="text-sm font-bold text-blue-600">€/m²</span>
@@ -364,7 +364,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                         type="number"
                         value={params.geschaetzterWert || ''}
                         onChange={(e) => handleGesamtwertChange(e.target.value)}
-                        className="w-40 px-3 py-2 text-xl font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                        className="w-40 px-3 py-2 text-base sm:text-xl font-bold text-blue-600 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                         placeholder="350000"
                       />
                       <span className="text-xl font-bold text-blue-600">€</span>
@@ -445,9 +445,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               </div>
 
               {/* Objektdetails */}
-              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl">
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">Objektdetails</h3>
-                <div className="grid grid-cols-3 gap-4">
+              <div className="bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-2xl">
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 sm:mb-4">Objektdetails</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Wohnfläche</label>
                     <div className="flex items-center gap-2">
@@ -461,7 +461,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                             setQmPreis(Math.round(params.geschaetzterWert / neueFlaeche).toString());
                           }
                         }}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right text-base sm:text-sm"
                         min={1}
                       />
                       <span className="text-gray-500">m²</span>
@@ -473,7 +473,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                       type="number"
                       value={params.zimmer}
                       onChange={(e) => updateParams({...params, zimmer: parseFloat(e.target.value) || 0})}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right text-base sm:text-sm"
                       min={1}
                       step={0.5}
                     />
@@ -484,7 +484,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                       type="number"
                       value={params.baujahr}
                       onChange={(e) => updateParams({...params, baujahr: parseInt(e.target.value) || 2000})}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right text-base sm:text-sm"
                       min={1800}
                       max={new Date().getFullYear()}
                     />
