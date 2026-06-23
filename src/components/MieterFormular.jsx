@@ -57,33 +57,38 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-blue-700 text-white p-5 rounded-t-xl flex justify-between items-center">
-          <h2 className="text-xl font-bold">{form.id ? 'Mieter bearbeiten' : 'Neuer Mieter'}</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
+      <div className="bg-white w-full rounded-t-3xl sm:rounded-xl shadow-2xl sm:max-w-2xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
+          <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
+        </div>
+        {/* Header */}
+        <div className="flex-shrink-0 bg-blue-700 text-white px-4 sm:px-5 py-4 sm:py-5 flex justify-between items-center">
+          <h2 className="text-lg sm:text-xl font-bold">{form.id ? 'Mieter bearbeiten' : 'Neuer Mieter'}</h2>
           <button onClick={onClose} className="text-white text-2xl hover:text-blue-200">&times;</button>
         </div>
 
         {/* Tab-Navigation */}
-        <div className="flex border-b border-gray-200 bg-gray-50 px-4">
+        <div className="flex border-b border-gray-200 bg-gray-50 px-2 sm:px-4 flex-shrink-0">
           {[
             { id: 'stammdaten', label: '👤 Stammdaten' },
             { id: 'mietvertrag', label: '📄 Mietvertrag' },
-            { id: 'mietanpassungen', label: '📈 Mietanpassungen' },
+            { id: 'mietanpassungen', label: '📈 Anpassungen' },
           ].map(tab => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              className={`flex-1 px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center ${activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               {tab.label}
             </button>
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-5">
           {/* Immobilie (immer sichtbar) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Immobilie *</label>
             <select value={form.immobilieId} onChange={e => setForm({...form, immobilieId: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" required>
               <option value="">— Immobilie wählen —</option>
               {portfolio.map(i => <option key={i.id} value={i.id}>{i.name || i.adresse || i.plz}</option>)}
             </select>
@@ -98,23 +103,23 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   <div className="col-span-2">
                     <label className="block text-xs text-gray-600 mb-1">Name *</label>
                     <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" required />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Email</label>
                     <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Telefon</label>
                     <input type="tel" value={form.telefon} onChange={e => setForm({...form, telefon: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                   </div>
                   <div className="col-span-2">
                     <label className="block text-xs text-gray-600 mb-1">Zimmer / Einheit</label>
                     <input type="text" value={form.zimmerBezeichnung} onChange={e => setForm({...form, zimmerBezeichnung: e.target.value})}
                       placeholder="z.B. Zimmer 2, Ganze Wohnung, EG links"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                   </div>
                 </div>
               </div>
@@ -126,7 +131,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Mahnstufe</label>
                     <select value={form.mahnstufe} onChange={e => setForm({...form, mahnstufe: parseInt(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm">
                       <option value={0}>Keine Mahnung</option>
                       <option value={1}>1. Mahnung</option>
                       <option value={2}>2. Mahnung</option>
@@ -137,7 +142,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Letzte Mahnung am</label>
                       <input type="date" value={form.letzteMahnungAm} onChange={e => setForm({...form, letzteMahnungAm: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                     </div>
                   )}
                 </div>
@@ -147,7 +152,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Notizen</label>
                 <textarea value={form.notizen} onChange={e => setForm({...form, notizen: e.target.value})}
-                  rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                   placeholder="Besonderheiten, Vereinbarungen, etc." />
               </div>
             </>
@@ -180,7 +185,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kündigungsfrist</label>
                     <select value={form.kuendigungsfrist} onChange={e => setForm({...form, kuendigungsfrist: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm">
                       <option value="3 Monate">3 Monate</option>
                       <option value="6 Monate">6 Monate</option>
                       <option value="12 Monate">12 Monate</option>
@@ -190,7 +195,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Nächste Anpassung</label>
                     <input type="date" value={form.naechsteAnpassungDatum} onChange={e => setForm({...form, naechsteAnpassungDatum: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                   </div>
                 </div>
               </div>
@@ -202,17 +207,17 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Mietbeginn</label>
                     <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Mietende (opt.)</label>
                     <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Mon.)</label>
                     <input type="number" value={form.kaltmiete} onChange={e => setForm({...form, kaltmiete: parseFloat(e.target.value) || ''})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" step="10" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" step="10" />
                   </div>
                   <div className="flex flex-col justify-end">
                     {preisProQm ? (
@@ -236,7 +241,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kautionshöhe (€)</label>
                     <input type="number" value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                   </div>
                   <div className="flex items-end pb-0.5">
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -249,7 +254,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Bezahlt am</label>
                       <input type="date" value={form.kautionBezahltAm} onChange={e => setForm({...form, kautionBezahltAm: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
                     </div>
                   )}
                 </div>
@@ -314,7 +319,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Gültig ab</label>
                     <input type="date" value={newAnpassung.datum} onChange={e => setNewAnpassung(a => ({ ...a, datum: e.target.value }))}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-400" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-blue-400" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Neue Kaltmiete (€)</label>
@@ -326,7 +331,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                     <label className="block text-xs text-gray-500 mb-1">Grund (opt.)</label>
                     <input type="text" value={newAnpassung.grund} onChange={e => setNewAnpassung(a => ({ ...a, grund: e.target.value }))}
                       placeholder="z.B. Mietspiegel"
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-400" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-blue-400" />
                   </div>
                 </div>
                 {newAnpassung.betrag && wohnflaeche > 0 && (
@@ -343,13 +348,13 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
             </>
           )}
 
-          <div className="flex gap-3 pt-2 border-t border-gray-100">
+          <div className="flex gap-3 pt-2 border-t border-gray-100 pb-2">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold">
               Abbrechen
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:opacity-50">
+              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold disabled:opacity-50">
               {saving ? 'Speichern...' : 'Speichern'}
             </button>
           </div>

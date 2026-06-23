@@ -75,7 +75,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
                 type="date"
                 value={neueInvestition.datum}
                 onChange={(e) => setNeueInvestition({...neueInvestition, datum: e.target.value})}
-                className="w-full px-2 py-1 border rounded text-sm"
+                className="w-full px-2 py-1 border rounded text-base sm:text-sm"
               />
             </div>
             <div>
@@ -83,7 +83,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
               <select
                 value={neueInvestition.kategorie}
                 onChange={(e) => setNeueInvestition({...neueInvestition, kategorie: e.target.value})}
-                className="w-full px-2 py-1 border rounded text-sm"
+                className="w-full px-2 py-1 border rounded text-base sm:text-sm"
               >
                 {Object.entries(kategorien).map(([key, val]) => (
                   <option key={key} value={key}>{val.icon} {val.label}</option>
@@ -98,7 +98,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
               value={neueInvestition.beschreibung}
               onChange={(e) => setNeueInvestition({...neueInvestition, beschreibung: e.target.value})}
               placeholder="z.B. Neue Heizung, Dachsanierung..."
-              className="w-full px-2 py-1 border rounded text-sm"
+              className="w-full px-2 py-1 border rounded text-base sm:text-sm"
             />
           </div>
           <div className="mb-3">
@@ -108,7 +108,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
               value={neueInvestition.betrag}
               onChange={(e) => setNeueInvestition({...neueInvestition, betrag: e.target.value})}
               placeholder="z.B. 5000"
-              className="w-full px-2 py-1 border rounded text-sm"
+              className="w-full px-2 py-1 border rounded text-base sm:text-sm"
             />
           </div>
           <div className="flex gap-2">

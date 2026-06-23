@@ -100,34 +100,34 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
           </div>
           {/* KPI Strip */}
           <div className="grid grid-cols-3 bg-white border-b border-gray-200 divide-x divide-gray-100">
-            <div className={`px-5 py-3 ${monatsCashflow >= 0 ? '' : ''}`}>
-              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Monatl. Cashflow</div>
-              <div className={`text-xl font-black ${monatsCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            <div className="px-2 sm:px-5 py-2 sm:py-3">
+              <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Monatl.</div>
+              <div className={`text-sm sm:text-xl font-black ${monatsCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}
               </div>
             </div>
-            <div className="px-5 py-3">
-              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Jährl. Cashflow</div>
-              <div className={`text-xl font-black ${jahresCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            <div className="px-2 sm:px-5 py-2 sm:py-3">
+              <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Jährlich</div>
+              <div className={`text-sm sm:text-xl font-black ${jahresCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow)}
               </div>
             </div>
-            <div className="px-5 py-3">
-              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide">Bisheriger Gewinn</div>
-              <div className={`text-xl font-black text-violet-600`}>
+            <div className="px-2 sm:px-5 py-2 sm:py-3">
+              <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Bisher gesamt</div>
+              <div className="text-sm sm:text-xl font-black text-emerald-700">
                 {bisherigeCashflowGesamt >= 0 ? '+' : ''}{formatCurrency(bisherigeCashflowGesamt)}
               </div>
-              <div className="text-xs text-gray-400">{monateSeitStart} Monate</div>
+              <div className="text-[10px] sm:text-xs text-gray-400">{monateSeitStart} Mo.</div>
             </div>
           </div>
           {/* Tab-Navigation */}
-          <div className="flex gap-1 bg-slate-100 p-1">
+          <div className="flex gap-1 bg-slate-100 p-1 flex-shrink-0">
             {[
               { id: 'uebersicht', label: '📊 Übersicht' },
               { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-4 text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                className={`flex-1 py-2 px-4 text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                 {tab.label}
               </button>
             ))}
@@ -192,7 +192,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                     type="text"
                     value={params.name}
                     onChange={(e) => updateParams({ name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
                     placeholder="z.B. Mitarbeiter-WG München"
                   />
                 </div>
@@ -203,7 +203,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                       type="text"
                       value={params.plz}
                       onChange={(e) => updateParams({ plz: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -212,7 +212,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                       type="date"
                       value={params.mietvertragStart}
                       onChange={(e) => updateParams({ mietvertragStart: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
@@ -254,7 +254,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                     type="text"
                     value={params.adresse}
                     onChange={(e) => updateParams({ adresse: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
                     placeholder="Musterstraße 123"
                   />
                 </div>
@@ -265,7 +265,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                       type="number"
                       value={params.wohnflaeche}
                       onChange={(e) => updateParams({ wohnflaeche: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -274,7 +274,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                       type="number"
                       value={params.zimmer}
                       onChange={(e) => updateParams({ zimmer: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
