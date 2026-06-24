@@ -92,6 +92,14 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     eigentumsform: immobilie.eigentumsform || 'allein',
     userAnteil: immobilie.userAnteil ?? 100,
     gbrPartner: immobilie.gbrPartner || [],
+    stellplatz: immobilie.stellplatz || {
+      vorhanden: false,
+      typ: 'tiefgarage',
+      anzahl: 1,
+      kaufpreisAnteil: 0,
+      monatlicheMiete: 0,
+      istVermietet: true,
+    },
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -492,6 +500,124 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 </div>
               </div>
 
+              {/* Stellplatz */}
+              {(() => {
+                const sp = params.stellplatz || {};
+                const updateSp = (updates) => updateParams({ ...params, stellplatz: { ...sp, ...updates } });
+                const STELLPLATZ_TYPEN = [
+                  { value: 'tiefgarage', label: '🏢 Tiefgarage' },
+                  { value: 'aussen', label: '🅿️ Außenstellplatz' },
+                  { value: 'carport', label: '🚗 Carport' },
+                  { value: 'doppelparker', label: '🔀 Doppelparker' },
+                ];
+                const jahresEinnahmen = (sp.vorhanden && sp.istVermietet)
+                  ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1) * 12 : 0;
+                return (
+                  <div className="bg-gray-50 border border-gray-200 p-4 sm:p-5 rounded-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">🅿️ Stellplatz</h3>
+                      <button
+                        type="button"
+                        onClick={() => updateSp({ vorhanden: !sp.vorhanden })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sp.vorhanden ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${sp.vorhanden ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+                    {sp.vorhanden && (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Typ</label>
+                            <select
+                              value={sp.typ || 'tiefgarage'}
+                              onChange={e => updateSp({ typ: e.target.value })}
+                              className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                              {STELLPLATZ_TYPEN.map(t => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Anzahl Stellplätze</label>
+                            <input
+                              type="number" min={1} max={20}
+                              value={sp.anzahl || 1}
+                              onChange={e => updateSp({ anzahl: parseInt(e.target.value) || 1 })}
+                              className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Kaufpreis-Anteil</label>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number" min={0} step={1000}
+                                value={sp.kaufpreisAnteil || 0}
+                                onChange={e => updateSp({ kaufpreisAnteil: parseFloat(e.target.value) || 0 })}
+                                className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-500">€</span>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-0.5">Im Kaufpreis enthalten</p>
+                          </div>
+                        </div>
+
+                        {/* Vermietung */}
+                        <div className="pt-2 border-t border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">Stellplatz vermieten</span>
+                            <button
+                              type="button"
+                              onClick={() => updateSp({ istVermietet: !sp.istVermietet })}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sp.istVermietet ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${sp.istVermietet ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                          </div>
+                          {sp.istVermietet && (
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <label className="block text-xs text-gray-500 mb-1">Miete pro Stellplatz / Monat</label>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number" min={0} step={5}
+                                    value={sp.monatlicheMiete || 0}
+                                    onChange={e => updateSp({ monatlicheMiete: parseFloat(e.target.value) || 0 })}
+                                    className="w-full px-3 py-2 border-2 border-emerald-300 rounded-lg text-base sm:text-sm text-right font-bold focus:ring-2 focus:ring-emerald-500"
+                                  />
+                                  <span className="text-sm text-gray-500">€</span>
+                                </div>
+                              </div>
+                              {sp.anzahl > 1 && (
+                                <div className="text-center bg-emerald-50 rounded-xl px-3 py-2">
+                                  <div className="text-xs text-gray-400">Gesamt</div>
+                                  <div className="font-bold text-emerald-700">{formatCurrency((sp.monatlicheMiete || 0) * sp.anzahl)}/Mo</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Summary */}
+                        {jahresEinnahmen > 0 && (
+                          <div className="flex justify-between items-center bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                            <span className="text-sm text-emerald-700 font-medium">🅿️ Stellplatz-Mieteinnahmen</span>
+                            <div className="text-right">
+                              <div className="font-bold text-emerald-700">{formatCurrency((sp.monatlicheMiete || 0) * (sp.anzahl || 1))}/Mo</div>
+                              <div className="text-xs text-emerald-600">{formatCurrency(jahresEinnahmen)}/Jahr</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {!sp.vorhanden && (
+                      <p className="text-sm text-gray-400">Kein Stellplatz vorhanden oder inbegriffen.</p>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Prognose */}
               <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Prognose</h3>
@@ -804,7 +930,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                       </button>
                     </div>
                     <div className="md:col-span-2 bg-gray-50 rounded-xl p-3 flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                      <div><span className="text-gray-400 text-xs">Kaufpreis</span><br/><strong>{formatCurrency(params.kaufpreis)}</strong></div>
+                      <div>
+                        <span className="text-gray-400 text-xs">Kaufpreis</span><br/>
+                        <strong>{formatCurrency(params.kaufpreis)}</strong>
+                        {params.stellplatz?.vorhanden && params.stellplatz?.kaufpreisAnteil > 0 && (
+                          <div className="text-xs text-blue-500 mt-0.5">davon 🅿️ {formatCurrency(params.stellplatz.kaufpreisAnteil)} SP</div>
+                        )}
+                      </div>
                       <div className="text-gray-300">+</div>
                       <div><span className="text-gray-400 text-xs">Nebenkosten</span><br/><strong>{formatCurrency(kaufnebenkostenAbsolut)}</strong></div>
                       <div className="text-gray-300">−</div>

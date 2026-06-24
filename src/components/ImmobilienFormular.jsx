@@ -47,6 +47,14 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     // Eigentumsstruktur
     eigentumsform: 'allein',      // 'allein' oder 'gbr'
     userAnteil: 100,              // Anteil des Users in % (bei GbR)
+    stellplatz: {
+      vorhanden: false,
+      typ: 'tiefgarage',
+      anzahl: 1,
+      kaufpreisAnteil: 0,
+      monatlicheMiete: 0,
+      istVermietet: true,
+    },
     gbrPartner: [],               // [{name, anteil}] weitere GbR-Gesellschafter
   });
 
@@ -691,6 +699,82 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 })()}
               </div>
             )}
+
+            {/* Stellplatz - nur für Kauf / MFH */}
+            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (() => {
+              const sp = formData.stellplatz || {};
+              const updateSp = (updates) => handleChange('stellplatz', { ...sp, ...updates });
+              return (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold text-gray-700">🅿️ Stellplatz</h3>
+                    <button
+                      type="button"
+                      onClick={() => updateSp({ vorhanden: !sp.vorhanden })}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sp.vorhanden ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${sp.vorhanden ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  {sp.vorhanden ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Typ</label>
+                          <select
+                            value={sp.typ || 'tiefgarage'}
+                            onChange={e => updateSp({ typ: e.target.value })}
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="tiefgarage">🏢 Tiefgarage</option>
+                            <option value="aussen">🅿️ Außen</option>
+                            <option value="carport">🚗 Carport</option>
+                            <option value="doppelparker">🔀 Doppelparker</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Anzahl</label>
+                          <input type="number" min={1} max={20}
+                            value={sp.anzahl || 1}
+                            onChange={e => updateSp({ anzahl: parseInt(e.target.value) || 1 })}
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Kaufpreis-Anteil (€)</label>
+                          <input type="number" min={0} step={1000}
+                            value={sp.kaufpreisAnteil || 0}
+                            onChange={e => updateSp({ kaufpreisAnteil: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Miete/SP/Mo (€)</label>
+                          <input type="number" min={0} step={5}
+                            value={sp.monatlicheMiete || 0}
+                            onChange={e => updateSp({ monatlicheMiete: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!sp.istVermietet}
+                          onChange={e => updateSp({ istVermietet: e.target.checked })}
+                          className="rounded"
+                        />
+                        Stellplatz ist vermietet
+                      </label>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">Kein Stellplatz vorhanden.</p>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Arbitrage-Daten für Mietimmobilie */}
             {formData.immobilienTyp === 'mietimmobilie' && (

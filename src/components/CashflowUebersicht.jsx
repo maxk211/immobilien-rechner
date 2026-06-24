@@ -36,6 +36,11 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       const basisMiete = getAktuelleMiete(params); // aktuelle Miete als Basis für Prognose
       const jahresMiete = (histMiete?.kaltmiete != null ? histMiete.kaltmiete : basisMiete) * 12;
       const nkVomMieter = (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) * 12 : 0;
+      // Stellplatz-Einnahmen
+      const sp = params.stellplatz;
+      const jahresStellplatz = (sp?.vorhanden && sp?.istVermietet)
+        ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1) * 12
+        : 0;
       // Vermieterkosten: historische Werte aus mietHistorie[Jahr] bevorzugen (manuell eingetragen)
       const histKosten = (params.mietHistorie || {})[`${jahr}`] || {};
       const jInstandhaltung = histKosten.instandhaltung ?? params.instandhaltung;
@@ -59,12 +64,13 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date(jahr, 11, 31))
         .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0) * 12;
 
-      const jahresCashflow = jahresMiete + nkVomMieter - jahresKosten - jahresKreditrate - jahresInvestitionen - jahresBauspar;
+      const jahresCashflow = jahresMiete + nkVomMieter + jahresStellplatz - jahresKosten - jahresKreditrate - jahresInvestitionen - jahresBauspar;
       kumulierterCashflow += jahresCashflow;
 
       daten.push({
         jahr,
-        einnahmen: Math.round(jahresMiete),
+        einnahmen: Math.round(jahresMiete + jahresStellplatz),
+        stellplatz: Math.round(jahresStellplatz),
         kosten: Math.round(jahresKosten),
         kreditrate: Math.round(jahresKreditrate),
         investitionen: Math.round(jahresInvestitionen),
@@ -104,8 +110,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
 
   // Vermieterkosten für aktuelles Jahr aus mietHistorie (falls manuell eingetragen)
   const aktuellesJahrHistKosten = (params.mietHistorie || {})[`${aktuellesJahr}`] || {};
+  const spCF = params.stellplatz;
+  const stellplatzMonatsmiete = (spCF?.vorhanden && spCF?.istVermietet)
+    ? (spCF.monatlicheMiete || 0) * (spCF.anzahl || 1)
+    : 0;
+
   const monatsDaten = {
     einnahmen: getAktuelleMiete(params), // aktuelle Miete lt. mietAnpassungen
+    stellplatz: stellplatzMonatsmiete,
     nebenkosten: aktuellesJahrHistKosten.nebenkosten ?? params.nebenkosten,
     instandhaltung: aktuellesJahrHistKosten.instandhaltung ?? params.instandhaltung,
     verwaltung: aktuellesJahrHistKosten.verwaltung ?? params.verwaltung,
@@ -119,10 +131,10 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
     bauspar: (params.bausparvertraege || [])
       .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
       .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0),
-    // Cashflow neu berechnen mit allen Kosten inkl. Bauspar
+    // Cashflow neu berechnen mit allen Kosten inkl. Bauspar + Stellplatz
     get gesamtKosten() { return this.nebenkosten + this.instandhaltung + this.verwaltung + this.hausgeld + this.strom + this.internet; },
-    get cashflowMitTilgung() { return this.einnahmen - this.gesamtKosten - this.kreditrate - this.bauspar; },
-    get cashflowOhneTilgung() { return this.einnahmen - this.gesamtKosten - this.zinsen - this.bauspar; }
+    get cashflowMitTilgung() { return this.einnahmen + this.stellplatz - this.gesamtKosten - this.kreditrate - this.bauspar; },
+    get cashflowOhneTilgung() { return this.einnahmen + this.stellplatz - this.gesamtKosten - this.zinsen - this.bauspar; }
   };
 
   return (
@@ -159,6 +171,12 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               <span className="text-green-600">+ Mieteinnahmen</span>
               <span className="font-semibold text-green-600">{formatCurrency(a(monatsDaten.einnahmen))}</span>
             </div>
+            {monatsDaten.stellplatz > 0 && (
+              <div className="flex justify-between items-center py-1 text-sm">
+                <span className="text-green-500">+ 🅿️ Stellplatz-Miete ({spCF.anzahl > 1 ? `${spCF.anzahl}×` : ''}{formatCurrency(spCF.monatlicheMiete)})</span>
+                <span className="text-green-500">{formatCurrency(a(monatsDaten.stellplatz))}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center py-1 text-sm">
               <span className="text-red-500">- Nebenkosten</span>
               <span className="text-red-500">{formatCurrency(a(monatsDaten.nebenkosten))}</span>

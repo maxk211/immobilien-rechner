@@ -223,7 +223,15 @@ export const berechneRendite = (params) => {
   // - warmmiete: Warmmiete (alles inkl., Vermieter zahlt alle Betriebskosten)
   const jahresmieteKalt = kaltmiete * 12;
   const jahresNKVomMieter = vermietungsmodell === 'kaltmiete_nk' ? (nebenkostenVomMieter || 0) * 12 : 0;
-  const jahresEinnahmen = jahresmieteKalt + jahresNKVomMieter;
+
+  // Stellplatz-Einnahmen (falls vorhanden und vermietet)
+  const sp = params.stellplatz;
+  const stellplatzMonatsMiete = (sp?.vorhanden && sp?.istVermietet)
+    ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1)
+    : 0;
+  const jahresStellplatz = stellplatzMonatsMiete * 12;
+
+  const jahresEinnahmen = jahresmieteKalt + jahresNKVomMieter + jahresStellplatz;
 
   const jahresinstandhaltung = instandhaltung * 12;
   const jahresverwaltung = verwaltung * 12;
@@ -348,6 +356,8 @@ export const berechneRendite = (params) => {
     // Aktive Phase für CashflowUebersicht
     effZinssatz,
     effRestschuld: effKredit,
+    // Stellplatz
+    stellplatzMonatsMiete,
   };
 };
 
