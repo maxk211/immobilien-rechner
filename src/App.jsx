@@ -6,6 +6,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
+import LandingPage from './LandingPage';
 import { formatCurrency, formatPercent } from './utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from './utils/miete.js';
 import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte } from './utils/berechnung.js';
@@ -45,6 +46,7 @@ import PortfolioOverview from './components/PortfolioOverview';
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
   const [portfolio, setPortfolio] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showKalkulation, setShowKalkulation] = useState(false);
@@ -975,9 +977,15 @@ function App() {
     );
   }
 
-  // Login Screen wenn nicht eingeloggt
+  // Landing Page oder Auth wenn nicht eingeloggt
   if (!session) {
-    return <Auth />;
+    if (showAuth) return <Auth />;
+    return (
+      <LandingPage
+        onGetStarted={() => setShowAuth(true)}
+        onLogin={() => setShowAuth(true)}
+      />
+    );
   }
 
   // Aktive vs. inaktive Immobilien für Dashboard
