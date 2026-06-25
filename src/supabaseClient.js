@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner'];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter'];
 
 // Immobilie speichern (neu oder update)
@@ -156,7 +156,11 @@ function dbToApp(db) {
     dauerauftrag: db.dauerauftrag || false,
     dauerauftragBetrag: Number(db.dauerauftrag_betrag) || 0,
     zaehler: db.zaehler || [],
-    bausparvertraege: db.bausparvertraege || []
+    bausparvertraege: db.bausparvertraege || [],
+    stellplatz: db.stellplatz || null,
+    eigentumsform: db.eigentumsform || 'allein',
+    userAnteil: db.user_anteil ?? 100,
+    gbrPartner: db.gbr_partner || [],
   };
 }
 
@@ -229,7 +233,11 @@ function appToDb(app) {
     dauerauftrag: app.dauerauftrag || false,
     dauerauftrag_betrag: app.dauerauftragBetrag || null,
     zaehler: app.zaehler || [],
-    bausparvertraege: app.bausparvertraege || []
+    bausparvertraege: app.bausparvertraege || [],
+    stellplatz: app.stellplatz || null,
+    eigentumsform: app.eigentumsform || 'allein',
+    user_anteil: app.userAnteil ?? 100,
+    gbr_partner: app.gbrPartner || [],
   };
 }
 
