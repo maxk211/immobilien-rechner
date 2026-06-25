@@ -114,15 +114,19 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
 
   const startEdit = () => {
     const init = {};
-    ZIEL_TYPEN.forEach(t => { init[t.id] = ziele[t.id] ?? t.defaultZiel; });
+    // Bereits gespeicherter Zustand wird respektiert (null = deaktiviert, Wert = aktiv)
+    // Ziele die noch nie berührt wurden, bekommen den Defaultwert (= aktiv beim ersten Öffnen)
+    ZIEL_TYPEN.forEach(t => {
+      init[t.id] = t.id in ziele ? ziele[t.id] : t.defaultZiel;
+    });
     setEditZiele(init);
     setEditMode(true);
   };
 
   const saveEdit = () => {
-    const saved = { ...ziele, ...editZiele };
-    setZiele(saved);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    // editZiele enthält alle 4 Keys (aktiv = Zahl, deaktiviert = null)
+    setZiele(editZiele);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(editZiele));
     setEditMode(false);
   };
 
@@ -158,7 +162,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                     <button
                       onClick={() => {
                         const u = { ...editZiele };
-                        if (u[typ.id] != null) delete u[typ.id];
+                        if (u[typ.id] != null) u[typ.id] = null;
                         else u[typ.id] = typ.defaultZiel;
                         setEditZiele(u);
                       }}
@@ -261,7 +265,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                 <div key={typ.id} className={`p-4 rounded-xl border ${c.border} ${c.bg}`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2"><span>{typ.icon}</span><span className={`font-semibold text-sm ${c.text}`}>{typ.label}</span></div>
-                    <button onClick={() => { const u = { ...editZiele }; if (u[typ.id] != null) delete u[typ.id]; else u[typ.id] = typ.defaultZiel; setEditZiele(u); }}
+                    <button onClick={() => { const u = { ...editZiele }; if (u[typ.id] != null) u[typ.id] = null; else u[typ.id] = typ.defaultZiel; setEditZiele(u); }}
                       className={`text-xs px-2 py-0.5 rounded-full font-semibold transition-all ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-gray-400 bg-gray-100'}`}>
                       {editZiele[typ.id] != null ? '✓ Aktiv' : 'Inaktiv'}
                     </button>
