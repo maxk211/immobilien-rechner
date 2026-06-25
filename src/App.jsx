@@ -40,6 +40,8 @@ import KalkulationsModal from './components/KalkulationsModal';
 import ImmobilienFormular from './components/ImmobilienFormular';
 import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
+import PortfolioZiele from './components/PortfolioZiele';
+import VermieterTodos from './components/VermieterTodos';
 
 
 
@@ -1076,6 +1078,13 @@ function App() {
 
       <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
         <PortfolioOverview portfolio={portfolio} />
+        <PortfolioZiele portfolio={portfolio} />
+        <VermieterTodos
+          portfolio={portfolio}
+          mieterListe={mieterListe}
+          nkAbrechnungen={nkAbrechnungen}
+          onSelectImmobilie={(immo) => setSelectedImmobilie(immo)}
+        />
 
         {/* Navigation & Actions Bar */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
