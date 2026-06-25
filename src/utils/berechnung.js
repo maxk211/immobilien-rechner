@@ -409,7 +409,12 @@ export const berechneMtlCashflow = (immo) => {
     .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
     .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
 
-  return gesamtMiete + nkVomMieter - ergebnis.monatlicheRate - betriebskosten - bauspar;
+  // Stellplatz-Mieteinnahmen
+  const spMtl = (immo.stellplatz?.vorhanden && immo.stellplatz?.istVermietet)
+    ? (immo.stellplatz.monatlicheMiete || 0) * (immo.stellplatz.anzahl || 1)
+    : 0;
+
+  return gesamtMiete + nkVomMieter + spMtl - ergebnis.monatlicheRate - betriebskosten - bauspar;
 };
 
 // ─── Vermögenswerte-Helper ───────────────────────────────────────────────────
