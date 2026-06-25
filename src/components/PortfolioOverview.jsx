@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete } from '../utils/miete.js';
 import { berechneMtlCashflow, berechneImmoVermoegenswerte } from '../utils/berechnung.js';
+import PortfolioZiele from './PortfolioZiele';
 
 const PortfolioOverview = ({ portfolio }) => {
   const [showVermoegenDetail, setShowVermoegenDetail] = useState(false);
@@ -182,24 +183,21 @@ const PortfolioOverview = ({ portfolio }) => {
         </div>
       </div>
 
-      {/* Vermögens-KPI Zeile */}
+      {/* Freies Vermögen + Portfolio-Ziele Zeile */}
       {stats.anzahlKaufimmobilien > 0 && (
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* Freies Vermögen */}
-          <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 p-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600 mb-1">Freies Vermögen (EK)</div>
-            <div className="text-2xl font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
-            <div className="text-xs text-amber-500 mt-1 font-medium">Marktwert − Restschuld</div>
+        <div className="flex flex-col sm:flex-row gap-3 mb-4 items-stretch">
+          {/* Freies Vermögen — kompakt */}
+          <div className="flex-shrink-0 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 p-3 sm:p-4 shadow-sm sm:w-48">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Freies Vermögen</div>
+            <div className="text-lg sm:text-xl font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
+            <div className="text-xs text-amber-500 mt-0.5">Marktwert − Restschuld</div>
             {stats.gesamtRestschuld > 0 && (
-              <div className="text-xs text-gray-400 mt-0.5">Restschuld: {formatCurrency(stats.gesamtRestschuld)}</div>
+              <div className="text-[10px] text-gray-400 mt-0.5">Schulden: {formatCurrency(stats.gesamtRestschuld)}</div>
             )}
           </div>
-          {/* Tilgung p.a. */}
-          <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 p-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-wider text-teal-500 mb-1">Tilgung p.a. (Vermögensaufbau)</div>
-            <div className="text-2xl font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</div>
-            <div className="text-xs text-teal-400 mt-1 font-medium">Schuldenabbau in {new Date().getFullYear()}</div>
-            <div className="text-xs text-gray-400 mt-0.5">≈ {formatCurrency(stats.gesamtTilgungJahr / 12)}/Monat</div>
+          {/* Portfolio-Ziele inline */}
+          <div className="flex-1">
+            <PortfolioZiele portfolio={portfolio} inline />
           </div>
         </div>
       )}

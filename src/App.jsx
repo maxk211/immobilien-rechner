@@ -1078,7 +1078,6 @@ function App() {
 
       <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
         <PortfolioOverview portfolio={portfolio} />
-        <PortfolioZiele portfolio={portfolio} />
         <VermieterTodos
           portfolio={portfolio}
           mieterListe={mieterListe}
