@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 
@@ -26,6 +27,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
   const kmPauschale = params.kmPauschale || 0.30;
   const fahrtenListe = params.fahrtenListe || [];
   const investitionen = params.investitionen || [];
+  // Neue Anlage-V-Felder
+  const grundsteuerMonat = params.grundsteuerMonat || 0;
+  const versicherungMonat = params.versicherungMonat || 0;
 
   // AfA-Rate für ein bestimmtes Jahr bestimmen
   // Phasen überschreiben den Basis-afaSatz ab dem jeweiligen vonJahr
@@ -83,10 +87,21 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
     // Mieteinnahmen: mietHistorie[Jahr].kaltmiete falls händisch, sonst Basismiete
     const histMieteSteuer = (params.mietHistorie || {})[`${jahr}`];
-    const jahresMiete = (histMieteSteuer?.kaltmiete != null ? histMieteSteuer.kaltmiete : getAktuelleMiete(params)) * 12;
+    const jahresKaltmiete = (histMieteSteuer?.kaltmiete != null ? histMieteSteuer.kaltmiete : getAktuelleMiete(params)) * 12;
 
-    // Laufende Kosten (Werbungskosten)
-    const laufendeKosten = (params.instandhaltung + params.verwaltung + (params.hausgeld || 0)) * 12;
+    // NK vom Mieter (Umlagen) — Anlage V Zeile 6
+    const nkModus = params.vermietungsmodell || 'kaltmiete';
+    const nkBetrag = nkModus === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
+    const jahresNK = nkBetrag * 12;
+    const jahresMiete = jahresKaltmiete; // Kaltmiete für Rechnung — NK separat
+
+    // Laufende Kosten (Werbungskosten) — aufgeteilt für Anlage V
+    const jahresInstandhaltung = (params.instandhaltung || 0) * 12;
+    const jahresVerwaltung = (params.verwaltung || 0) * 12;
+    const jahresHausgeld = (params.hausgeld || 0) * 12;
+    const jahresGrundsteuer = grundsteuerMonat * 12;
+    const jahresVersicherung = versicherungMonat * 12;
+    const laufendeKosten = jahresInstandhaltung + jahresVerwaltung + jahresHausgeld + jahresGrundsteuer + jahresVersicherung;
 
     // Finanzierungskosten (nur Zinsen - Tilgung ist nicht absetzbar!)
     const zinssatz = params.zinssatz ?? 4.0;
@@ -162,9 +177,12 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     // Bereinigung: Einmaleffekte herausrechnen
     const einmaleffekte = bereinigt ? sofortAbsetzbar : 0;
 
-    // Steuerliche Berechnung
+    // Steuerliche Berechnung — NK vom Mieter ist Einnahme UND Werbungskosten (Durchlaufposten)
+    // In der Praxis: NK-Einnahmen müssen deklariert werden, NK-Ausgaben sind Werbungskosten
+    // Vereinfacht: NK-Einnahmen + NK-Ausgaben heben sich auf → hier nur Überschuss relevant
+    const gesamtEinnahmen = jahresMiete + jahresNK;
     const absetzbareKosten = jahresAfa + jahresZinsen + laufendeKosten + jahresFahrtkosten + (bereinigt ? 0 : sofortAbsetzbar);
-    const zuVersteuern = jahresMiete - absetzbareKosten;
+    const zuVersteuern = gesamtEinnahmen - absetzbareKosten;
     const steuerEffekt = zuVersteuern * (steuersatz / 100);
 
     // Jahr-Typ bestimmen
@@ -178,19 +196,28 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     return {
       jahr,
       jahrTyp,
-      einnahmen: Math.round(jahresMiete),
-      laufendeKosten: Math.round(laufendeKosten),
-      zinsen: Math.round(jahresZinsen),
-      afa: Math.round(jahresAfa),
+      // Einnahmen (Anlage V)
+      einnahmen: Math.round(jahresMiete),          // Kaltmiete
+      nkEinnahmen: Math.round(jahresNK),           // Z. 6 — NK vom Mieter
+      gesamtEinnahmen: Math.round(gesamtEinnahmen),
+      // Werbungskosten (Anlage V)
+      zinsen: Math.round(jahresZinsen),            // Z. 9 — Schuldzinsen
+      afa: Math.round(jahresAfa),                  // Z. 13/14 — AfA
       afaBemessungsgrundlage: Math.round(afaBemessungsgrundlage),
       gueltigerAfaSatz,
-      fahrtkosten: Math.round(jahresFahrtkosten),
-      investitionenSofort: Math.round(sofortAbsetzbar),
+      instandhaltung: Math.round(jahresInstandhaltung), // Z. 33 — Erhaltungsaufwand laufend
+      verwaltung: Math.round(jahresVerwaltung),    // Z. 34 — Verwaltungskosten
+      hausgeld: Math.round(jahresHausgeld),        // Z. 35 — Hausgeld/WEG
+      grundsteuer: Math.round(jahresGrundsteuer),  // Z. 36 — Grundsteuer
+      versicherung: Math.round(jahresVersicherung),// Z. 37 — Versicherungen
+      fahrtkosten: Math.round(jahresFahrtkosten),  // Z. 40 — Fahrtkosten
+      investitionenSofort: Math.round(sofortAbsetzbar), // Z. 33 — Erhaltungsaufwand einmalig
       investitionenAfa: Math.round(afaRelevant),
       investitionenNichtRelevant: Math.round(nichtRelevant),
       investitionenGesamt: investitionenDiesesJahr,
+      laufendeKosten: Math.round(laufendeKosten),
       absetzbareKosten: Math.round(absetzbareKosten),
-      zuVersteuern: Math.round(zuVersteuern),
+      zuVersteuern: Math.round(zuVersteuern),      // Z. 54 — Einkünfte V+V
       steuerEffekt: Math.round(steuerEffekt),
       restschuld: Math.round(restschuld),
       einmaleffekte: Math.round(einmaleffekte)
@@ -203,6 +230,107 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
   // Fahrten für gewähltes Jahr
   const fahrtenSelectedJahr = fahrtenListe.filter(f => new Date(f.datum).getFullYear() === selectedJahr);
+
+  // ── Anlage V Excel-Export ─────────────────────────────────────────────────
+  const exportAnlageV = () => {
+    const immoName = params.name || params.adresse || 'Immobilie';
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Jahresübersicht alle Jahre
+    const headerRow = [
+      'Position (Anlage V)', 'Zeile', ...verfuegbareJahre
+    ];
+
+    const alleJahreDaten = verfuegbareJahre.map(j => berechneJahresSteuer(j, false));
+
+    const rows = [
+      headerRow,
+      [],
+      ['A. EINNAHMEN (§ 21 EStG)', '', ...verfuegbareJahre.map(() => '')],
+      ['Mieteinnahmen (Kaltmiete)', 'Z. 4–5', ...alleJahreDaten.map(d => d.einnahmen)],
+      ['Nebenkosten vom Mieter (Umlagen)', 'Z. 6', ...alleJahreDaten.map(d => d.nkEinnahmen)],
+      ['Summe Einnahmen', '', ...alleJahreDaten.map(d => d.gesamtEinnahmen)],
+      [],
+      ['B. WERBUNGSKOSTEN (§ 9 EStG)', '', ...verfuegbareJahre.map(() => '')],
+      ['Schuldzinsen', 'Z. 9', ...alleJahreDaten.map(d => d.zinsen)],
+      ['AfA Gebäude', 'Z. 13', ...alleJahreDaten.map(d => d.afa)],
+      [`AfA-Satz: ${afaSatz}% | Bemessungsgrundlage: ${formatCurrency(params.kaufpreis * (gebaeudeAnteilProzent / 100))}`, 'Info', ...verfuegbareJahre.map(() => '')],
+      ['Erhaltungsaufwand (laufend)', 'Z. 33a', ...alleJahreDaten.map(d => d.instandhaltung)],
+      ['Erhaltungsaufwand (einmalig)', 'Z. 33b', ...alleJahreDaten.map(d => d.investitionenSofort)],
+      ['Grundsteuer', 'Z. 34', ...alleJahreDaten.map(d => d.grundsteuer)],
+      ['Versicherungen', 'Z. 35', ...alleJahreDaten.map(d => d.versicherung)],
+      ['Hausgeld / WEG-Rücklagen', 'Z. 36', ...alleJahreDaten.map(d => d.hausgeld)],
+      ['Verwaltungskosten', 'Z. 37', ...alleJahreDaten.map(d => d.verwaltung)],
+      ['Fahrtkosten (§ 9 Abs. 1 EStG)', 'Z. 40', ...alleJahreDaten.map(d => d.fahrtkosten)],
+      ['Summe Werbungskosten', 'Z. 53', ...alleJahreDaten.map(d => d.absetzbareKosten)],
+      [],
+      ['C. ERGEBNIS', '', ...verfuegbareJahre.map(() => '')],
+      ['Einkünfte aus V+V (Überschuss/Verlust)', 'Z. 54', ...alleJahreDaten.map(d => d.zuVersteuern)],
+      [`Steuereffekt bei ${steuersatz}% Steuersatz`, 'Info', ...alleJahreDaten.map(d => d.steuerEffekt)],
+      [],
+      ['D. NACHRICHTLICH (nicht in Anlage V)', '', ...verfuegbareJahre.map(() => '')],
+      ['Tilgung (nur Cashflow, nicht absetzbar)', '—', ...alleJahreDaten.map(d => Math.round((ergebnis.monatlicheRate * 12) - d.zinsen))],
+      ['Restschuld zum Jahresende', '—', ...alleJahreDaten.map(d => d.restschuld)],
+      ['AfA-relevante Investitionen (Herstellungskosten)', '—', ...alleJahreDaten.map(d => d.investitionenAfa)],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Spaltenbreiten
+    ws['!cols'] = [
+      { wch: 42 }, { wch: 8 },
+      ...verfuegbareJahre.map(() => ({ wch: 14 }))
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Anlage V Übersicht');
+
+    // Sheet 2: Detailblatt für ausgewähltes Jahr
+    if (selectedDaten) {
+      const d = selectedDaten;
+      const detailRows = [
+        [`Anlage V — ${immoName} — Steuerjahr ${selectedJahr}`],
+        [],
+        ['A. EINNAHMEN'],
+        ['Mieteinnahmen (Kaltmiete)', d.einnahmen],
+        ['Nebenkosten vom Mieter', d.nkEinnahmen],
+        ['Summe Einnahmen', d.gesamtEinnahmen],
+        [],
+        ['B. WERBUNGSKOSTEN'],
+        ['Schuldzinsen (Z. 9)', d.zinsen],
+        [`AfA Gebäude (Z. 13) — ${d.gueltigerAfaSatz}% von ${formatCurrency(d.afaBemessungsgrundlage)}`, d.afa],
+        ['Erhaltungsaufwand laufend (Z. 33)', d.instandhaltung],
+        ['Erhaltungsaufwand einmalig (Z. 33)', d.investitionenSofort],
+        ['Grundsteuer (Z. 34)', d.grundsteuer],
+        ['Versicherungen (Z. 35)', d.versicherung],
+        ['Hausgeld / WEG (Z. 36)', d.hausgeld],
+        ['Verwaltungskosten (Z. 37)', d.verwaltung],
+        ['Fahrtkosten §9 (Z. 40)', d.fahrtkosten],
+        ['Summe Werbungskosten (Z. 53)', d.absetzbareKosten],
+        [],
+        ['C. ERGEBNIS'],
+        ['Einkünfte aus V+V (Z. 54)', d.zuVersteuern],
+        [`Steuereffekt (${steuersatz}%)`, d.steuerEffekt],
+        [],
+        ['D. FAHRTENNACHWEIS (§ 9 Abs. 1 EStG)'],
+        ['Datum', 'Zweck', 'km', 'Betrag'],
+        ...fahrtenSelectedJahr.map(f => [
+          new Date(f.datum).toLocaleDateString('de-DE'),
+          f.grund || '',
+          f.km * 2,
+          Math.round(f.km * 2 * kmPauschale)
+        ]),
+        fahrtenSelectedJahr.length === 0
+          ? ['(keine Fahrten in diesem Jahr erfasst)']
+          : ['Summe', '', '', Math.round(d.fahrtkosten)],
+      ];
+
+      const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
+      ws2['!cols'] = [{ wch: 50 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(wb, ws2, `Detail ${selectedJahr}`);
+    }
+
+    XLSX.writeFile(wb, `Anlage_V_${immoName.replace(/[^a-z0-9]/gi, '_')}_${selectedJahr}.xlsx`);
+  };
 
   return (
     <div className="space-y-4">
@@ -270,78 +398,126 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             <span className="w-12 text-right font-semibold">{steuersatz}%</span>
           </div>
         </div>
+
+        {/* Zusätzliche Werbungskosten für Anlage V */}
+        <div className="border-t border-gray-100 pt-4">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Weitere Werbungskosten (Anlage V)</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">🏛 Grundsteuer / Monat</label>
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" step="5" value={grundsteuerMonat}
+                  onChange={(e) => updateSteuerParams({ grundsteuerMonat: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">🛡 Versicherungen / Monat</label>
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" step="5" value={versicherungMonat}
+                  onChange={(e) => updateSteuerParams({ versicherungMonat: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+          </div>
+          <div className="text-[10px] text-gray-400 mt-2">
+            Hausgeld, Verwaltung und Instandhaltungsrücklage werden aus den Immobilien-Stammdaten übernommen.
+          </div>
+        </div>
       </div>
 
-      {/* Transparente Steuerformel */}
+      {/* ── Anlage V Formular-Ansicht ─────────────────────────────────────── */}
       {selectedDaten && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-800 mb-3">📊 Steuerliche Berechnung {selectedJahr}</h4>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-slate-800 text-white">
+            <div>
+              <div className="font-bold text-sm">📋 Anlage V — Einkünfte aus Vermietung und Verpachtung</div>
+              <div className="text-slate-400 text-xs mt-0.5">Steuerjahr {selectedJahr} · §21 EStG</div>
+            </div>
+            <button
+              onClick={exportAnlageV}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all"
+            >
+              ⬇ Excel-Export
+            </button>
+          </div>
+
           {isGbR && (
-            <div className="mb-3 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">
-              🏛 GbR: Steuerwerte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
+            <div className="px-4 py-2 bg-violet-50 border-b border-violet-200 text-xs text-violet-700 font-medium">
+              🏛 GbR: Werte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
             </div>
           )}
 
-          <div className="space-y-2 text-sm">
-            {/* Einnahmen */}
-            <div className="flex justify-between items-center py-2 border-b border-green-200 bg-green-50 px-3 rounded">
-              <span className="text-green-700 font-medium">+ Mieteinnahmen</span>
-              <span className="font-semibold text-green-700">{formatCurrency(a(selectedDaten.einnahmen))}</span>
+          <div className="divide-y divide-gray-100">
+            {/* A. EINNAHMEN */}
+            <div className="px-4 py-2 bg-green-50">
+              <div className="text-[11px] font-bold text-green-700 uppercase tracking-wide mb-1.5">A. Einnahmen</div>
+              <AnlageVZeile zeile="Z. 4–5" label="Mieteinnahmen (Kaltmiete)" betrag={a(selectedDaten.einnahmen)} color="green" />
+              {selectedDaten.nkEinnahmen > 0 && (
+                <AnlageVZeile zeile="Z. 6" label="Nebenkosten vom Mieter (Umlagen)" betrag={a(selectedDaten.nkEinnahmen)} color="green" />
+              )}
+              <AnlageVZeile zeile="Σ" label="Summe Einnahmen" betrag={a(selectedDaten.gesamtEinnahmen)} color="green" bold />
             </div>
 
-            {/* Kosten */}
-            <div className="flex justify-between items-center py-1 px-3">
-              <span className="text-red-600">− Laufende Kosten <span className="text-xs text-gray-400">(Inst., Verw., Hausgeld)</span></span>
-              <span className="text-red-600">{formatCurrency(a(selectedDaten.laufendeKosten))}</span>
+            {/* B. WERBUNGSKOSTEN */}
+            <div className="px-4 py-2">
+              <div className="text-[11px] font-bold text-red-700 uppercase tracking-wide mb-1.5">B. Werbungskosten</div>
+              <AnlageVZeile zeile="Z. 9" label="Schuldzinsen" betrag={a(selectedDaten.zinsen)} color="red" />
+              <AnlageVZeile
+                zeile="Z. 13"
+                label={`AfA Gebäude (${selectedDaten.gueltigerAfaSatz}% von ${formatCurrency(a(selectedDaten.afaBemessungsgrundlage))})`}
+                betrag={a(selectedDaten.afa)}
+                color="red"
+                badge={selectedDaten.gueltigerAfaSatz !== afaSatz ? 'angepasst' : null}
+              />
+              {selectedDaten.investitionenSofort > 0 && (
+                <AnlageVZeile zeile="Z. 33" label="Erhaltungsaufwand (einmalig)" betrag={a(selectedDaten.investitionenSofort)} color="orange" badge="Einmaleffekt" />
+              )}
+              {selectedDaten.instandhaltung > 0 && (
+                <AnlageVZeile zeile="Z. 33" label="Erhaltungsaufwand (laufend)" betrag={a(selectedDaten.instandhaltung)} color="red" />
+              )}
+              {selectedDaten.grundsteuer > 0 && (
+                <AnlageVZeile zeile="Z. 34" label="Grundsteuer" betrag={a(selectedDaten.grundsteuer)} color="red" />
+              )}
+              {selectedDaten.versicherung > 0 && (
+                <AnlageVZeile zeile="Z. 35" label="Versicherungen" betrag={a(selectedDaten.versicherung)} color="red" />
+              )}
+              {selectedDaten.hausgeld > 0 && (
+                <AnlageVZeile zeile="Z. 36" label="Hausgeld / WEG" betrag={a(selectedDaten.hausgeld)} color="red" />
+              )}
+              {selectedDaten.verwaltung > 0 && (
+                <AnlageVZeile zeile="Z. 37" label="Verwaltungskosten" betrag={a(selectedDaten.verwaltung)} color="red" />
+              )}
+              {selectedDaten.fahrtkosten > 0 && (
+                <AnlageVZeile zeile="Z. 40" label="Fahrtkosten (§ 9 Abs. 1)" betrag={a(selectedDaten.fahrtkosten)} color="red" />
+              )}
+              <AnlageVZeile zeile="Z. 53" label="Summe Werbungskosten" betrag={a(selectedDaten.absetzbareKosten)} color="red" bold />
             </div>
 
-            <div className="flex justify-between items-center py-1 px-3">
-              <span className="text-red-600">− Schuldzinsen <span className="text-xs text-gray-400">(nicht Tilgung!)</span></span>
-              <span className="text-red-600">{formatCurrency(a(selectedDaten.zinsen))}</span>
-            </div>
-
-            {selectedDaten.fahrtkosten > 0 && (
-              <div className="flex justify-between items-center py-1 px-3">
-                <span className="text-red-600">− Fahrtkosten</span>
-                <span className="text-red-600">{formatCurrency(a(selectedDaten.fahrtkosten))}</span>
+            {/* C. ERGEBNIS */}
+            <div className={`px-4 py-3 ${selectedDaten.zuVersteuern < 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+              <div className="text-[11px] font-bold uppercase tracking-wide mb-1.5 text-gray-600">C. Ergebnis</div>
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-xs text-gray-500">Z. 54 — Einkünfte aus V+V</div>
+                  <div className={`text-2xl font-black mt-0.5 ${selectedDaten.zuVersteuern < 0 ? 'text-emerald-700' : 'text-gray-800'}`}>
+                    {selectedDaten.zuVersteuern < 0 ? '−' : '+'}{formatCurrency(Math.abs(a(selectedDaten.zuVersteuern)))}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {selectedDaten.zuVersteuern < 0 ? 'steuerlicher Verlust → mindert andere Einkünfte' : 'steuerlicher Überschuss → erhöht Steuerlast'}
+                  </div>
+                </div>
+                <div className={`text-right rounded-xl px-4 py-2 ${selectedDaten.steuerEffekt > 0 ? 'bg-red-100' : 'bg-emerald-100'}`}>
+                  <div className="text-xs text-gray-500">{selectedDaten.steuerEffekt > 0 ? 'Steuerlast' : 'Steuerersparnis'}</div>
+                  <div className={`text-lg font-black ${selectedDaten.steuerEffekt > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                    {selectedDaten.steuerEffekt > 0 ? '−' : '+'}{formatCurrency(Math.abs(a(selectedDaten.steuerEffekt)))}
+                  </div>
+                  <div className="text-[10px] text-gray-400">bei {steuersatz}% Steuersatz</div>
+                </div>
               </div>
-            )}
-
-            {selectedDaten.investitionenSofort > 0 && (
-              <div className="flex justify-between items-center py-1 px-3 bg-orange-50 rounded">
-                <span className="text-orange-600">− Erhaltungsaufwand <span className="text-xs">⚠️ Einmaleffekt</span></span>
-                <span className="text-orange-600">{formatCurrency(a(selectedDaten.investitionenSofort))}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center py-1 px-3">
-              <span className="text-red-600">
-                − AfA
-                <span className="text-xs text-gray-400"> ({selectedDaten.gueltigerAfaSatz}% von {formatCurrency(a(selectedDaten.afaBemessungsgrundlage))})</span>
-                {selectedDaten.gueltigerAfaSatz !== afaSatz && (
-                  <span className="ml-1 text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full font-semibold">angepasst</span>
-                )}
-              </span>
-              <span className="text-red-600">{formatCurrency(a(selectedDaten.afa))}</span>
-            </div>
-
-            {/* Ergebnis */}
-            <div className="flex justify-between items-center py-2 px-3 border-t-2 border-gray-300 mt-2">
-              <span className="font-semibold">= Steuerlicher Überschuss/Verlust</span>
-              <span className={`font-bold ${selectedDaten.zuVersteuern >= 0 ? 'text-gray-800' : 'text-green-600'}`}>
-                {formatCurrency(a(selectedDaten.zuVersteuern))}
-              </span>
-            </div>
-
-            {/* Steuereffekt */}
-            <div className={`flex justify-between items-center py-3 px-4 rounded-lg mt-2 ${selectedDaten.steuerEffekt > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-              <div>
-                <span className="font-semibold">{selectedDaten.steuerEffekt > 0 ? 'Steuerlast' : 'Steuerersparnis'}</span>
-                <span className="text-xs text-gray-500 block">bei {steuersatz}% Steuersatz</span>
-              </div>
-              <span className={`text-xl font-bold ${selectedDaten.steuerEffekt > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {selectedDaten.steuerEffekt > 0 ? '−' : '+'}{formatCurrency(Math.abs(a(selectedDaten.steuerEffekt)))}
-              </span>
             </div>
           </div>
         </div>
@@ -789,6 +965,28 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
   );
 };
 
-// Reparaturen & Investitionen Komponente
+// ── Anlage V Zeilen-Hilfskomponente ──────────────────────────────────────────
+function AnlageVZeile({ zeile, label, betrag, color = 'gray', bold = false, badge = null }) {
+  const colors = {
+    green: 'text-green-700',
+    red: 'text-red-600',
+    orange: 'text-orange-600',
+    gray: 'text-gray-700',
+  };
+  return (
+    <div className={`flex justify-between items-center py-1 ${bold ? 'border-t border-gray-200 mt-1 pt-1.5' : ''}`}>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-[10px] text-gray-400 font-mono w-10 shrink-0">{zeile}</span>
+        <span className={`text-xs ${bold ? 'font-bold' : ''} ${colors[color]} truncate`}>{label}</span>
+        {badge && (
+          <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-full font-semibold shrink-0">{badge}</span>
+        )}
+      </div>
+      <span className={`text-xs font-${bold ? 'black' : 'semibold'} ${colors[color]} shrink-0 ml-2`}>
+        {betrag > 0 ? formatCurrency(betrag) : '—'}
+      </span>
+    </div>
+  );
+}
 
 export default Steuerberechnung;
