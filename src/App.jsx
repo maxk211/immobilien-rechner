@@ -42,6 +42,8 @@ import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
 import PortfolioZiele from './components/PortfolioZiele';
 import VermieterTodos from './components/VermieterTodos';
+import UpgradeModal from './components/UpgradeModal';
+import { useSubscription } from './hooks/useSubscription';
 
 
 
@@ -50,6 +52,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [portfolio, setPortfolio] = useState([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Subscription-Status — solange PAYMENTS_LIVE=false ist isPro immer true
+  const { isPro, canAddImmo, openCheckout } = useSubscription(session, portfolio.length);
   const [showForm, setShowForm] = useState(false);
   const [showKalkulation, setShowKalkulation] = useState(false);
   const [selectedImmobilie, setSelectedImmobilie] = useState(null);
@@ -1009,6 +1015,13 @@ function App() {
       }} />
       {/* Custom Confirm Dialog */}
       <ConfirmDialog />
+      {/* Upgrade Modal — wird nur angezeigt wenn PAYMENTS_LIVE=true und User Free Tier */}
+      {showUpgradeModal && (
+        <UpgradeModal
+          onClose={() => setShowUpgradeModal(false)}
+          onCheckout={() => { setShowUpgradeModal(false); openCheckout(); }}
+        />
+      )}
       {/* Changelog Popup */}
       {showChangelog && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
@@ -1144,7 +1157,7 @@ function App() {
               🧮 Kalkulation
             </button>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => canAddImmo ? setShowForm(true) : setShowUpgradeModal(true)}
               className="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
             >
               + Neue Immobilie
