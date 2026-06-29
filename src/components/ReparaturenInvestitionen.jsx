@@ -54,6 +54,49 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
 
   const gesamtInvestitionen = investitionen.reduce((sum, inv) => sum + inv.betrag, 0);
 
+  // ── 15%-Regel (§ 6 Abs. 1 Nr. 1a EStG) ──────────────────────────────────
+  // Reparaturen innerhalb von 3 Jahren nach Kauf dürfen max. 15% des
+  // Gebäudewerts (Kaufpreis ohne Grundstück) betragen — sonst werden sie
+  // zu "anschaffungsnahen Herstellungskosten" (nur noch via AfA absetzbar).
+  const regel15 = useMemo(() => {
+    const kaufdatum = immobilie.kaufdatum;
+    const kaufpreis = immobilie.kaufpreis || 0;
+    const grundstueck = immobilie.grundstueck || 0;
+    const gebaeudewert = kaufpreis - grundstueck;
+
+    if (!kaufdatum || gebaeudewert <= 0) return null;
+
+    const kauf = new Date(kaufdatum);
+    const fensterEnde = new Date(kauf);
+    fensterEnde.setFullYear(fensterEnde.getFullYear() + 3);
+    const heute = new Date();
+
+    // Nur relevant wenn noch im 3-Jahres-Fenster oder kürzlich abgelaufen
+    const nochImFenster = heute <= fensterEnde;
+    const abgelaufenSeit = nochImFenster ? 0 : Math.floor((heute - fensterEnde) / (1000 * 60 * 60 * 24 * 30.44));
+    if (abgelaufenSeit > 6) return null; // Fenster vor >6 Monaten abgelaufen → ausblenden
+
+    // Relevante Kosten: Erhaltungsaufwand, Modernisierung, Herstellungskosten
+    // (nicht: Anschaffungsnebenkosten, nicht_relevant)
+    const relevantKategorien = ['erhaltung', 'modernisierung', 'herstellung'];
+    const relevantKosten = investitionen
+      .filter(inv => {
+        const d = new Date(inv.datum);
+        return d >= kauf && d <= fensterEnde && relevantKategorien.includes(inv.kategorie);
+      })
+      .reduce((sum, inv) => sum + inv.betrag, 0);
+
+    const grenze = gebaeudewert * 0.15;
+    const prozent = grenze > 0 ? Math.min((relevantKosten / grenze) * 100, 100) : 0;
+    const restBis15 = Math.max(0, grenze - relevantKosten);
+    const ueberschritten = relevantKosten > grenze;
+    const warnung = !ueberschritten && prozent >= 75;
+
+    const monate = Math.max(0, Math.ceil((fensterEnde - heute) / (1000 * 60 * 60 * 24 * 30.44)));
+
+    return { gebaeudewert, grenze, relevantKosten, prozent, restBis15, ueberschritten, warnung, nochImFenster, monate };
+  }, [investitionen, immobilie.kaufdatum, immobilie.kaufpreis, immobilie.grundstueck]);
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
@@ -65,6 +108,48 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
           + Hinzufügen
         </button>
       </div>
+
+      {/* 15%-Regel Banner */}
+      {regel15 && (
+        <div className={`rounded-xl p-3 mb-4 border ${
+          regel15.ueberschritten
+            ? 'bg-red-50 border-red-300'
+            : regel15.warnung
+              ? 'bg-amber-50 border-amber-300'
+              : 'bg-blue-50 border-blue-200'
+        }`}>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <span className="font-bold text-sm">
+                {regel15.ueberschritten ? '🚨' : regel15.warnung ? '⚠️' : 'ℹ️'} 15%-Regel (§ 6 Abs. 1 Nr. 1a EStG)
+              </span>
+              <div className={`text-xs mt-0.5 ${regel15.ueberschritten ? 'text-red-700' : regel15.warnung ? 'text-amber-700' : 'text-blue-700'}`}>
+                {regel15.ueberschritten
+                  ? 'Grenze überschritten — Kosten werden zu Herstellungskosten (AfA statt Sofortabzug)!'
+                  : regel15.warnung
+                    ? `Achtung: ${regel15.prozent.toFixed(0)}% der Grenze erreicht — noch ${formatCurrency(regel15.restBis15)} Spielraum`
+                    : regel15.nochImFenster
+                      ? `3-Jahres-Fenster läuft noch ${regel15.monate} Monate — Grenze im Blick behalten`
+                      : 'Fenster kürzlich abgelaufen — Endstand der Kosten'}
+              </div>
+            </div>
+            <div className={`text-right shrink-0 text-xs font-bold ${regel15.ueberschritten ? 'text-red-700' : regel15.warnung ? 'text-amber-700' : 'text-blue-700'}`}>
+              {formatCurrency(regel15.relevantKosten)}<br />
+              <span className="font-normal text-gray-500">/ {formatCurrency(regel15.grenze)}</span>
+            </div>
+          </div>
+          {/* Fortschrittsbalken */}
+          <div className="w-full bg-white/70 rounded-full h-2 overflow-hidden">
+            <div
+              className={`h-2 rounded-full transition-all duration-700 ${regel15.ueberschritten ? 'bg-red-500' : regel15.warnung ? 'bg-amber-400' : 'bg-blue-500'}`}
+              style={{ width: `${regel15.prozent}%` }}
+            />
+          </div>
+          <div className="text-[10px] text-gray-400 mt-1">
+            Gebäudewert (ohne Grundstück): {formatCurrency(regel15.gebaeudewert)} · Grenze: 15% = {formatCurrency(regel15.grenze)}
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <div className="bg-gray-50 p-3 rounded-lg mb-4">

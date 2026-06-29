@@ -178,6 +178,55 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     }
   });
 
+  // ── 8. 15%-Regel (§ 6 Abs. 1 Nr. 1a EStG) ───────────────────────────────
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie') return;
+    const kaufdatum = immo.kaufdatum;
+    const kaufpreis = immo.kaufpreis || 0;
+    const grundstueck = immo.grundstueck || 0;
+    const gebaeudewert = kaufpreis - grundstueck;
+    if (!kaufdatum || gebaeudewert <= 0) return;
+
+    const kauf = new Date(kaufdatum);
+    const fensterEnde = new Date(kauf);
+    fensterEnde.setFullYear(fensterEnde.getFullYear() + 3);
+    if (heute > fensterEnde) return; // 3-Jahres-Fenster abgelaufen
+
+    const relevantKategorien = ['erhaltung', 'modernisierung', 'herstellung'];
+    const relevantKosten = (immo.investitionen || [])
+      .filter(inv => {
+        const d = new Date(inv.datum);
+        return d >= kauf && d <= fensterEnde && relevantKategorien.includes(inv.kategorie);
+      })
+      .reduce((sum, inv) => sum + inv.betrag, 0);
+
+    const grenze = gebaeudewert * 0.15;
+    const prozent = grenze > 0 ? (relevantKosten / grenze) * 100 : 0;
+    const monate = Math.ceil((fensterEnde - heute) / (1000 * 60 * 60 * 24 * 30.44));
+
+    if (relevantKosten > grenze) {
+      todos.push({
+        id: `regel15-${immo.id}`,
+        priority: 'rot',
+        icon: '🚨',
+        titel: '15%-Grenze überschritten! Steuerlicher Verlust droht',
+        sub: `${immo.name || immo.adresse} · ${Math.round(prozent)}% der Grenze (${formatCurrency(relevantKosten)} / ${formatCurrency(grenze)})`,
+        immoId: immo.id,
+        badge: 'Steuerfalle',
+      });
+    } else if (prozent >= 75) {
+      todos.push({
+        id: `regel15-${immo.id}`,
+        priority: 'gelb',
+        icon: '⚠️',
+        titel: `15%-Regel: ${Math.round(prozent)}% der Grenze — noch ${formatCurrency(grenze - relevantKosten)} Spielraum`,
+        sub: `${immo.name || immo.adresse} · 3-Jahres-Fenster läuft noch ${monate} Monate`,
+        immoId: immo.id,
+        badge: 'Achtung',
+      });
+    }
+  });
+
   // Sortieren: rot → gelb → grün
   return todos.sort((a, b) => PRIORITAET[a.priority] - PRIORITAET[b.priority]);
 }
