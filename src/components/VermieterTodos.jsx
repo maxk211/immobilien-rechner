@@ -15,6 +15,9 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     if (immo.immobilienTyp === 'mietimmobilie') return;
     const phasen = immo.finanzierungsphasen || [];
     phasen.forEach((phase, idx) => {
+      // Wenn bereits eine Folge-Phase hinterlegt ist → Anschlussfinanzierung geregelt, keine Warnung
+      if (idx < phasen.length - 1) return;
+
       const startDatum = idx === 0
         ? (phase.kreditStartDatum || immo.kaufdatum)
         : phase.kreditStartDatum || null;
