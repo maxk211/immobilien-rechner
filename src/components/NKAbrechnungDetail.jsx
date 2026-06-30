@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { applyPlugin } from 'jspdf-autotable';
+applyPlugin(jsPDF);
 import { berechneMieteranteil } from './NKAbrechnungFormular';
 
 const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {

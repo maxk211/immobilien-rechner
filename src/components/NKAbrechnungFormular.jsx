@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { applyPlugin } from 'jspdf-autotable';
+applyPlugin(jsPDF);
 import { NK_STANDARD_POSITIONEN } from '../constants/index.js';
 
 export function berechneMieteranteil(pos, mieterflaeche, gesamtflaeche, anzahlParteien) {
