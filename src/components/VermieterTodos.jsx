@@ -144,6 +144,58 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     }
   });
 
+  // ── 5b. Letzte Mieterhöhung nach § 558 BGB — 3-Jahres-Kappungsgrenze ────────
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie') return;
+    const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
+    if (aktiveMieter.length === 0) return;
+
+    aktiveMieter.forEach(mieter => {
+      if (!mieter.letzte_mieterhoehung) {
+        // Feld nicht gepflegt → Erinnerungs-TODO
+        todos.push({
+          id: `mieterhoehung-datum-${mieter.id}`,
+          priority: 'gelb',
+          icon: '📜',
+          titel: 'Letzte Mieterhöhung nicht hinterlegt',
+          sub: `${mieter.name} · ${immo.name || immo.adresse} — Datum für 3-Jahres-Kappungsgrenze fehlt`,
+          immoId: immo.id,
+          badge: 'Eintragen',
+        });
+      } else {
+        const letzte = new Date(mieter.letzte_mieterhoehung);
+        const naechsteMoeglich = new Date(letzte);
+        naechsteMoeglich.setFullYear(naechsteMoeglich.getFullYear() + 3);
+        const monateVerbleibend = (naechsteMoeglich - heute) / (1000 * 60 * 60 * 24 * 30.44);
+        const immoName = immo.name || immo.adresse || 'Immobilie';
+
+        if (monateVerbleibend <= 0) {
+          // 3 Jahre überschritten → Mieterhöhung jetzt möglich
+          todos.push({
+            id: `mieterhoehung-3j-${mieter.id}`,
+            priority: 'gruen',
+            icon: '📈',
+            titel: '3-Jahres-Mieterhöhung möglich',
+            sub: `${mieter.name} · ${immoName} · letzte Erhöhung: ${letzte.toLocaleDateString('de-DE')}`,
+            immoId: immo.id,
+            badge: 'Jetzt möglich',
+          });
+        } else if (monateVerbleibend <= 3) {
+          // Vorwarnung 3 Monate vorher
+          todos.push({
+            id: `mieterhoehung-3j-warnung-${mieter.id}`,
+            priority: 'gruen',
+            icon: '📅',
+            titel: `Mieterhöhungs-Fenster öffnet in ${Math.ceil(monateVerbleibend)} Monat${Math.ceil(monateVerbleibend) !== 1 ? 'en' : ''}`,
+            sub: `${mieter.name} · ${immoName} · möglich ab ${naechsteMoeglich.toLocaleDateString('de-DE')} — jetzt Schreiben vorbereiten`,
+            immoId: immo.id,
+            badge: 'Vorbereiten',
+          });
+        }
+      }
+    });
+  });
+
   // ── 6. Leerstehende Immobilie ─────────────────────────────────────────────
   portfolio.forEach(immo => {
     if (immo.immobilienTyp === 'mietimmobilie') return;

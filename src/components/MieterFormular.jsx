@@ -26,6 +26,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
     kuendigungsfrist: mieter?.kuendigungsfrist || '3 Monate',
     naechsteAnpassungDatum: mieter?.naechsteAnpassungDatum || '',
     mietanpassungenMieter: mieter?.mietanpassungen_mieter || [],
+    letzteMieterhoehung: mieter?.letzte_mieterhoehung || '',
   });
   const [saving, setSaving] = useState(false);
   const [newAnpassung, setNewAnpassung] = useState({ datum: '', betrag: '', grund: '' });
@@ -344,6 +345,29 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
                   className="mt-3 w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40">
                   Anpassung hinzufügen
                 </button>
+              </div>
+
+              {/* Letzte formale Mieterhöhung */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-amber-800 mb-1">📜 Letzte Mieterhöhung nach § 558 BGB</p>
+                <p className="text-xs text-amber-600 mb-3">Datum der letzten formalen Mieterhöhung (Grundlage für 3-Jahres-Kappungsgrenze)</p>
+                <input type="date" value={form.letzteMieterhoehung}
+                  onChange={e => setForm({ ...form, letzteMieterhoehung: e.target.value })}
+                  className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-base sm:text-sm bg-white" />
+                {form.letzteMieterhoehung && (() => {
+                  const letzte = new Date(form.letzteMieterhoehung);
+                  const naechste = new Date(letzte);
+                  naechste.setFullYear(naechste.getFullYear() + 3);
+                  const heute = new Date();
+                  const monateVerbleibend = (naechste - heute) / (1000 * 60 * 60 * 24 * 30.44);
+                  return (
+                    <div className={`mt-2 text-xs font-semibold ${monateVerbleibend <= 0 ? 'text-emerald-700' : monateVerbleibend <= 3 ? 'text-amber-700' : 'text-amber-600'}`}>
+                      {monateVerbleibend <= 0
+                        ? '✅ Nächste Mieterhöhung ist jetzt möglich'
+                        : `Nächste Mieterhöhung möglich ab: ${naechste.toLocaleDateString('de-DE')} (in ${Math.ceil(monateVerbleibend)} Mon.)`}
+                    </div>
+                  );
+                })()}
               </div>
             </>
           )}

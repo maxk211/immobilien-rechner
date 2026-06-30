@@ -996,6 +996,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                         </div>
                         {idx > 0 && <button onClick={() => deletePhase(phase.id)} className="text-red-400 hover:text-red-600 text-sm">Entfernen</button>}
                       </div>
+                      {/* Kreditinstitut */}
+                      <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">🏦 Kreditinstitut / Bank</label>
+                        <input type="text" value={phase.kreditinstitut || ''}
+                          placeholder="z.B. PSD Bank, Deutsche Bank …"
+                          onChange={e => updatePhase(phase.id, { kreditinstitut: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-400 bg-white" />
+                      </div>
+
                       {idx === 0 && (
                         <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                           <label className="block text-xs font-semibold text-slate-600 mb-1">📅 Kreditstartdatum <span className="font-normal text-slate-400">(falls abweichend vom Kaufdatum)</span></label>

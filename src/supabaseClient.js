@@ -28,7 +28,7 @@ export async function loadImmobilien() {
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
 const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner'];
-const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter'];
+const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
 export async function saveImmobilie(immobilie) {
@@ -286,6 +286,7 @@ export async function saveMieter(mieter) {
     kuendigungsfrist: mieter.kuendigungsfrist || null,
     naechste_anpassung_datum: mieter.naechsteAnpassungDatum || null,
     mietanpassungen_mieter: mieter.mietanpassungenMieter || [],
+    letzte_mieterhoehung: mieter.letzteMieterhoehung || null,
   };
 
   const doMieterSave = async (data) => {

@@ -68,6 +68,22 @@ function App() {
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [nkAbrechnungen, setNkAbrechnungen] = useState([]);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showSelbstauskunftModal, setShowSelbstauskunftModal] = useState(false);
+  const [selbstauskunftDaten, setSelbstauskunftDaten] = useState(() => {
+    try {
+      const saved = localStorage.getItem('selbstauskunft_daten');
+      return saved ? JSON.parse(saved) : {
+        name: '', familienstand: 'ledig', wohnsituation: 'zur Miete',
+        anschrift: '', taetigkeit: '',
+        bargeld: '', bargeldBeschreibung: '',
+        depot: '', depotBeschreibung: '',
+        beteiligungWert: '', beteiligungBeschreibung: '',
+        sonstigeVerbindlichkeiten: 'Keine sonstigen Verbindlichkeiten außerhalb der Immobilien-Darlehen.',
+      };
+    } catch(e) {
+      return { name: '', familienstand: 'ledig', wohnsituation: 'zur Miete', anschrift: '', taetigkeit: '', bargeld: '', bargeldBeschreibung: '', depot: '', depotBeschreibung: '', beteiligungWert: '', beteiligungBeschreibung: '', sonstigeVerbindlichkeiten: '' };
+    }
+  });
 
   // Changelog einmalig anzeigen wenn neue Version
   useEffect(() => {
@@ -232,136 +248,256 @@ function App() {
     await supabase.auth.signOut();
   };
 
-  // Export Portfolio als JSON
   // ─── PDF Selbstauskunft ──────────────────────────────────────────────────────
-  const handleSelbstauskunft = () => {
+  const handleSelbstauskunft = () => setShowSelbstauskunftModal(true);
+
+  const generateSelbstauskunftPDF = (daten) => {
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const W = 210; const H = 297;
-    const heute = new Date().toLocaleDateString('de-DE');
-    let y = 0;
+    const W = 210;
+    const H = 297;
+    const heute = new Date();
+    const datumStr = heute.toLocaleDateString('de-DE');
+    const ORANGE = [180, 100, 20];
+    const ORANGE_LIGHT = [254, 248, 240];
+    const BLUE_LIGHT = [219, 234, 254];
+    let y = 14;
 
-    // Header-Banner
-    pdf.setFillColor(30, 41, 59); // slate-900
-    pdf.rect(0, 0, W, 45, 'F');
-    pdf.setFontSize(22); pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold');
-    pdf.text('Immobilien Selbstauskunft', W / 2, 18, { align: 'center' });
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(148, 163, 184);
-    pdf.text(`Erstellt am: ${heute}  ·  ${session?.user?.email || ''}`, W / 2, 27, { align: 'center' });
-    pdf.setFontSize(9); pdf.setTextColor(100, 116, 139);
-    pdf.text(`${portfolio.length} Objekte im Portfolio`, W / 2, 35, { align: 'center' });
-    y = 55;
+    // ── Titel ────────────────────────────────────────────────────────────────
+    pdf.setFontSize(17); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(20, 30, 50);
+    pdf.text('Selbstauskunft – Vermögens- & Immobilienübersicht', 14, y);
+    y += 6;
+    pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 100, 100);
+    pdf.text(`${daten.name} · Stand ${datumStr}`, 14, y);
+    y += 7;
 
-    // Portfolio Gesamt-KPIs
-    const kaufimmos = portfolio.filter(i => i.immobilienTyp !== 'mietimmobilie');
-    const gesamtMarktwert = kaufimmos.reduce((s, i) => s + (i.geschaetzterWert || i.kaufpreis || 0), 0);
-    const gesamtTilgung = kaufimmos.reduce((s, i) => { const v = berechneImmoVermoegenswerte(i); return s + (v?.tilgungJahr || 0); }, 0);
-    const gesamtFreiesEK = kaufimmos.reduce((s, i) => { const v = berechneImmoVermoegenswerte(i); return s + (v?.freiVermoegen || 0); }, 0);
-    const gesamtRestschuld = kaufimmos.reduce((s, i) => { const v = berechneImmoVermoegenswerte(i); return s + (v?.restschuld || 0); }, 0);
-    const gesamtKaltmiete = kaufimmos.reduce((s, i) => s + (getAktuelleMiete(i) || 0), 0);
-    const kreditrate = kaufimmos.reduce((s, i) => {
-      const v = berechneImmoVermoegenswerte(i);
-      const mzins = (i.zinssatz ?? 4) / 100 / 12;
-      const pAT = (i.tilgung ?? 2) / 100 / 12;
-      const fk = v?.fremdkapital || 0;
-      return s + (fk > 0 ? fk * (mzins + pAT) : 0);
-    }, 0);
-
-    // KPI-Boxen
-    const kpis = [
-      { label: 'Gesamtmarktwert', value: `${(gesamtMarktwert/1000).toFixed(0)}T €`, color: [99, 102, 241] },
-      { label: 'Freies Eigenkapital', value: `${(gesamtFreiesEK/1000).toFixed(0)}T €`, color: [124, 58, 237] },
-      { label: 'Restschuld gesamt', value: `${(gesamtRestschuld/1000).toFixed(0)}T €`, color: [239, 68, 68] },
-      { label: 'Tilgung p.a.', value: `${(gesamtTilgung/1000).toFixed(0)}T €`, color: [20, 184, 166] },
-      { label: 'Kaltmiete/Mon.', value: `${gesamtKaltmiete.toLocaleString('de-DE')} €`, color: [16, 185, 129] },
-      { label: 'Kreditrate/Mon.', value: `${kreditrate.toLocaleString('de-DE', {maximumFractionDigits:0})} €`, color: [245, 158, 11] },
-    ];
-    const bw = (W - 28) / 3; const bh = 18;
-    kpis.forEach((k, i) => {
-      const bx = 14 + (i % 3) * (bw + 4);
-      const by = y + Math.floor(i / 3) * (bh + 3);
-      pdf.setFillColor(...k.color, 15);
-      pdf.roundedRect(bx, by, bw, bh, 2, 2, 'F');
-      pdf.setDrawColor(...k.color); pdf.setLineWidth(0.4);
-      pdf.roundedRect(bx, by, bw, bh, 2, 2, 'S');
-      pdf.setFontSize(7); pdf.setTextColor(100, 100, 120); pdf.setFont('helvetica', 'normal');
-      pdf.text(k.label, bx + bw / 2, by + 6, { align: 'center' });
-      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...k.color);
-      pdf.text(k.value, bx + bw / 2, by + 13, { align: 'center' });
-    });
-    y += bh * 2 + 10;
-
-    // Objekt-Tabelle
-    pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 41, 59);
-    pdf.text('Objektübersicht', 14, y); y += 5;
-
-    const rows = kaufimmos.map(immo => {
-      const v = berechneImmoVermoegenswerte(immo);
-      const miete = getAktuelleMiete(immo);
-      // Rate aus berechneRendite (phase-aware) für Anzeige in der Tabelle
-      const rate = berechneRendite({ ...immo, kaltmiete: miete }).monatlicheRate;
-      // Cashflow einheitlich via berechneMtlCashflow (inkl. Bauspar, Phase-aware)
-      const cf = berechneMtlCashflow(immo);
-      return [
-        immo.name || immo.adresse || '–',
-        `${((immo.kaufpreis||0)/1000).toFixed(0)}T`,
-        `${((v?.marktwert||0)/1000).toFixed(0)}T`,
-        `${((v?.restschuld||0)/1000).toFixed(0)}T`,
-        `${((v?.freiVermoegen||0)/1000).toFixed(0)}T`,
-        `${rate.toFixed(0)} €`,
-        `${miete.toFixed(0)} €`,
-        `${cf >= 0 ? '+' : ''}${cf.toFixed(0)} €`,
-      ];
-    });
-
+    // ── Persönliche Daten ────────────────────────────────────────────────────
     pdf.autoTable({
       startY: y,
-      head: [['Objekt', 'Kaufpr.', 'Marktwert', 'Restschuld', 'Freies EK', 'Rate/Mo.', 'Miete/Mo.', 'CF/Mo.']],
-      body: rows,
-      styles: { fontSize: 8, cellPadding: 2.5 },
-      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 7 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      body: [
+        [
+          { content: 'Name', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: daten.name },
+          { content: 'Familienstand', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: daten.familienstand },
+          { content: 'Wohnsituation', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: daten.wohnsituation },
+        ],
+        [
+          { content: 'Anschrift', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: daten.anschrift, colSpan: 2 },
+          { content: 'Tätigkeit', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: daten.taetigkeit, colSpan: 2 },
+        ],
+      ],
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      theme: 'plain',
+      tableLineColor: [200, 200, 200],
+      tableLineWidth: 0.1,
       columnStyles: {
-        0: { cellWidth: 35 },
-        1: { halign: 'right', cellWidth: 18 },
-        2: { halign: 'right', cellWidth: 22 },
-        3: { halign: 'right', cellWidth: 22 },
-        4: { halign: 'right', cellWidth: 20, textColor: [124, 58, 237], fontStyle: 'bold' },
-        5: { halign: 'right', cellWidth: 20 },
-        6: { halign: 'right', cellWidth: 20 },
-        7: { halign: 'right', cellWidth: 20, fontStyle: 'bold' },
+        0: { cellWidth: 22 }, 1: { cellWidth: 38 },
+        2: { cellWidth: 24 }, 3: { cellWidth: 30 },
+        4: { cellWidth: 24 }, 5: { cellWidth: 44 },
       },
       margin: { left: 14, right: 14 },
     });
-    y = pdf.lastAutoTable.finalY + 8;
+    y = pdf.lastAutoTable.finalY + 7;
 
-    // Monatliche Übersicht Gesamt
-    const monatsCF = gesamtKaltmiete - kreditrate - kaufimmos.reduce((s,i) => s + ((i.instandhaltung||100)+(i.verwaltung||30)+(i.hausgeld||0)), 0);
-    pdf.autoTable({
-      startY: y,
-      head: [['Monatliche Zusammenfassung (alle Kaufobjekte)', '']],
-      body: [
-        ['Gesamte Kaltmieten', `${gesamtKaltmiete.toLocaleString('de-DE')} €`],
-        ['Gesamte Kreditraten', `${kreditrate.toLocaleString('de-DE', {maximumFractionDigits:0})} €`],
-        ['Monatl. Cashflow (nach Kredit & Kosten)', `${monatsCF >= 0 ? '+' : ''}${monatsCF.toLocaleString('de-DE', {maximumFractionDigits:0})} €`],
-        ['Tilgung p.a. (Vermögensaufbau)', `${gesamtTilgung.toLocaleString('de-DE', {maximumFractionDigits:0})} €`],
-      ],
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: 'bold' },
-      columnStyles: { 0: { cellWidth: 120 }, 1: { halign: 'right', fontStyle: 'bold' } },
-      margin: { left: 14, right: 14 },
+    // ── Immobilien-Portfolio ──────────────────────────────────────────────────
+    const kaufimmos = portfolio.filter(i => i.immobilienTyp !== 'mietimmobilie');
+    pdf.setFontSize(10.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...ORANGE);
+    pdf.text(`Immobilien-Portfolio (${kaufimmos.length} Objekte)`, 14, y);
+    y += 4;
+
+    const immoRows = kaufimmos.map((immo, idx) => {
+      const phase0 = (immo.finanzierungsphasen || [])[0];
+      const startDatum = phase0?.kreditStartDatum || immo.kaufdatum;
+      const zinsbindung = phase0?.zinsbindung || 10;
+      let zinsbindungBisStr = '—';
+      if (startDatum && immo.kaufpreis) {
+        const d = new Date(startDatum);
+        d.setFullYear(d.getFullYear() + zinsbindung);
+        zinsbindungBisStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      }
+      const miete = getAktuelleMiete(immo);
+      const rendite = berechneRendite({ ...immo, kaltmiete: miete });
+      const rate = rendite.monatlicheRate || 0;
+      const nominalbetrag = immo.kaufpreis ? Math.max(0, Math.round(immo.kaufpreis - (immo.eigenkapital || 0))) : 0;
+      const bank = phase0?.kreditinstitut || '—';
+      const tilgPA = phase0?.anfangstilgung ?? immo.tilgung ?? 2;
+      const zinsPA = phase0?.sollzinssatz ?? immo.zinssatz ?? 4;
+      const kaufdatumStr = immo.kaufdatum
+        ? (() => { const d = new Date(immo.kaufdatum); return `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; })()
+        : '—';
+      const typ = immo.immobilienTyp === 'mehrfamilienhaus' ? 'MFH' : immo.immobilienTyp === 'gewerblich' ? 'Gew.' : 'ETW';
+      return [
+        idx + 1,
+        immo.name || immo.adresse || '—',
+        typ,
+        immo.anzahlWohnungen || 1,
+        immo.wohnflaeche ? `${immo.wohnflaeche}` : '—',
+        kaufdatumStr,
+        immo.kaufpreis ? `${Math.round(immo.kaufpreis).toLocaleString('de-DE')} €` : '—',
+        `${Math.round(immo.geschaetzterWert || immo.kaufpreis || 0).toLocaleString('de-DE')} €`,
+        miete > 0 ? `${Math.round(miete)} €` : '—',
+        bank,
+        nominalbetrag > 0 ? `${nominalbetrag.toLocaleString('de-DE')} €` : '—',
+        rate > 0 ? `${rate.toFixed(0)} €` : '—',
+        immo.kaufpreis ? `${tilgPA.toFixed(2)} %` : '—',
+        immo.kaufpreis ? `${zinsPA.toFixed(2)} %` : '—',
+        zinsbindungBisStr,
+      ];
     });
 
-    // Footer
+    const gesamtKaufpreis = kaufimmos.reduce((s, i) => s + (i.kaufpreis || 0), 0);
+    const gesamtVerkehrswert = kaufimmos.reduce((s, i) => s + (i.geschaetzterWert || i.kaufpreis || 0), 0);
+    const gesamtMiete = kaufimmos.reduce((s, i) => s + getAktuelleMiete(i), 0);
+    const gesamtRate = kaufimmos.reduce((s, i) => {
+      const r = berechneRendite({ ...i, kaltmiete: getAktuelleMiete(i) });
+      return s + (r.monatlicheRate || 0);
+    }, 0);
+
+    immoRows.push([
+      { content: 'Summe', colSpan: 6, styles: { fontStyle: 'bold', fillColor: ORANGE_LIGHT } },
+      { content: `${Math.round(gesamtKaufpreis).toLocaleString('de-DE')} €`, styles: { fontStyle: 'bold', fillColor: ORANGE_LIGHT, halign: 'right' } },
+      { content: `${Math.round(gesamtVerkehrswert).toLocaleString('de-DE')} €`, styles: { fontStyle: 'bold', fillColor: ORANGE_LIGHT, halign: 'right' } },
+      { content: `${Math.round(gesamtMiete)} €`, styles: { fontStyle: 'bold', fillColor: ORANGE_LIGHT, halign: 'right' } },
+      { content: '', styles: { fillColor: ORANGE_LIGHT } },
+      { content: '', styles: { fillColor: ORANGE_LIGHT } },
+      { content: `${gesamtRate.toFixed(0)} €`, styles: { fontStyle: 'bold', fillColor: ORANGE_LIGHT, halign: 'right' } },
+      { content: '', styles: { fillColor: ORANGE_LIGHT } },
+      { content: '', styles: { fillColor: ORANGE_LIGHT } },
+      { content: '', styles: { fillColor: ORANGE_LIGHT } },
+    ]);
+
+    pdf.autoTable({
+      startY: y,
+      head: [['#', 'Adresse', 'Art', 'WE', 'Wfl.\nm²', 'Kauf-\ndatum', 'Kaufpreis €', 'Verkehrs-\nwert €', 'Kaltm.\n€/Mon.', 'Bank', 'Nominal-\nbetrag €', 'Rate\n€/Mon.', 'Tilg.\np.a.', 'Zins\np.a.', 'Zinsb.\nbis']],
+      body: immoRows,
+      styles: { fontSize: 6.2, cellPadding: 1.5, overflow: 'linebreak' },
+      headStyles: { fillColor: ORANGE, textColor: 255, fontStyle: 'bold', fontSize: 6.2, valign: 'bottom' },
+      alternateRowStyles: { fillColor: [253, 250, 245] },
+      columnStyles: {
+        0: { cellWidth: 6, halign: 'center' },
+        1: { cellWidth: 34 },
+        2: { cellWidth: 9, halign: 'center' },
+        3: { cellWidth: 7, halign: 'center' },
+        4: { cellWidth: 9, halign: 'right' },
+        5: { cellWidth: 11, halign: 'center' },
+        6: { cellWidth: 19, halign: 'right' },
+        7: { cellWidth: 19, halign: 'right' },
+        8: { cellWidth: 13, halign: 'right' },
+        9: { cellWidth: 18 },
+        10: { cellWidth: 17, halign: 'right' },
+        11: { cellWidth: 11, halign: 'right' },
+        12: { cellWidth: 9, halign: 'right' },
+        13: { cellWidth: 9, halign: 'right' },
+        14: { cellWidth: 11, halign: 'center' },
+      },
+      margin: { left: 14, right: 14 },
+    });
+    y = pdf.lastAutoTable.finalY + 7;
+
+    // ── Sonstige Vermögenswerte + Vermögens-Kennzahlen (nebeneinander) ────────
+    const bargeld = parseFloat(daten.bargeld) || 0;
+    const depot = parseFloat(daten.depot) || 0;
+    const beteiligung = parseFloat(daten.beteiligungWert) || 0;
+    const summeSonstige = bargeld + depot + beteiligung;
+    const gesamtMietePA = gesamtMiete * 12;
+    const gesamtRatePA = gesamtRate * 12;
+    const nettoCF = gesamtMietePA - gesamtRatePA;
+    const wertzuwachs = gesamtVerkehrswert - gesamtKaufpreis;
+    const bruttoVermoegen = gesamtVerkehrswert + summeSonstige;
+
+    pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...ORANGE);
+    pdf.text('Sonstige Vermögenswerte', 14, y);
+    pdf.text('Vermögens-Kennzahlen', W / 2 + 4, y);
+    y += 3;
+
+    const linksStartY = y;
+    pdf.autoTable({
+      startY: linksStartY,
+      head: [['Position', 'Institut / Erläuterung', 'Wert']],
+      body: [
+        ['Bargeld / Bankguthaben', daten.bargeldBeschreibung || '—', bargeld > 0 ? `${Math.round(bargeld).toLocaleString('de-DE')} €` : '—'],
+        ['Depot (Aktien & ETFs)', daten.depotBeschreibung || '—', depot > 0 ? `${Math.round(depot).toLocaleString('de-DE')} €` : '—'],
+        ['Beteiligung', daten.beteiligungBeschreibung || '—', beteiligung > 0 ? `${Math.round(beteiligung).toLocaleString('de-DE')} €` : '—'],
+        [
+          { content: 'Summe sonstige Vermögenswerte', colSpan: 2, styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: `${Math.round(summeSonstige).toLocaleString('de-DE')} €`, styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT, halign: 'right' } },
+        ],
+      ],
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      headStyles: { fillColor: ORANGE, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+      columnStyles: { 0: { cellWidth: 38 }, 1: { cellWidth: 38 }, 2: { cellWidth: 18, halign: 'right' } },
+      margin: { left: 14, right: W / 2 + 3 },
+    });
+    const linksEndeY = pdf.lastAutoTable.finalY;
+
+    pdf.autoTable({
+      startY: linksStartY,
+      head: [['Kennzahl', 'Wert']],
+      body: [
+        ['Mieteinnahmen p.a. (kalt)', `${Math.round(gesamtMietePA).toLocaleString('de-DE')} €`],
+        ['Darlehensraten p.a. (gesamt)', `${Math.round(gesamtRatePA).toLocaleString('de-DE')} €`],
+        [
+          { content: 'Netto-Cashflow p.a. (vor Steuern, Instandhaltung)', styles: { fontStyle: 'bold' } },
+          { content: `${Math.round(nettoCF).toLocaleString('de-DE')} €`, styles: { fontStyle: 'bold', halign: 'right' } },
+        ],
+        ['Kaufpreise (Summe)', `${Math.round(gesamtKaufpreis).toLocaleString('de-DE')} €`],
+        ['Aktueller Verkehrswert (Summe)', `${Math.round(gesamtVerkehrswert).toLocaleString('de-DE')} €`],
+        [
+          { content: 'Wertzuwachs Immobilien', styles: { fontStyle: 'bold' } },
+          { content: `${wertzuwachs >= 0 ? '+' : ''}${Math.round(wertzuwachs).toLocaleString('de-DE')} €`, styles: { fontStyle: 'bold', textColor: wertzuwachs >= 0 ? [22, 163, 74] : [220, 38, 38], halign: 'right' } },
+        ],
+        ['+ Sonstige Vermögenswerte (Bargeld, Depot, Beteiligung)', `+${Math.round(summeSonstige).toLocaleString('de-DE')} €`],
+        [
+          { content: 'Brutto-Vermögensbestand gesamt', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: `${Math.round(bruttoVermoegen).toLocaleString('de-DE')} €`, styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT, halign: 'right' } },
+        ],
+      ],
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      headStyles: { fillColor: ORANGE, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+      columnStyles: { 0: { cellWidth: 74 }, 1: { cellWidth: 22, halign: 'right' } },
+      margin: { left: W / 2 + 4, right: 14 },
+    });
+    const rechtsEndeY = pdf.lastAutoTable.finalY;
+    y = Math.max(linksEndeY, rechtsEndeY) + 6;
+
+    // ── Sonstige Verbindlichkeiten ─────────────────────────────────────────────
+    pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...ORANGE);
+    pdf.text('Sonstige Verbindlichkeiten', 14, y);
+    y += 3;
+    pdf.autoTable({
+      startY: y,
+      body: [[daten.sonstigeVerbindlichkeiten || 'Keine sonstigen Verbindlichkeiten außerhalb der Immobilien-Darlehen.']],
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      theme: 'plain',
+      tableLineColor: [200, 200, 200],
+      tableLineWidth: 0.1,
+      margin: { left: 14, right: 14 },
+    });
+    y = pdf.lastAutoTable.finalY + 10;
+
+    // ── Unterschrift ──────────────────────────────────────────────────────────
+    if (y > H - 25) { pdf.addPage(); y = 20; }
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 30, 30);
+    const ort = daten.anschrift ? daten.anschrift.split(',').pop()?.trim() || daten.anschrift.split(' ').slice(-2).join(' ') : '';
+    pdf.text(`Ort, Datum: ${ort ? ort + ', ' : ''}${datumStr}`, 14, y);
+    pdf.text('Unterschrift: ______________________________', 120, y);
+
+    // ── Footer ────────────────────────────────────────────────────────────────
     const pageCount = pdf.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       pdf.setPage(i);
-      pdf.setFontSize(7); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(150, 150, 150);
-      pdf.text(`Seite ${i} von ${pageCount}  ·  Immobilien Portfolio App  ·  ${heute}`, W / 2, H - 8, { align: 'center' });
-      pdf.text('Diese Aufstellung dient zur internen Übersicht und stellt keine offizielle Bankauskunft dar.', W / 2, H - 4, { align: 'center' });
+      pdf.setFontSize(6.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(150, 150, 150);
+      pdf.text(`Seite ${i} von ${pageCount}  ·  Immobilien Portfolio App  ·  ${datumStr}`, W / 2, H - 7, { align: 'center' });
+      pdf.text('Diese Aufstellung dient zur internen Übersicht und stellt keine offizielle Bankauskunft dar.', W / 2, H - 3, { align: 'center' });
     }
 
     pdf.save(`Selbstauskunft_Immobilien_${new Date().toISOString().split('T')[0]}.pdf`);
   };
+
+  // Export Portfolio als JSON
 
   const handleExport = () => {
     const exportData = {
@@ -1260,6 +1396,143 @@ function App() {
             portfolio={portfolio}
           />
         </ModalErrorBoundary>
+      )}
+
+      {/* ── Selbstauskunft Modal ───────────────────────────────────────────────── */}
+      {showSelbstauskunftModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="bg-amber-700 text-white px-5 py-4 flex justify-between items-center flex-shrink-0">
+              <div>
+                <h2 className="text-lg font-bold">📋 Selbstauskunft generieren</h2>
+                <p className="text-amber-200 text-xs mt-0.5">Angaben werden lokal gespeichert und beim nächsten Mal vorausgefüllt</p>
+              </div>
+              <button onClick={() => setShowSelbstauskunftModal(false)} className="text-white text-2xl hover:text-amber-200">&times;</button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-5 space-y-5">
+              {/* Persönliche Daten */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-blue-800 mb-3">👤 Persönliche Angaben</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-600 mb-1">Name (Vor- und Nachname)</label>
+                    <input type="text" value={selbstauskunftDaten.name} placeholder="David Schmidbauer"
+                      onChange={e => setSelbstauskunftDaten(d => ({ ...d, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Familienstand</label>
+                    <select value={selbstauskunftDaten.familienstand}
+                      onChange={e => setSelbstauskunftDaten(d => ({ ...d, familienstand: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
+                      {['ledig', 'verheiratet', 'geschieden', 'verwitwet', 'eingetragene Lebenspartnerschaft'].map(v =>
+                        <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Wohnsituation</label>
+                    <select value={selbstauskunftDaten.wohnsituation}
+                      onChange={e => setSelbstauskunftDaten(d => ({ ...d, wohnsituation: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
+                      {['zur Miete', 'im Eigentum', 'bei Familie / Eltern', 'sonstiges'].map(v =>
+                        <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-600 mb-1">Anschrift</label>
+                    <input type="text" value={selbstauskunftDaten.anschrift} placeholder="Musterstraße 1, 12345 Musterstadt"
+                      onChange={e => setSelbstauskunftDaten(d => ({ ...d, anschrift: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-600 mb-1">Tätigkeit / Beruf</label>
+                    <input type="text" value={selbstauskunftDaten.taetigkeit} placeholder="z.B. Geschäftsführer / 100 % Gesellschafter …"
+                      onChange={e => setSelbstauskunftDaten(d => ({ ...d, taetigkeit: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sonstige Vermögenswerte */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-emerald-800 mb-3">💰 Sonstige Vermögenswerte</p>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Bargeld / Bankguthaben (€)</label>
+                      <input type="number" value={selbstauskunftDaten.bargeld} placeholder="0"
+                        onChange={e => setSelbstauskunftDaten(d => ({ ...d, bargeld: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Institut / Erläuterung</label>
+                      <input type="text" value={selbstauskunftDaten.bargeldBeschreibung} placeholder="z.B. N26, Trade Republic"
+                        onChange={e => setSelbstauskunftDaten(d => ({ ...d, bargeldBeschreibung: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Depot / Aktien & ETFs (€)</label>
+                      <input type="number" value={selbstauskunftDaten.depot} placeholder="0"
+                        onChange={e => setSelbstauskunftDaten(d => ({ ...d, depot: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Institut / Erläuterung</label>
+                      <input type="text" value={selbstauskunftDaten.depotBeschreibung} placeholder="z.B. Scalable, Trade Republic"
+                        onChange={e => setSelbstauskunftDaten(d => ({ ...d, depotBeschreibung: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Beteiligung (€ Wert)</label>
+                      <input type="number" value={selbstauskunftDaten.beteiligungWert} placeholder="0"
+                        onChange={e => setSelbstauskunftDaten(d => ({ ...d, beteiligungWert: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Beschreibung</label>
+                      <input type="text" value={selbstauskunftDaten.beteiligungBeschreibung} placeholder="z.B. GmbH via Holding (100 %)"
+                        onChange={e => setSelbstauskunftDaten(d => ({ ...d, beteiligungBeschreibung: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                  </div>
+                  {(parseFloat(selbstauskunftDaten.bargeld)||0) + (parseFloat(selbstauskunftDaten.depot)||0) + (parseFloat(selbstauskunftDaten.beteiligungWert)||0) > 0 && (
+                    <div className="bg-emerald-100 rounded-lg px-3 py-2 text-sm font-bold text-emerald-800">
+                      Summe sonstige Vermögenswerte: {((parseFloat(selbstauskunftDaten.bargeld)||0) + (parseFloat(selbstauskunftDaten.depot)||0) + (parseFloat(selbstauskunftDaten.beteiligungWert)||0)).toLocaleString('de-DE')} €
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sonstige Verbindlichkeiten */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">⚠️ Sonstige Verbindlichkeiten</label>
+                <textarea value={selbstauskunftDaten.sonstigeVerbindlichkeiten} rows={2}
+                  onChange={e => setSelbstauskunftDaten(d => ({ ...d, sonstigeVerbindlichkeiten: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-4 border-t border-gray-100 flex-shrink-0">
+              <button onClick={() => setShowSelbstauskunftModal(false)}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold">
+                Abbrechen
+              </button>
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('selbstauskunft_daten', JSON.stringify(selbstauskunftDaten)); } catch(e) {}
+                  setShowSelbstauskunftModal(false);
+                  generateSelbstauskunftPDF(selbstauskunftDaten);
+                }}
+                className="flex-1 px-4 py-3 bg-amber-700 text-white rounded-xl hover:bg-amber-800 font-semibold">
+                📥 PDF generieren
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <footer className="bg-gray-800 text-gray-400 py-6 mt-12">
