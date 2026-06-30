@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
+import { berechneZinsUndTilgung } from '../utils/berechnung.js';
 
 const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilFaktor = 1 }) => {
   const aktuellesJahr = new Date().getFullYear();
@@ -104,38 +105,11 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     const laufendeKosten = jahresInstandhaltung + jahresVerwaltung + jahresHausgeld + jahresGrundsteuer + jahresVersicherung;
 
     // Finanzierungskosten (nur Zinsen - Tilgung ist nicht absetzbar!)
-    const zinssatz = params.zinssatz ?? 4.0;
-    const kaufnebenkosten = params.kaufnebenkosten ?? 10;
-    const kaufnebenkostenAbsolut = params.kaufpreis * (kaufnebenkosten / 100);
-    const gesamtinvestition = params.kaufpreis + kaufnebenkostenAbsolut;
-    const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
-      ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
-      : (params.eigenkapital ?? params.kaufpreis * 0.2);
-    const anfangsFremdkapital = params.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-
-    // Restschuld für dieses Jahr berechnen
-    const monatszins = zinssatz / 100 / 12;
-    const laufzeit = params.laufzeit ?? 25;
-    let annuitaet = 0;
-    if (anfangsFremdkapital > 0 && monatszins > 0) {
-      annuitaet = anfangsFremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) / (Math.pow(1 + monatszins, laufzeit * 12) - 1);
-    }
-
-    let restschuld = anfangsFremdkapital;
-    for (let m = 0; m < jahreIndex * 12 && restschuld > 0; m++) {
-      const monatsZinsen = restschuld * monatszins;
-      const monatsTilgung = Math.min(annuitaet - monatsZinsen, restschuld);
-      restschuld = Math.max(0, restschuld - monatsTilgung);
-    }
-
-    // Zinsen für dieses Jahr
-    let jahresZinsen = 0;
-    for (let m = 0; m < 12 && restschuld > 0; m++) {
-      const monatsZinsen = restschuld * monatszins;
-      jahresZinsen += monatsZinsen;
-      const monatsTilgung = Math.min(annuitaet - monatsZinsen, restschuld);
-      restschuld = Math.max(0, restschuld - monatsTilgung);
-    }
+    // Exakte Berechnung mit Anschlussfinanzierungs-Unterstützung (monatsgenaue Iteration)
+    const zinsResult = berechneZinsUndTilgung(params, jahr);
+    const jahresZinsen = zinsResult?.zinsen ?? 0;
+    const jahresTilgung = zinsResult?.tilgung ?? 0;
+    const restschuld = zinsResult?.restschuldEnde ?? 0;
 
     // AfA Basis-Berechnung
     const gebaeudeAnteil = params.kaufpreis * (gebaeudeAnteilProzent / 100);
@@ -219,7 +193,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       absetzbareKosten: Math.round(absetzbareKosten),
       zuVersteuern: Math.round(zuVersteuern),      // Z. 54 — Einkünfte V+V
       steuerEffekt: Math.round(steuerEffekt),
-      restschuld: Math.round(restschuld),
+      restschuld: Math.round(restschuld),           // Restschuld zum Jahresende (exakt, phasenaware)
+      tilgung: Math.round(jahresTilgung),           // Tilgung dieses Jahres (exakt)
       einmaleffekte: Math.round(einmaleffekte)
     };
   };
@@ -269,7 +244,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       [`Steuereffekt bei ${steuersatz}% Steuersatz`, 'Info', ...alleJahreDaten.map(d => d.steuerEffekt)],
       [],
       ['D. NACHRICHTLICH (nicht in Anlage V)', '', ...verfuegbareJahre.map(() => '')],
-      ['Tilgung (nur Cashflow, nicht absetzbar)', '—', ...alleJahreDaten.map(d => Math.round((ergebnis.monatlicheRate * 12) - d.zinsen))],
+      ['Tilgung (nur Cashflow, nicht absetzbar)', '—', ...alleJahreDaten.map(d => d.tilgung ?? Math.round((ergebnis.monatlicheRate * 12) - d.zinsen))],
       ['Restschuld zum Jahresende', '—', ...alleJahreDaten.map(d => d.restschuld)],
       ['AfA-relevante Investitionen (Herstellungskosten)', '—', ...alleJahreDaten.map(d => d.investitionenAfa)],
     ];
@@ -615,7 +590,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                 <span className="font-medium text-gray-600">Tilgung</span>
                 <span className="text-xs text-gray-500 block">nur Cashflow, keine Steuerwirkung</span>
               </div>
-              <span className="font-bold text-gray-500">{formatCurrency(a((ergebnis.monatlicheRate * 12) - selectedDaten.zinsen))}</span>
+              <span className="font-bold text-gray-500">{formatCurrency(a(selectedDaten.tilgung ?? (ergebnis.monatlicheRate * 12) - selectedDaten.zinsen))}</span>
             </div>
           </div>
         )}

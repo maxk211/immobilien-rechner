@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
-import { berechneJahresRateFuerPhasen } from '../utils/berechnung.js';
+import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung } from '../utils/berechnung.js';
 
 // ── Hilfsfunktion: Zeile in Tabelle ─────────────────────────────────────────
 function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = false, separator = false, plus = false, hideZero = false }) {
@@ -38,8 +38,20 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
   const a = (v) => Math.round((v || 0) * anteilFaktor);
   const isGbR = anteilFaktor !== 1;
 
-  // ── Kreditdetails (Zins/Tilgungs-Split) ────────────────────────────────────
+  // ── Kreditdetails (Zins/Tilgungs-Split) — aktueller Monat exakt berechnet ──
   const kreditDetails = useMemo(() => {
+    const heute = new Date();
+    // Exakte Berechnung: tatsächliche Restschuld dieses Monats (Phasenwechsel berücksichtigt)
+    const result = berechneZinsUndTilgung(params, heute.getFullYear(), heute.getMonth());
+    if (result && ergebnis.monatlicheRate > 0) {
+      const zinsen = Math.min(result.zinsen, ergebnis.monatlicheRate); // Zinsen nie > Rate
+      return {
+        zinsen: Math.max(0, zinsen),
+        tilgung: Math.max(0, ergebnis.monatlicheRate - zinsen),
+        gesamt: ergebnis.monatlicheRate,
+      };
+    }
+    // Fallback: Phasen-Start-Restschuld (wie bisher)
     const effZinssatz = ergebnis.effZinssatz ?? (params.zinssatz ?? 4.0);
     const effRestschuld = ergebnis.effRestschuld ?? (() => {
       const kauf = params.kaufnebenkosten ?? 10;
@@ -50,13 +62,23 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       return params.finanzierungsbetrag ?? Math.max(0, params.kaufpreis + kNKAbs - gesamtEK);
     })();
     const monatsZinsen = effRestschuld * (effZinssatz / 100 / 12);
-    const monatsTilgung = ergebnis.monatlicheRate - monatsZinsen;
     return {
       zinsen: Math.max(0, Math.round(monatsZinsen)),
-      tilgung: Math.max(0, Math.round(monatsTilgung)),
+      tilgung: Math.max(0, Math.round(ergebnis.monatlicheRate - monatsZinsen)),
       gesamt: ergebnis.monatlicheRate,
     };
   }, [ergebnis, params]);
+
+  // ── Jahreszins/-tilgung: exakte Summe der 12 Monate (nicht × 12!) ──────────
+  const jahresKredit = useMemo(() => {
+    const result = berechneZinsUndTilgung(params, aktuellesJahr);
+    if (!result || ergebnis.monatlicheRate <= 0) return null;
+    return {
+      zinsen: result.zinsen,
+      tilgung: Math.max(0, ergebnis.monatlicheRate * 12 - result.zinsen),
+      gesamt: ergebnis.monatlicheRate * 12,
+    };
+  }, [params, ergebnis, aktuellesJahr]);
 
   // ── Monatswerte für aktuelles Jahr ─────────────────────────────────────────
   const monat = useMemo(() => {
@@ -230,11 +252,15 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
 
               {/* FINANZIERUNG */}
               <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Finanzierung</td></tr>
-              <CfZeile label="Schuldzinsen" color="red" monat={a(monat.zinsen)} jahr={a(monat.zinsen * 12)} />
+              <CfZeile label="Schuldzinsen" color="red"
+                monat={a(monat.zinsen)}
+                jahr={a(jahresKredit?.zinsen ?? monat.zinsen * 12)} />
               <CfZeile label="Tilgung (Eigenkapitalaufbau)" color="blue" einzug
-                monat={a(monat.tilgung)} jahr={a(monat.tilgung * 12)} />
+                monat={a(monat.tilgung)}
+                jahr={a(jahresKredit?.tilgung ?? monat.tilgung * 12)} />
               <CfZeile label="Kreditrate gesamt" color="red" bold separator
-                monat={a(monat.kreditrate)} jahr={a(monat.kreditrate * 12)} />
+                monat={a(monat.kreditrate)}
+                jahr={a(jahresKredit?.gesamt ?? monat.kreditrate * 12)} />
               {monat.bauspar > 0 && (
                 <CfZeile label="Bauspar-Sparrate (Ansparphase)" color="orange"
                   monat={a(monat.bauspar)} jahr={a(monat.bauspar * 12)} />
@@ -244,41 +270,58 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
 
           {/* Cashflow-Ergebnis-Block */}
           <div className="mt-4 space-y-2">
-            {/* Cashflow vor Tilgung */}
-            <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.vorTilgung >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-              <div>
-                <div className="font-bold text-sm text-gray-800">Cashflow vor Tilgung</div>
-                <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Zinsen{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
-              </div>
-              <div className="text-right">
-                <div className={`text-xl font-black ${monat.vorTilgung >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {monat.vorTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.vorTilgung))}
-                  <span className="text-xs font-normal text-gray-400">/Mo</span>
-                </div>
-                <div className={`text-sm font-semibold ${monat.vorTilgung >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {monat.vorTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.vorTilgung * 12))}
-                  <span className="text-xs font-normal text-gray-400">/Jahr</span>
-                </div>
-              </div>
-            </div>
+            {(() => {
+              // Jahreszahlen mit exakten Zinssummen (nicht × 12)
+              const jZinsen = jahresKredit?.zinsen ?? monat.zinsen * 12;
+              const jGesamt = jahresKredit?.gesamt ?? monat.kreditrate * 12;
+              const vorTilgungJahr = a(monat.gesamtEinnahmen) * 12
+                - a(monat.gesamtBetrieb) * 12
+                - a(jZinsen)
+                - a(monat.bauspar) * 12;
+              const nachTilgungJahr = a(monat.gesamtEinnahmen) * 12
+                - a(monat.gesamtBetrieb) * 12
+                - a(jGesamt)
+                - a(monat.bauspar) * 12;
+              return (
+                <>
+                  {/* Cashflow vor Tilgung */}
+                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.vorTilgung >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                    <div>
+                      <div className="font-bold text-sm text-gray-800">Cashflow vor Tilgung</div>
+                      <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Zinsen{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-xl font-black ${monat.vorTilgung >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {monat.vorTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.vorTilgung))}
+                        <span className="text-xs font-normal text-gray-400">/Mo</span>
+                      </div>
+                      <div className={`text-sm font-semibold ${vorTilgungJahr >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {vorTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(vorTilgungJahr))}
+                        <span className="text-xs font-normal text-gray-400">/Jahr</span>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Cashflow nach Tilgung */}
-            <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.nachTilgung >= 0 ? 'bg-emerald-100 border-emerald-300' : 'bg-red-100 border-red-300'}`}>
-              <div>
-                <div className="font-bold text-sm text-gray-800">Cashflow nach Tilgung</div>
-                <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Kreditrate{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
-              </div>
-              <div className="text-right">
-                <div className={`text-xl font-black ${monat.nachTilgung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                  {monat.nachTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.nachTilgung))}
-                  <span className="text-xs font-normal text-gray-400">/Mo</span>
-                </div>
-                <div className={`text-sm font-semibold ${monat.nachTilgung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                  {monat.nachTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.nachTilgung * 12))}
-                  <span className="text-xs font-normal text-gray-400">/Jahr</span>
-                </div>
-              </div>
-            </div>
+                  {/* Cashflow nach Tilgung */}
+                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.nachTilgung >= 0 ? 'bg-emerald-100 border-emerald-300' : 'bg-red-100 border-red-300'}`}>
+                    <div>
+                      <div className="font-bold text-sm text-gray-800">Cashflow nach Tilgung</div>
+                      <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Kreditrate{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-xl font-black ${monat.nachTilgung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                        {monat.nachTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.nachTilgung))}
+                        <span className="text-xs font-normal text-gray-400">/Mo</span>
+                      </div>
+                      <div className={`text-sm font-semibold ${nachTilgungJahr >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                        {nachTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(nachTilgungJahr))}
+                        <span className="text-xs font-normal text-gray-400">/Jahr</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* Info zu Tilgung */}

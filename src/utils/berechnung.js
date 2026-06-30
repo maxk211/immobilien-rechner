@@ -417,6 +417,115 @@ export const berechneMtlCashflow = (immo) => {
   return gesamtMiete + nkVomMieter + spMtl - ergebnis.monatlicheRate - betriebskosten - bauspar;
 };
 
+/**
+ * Berechnet den exakten Zins- und Tilgungsanteil für ein Zieljahr oder Zielmonat.
+ * Berücksichtigt Anschlussfinanzierungen (mehrere Finanzierungsphasen) korrekt
+ * durch monatsgenaue Iteration von Kreditbeginn bis Zielpunkt.
+ *
+ * @param {Object} params - Immobilien-Parameter (inkl. finanzierungsphasen, kaufdatum, etc.)
+ * @param {number} targetJahr - Zieljahr (z.B. 2024)
+ * @param {number|null} targetMonat - 0–11 für spezifischen Kalendermonat; null = ganzes Jahr
+ * @returns {{ zinsen, tilgung, restschuldAnfang, restschuldEnde } | null}
+ */
+export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) => {
+  const phasen = params.finanzierungsphasen || [];
+  const kreditStartStr = phasen[0]?.kreditStartDatum || params.kaufdatum;
+  if (!kreditStartStr || !params.kaufpreis) return null;
+
+  const kreditStart = new Date(kreditStartStr);
+  const ksJahr = kreditStart.getFullYear();
+  const ksMonat = kreditStart.getMonth(); // 0-indexed
+
+  // Anfangs-Fremdkapital (identische Logik wie berechneRendite)
+  const kNKAbs = (params.kaufpreis || 0) * ((params.kaufnebenkosten ?? 10) / 100);
+  const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
+    ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
+    : (params.eigenkapital || 0);
+  const anfangsFK = (params.finanzierungsbetrag !== null && params.finanzierungsbetrag !== undefined)
+    ? params.finanzierungsbetrag
+    : Math.max(0, (params.kaufpreis || 0) + kNKAbs - gesamtEK);
+
+  if (anfangsFK <= 0) return { zinsen: 0, tilgung: 0, restschuldAnfang: 0, restschuldEnde: 0 };
+
+  // Absoluter Monat relativ zum Kreditstart (0 = erster Kreditmonat)
+  const toAbs = (j, m) => (j - ksJahr) * 12 + m - ksMonat;
+
+  const zStartM = targetMonat !== null ? targetMonat : 0;
+  const zEndM = targetMonat !== null ? targetMonat : 11;
+  const absStart = toAbs(targetJahr, zStartM);
+  const absEnd = toAbs(targetJahr, zEndM);
+
+  // Zielzeitraum vollständig vor Kreditbeginn
+  if (absEnd < 0) return { zinsen: 0, tilgung: 0, restschuldAnfang: anfangsFK, restschuldEnde: anfangsFK };
+
+  const effStart = Math.max(0, absStart); // Clamp auf Kreditbeginn für erstes Jahr
+
+  // Phasenliste aufbauen: { s: startAbsM, e: endAbsM, mz: Monatszinssatz, rate, override }
+  const phaseListe = [];
+  if (phasen.length > 0) {
+    let kRS = anfangsFK;
+    let phS = 0;
+    for (let i = 0; i < phasen.length; i++) {
+      const ph = phasen[i];
+      const pz = ph.sollzinssatz ?? ph.zinssatz ?? (params.zinssatz ?? 4.0);
+      const sk = (i > 0 && ph.restschuldOverride != null) ? ph.restschuldOverride : kRS;
+      const lm = (ph.darlehensTyp === 'endfaellig' ? (ph.laufzeit || 10) : (ph.zinsbindung || 10)) * 12;
+      const mz = pz / 100 / 12;
+      const pAT = ph.anfangstilgung || (ph.darlehensTyp === 'endfaellig' ? 0 : 2.0);
+      const rate = ph.monatlicherBetrag > 0 ? ph.monatlicherBetrag : (sk > 0 ? sk * (mz + pAT / 100 / 12) : 0);
+      const isLast = i === phasen.length - 1;
+
+      phaseListe.push({
+        s: phS, e: isLast ? Infinity : phS + lm, mz, rate,
+        override: (i > 0 && ph.restschuldOverride != null) ? ph.restschuldOverride : null,
+      });
+
+      // Restschuld am Phasenende für nächste Phase
+      let rs = sk;
+      for (let m = 0; m < lm && rs > 0; m++) {
+        rs = Math.max(0, rs - Math.min(rate - rs * mz, rs));
+      }
+      kRS = rs;
+      phS += lm;
+    }
+  } else {
+    // Fallback: Einzel-Phase mit exakter Annuität (wie berechneRendite ohne Phasen)
+    const pz = params.zinssatz ?? 4.0;
+    const mz = pz / 100 / 12;
+    const lm = (params.laufzeit ?? 25) * 12;
+    const rate = anfangsFK > 0
+      ? (mz > 0
+        ? anfangsFK * (mz * Math.pow(1 + mz, lm)) / (Math.pow(1 + mz, lm) - 1)
+        : anfangsFK / lm)
+      : 0;
+    phaseListe.push({ s: 0, e: Infinity, mz, rate, override: null });
+  }
+
+  // Monatsgenaue Iteration von Kreditbeginn bis Zielpunkt
+  let rs = anfangsFK;
+  let sumZins = 0, sumTilg = 0;
+  let rsAnfang = anfangsFK;
+  let done = false;
+
+  for (let phi = 0; phi < phaseListe.length && !done; phi++) {
+    const ph = phaseListe[phi];
+    // Restschuld-Override bei Anschlussfinanzierung (manuell gesetzte Restschuld)
+    if (ph.override !== null) rs = ph.override;
+
+    for (let absM = ph.s; absM < ph.e && rs > 0; absM++) {
+      if (absM > absEnd) { done = true; break; }
+      const iz = rs * ph.mz;
+      const tg = Math.max(0, Math.min(ph.rate - iz, rs));
+      // Restschuld am Anfang des Zielzeitraums merken (vor Tilgung dieses Monats)
+      if (absM === effStart) rsAnfang = rs;
+      if (absM >= effStart && absM <= absEnd) { sumZins += iz; sumTilg += tg; }
+      rs = Math.max(0, rs - tg);
+    }
+  }
+
+  return { zinsen: Math.round(sumZins), tilgung: Math.round(sumTilg), restschuldAnfang: Math.round(rsAnfang), restschuldEnde: Math.round(rs) };
+};
+
 // ─── Vermögenswerte-Helper ───────────────────────────────────────────────────
 // Berechnet Restschuld, Jahres-Tilgung und freies Vermögen für eine Kaufimmobilie
 export const berechneImmoVermoegenswerte = (immo) => {
