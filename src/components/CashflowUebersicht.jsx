@@ -132,11 +132,32 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       return params.finanzierungsbetrag ?? Math.max(0, params.kaufpreis + kNKAbs - gesamtEK);
     })();
 
+    // Mietanpassungen sortiert (für getMieteForJahr)
+    const mietAnpSorted = [...(params.mietAnpassungen || [])]
+      .filter(a => a.kaltmiete != null)
+      .sort((a, b) => new Date(a.datum) - new Date(b.datum));
+
+    // Monatlich gewichtete Durchschnittsmiete für ein Jahr — berücksichtigt
+    // geplante und vergangene Mietanpassungen korrekt (auch unterjährige Änderungen)
+    const getMieteForJahr = (jahr) => {
+      const histMiete = (params.mietHistorie || {})[`${jahr}`];
+      if (histMiete?.kaltmiete != null) return histMiete.kaltmiete; // Manuelle Override hat Vorrang
+      if (mietAnpSorted.length === 0) return params.kaltmiete || 0;
+      let summe = 0;
+      for (let m = 0; m < 12; m++) {
+        const monatsMitte = new Date(jahr, m, 15);
+        let gueltige = null;
+        for (const a of mietAnpSorted) {
+          if (new Date(a.datum) <= monatsMitte) gueltige = a;
+        }
+        summe += gueltige?.kaltmiete ?? (params.kaltmiete || 0);
+      }
+      return summe / 12; // Monatsdurchschnitt (berücksichtigt unterjährige Anpassungen)
+    };
+
     for (let jahr = kaufjahr; jahr <= aktuellesJahr + 5; jahr++) {
-      const histMiete  = (params.mietHistorie || {})[`${jahr}`];
       const histKosten = (params.mietHistorie || {})[`${jahr}`] || {};
-      const basisMiete = getAktuelleMiete(params);
-      const kaltmiete  = (histMiete?.kaltmiete != null ? histMiete.kaltmiete : basisMiete);
+      const kaltmiete  = getMieteForJahr(jahr);
       const nkVM = params.vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
       const sp = params.stellplatz;
       const stellplatz = (sp?.vorhanden && sp?.istVermietet)
@@ -160,6 +181,12 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         .filter(inv => new Date(inv.datum).getFullYear() === jahr)
         .reduce((sum, inv) => sum + inv.betrag, 0);
 
+      // Cashflow vor Tilgung: Einnahmen − Betrieb − Zinsen (exakt, phasenaware) − Bauspar
+      const zinsResult = berechneZinsUndTilgung(params, jahr);
+      const jahresZinsen = zinsResult?.zinsen ?? 0;
+      const cfVorTilgung = einnahmen - betrieb - jahresZinsen - bauspar;
+
+      // Cashflow nach Tilgung: Einnahmen − Betrieb − Kreditrate − Bauspar − Einmalinvestitionen
       const cashflow = einnahmen - betrieb - kreditrate - bauspar - einmalInvest;
       kumuliert += cashflow;
 
@@ -170,6 +197,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         kreditrate: Math.round(kreditrate),
         bauspar: Math.round(bauspar),
         investitionen: Math.round(einmalInvest),
+        jahresZinsen: Math.round(jahresZinsen),
+        cfVorTilgung: Math.round(cfVorTilgung),
         cashflow: Math.round(cashflow),
         kumuliert: Math.round(kumuliert),
         istVorjahr: jahr < aktuellesJahr,
@@ -344,52 +373,63 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       {tab === 'verlauf' && (
         <div className="p-4">
           {/* Disclaimer */}
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-            <span className="font-bold">⚠️ Hinweis zu historischen Werten:</span> Die Vorjahres-Cashflows
-            sind nur korrekt, wenn Miethistorie und Kostenwerte für die jeweiligen Jahre
-            im System gepflegt wurden. Andernfalls werden die aktuellen Basiswerte
-            hochgerechnet — was von der Realität abweichen kann.
+          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+            <span className="font-bold">⚠️ Hinweis zu historischen Werten:</span> Vorjahres-Cashflows
+            sind nur korrekt, wenn Miethistorie und Kostenwerte gepflegt wurden.
+            Mietanpassungen (geplante & vergangene) werden automatisch pro Jahr berücksichtigt.
           </div>
 
           {/* Mobile: Karten */}
           <div className="sm:hidden space-y-2">
-            {verlaufDaten.map(d => (
-              <div key={d.jahr} className={`rounded-xl border p-3 ${
-                d.istAktuell ? 'bg-blue-50 border-blue-300' :
-                d.istPrognose ? 'bg-gray-50 border-dashed border-gray-200' :
-                'bg-white border-gray-100'
-              }`}>
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-bold text-sm ${d.istAktuell ? 'text-blue-700' : d.istPrognose ? 'text-gray-400' : 'text-gray-700'}`}>
-                      {d.jahr}
-                    </span>
-                    {d.istAktuell && <span className="text-[10px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded-full font-bold">Aktuell</span>}
-                    {d.istPrognose && <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">Prognose</span>}
-                    {d.istVorjahr && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Vorjahr</span>}
+            {verlaufDaten.map(d => {
+              const af = anteilFaktor;
+              return (
+                <div key={d.jahr} className={`rounded-xl border p-3 ${
+                  d.istAktuell ? 'bg-blue-50 border-blue-300' :
+                  d.istPrognose ? 'bg-gray-50 border-dashed border-gray-200' :
+                  'bg-white border-gray-100'
+                }`}>
+                  {/* Header: Jahr + CF nach Tilgung */}
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`font-bold text-sm ${d.istAktuell ? 'text-blue-700' : d.istPrognose ? 'text-gray-400' : 'text-gray-700'}`}>
+                        {d.jahr}
+                      </span>
+                      {d.istAktuell && <span className="text-[10px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded-full font-bold">Aktuell</span>}
+                      {d.istPrognose && <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">Prognose</span>}
+                      {d.istVorjahr && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Vorjahr</span>}
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-black text-sm ${d.cashflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                        {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * af))}
+                        <span className="text-[10px] font-normal text-gray-400 ml-0.5">nach Tilg.</span>
+                      </div>
+                      <div className={`text-[11px] font-semibold ${d.cfVorTilgung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {d.cfVorTilgung >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cfVorTilgung * af))}
+                        <span className="text-[10px] font-normal text-gray-400 ml-0.5">vor Tilg.</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className={`font-black text-base ${d.cashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * anteilFaktor))}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <div className="text-gray-400 mb-0.5">Einnahmen</div>
-                    <div className="text-emerald-600 font-semibold">{formatCurrency(Math.round(d.einnahmen * anteilFaktor))}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400 mb-0.5">Betrieb + Kredit</div>
-                    <div className="text-red-500 font-semibold">{formatCurrency(Math.round((d.betrieb + d.kreditrate) * anteilFaktor))}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400 mb-0.5">Kumuliert</div>
-                    <div className={`font-semibold ${d.kumuliert >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                      {formatCurrency(Math.round(d.kumuliert * anteilFaktor))}
+                  {/* Kennzahlen */}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <div className="text-gray-400 mb-0.5">Einnahmen</div>
+                      <div className="text-emerald-600 font-semibold">{formatCurrency(Math.round(d.einnahmen * af))}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400 mb-0.5">Betrieb</div>
+                      <div className="text-red-500 font-semibold">{formatCurrency(Math.round(d.betrieb * af))}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400 mb-0.5">Kumuliert</div>
+                      <div className={`font-semibold ${d.kumuliert >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                        {formatCurrency(Math.round(d.kumuliert * af))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Desktop: Tabelle */}
@@ -402,8 +442,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                   <th className="text-right p-2 text-red-500 font-semibold">Betrieb</th>
                   <th className="text-right p-2 text-red-600 font-semibold">Kreditrate</th>
                   <th className="text-right p-2 text-orange-500 font-semibold">Invest.</th>
-                  <th className="text-right p-2 text-orange-600 font-semibold">Bauspar</th>
-                  <th className="text-right p-2 font-bold text-gray-800">Cashflow</th>
+                  <th className="text-right p-2 text-emerald-500 font-semibold">CF vor Tilg.</th>
+                  <th className="text-right p-2 font-bold text-gray-800">CF nach Tilg.</th>
                   <th className="text-right p-2 text-blue-600 font-semibold rounded-r">Kumuliert</th>
                 </tr>
               </thead>
@@ -426,7 +466,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                     <td className="p-2 text-right text-red-500">{formatCurrency(Math.round(d.betrieb * anteilFaktor))}</td>
                     <td className="p-2 text-right text-red-600">{formatCurrency(Math.round(d.kreditrate * anteilFaktor))}</td>
                     <td className="p-2 text-right text-orange-500">{d.investitionen > 0 ? formatCurrency(Math.round(d.investitionen * anteilFaktor)) : '—'}</td>
-                    <td className="p-2 text-right text-orange-600">{d.bauspar > 0 ? formatCurrency(Math.round(d.bauspar * anteilFaktor)) : '—'}</td>
+                    <td className={`p-2 text-right font-semibold ${d.cfVorTilgung >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {d.cfVorTilgung >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cfVorTilgung * anteilFaktor))}
+                    </td>
                     <td className={`p-2 text-right font-bold ${d.cashflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                       {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * anteilFaktor))}
                     </td>
@@ -440,8 +482,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
           </div>
 
           <div className="mt-3 p-2 bg-gray-50 rounded-lg text-xs text-gray-500">
-            Prognose-Jahre verwenden aktuelle Miet- und Kostenwerte als Basis.
-            Zinsänderungen bei Anschlussfinanzierungen werden aus den Finanzierungsphasen übernommen.
+            Mietanpassungen (geplante Mieterhöhungen) werden monatlich gewichtet eingerechnet.
+            Anschlussfinanzierungen werden aus den Finanzierungsphasen übernommen.
           </div>
         </div>
       )}
