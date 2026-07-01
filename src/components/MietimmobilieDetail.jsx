@@ -228,13 +228,13 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
             <div className="space-y-1">
               <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
                 <span className="text-sm text-gray-600">
-                  Einnahmen — {params.anzahlZimmerVermietet} Zimmer × {formatCurrency(params.untermieteProZimmer)}
+                  Einnahmen — {params.anzahlZimmerVermietet} Zimmer × {formatCurrency(aktUntermiete)}
                 </span>
                 <span className="text-sm font-bold text-emerald-600">+{formatCurrency(einnahmen)}</span>
               </div>
               <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
                 <span className="text-sm text-gray-600">Eigene Warmmiete</span>
-                <span className="text-sm font-bold text-red-500">−{formatCurrency(params.eigeneWarmmiete)}</span>
+                <span className="text-sm font-bold text-red-500">−{formatCurrency(aktWarmmiete)}</span>
               </div>
               {zusatzkosten > 0 && (
                 <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
@@ -395,7 +395,10 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                     </div>
                   </div>
                   <p className="text-xs text-green-600 mt-2">
-                    Einnahmen: {params.anzahlZimmerVermietet} × {formatCurrency(params.untermieteProZimmer)} = <strong>{formatCurrency(einnahmen)}</strong>
+                    Einnahmen: {params.anzahlZimmerVermietet} × {formatCurrency(aktUntermiete)} = <strong>{formatCurrency(einnahmen)}</strong>
+                    {aktUntermiete !== params.untermieteProZimmer && (
+                      <span className="text-gray-400 ml-1">(Basis: {formatCurrency(params.untermieteProZimmer)} → Anpassung aktiv)</span>
+                    )}
                   </p>
                 </div>
 
