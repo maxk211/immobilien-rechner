@@ -3,6 +3,8 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from '../utils/miete.js';
 import MieterDashboard from './MieterDashboard';
 import MieteinnahmenTracker from './MieteinnahmenTracker';
+import ArbitrageCashflow from './ArbitrageCashflow';
+import ArbitrageSteuern from './ArbitrageSteuern';
 
 const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
   const [params, setParams] = useState({
@@ -23,6 +25,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     // Mietanpassungen: [{datum, eigeneWarmmiete?, untermieteProZimmer?}]
     mietAnpassungen: immobilie.mietAnpassungen || [],
     mietEingaenge: immobilie.mietEingaenge || [],
+    steuersatz: immobilie.steuersatz || 30,
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('uebersicht');
@@ -123,17 +126,21 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
             </div>
           </div>
           {/* Tab-Navigation */}
-          <div className="flex gap-1 bg-slate-100 p-1 flex-shrink-0">
-            {[
-              { id: 'uebersicht', label: '📊 Übersicht' },
-              { id: 'mieteingaenge', label: '💶 Mieteingänge' },
-              { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
-            ].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2 px-4 text-[11px] sm:text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                {tab.label}
-              </button>
-            ))}
+          <div className="overflow-x-auto flex-shrink-0">
+            <div className="flex gap-1 bg-slate-100 p-1 min-w-max">
+              {[
+                { id: 'uebersicht', label: '📊 Übersicht' },
+                { id: 'mieteingaenge', label: '💶 Eingänge' },
+                { id: 'cashflow', label: '📈 Cashflow' },
+                { id: 'steuern', label: '🧾 Steuern' },
+                { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`py-2 px-3 sm:px-4 text-[11px] sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -183,6 +190,19 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               </div>
             );
           })()}
+
+          {/* Cashflow Tab */}
+          {activeTab === 'cashflow' && (
+            <ArbitrageCashflow params={params} />
+          )}
+
+          {/* Steuern Tab */}
+          {activeTab === 'steuern' && (
+            <ArbitrageSteuern
+              params={params}
+              onUpdateParams={(neu) => updateParams(neu)}
+            />
+          )}
 
           {/* Mieter Tab */}
           {activeTab === 'mieter' && (
