@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
+import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 
-const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
+const MIETER_DOK_TYPEN = ['Mietvertrag', 'Personalausweis', 'Selbstauskunft', 'Bonitätsnachweis', 'SCHUFA-Auskunft', 'Übergabeprotokoll', 'Kautionsquittung', 'Sonstiges'];
+const MIETER_DOK_ICONS = { 'Mietvertrag': '📋', 'Personalausweis': '🪪', 'Selbstauskunft': '📝', 'Bonitätsnachweis': '💳', 'SCHUFA-Auskunft': '🔍', 'Übergabeprotokoll': '🔑', 'Kautionsquittung': '🧾', 'Sonstiges': '📎' };
+
+const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente = [], onDokumentUpdate }) => {
   const [activeTab, setActiveTab] = useState('stammdaten');
   const [form, setForm] = useState({
     id: mieter?.id || null,
@@ -31,6 +35,80 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
   const [saving, setSaving] = useState(false);
   const [newAnpassung, setNewAnpassung] = useState({ datum: '', betrag: '', grund: '' });
 
+  // Dokumente-Tab State
+  const [dokTyp, setDokTyp] = useState('Mietvertrag');
+  const [pendingFiles, setPendingFiles] = useState([]); // { file, typ } — für neuen Mieter
+  const [dokUploading, setDokUploading] = useState(false);
+  const [dokFehler, setDokFehler] = useState('');
+  const [dokDragOver, setDokDragOver] = useState(false);
+  const [ladeId, setLadeId] = useState(null);
+
+  // Dokumente dieses Mieters aus der Immobilien-Dokumentenliste
+  const mieterDokumente = mieter?.id
+    ? immobilieDokumente.filter(d => d.mieterId === mieter.id)
+    : [];
+
+  const formatBytes = (bytes) => {
+    if (!bytes) return '—';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleDokFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    setDokFehler('');
+    const immo = portfolio.find(i => String(i.id) === String(form.immobilieId));
+    if (!immo?.id) { setDokFehler('Zuerst Immobilie auswählen'); return; }
+
+    if (mieter?.id) {
+      // Bestehender Mieter → sofort hochladen
+      setDokUploading(true);
+      try {
+        const neu = [];
+        for (const file of Array.from(files)) {
+          if (file.size > 20 * 1024 * 1024) { setDokFehler(`"${file.name}" zu groß (max. 20 MB)`); continue; }
+          const meta = await uploadDokument(immo.id, file, dokTyp, { id: mieter.id, name: mieter.name });
+          neu.push(meta);
+        }
+        if (neu.length > 0 && onDokumentUpdate) {
+          await onDokumentUpdate([...immobilieDokumente, ...neu]);
+        }
+      } catch (e) {
+        setDokFehler(`Upload fehlgeschlagen: ${e.message}`);
+      } finally {
+        setDokUploading(false);
+      }
+    } else {
+      // Neuer Mieter → Dateien puffern, Upload nach Speichern
+      const valide = Array.from(files).filter(f => {
+        if (f.size > 20 * 1024 * 1024) { setDokFehler(`"${f.name}" zu groß (max. 20 MB)`); return false; }
+        return true;
+      });
+      setPendingFiles(prev => [...prev, ...valide.map(f => ({ file: f, typ: dokTyp }))]);
+    }
+  };
+
+  const removePending = (idx) => setPendingFiles(prev => prev.filter((_, i) => i !== idx));
+
+  const handleDokDownload = async (doc) => {
+    setLadeId(doc.id);
+    try {
+      const url = await getDokumentUrl(doc.path);
+      if (url) window.open(url, '_blank');
+      else alert('Nicht mehr verfügbar.');
+    } catch (e) { alert(e.message); }
+    finally { setLadeId(null); }
+  };
+
+  const handleDokDelete = async (doc) => {
+    if (!window.confirm(`"${doc.name}" löschen?`)) return;
+    try {
+      await deleteDokument(doc.path);
+      if (onDokumentUpdate) await onDokumentUpdate(immobilieDokumente.filter(d => d.id !== doc.id));
+    } catch (e) { alert(e.message); }
+  };
+
   // Wohnfläche aus gewählter Immobilie für €/qm Berechnung
   const gewaehltesObjekt = portfolio.find(i => String(i.id) === String(form.immobilieId));
   const wohnflaeche = gewaehltesObjekt?.wohnflaeche || 0;
@@ -42,7 +120,27 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
     if (!form.name.trim()) { toast.error('Name ist Pflicht'); return; }
     if (!form.immobilieId) { toast.error('Bitte eine Immobilie auswählen'); return; }
     setSaving(true);
-    try { await onSave(form); } finally { setSaving(false); }
+    try {
+      const savedMieter = await onSave(form);
+      // Gepufferte Dokumente für neuen Mieter jetzt hochladen
+      if (pendingFiles.length > 0 && onDokumentUpdate) {
+        const mieterMeta = {
+          id: savedMieter?.id || mieter?.id || form.id || 'unbekannt',
+          name: form.name,
+        };
+        const immo = portfolio.find(i => String(i.id) === String(form.immobilieId));
+        if (immo?.id) {
+          const neu = [];
+          for (const { file, typ } of pendingFiles) {
+            try {
+              const meta = await uploadDokument(immo.id, file, typ, mieterMeta);
+              neu.push(meta);
+            } catch (e) { console.error('Upload fehlgeschlagen:', e); }
+          }
+          if (neu.length > 0) await onDokumentUpdate([...immobilieDokumente, ...neu]);
+        }
+      }
+    } finally { setSaving(false); }
   };
 
   const addMietanpassung = () => {
@@ -76,6 +174,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
             { id: 'stammdaten', label: '👤 Stammdaten' },
             { id: 'mietvertrag', label: '📄 Mietvertrag' },
             { id: 'mietanpassungen', label: '📈 Anpassungen' },
+            { id: 'dokumente', label: `📎 Dokumente${pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : ''}` },
           ].map(tab => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
               className={`flex-1 px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center ${activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -372,6 +471,94 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
             </>
           )}
 
+          {/* === TAB: DOKUMENTE === */}
+          {activeTab === 'dokumente' && (
+            <div className="space-y-4">
+              {/* Typ-Auswahl */}
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-2">Dokumenttyp auswählen:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {MIETER_DOK_TYPEN.map(t => (
+                    <button key={t} type="button" onClick={() => setDokTyp(t)}
+                      className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all ${
+                        dokTyp === t ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}>
+                      {MIETER_DOK_ICONS[t]} {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Upload-Zone */}
+              <div
+                className="border-2 border-dashed rounded-xl p-4 transition-colors"
+                style={{ borderColor: dokDragOver ? '#3b82f6' : '#d1d5db', background: dokDragOver ? '#eff6ff' : '#f9fafb' }}
+                onDragOver={e => { e.preventDefault(); setDokDragOver(true); }}
+                onDragLeave={() => setDokDragOver(false)}
+                onDrop={e => { e.preventDefault(); setDokDragOver(false); handleDokFiles(e.dataTransfer.files); }}>
+                <label className={`flex flex-col items-center gap-2 cursor-pointer ${dokUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <span className="text-2xl">{dokUploading ? '⏳' : '📤'}</span>
+                  <p className="text-sm font-semibold text-gray-700">{dokUploading ? 'Wird hochgeladen…' : 'Datei hochladen'}</p>
+                  <p className="text-xs text-gray-400">
+                    {mieter?.id ? 'Klicken oder Datei hierher ziehen · max. 20 MB' : 'Wird beim Speichern des Mieters hochgeladen'}
+                  </p>
+                  <input type="file" multiple className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.zip"
+                    onChange={e => handleDokFiles(e.target.files)} />
+                </label>
+                {dokFehler && <p className="text-xs text-red-600 text-center mt-2">⚠️ {dokFehler}</p>}
+              </div>
+
+              {/* Pending Files (nur bei neuem Mieter) */}
+              {pendingFiles.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-amber-700 mb-1">⏳ Wird beim Speichern hochgeladen:</p>
+                  {pendingFiles.map((pf, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <span className="text-base">{MIETER_DOK_ICONS[pf.typ] || '📎'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 truncate">{pf.file.name}</p>
+                        <p className="text-xs text-amber-600">{pf.typ} · {formatBytes(pf.file.size)}</p>
+                      </div>
+                      <button type="button" onClick={() => removePending(idx)}
+                        className="text-red-400 hover:text-red-600 text-lg leading-none flex-shrink-0">&times;</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bereits hochgeladene Dokumente (bestehender Mieter) */}
+              {mieterDokumente.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Hochgeladene Dokumente:</p>
+                  {mieterDokumente.map(doc => (
+                    <div key={doc.id} className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 group">
+                      <span className="text-base">{MIETER_DOK_ICONS[doc.typ] || '📎'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 truncate">{doc.name}</p>
+                        <p className="text-xs text-gray-400">{doc.typ} · {formatBytes(doc.groesse)} · {new Date(doc.hochgeladenAm).toLocaleDateString('de-DE')}</p>
+                      </div>
+                      <button type="button" onClick={() => handleDokDownload(doc)} disabled={ladeId === doc.id}
+                        className="p-1 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50" title="Herunterladen">
+                        {ladeId === doc.id ? '⏳' : '⬇️'}
+                      </button>
+                      <button type="button" onClick={() => handleDokDelete(doc)}
+                        className="p-1 text-red-400 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Löschen">
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {mieterDokumente.length === 0 && pendingFiles.length === 0 && !mieter?.id && (
+                <p className="text-xs text-gray-400 text-center py-2">
+                  💡 Du kannst schon jetzt Dokumente auswählen — sie werden zusammen mit dem Mieter gespeichert.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2 border-t border-gray-100 pb-2">
             <button type="button" onClick={onClose}
               className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold">
@@ -379,7 +566,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose }) => {
             </button>
             <button type="submit" disabled={saving}
               className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold disabled:opacity-50">
-              {saving ? 'Speichern...' : 'Speichern'}
+              {saving ? 'Speichern...' : saving && pendingFiles.length > 0 ? 'Speichern & Hochladen...' : 'Speichern'}
             </button>
           </div>
         </form>

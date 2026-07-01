@@ -247,13 +247,13 @@ function appToDb(app) {
 
 const DOKUMENTE_BUCKET = 'immobilien-dokumente';
 
-export async function uploadDokument(immobilieId, file, typ = 'Sonstiges') {
+export async function uploadDokument(immobilieId, file, typ = 'Sonstiges', mieterMeta = null) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Nicht eingeloggt');
 
-  const ext = file.name.split('.').pop();
   const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_');
-  const path = `${user.id}/${immobilieId}/${Date.now()}_${safeName}`;
+  const subFolder = mieterMeta?.id ? `mieter-${mieterMeta.id}` : 'allgemein';
+  const path = `${user.id}/${immobilieId}/${subFolder}/${Date.now()}_${safeName}`;
 
   const { error: uploadError } = await supabase.storage
     .from(DOKUMENTE_BUCKET)
@@ -268,6 +268,8 @@ export async function uploadDokument(immobilieId, file, typ = 'Sonstiges') {
     typ,
     groesse: file.size,
     hochgeladenAm: new Date().toISOString(),
+    mieterId: mieterMeta?.id || null,
+    mieterName: mieterMeta?.name || null,
   };
 }
 

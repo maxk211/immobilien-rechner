@@ -153,8 +153,11 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
               <span className="text-xl flex-shrink-0">{DOK_ICONS[doc.typ] || '📎'}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800 truncate">{doc.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   <span className="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-medium">{doc.typ}</span>
+                  {doc.mieterName && (
+                    <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-medium">👤 {doc.mieterName}</span>
+                  )}
                   <span className="text-xs text-slate-400">{formatBytes(doc.groesse)}</span>
                   <span className="text-xs text-slate-400">{new Date(doc.hochgeladenAm).toLocaleDateString('de-DE')}</span>
                 </div>
@@ -1471,6 +1474,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               nkAbrechnungen={nkAbrechnungen}
               onSaveNK={onSaveNK}
               onDeleteNK={onDeleteNK}
+              immobilieDokumente={params.dokumente || []}
+              onDokumentUpdate={async (neueDokumente) => {
+                const updated = { ...params, dokumente: neueDokumente };
+                updateParams(updated);
+                await onSave(updated);
+              }}
             />
           )}
 
