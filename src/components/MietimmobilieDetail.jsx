@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from '../utils/miete.js';
 import MieterDashboard from './MieterDashboard';
+import MieteinnahmenTracker from './MieteinnahmenTracker';
 
 const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
   const [params, setParams] = useState({
@@ -20,7 +21,8 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     plz: immobilie.plz || '',
     adresse: immobilie.adresse || '',
     // Mietanpassungen: [{datum, eigeneWarmmiete?, untermieteProZimmer?}]
-    mietAnpassungen: immobilie.mietAnpassungen || []
+    mietAnpassungen: immobilie.mietAnpassungen || [],
+    mietEingaenge: immobilie.mietEingaenge || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('uebersicht');
@@ -124,10 +126,11 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
           <div className="flex gap-1 bg-slate-100 p-1 flex-shrink-0">
             {[
               { id: 'uebersicht', label: '📊 Übersicht' },
+              { id: 'mieteingaenge', label: '💶 Mieteingänge' },
               { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2 px-4 text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                className={`flex-1 py-2 px-4 text-[11px] sm:text-sm font-semibold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                 {tab.label}
               </button>
             ))}
@@ -135,6 +138,52 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
+          {/* Mieteingänge Tab */}
+          {activeTab === 'mieteingaenge' && (() => {
+            // Angepasste params für MieteinnahmenTracker:
+            // - kaltmiete = Gesamt-Einnahmen aus Untervermietung (N × Zimmermiete)
+            // - mietAnpassungen auf Kaltmiete-Format mappen (historisch korrekte Erwartungsbeträge)
+            const anpassungenFuerTracker = (params.mietAnpassungen || []).map(anp => ({
+              datum: anp.datum,
+              kaltmiete: anp.untermieteProZimmer != null
+                ? (anp.untermieteProZimmer * params.anzahlZimmerVermietet)
+                : undefined,
+            })).filter(a => a.kaltmiete != null);
+
+            const trackerParams = {
+              ...params,
+              kaltmiete: einnahmen,
+              vermietungsmodell: 'warmmiete',
+              dauerauftrag: false,
+              dauerauftragBetrag: 0,
+              nebenkostenVomMieter: 0,
+              mietEingaenge: params.mietEingaenge || [],
+              mietAnpassungen: anpassungenFuerTracker,
+            };
+
+            const trackerImmo = {
+              ...immobilie,
+              kaufdatum: params.mietvertragStart || immobilie.kaufdatum || null,
+            };
+
+            return (
+              <div>
+                <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2">
+                  <span className="text-base">💡</span>
+                  <p className="text-xs text-emerald-800">
+                    Hier trackst du die eingehenden Zahlungen deiner Untermieter. Erwartet werden monatlich <strong>{formatCurrency(einnahmen)}</strong> ({params.anzahlZimmerVermietet} Zimmer × {formatCurrency(aktUntermiete)}).
+                  </p>
+                </div>
+                <MieteinnahmenTracker
+                  params={trackerParams}
+                  updateParams={(neu) => updateParams({ mietEingaenge: neu.mietEingaenge })}
+                  immobilie={trackerImmo}
+                  mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+                />
+              </div>
+            );
+          })()}
+
           {/* Mieter Tab */}
           {activeTab === 'mieter' && (
             <MieterDashboard
