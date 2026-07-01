@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente'];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
@@ -161,6 +161,7 @@ function dbToApp(db) {
     eigentumsform: db.eigentumsform || 'allein',
     userAnteil: db.user_anteil ?? 100,
     gbrPartner: db.gbr_partner || [],
+    dokumente: db.dokumente || [],
   };
 }
 
@@ -238,7 +239,50 @@ function appToDb(app) {
     eigentumsform: app.eigentumsform || 'allein',
     user_anteil: app.userAnteil ?? 100,
     gbr_partner: app.gbrPartner || [],
+    dokumente: app.dokumente || [],
   };
+}
+
+// ==================== DOKUMENTE (Supabase Storage) ====================
+
+const DOKUMENTE_BUCKET = 'immobilien-dokumente';
+
+export async function uploadDokument(immobilieId, file, typ = 'Sonstiges') {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Nicht eingeloggt');
+
+  const ext = file.name.split('.').pop();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_');
+  const path = `${user.id}/${immobilieId}/${Date.now()}_${safeName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(DOKUMENTE_BUCKET)
+    .upload(path, file, { upsert: false });
+
+  if (uploadError) throw uploadError;
+
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: file.name,
+    path,
+    typ,
+    groesse: file.size,
+    hochgeladenAm: new Date().toISOString(),
+  };
+}
+
+export async function deleteDokument(path) {
+  const { error } = await supabase.storage
+    .from(DOKUMENTE_BUCKET)
+    .remove([path]);
+  if (error) throw error;
+}
+
+export async function getDokumentUrl(path) {
+  const { data } = await supabase.storage
+    .from(DOKUMENTE_BUCKET)
+    .createSignedUrl(path, 3600); // 1 Stunde gültig
+  return data?.signedUrl || null;
 }
 
 // ==================== MIETER ====================

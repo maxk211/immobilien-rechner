@@ -16,6 +16,168 @@ import BausparManager from './BausparManager';
 import MieteinnahmenTracker from './MieteinnahmenTracker';
 import NKAbrechnungTab from './NKAbrechnungTab';
 import KautionsManager from './KautionsManager';
+import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
+
+// ─── Dokumente-Tab ────────────────────────────────────────────────────────────
+const DOK_TYPEN = ['Kaufvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
+const DOK_ICONS = { 'Kaufvertrag': '📜', 'Mietvertrag': '📋', 'NK-Abrechnung': '💡', 'Grundriss': '🏗️', 'Energieausweis': '⚡', 'Versicherung': '🛡️', 'Handwerker-Rechnung': '🔧', 'Fotos': '📷', 'Sonstiges': '📎' };
+
+const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
+  const [uploading, setUploading] = useState(false);
+  const [uploadFehler, setUploadFehler] = useState('');
+  const [gewaehltTyp, setGewaehltTyp] = useState('Sonstiges');
+  const [dragOver, setDragOver] = useState(false);
+  const [ladeId, setLadeId] = useState(null);
+
+  const formatBytes = (bytes) => {
+    if (!bytes) return '—';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    setUploadFehler('');
+    setUploading(true);
+    try {
+      const neueDokumente = [];
+      for (const file of Array.from(files)) {
+        if (file.size > 20 * 1024 * 1024) {
+          setUploadFehler(`"${file.name}" ist zu groß (max. 20 MB)`);
+          continue;
+        }
+        const meta = await uploadDokument(immobilie.id, file, gewaehltTyp);
+        neueDokumente.push(meta);
+      }
+      if (neueDokumente.length > 0) {
+        onDokumentUpdate([...dokumente, ...neueDokumente]);
+      }
+    } catch (e) {
+      setUploadFehler(`Upload fehlgeschlagen: ${e.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDownload = async (doc) => {
+    setLadeId(doc.id);
+    try {
+      const url = await getDokumentUrl(doc.path);
+      if (url) window.open(url, '_blank');
+      else alert('Dokument nicht mehr verfügbar.');
+    } catch (e) {
+      alert(`Fehler: ${e.message}`);
+    } finally {
+      setLadeId(null);
+    }
+  };
+
+  const handleDelete = async (doc) => {
+    if (!window.confirm(`"${doc.name}" wirklich löschen?`)) return;
+    try {
+      await deleteDokument(doc.path);
+      onDokumentUpdate(dokumente.filter(d => d.id !== doc.id));
+    } catch (e) {
+      alert(`Löschen fehlgeschlagen: ${e.message}`);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-bold text-slate-800">📎 Dokumente</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Verträge, Abrechnungen & Unterlagen zur Immobilie</p>
+        </div>
+        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full font-semibold">
+          {dokumente.length} Datei{dokumente.length !== 1 ? 'en' : ''}
+        </span>
+      </div>
+
+      {/* Upload-Bereich */}
+      <div
+        className="bg-white border-2 border-dashed rounded-xl p-5 space-y-3 transition-colors"
+        style={{ borderColor: dragOver ? '#6366f1' : '#cbd5e1', background: dragOver ? '#eef2ff' : undefined }}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}>
+
+        {/* Typ-Auswahl */}
+        <div className="flex flex-wrap gap-1.5">
+          {DOK_TYPEN.map(t => (
+            <button key={t} onClick={() => setGewaehltTyp(t)}
+              className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all ${
+                gewaehltTyp === t
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}>
+              {DOK_ICONS[t]} {t}
+            </button>
+          ))}
+        </div>
+
+        <label className={`flex flex-col items-center justify-center gap-2 cursor-pointer py-2 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-2xl">
+            {uploading ? '⏳' : '📤'}
+          </div>
+          <p className="text-sm font-semibold text-slate-700">
+            {uploading ? 'Wird hochgeladen…' : 'Datei hochladen'}
+          </p>
+          <p className="text-xs text-slate-400">
+            {uploading ? 'Bitte warten' : 'Klicken oder Datei hierher ziehen · max. 20 MB'}
+          </p>
+          <input type="file" multiple className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.zip"
+            onChange={e => handleFiles(e.target.files)} />
+        </label>
+
+        {uploadFehler && (
+          <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center">
+            ⚠️ {uploadFehler}
+          </div>
+        )}
+      </div>
+
+      {/* Dokumentenliste */}
+      {dokumente.length === 0 ? (
+        <div className="text-center py-8 text-slate-400">
+          <p className="text-3xl mb-2">🗂️</p>
+          <p className="text-sm">Noch keine Dokumente hochgeladen</p>
+          <p className="text-xs mt-1">PDF, Bilder, Word- & Excel-Dateien werden unterstützt</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {[...dokumente].reverse().map(doc => (
+            <div key={doc.id} className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 hover:border-indigo-200 hover:shadow-sm transition-all group">
+              <span className="text-xl flex-shrink-0">{DOK_ICONS[doc.typ] || '📎'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{doc.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-medium">{doc.typ}</span>
+                  <span className="text-xs text-slate-400">{formatBytes(doc.groesse)}</span>
+                  <span className="text-xs text-slate-400">{new Date(doc.hochgeladenAm).toLocaleDateString('de-DE')}</span>
+                </div>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <button onClick={() => handleDownload(doc)} disabled={ladeId === doc.id}
+                  className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
+                  title="Herunterladen">
+                  {ladeId === doc.id ? '⏳' : '⬇️'}
+                </button>
+                <button onClick={() => handleDelete(doc)}
+                  className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Löschen">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
@@ -100,6 +262,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
       monatlicheMiete: 0,
       istVermietet: true,
     },
+    dokumente: immobilie.dokumente || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -272,7 +435,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
           })()}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
+        <div className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
           {/* Tab-Navigation — 2-stufig: 4 Haupt-Tabs + kontextuelle Sub-Tabs */}
           {(() => {
             const aktiveMieterAnzahl = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -298,6 +461,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 subs: [
                   { id: 'investitionen', label: 'Investitionen' },
                   { id: 'zaehler',       label: 'Zähler' },
+                  { id: 'dokumente',     label: '📎 Dokumente' },
                 ]
               },
             ];
@@ -306,7 +470,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
             ) || GRUPPEN[0];
 
             return (
-              <div className="mb-5">
+              <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-5 pb-2 mb-4 border-b border-slate-100">
                 {/* Haupt-Tabs */}
                 <div className="grid grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1">
                   {GRUPPEN.map(g => (
@@ -1314,6 +1478,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
             <ZaehlerVerwaltung
               params={params}
               updateParams={(neu) => updateParams(neu)}
+            />
+          )}
+
+          {activeTab === 'dokumente' && (
+            <DokumenteTab
+              immobilie={immobilie}
+              dokumente={params.dokumente || []}
+              onDokumentUpdate={async (neueDokumente) => {
+                const updated = { ...params, dokumente: neueDokumente };
+                updateParams(updated);
+                await onSave(updated);
+              }}
             />
           )}
           </TabErrorBoundary>

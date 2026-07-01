@@ -378,18 +378,18 @@ function App() {
       headStyles: { fillColor: ORANGE, textColor: 255, fontStyle: 'bold', fontSize: 6.2, valign: 'bottom' },
       alternateRowStyles: { fillColor: [253, 250, 245] },
       columnStyles: {
-        0: { cellWidth: 6, halign: 'center' },
-        1: { cellWidth: 34 },
-        2: { cellWidth: 9, halign: 'center' },
-        3: { cellWidth: 7, halign: 'center' },
-        4: { cellWidth: 9, halign: 'right' },
-        5: { cellWidth: 11, halign: 'center' },
-        6: { cellWidth: 19, halign: 'right' },
-        7: { cellWidth: 19, halign: 'right' },
-        8: { cellWidth: 13, halign: 'right' },
-        9: { cellWidth: 18 },
-        10: { cellWidth: 17, halign: 'right' },
-        11: { cellWidth: 11, halign: 'right' },
+        0: { cellWidth: 5, halign: 'center' },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 7, halign: 'center' },
+        3: { cellWidth: 5, halign: 'center' },
+        4: { cellWidth: 8, halign: 'right' },
+        5: { cellWidth: 10, halign: 'center' },
+        6: { cellWidth: 17, halign: 'right' },
+        7: { cellWidth: 17, halign: 'right' },
+        8: { cellWidth: 12, halign: 'right' },
+        9: { cellWidth: 14 },
+        10: { cellWidth: 16, halign: 'right' },
+        11: { cellWidth: 10, halign: 'right' },
         12: { cellWidth: 9, halign: 'right' },
         13: { cellWidth: 9, halign: 'right' },
         14: { cellWidth: 11, halign: 'center' },
@@ -429,7 +429,7 @@ function App() {
       ],
       styles: { fontSize: 7.5, cellPadding: 2 },
       headStyles: { fillColor: ORANGE, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
-      columnStyles: { 0: { cellWidth: 38 }, 1: { cellWidth: 38 }, 2: { cellWidth: 18, halign: 'right' } },
+      columnStyles: { 0: { cellWidth: 32 }, 1: { cellWidth: 36 }, 2: { cellWidth: 16, halign: 'right' } },
       margin: { left: 14, right: W / 2 + 3 },
     });
     const linksEndeY = pdf.lastAutoTable.finalY;
@@ -458,7 +458,7 @@ function App() {
       ],
       styles: { fontSize: 7.5, cellPadding: 2 },
       headStyles: { fillColor: ORANGE, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
-      columnStyles: { 0: { cellWidth: 74 }, 1: { cellWidth: 22, halign: 'right' } },
+      columnStyles: { 0: { cellWidth: 65 }, 1: { cellWidth: 20, halign: 'right' } },
       margin: { left: W / 2 + 4, right: 14 },
     });
     const rechtsEndeY = pdf.lastAutoTable.finalY;
@@ -482,7 +482,19 @@ function App() {
     // ── Unterschrift ──────────────────────────────────────────────────────────
     if (y > H - 25) { pdf.addPage(); y = 20; }
     pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 30, 30);
-    const ort = daten.anschrift ? daten.anschrift.split(',').pop()?.trim() || daten.anschrift.split(' ').slice(-2).join(' ') : '';
+    const ort = (() => {
+      const adresse = daten.anschrift || '';
+      // Bevorzuge "PLZ Stadtname"-Muster (z.B. "93047 Regensburg")
+      const plzMatch = adresse.match(/\b\d{5}\s+([A-ZÄÖÜ][a-zäöüßA-ZÄÖÜ\-]+(?:[\s\-][A-ZÄÖÜ]?[a-zäöüßA-ZÄÖÜ\-]+)*)/);
+      if (plzMatch) return plzMatch[1];
+      // Fallback: letztes nicht-leeres Komma-Segment ohne führende Zahlen
+      const parts = adresse.split(',').map(p => p.trim()).filter(Boolean);
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const stripped = parts[i].replace(/^\d+\s*/, '');
+        if (stripped && !/^\d+$/.test(stripped)) return stripped;
+      }
+      return adresse.split(/\s+/).filter(t => !/^\d+$/.test(t)).pop() || '';
+    })();
     pdf.text(`Ort, Datum: ${ort ? ort + ', ' : ''}${datumStr}`, 14, y);
     pdf.text('Unterschrift: ______________________________', 120, y);
 
