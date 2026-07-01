@@ -63,7 +63,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
-      <div className="bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-2xl sm:max-w-4xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
+      <div className="bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-2xl sm:max-w-5xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
         {/* Mobile drag handle */}
         <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
           <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
