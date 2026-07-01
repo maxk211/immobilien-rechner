@@ -41,9 +41,12 @@ const ArbitrageCashflow = ({ params }) => {
       // Grobe Einnahmen/Ausgaben für das Jahr
       const monate = Math.max(1, Math.round((bis - von) / (1000 * 60 * 60 * 24 * 30.44)));
       const anpassungen = (params.mietAnpassungen || []).sort((a, b) => new Date(a.datum) - new Date(b.datum));
-      const lastAnp = anpassungen.filter(a => new Date(a.datum).getFullYear() <= j).pop();
-      const jUntermiete = lastAnp?.untermieteProZimmer ?? aktUntermiete;
-      const jWarmmiete = lastAnp?.eigeneWarmmiete ?? aktWarmmiete;
+      // Letzte Anpassung die im Jahr j oder früher liegt (Mitte des Jahres als Referenz)
+      const jahrMitte = new Date(j, 6, 1); // 1. Juli des Jahres
+      const lastAnp = anpassungen.filter(a => new Date(a.datum) <= jahrMitte).pop();
+      // Fallback auf Basiswert (params.*ProZimmer), NICHT auf aktuelle angepasste Werte
+      const jUntermiete = lastAnp?.untermieteProZimmer ?? params.untermieteProZimmer;
+      const jWarmmiete = lastAnp?.eigeneWarmmiete ?? params.eigeneWarmmiete;
       const jEinnahmen = params.anzahlZimmerVermietet * jUntermiete * monate;
       const jAusgaben = (jWarmmiete + zusatzkosten) * monate;
       data.push({ jahr: `${j}`, cf: Math.round(cf), einnahmen: Math.round(jEinnahmen), ausgaben: Math.round(jAusgaben) });
@@ -166,7 +169,7 @@ const ArbitrageCashflow = ({ params }) => {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="jahr" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} />
                     <Tooltip content={<CustomTooltip />} />
                     <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" />
                     <Area type="monotone" dataKey="cf" name="Netto-CF" stroke="#10b981" fill="url(#cfGrad)" strokeWidth={2} />
@@ -241,7 +244,7 @@ const ArbitrageCashflow = ({ params }) => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} />
                 <Tooltip content={<CustomTooltip />} />
                 <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" />
                 <Area type="monotone" dataKey="kumuliert" name="Kum. CF" stroke="#10b981" fill="url(#progGrad)" strokeWidth={2} />

@@ -47,7 +47,9 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
     // Kaltmiete/Warmmiete historisch korrekt aus mietAnpassungen
     const anpassungen = (params.mietAnpassungen || []).filter(a => a.kaltmiete != null);
     const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
-    const monatsDatum = new Date(jahr, monatNr - 1, 1);
+    // 15. des Monats verwenden, um Timezone-Probleme mit ISO-Datums-Strings (UTC) zu vermeiden.
+    // new Date('2026-07-01') ist UTC-Mitternacht = 02:00 CEST, > 01. Juli 00:00 lokal → 15. ist sicher.
+    const monatsDatum = new Date(jahr, monatNr - 1, 15);
     let gueltig = null;
     for (const anp of sorted) {
       if (new Date(anp.datum) <= monatsDatum) gueltig = anp;
