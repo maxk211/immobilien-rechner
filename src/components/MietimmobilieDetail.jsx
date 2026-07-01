@@ -159,9 +159,13 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 : undefined,
             })).filter(a => a.kaltmiete != null);
 
+            // Basis-Einnahmen ohne Anpassungen — damit der Fallback in getMieteForMonat
+            // für Monate VOR der ersten Anpassung den richtigen (alten) Wert nimmt.
+            const basisEinnahmen = params.anzahlZimmerVermietet * params.untermieteProZimmer;
+
             const trackerParams = {
               ...params,
-              kaltmiete: einnahmen,
+              kaltmiete: basisEinnahmen,
               vermietungsmodell: 'warmmiete',
               // dauerauftrag + dauerauftragBetrag aus params — NICHT überschreiben
               nebenkostenVomMieter: 0,

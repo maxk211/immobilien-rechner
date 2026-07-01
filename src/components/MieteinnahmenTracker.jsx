@@ -53,10 +53,11 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
       if (new Date(anp.datum) <= monatsDatum) gueltig = anp;
       else break;
     }
-    // Basiskaltmiete: letzte gültige Anpassung oder Fallback
+    // Basiskaltmiete: letzte gültige Anpassung oder Basiswert (NICHT aktuelleMiete,
+    // da die schon die neueste Anpassung enthält und historisch falsch wäre)
     const kaltmieteForMonat = gueltig
       ? gueltig.kaltmiete
-      : (isDauerauftrag ? dauerauftragBetrag : (aktuelleMiete || 0));
+      : (isDauerauftrag ? dauerauftragBetrag : (params.kaltmiete || 0));
     // NK-Vorauszahlung addieren (nur bei kaltmiete_nk, aktueller Wert)
     return kaltmieteForMonat + nkVomMieter;
   };
