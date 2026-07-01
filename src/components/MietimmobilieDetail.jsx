@@ -26,6 +26,8 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     mietAnpassungen: immobilie.mietAnpassungen || [],
     mietEingaenge: immobilie.mietEingaenge || [],
     steuersatz: immobilie.steuersatz || 30,
+    dauerauftrag: immobilie.dauerauftrag || false,
+    dauerauftragBetrag: immobilie.dauerauftragBetrag || 0,
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('uebersicht');
@@ -161,8 +163,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
               ...params,
               kaltmiete: einnahmen,
               vermietungsmodell: 'warmmiete',
-              dauerauftrag: false,
-              dauerauftragBetrag: 0,
+              // dauerauftrag + dauerauftragBetrag aus params — NICHT überschreiben
               nebenkostenVomMieter: 0,
               mietEingaenge: params.mietEingaenge || [],
               mietAnpassungen: anpassungenFuerTracker,
@@ -183,7 +184,11 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 </div>
                 <MieteinnahmenTracker
                   params={trackerParams}
-                  updateParams={(neu) => updateParams({ mietEingaenge: neu.mietEingaenge })}
+                  updateParams={(neu) => updateParams({
+                    mietEingaenge: neu.mietEingaenge,
+                    dauerauftrag: neu.dauerauftrag,
+                    dauerauftragBetrag: neu.dauerauftragBetrag,
+                  })}
                   immobilie={trackerImmo}
                   mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
                 />
