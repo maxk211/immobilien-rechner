@@ -13,6 +13,14 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   // ── 1. Zinsbindung läuft ab ───────────────────────────────────────────────
   portfolio.forEach(immo => {
     if (immo.immobilienTyp === 'mietimmobilie') return;
+
+    // Kein Kredit vorhanden → keine Zinsbindungswarnung
+    const kaufpreis = immo.kaufpreis || 0;
+    if (immo.geschenkt || kaufpreis <= 0) return;
+    const ekFuerKaufpreis = immo.ekFuerKaufpreis != null ? immo.ekFuerKaufpreis : (immo.eigenkapital || 0);
+    const kreditbetrag = kaufpreis - ekFuerKaufpreis;
+    if (kreditbetrag < 1) return; // vollständig eigenfinanziert
+
     const phasen = immo.finanzierungsphasen || [];
     phasen.forEach((phase, idx) => {
       // Wenn bereits eine Folge-Phase hinterlegt ist → Anschlussfinanzierung geregelt, keine Warnung
