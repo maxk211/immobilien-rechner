@@ -16,7 +16,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
 
     // Kein Kredit vorhanden → keine Zinsbindungswarnung
     const kaufpreis = immo.kaufpreis || 0;
-    if (immo.geschenkt || kaufpreis <= 0) return;
+    if (immo.geschenkt || immo.vollEigenfinanziert || kaufpreis <= 0) return;
     const ekFuerKaufpreis = immo.ekFuerKaufpreis != null ? immo.ekFuerKaufpreis : (immo.eigenkapital || 0);
     const kreditbetrag = kaufpreis - ekFuerKaufpreis;
     if (kreditbetrag < 1) return; // vollständig eigenfinanziert

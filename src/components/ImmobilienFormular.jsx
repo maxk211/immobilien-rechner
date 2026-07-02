@@ -22,6 +22,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     kaufpreis: 300000,
     eigenkapital: 60000,
     geschenkt: false,               // Immobilie als Schenkung erhalten (kein Kaufpreis, kein Kredit)
+    vollEigenfinanziert: false,     // 100 % aus eigenen Mitteln, kein Fremdkapital
     kaltmiete: 1000,
     vermietungsmodell: 'kaltmiete', // 'kaltmiete', 'kaltmiete_nk', 'warmmiete'
     nebenkostenVomMieter: 0,        // Monatliche NK-Vorauszahlung vom Mieter
@@ -477,9 +478,9 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
             {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">Finanzdaten</h3>
-                {/* Schenkung Toggle */}
-                <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <label className="flex items-center gap-3 cursor-pointer">
+                {/* Finanzierungsart — Schenkung oder Eigenfinanzierung */}
+                <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className={`flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all ${formData.geschenkt ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
                     <input
                       type="checkbox"
                       checked={formData.geschenkt || false}
@@ -487,16 +488,35 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         const g = e.target.checked;
                         handleChange('geschenkt', g);
                         if (g) {
-                          // Kein EK/Fremdkapital-Input bei Schenkung – Eigenkapital = kaufpreis
                           handleChange('eigenkapital', formData.kaufpreis);
                           handleChange('finanzierungsModus', 'berechnet');
+                          handleChange('vollEigenfinanziert', false);
                         }
                       }}
-                      className="w-4 h-4 rounded accent-amber-500"
+                      className="w-4 h-4 rounded accent-amber-500 mt-0.5 shrink-0"
                     />
                     <div>
-                      <span className="font-semibold text-amber-800">🎁 Als Schenkung / Erbschaft erhalten</span>
-                      <p className="text-xs text-amber-600 mt-0.5">Kein Kaufpreis — trage den Verkehrswert ein. Kein Kredit nötig.</p>
+                      <span className="font-semibold text-amber-800 text-sm">🎁 Schenkung / Erbschaft</span>
+                      <p className="text-xs text-amber-600 mt-0.5">Kein Kaufpreis — trage den Verkehrswert ein.</p>
+                    </div>
+                  </label>
+                  <label className={`flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all ${formData.vollEigenfinanziert ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                    <input
+                      type="checkbox"
+                      checked={formData.vollEigenfinanziert || false}
+                      onChange={(e) => {
+                        const v = e.target.checked;
+                        handleChange('vollEigenfinanziert', v);
+                        if (v) {
+                          handleChange('eigenkapital', formData.kaufpreis);
+                          handleChange('geschenkt', false);
+                        }
+                      }}
+                      className="w-4 h-4 rounded accent-green-500 mt-0.5 shrink-0"
+                    />
+                    <div>
+                      <span className="font-semibold text-green-800 text-sm">💰 100 % Eigenkapital</span>
+                      <p className="text-xs text-green-600 mt-0.5">Kein Kredit — vollständig aus eigenen Mitteln.</p>
                     </div>
                   </label>
                 </div>
@@ -511,12 +531,12 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       onChange={(e) => {
                         const v = parseFloat(e.target.value) || 0;
                         handleChange('kaufpreis', v);
-                        if (formData.geschenkt) handleChange('eigenkapital', v);
+                        if (formData.geschenkt || formData.vollEigenfinanziert) handleChange('eigenkapital', v);
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
-                  {!formData.geschenkt && (
+                  {!formData.geschenkt && !formData.vollEigenfinanziert && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Eigenkapital (€)</label>
                     <input
@@ -527,8 +547,16 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     />
                   </div>
                   )}
-                {/* Finanzierungskonditionen — nur wenn nicht geschenkt */}
-                {!formData.geschenkt && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  {formData.vollEigenfinanziert && !formData.geschenkt && (
+                    <div className="flex items-end pb-1">
+                      <div className="w-full px-3 py-2.5 border border-green-200 bg-green-50 rounded-lg text-sm font-bold text-green-800 flex items-center justify-between">
+                        <span>EK = Kaufpreis</span>
+                        <span className="text-xs font-normal text-green-600">kein Kredit</span>
+                      </div>
+                    </div>
+                  )}
+                {/* Finanzierungskonditionen — nur wenn nicht geschenkt und nicht vollständig eigenfinanziert */}
+                {!formData.geschenkt && !formData.vollEigenfinanziert && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="text-sm font-semibold text-blue-800 mb-3">🏦 Finanzierung</h4>
                   {/* Modus Toggle */}
                   <div className="flex gap-2 mb-3">
@@ -1082,9 +1110,14 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   zimmer: (formData.wohnungen || []).length,
                   objektart: 'mehrfamilienhaus',
                 } : {};
+                // 100 % Eigenkapital: kein Kredit — Eigenkapital = Kaufpreis
+                const ekAggregat = (formData.vollEigenfinanziert && !formData.geschenkt) ? {
+                  eigenkapital: formData.kaufpreis,
+                } : {};
                 onSave({
                   ...formData,
                   ...mfhAggregat,
+                  ...ekAggregat,
                   finanzierungsphasen: [erstePhase],
                   wohnungen: formData.wohnungen || [],
                 });
