@@ -175,8 +175,125 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               </div>
             </div>
 
-            {/* Objektdetails - nur für Kaufimmobilie / MFH */}
-            {(formData.immobilienTyp === 'kaufimmobilie' || formData.immobilienTyp === 'mehrfamilienhaus') && (
+            {/* MFH: Wohnungsaufteilung direkt nach Grunddaten — das Wichtigste zuerst */}
+            {formData.immobilienTyp === 'mehrfamilienhaus' && (
+              <div className="bg-amber-50 p-4 rounded-xl border-2 border-amber-300">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-amber-800">🏘️ Wohnungsaufteilung</h3>
+                    <p className="text-xs text-amber-600 mt-0.5">Fläche, Zimmer und Kaltmiete ergeben sich automatisch aus der Summe der WEs</p>
+                  </div>
+                  <button type="button"
+                    onClick={() => {
+                      const neu = (formData.wohnungen || []).concat({
+                        id: Date.now(),
+                        name: `WE ${(formData.wohnungen || []).length + 1}`,
+                        wohnflaeche: 60,
+                        kaltmiete: 800,
+                        etage: '',
+                        mieterName: '',
+                        mietbeginn: '',
+                        kautionBetrag: 0,
+                        kautionBezahlt: false,
+                        forderungen: [],
+                        mietAnpassungen: [],
+                      });
+                      handleChange('wohnungen', neu);
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-1">
+                    + Wohnung
+                  </button>
+                </div>
+                {(!formData.wohnungen || formData.wohnungen.length === 0) ? (
+                  <div className="text-center py-5 text-amber-600 text-sm bg-white/60 rounded-xl border border-amber-100">
+                    <p className="text-2xl mb-1">🏠</p>
+                    <p>Noch keine Wohneinheiten — klicke "+ Wohnung" zum Anlegen</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(formData.wohnungen || []).map((w, idx) => (
+                      <div key={w.id || idx} className="bg-white rounded-xl border border-amber-200 p-3 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm font-bold text-amber-800">🏠 WE {idx + 1}</span>
+                          <button type="button"
+                            onClick={() => handleChange('wohnungen', (formData.wohnungen || []).filter((_, i) => i !== idx))}
+                            className="ml-auto text-red-400 hover:text-red-600 text-xs px-1.5 py-0.5 rounded">✕</button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] text-gray-500 mb-0.5">Bezeichnung</label>
+                            <input type="text" value={w.name || ''}
+                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], name: e.target.value }; handleChange('wohnungen', neu); }}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" placeholder="z.B. EG links" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-gray-500 mb-0.5">Etage</label>
+                            <input type="text" value={w.etage || ''}
+                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], etage: e.target.value }; handleChange('wohnungen', neu); }}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" placeholder="z.B. EG, 1. OG" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-gray-500 mb-0.5">Fläche (m²)</label>
+                            <input type="number" value={w.wohnflaeche || ''}
+                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], wohnflaeche: parseFloat(e.target.value) || 0 }; handleChange('wohnungen', neu); }}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-right" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-gray-500 mb-0.5">Kaltmiete (€/mo)</label>
+                            <input type="number" value={w.kaltmiete || ''}
+                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], kaltmiete: parseFloat(e.target.value) || 0 }; handleChange('wohnungen', neu); }}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-right" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="bg-amber-100 rounded-xl px-4 py-2 flex justify-between items-center text-sm">
+                      <span className="text-amber-800 font-semibold">{(formData.wohnungen || []).length} Wohneinheiten gesamt</span>
+                      <span className="font-black text-amber-900">
+                        {formatCurrency((formData.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0))}/mo · {(formData.wohnungen || []).reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0)} m²
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MFH: Gebäudedaten — nur auf Gebäudeebene (kein Stockwerk/Balkon/Zimmer — kommen aus Wohnungen) */}
+            {formData.immobilienTyp === 'mehrfamilienhaus' && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">Gebäudedaten</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zustand</label>
+                    <select value={formData.zustand} onChange={(e) => handleChange('zustand', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm">
+                      <option value="neuwertig">Neuwertig</option>
+                      <option value="sehr gut">Sehr gut</option>
+                      <option value="gut">Gut</option>
+                      <option value="normal">Normal</option>
+                      <option value="renovierungsbedürftig">Renovierungsbedürftig</option>
+                      <option value="sanierungsbedürftig">Sanierungsbedürftig</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Baujahr</label>
+                    <input type="number" value={formData.baujahr} onChange={(e) => handleChange('baujahr', parseInt(e.target.value) || 2000)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Grundstück (m²)</label>
+                    <input type="number" value={formData.grundstueck} onChange={(e) => handleChange('grundstueck', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Energieeffizienz</label>
+                    <select value={formData.energieeffizienz} onChange={(e) => handleChange('energieeffizienz', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm">
+                      {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (<option key={e} value={e}>{e}</option>))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Objektdetails - nur für Kaufimmobilie (ETW/EFH/Reihenhaus etc.) */}
+            {formData.immobilienTyp === 'kaufimmobilie' && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">Objektdetails</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -493,6 +610,15 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   )}
                 </div>}
 
+                  {formData.immobilienTyp === 'mehrfamilienhaus' ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kaltmiete gesamt (aus Wohnungen)</label>
+                      <div className="w-full px-3 py-2.5 border border-gray-200 bg-amber-50 rounded-lg text-sm font-bold text-amber-800 flex items-center justify-between">
+                        <span>{formatCurrency((formData.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0))}/mo</span>
+                        <span className="text-xs font-normal text-amber-600">{(formData.wohnungen || []).length} WE · automatisch</span>
+                      </div>
+                    </div>
+                  ) : (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {formData.vermietungsmodell === 'warmmiete' ? 'Warmmiete (€/Monat)' : 'Kaltmiete (€/Monat)'}
@@ -504,6 +630,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
+                  )}
                 </div>
 
                 {/* Vermietungsmodell */}
@@ -776,125 +903,6 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               );
             })()}
 
-            {/* Wohnungsaufteilung für MFH */}
-            {formData.immobilienTyp === 'mehrfamilienhaus' && (
-              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-base font-bold text-amber-800">🏘️ Wohnungsaufteilung</h3>
-                    <p className="text-xs text-amber-600 mt-0.5">Lege die Wohneinheiten deines MFH an — kann später jederzeit ergänzt werden</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const neu = (formData.wohnungen || []).concat({
-                        id: Date.now(),
-                        name: `WE ${(formData.wohnungen || []).length + 1}`,
-                        wohnflaeche: 60,
-                        kaltmiete: 800,
-                        etage: '',
-                        mieterName: '',
-                        mietbeginn: '',
-                        kautionBetrag: 0,
-                        kautionBezahlt: false,
-                        forderungen: [],
-                        mietAnpassungen: [],
-                      });
-                      handleChange('wohnungen', neu);
-                    }}
-                    className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-1"
-                  >
-                    + Wohnung
-                  </button>
-                </div>
-
-                {(!formData.wohnungen || formData.wohnungen.length === 0) ? (
-                  <div className="text-center py-5 text-amber-600 text-sm bg-white/60 rounded-xl border border-amber-100">
-                    <p className="text-2xl mb-1">🏠</p>
-                    <p>Noch keine Wohneinheiten — klicke "+ Wohnung" zum Anlegen</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {(formData.wohnungen || []).map((w, idx) => (
-                      <div key={w.id || idx} className="bg-white rounded-xl border border-amber-200 p-3 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-bold text-amber-800">🏠 WE {idx + 1}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleChange('wohnungen', (formData.wohnungen || []).filter((_, i) => i !== idx))}
-                            className="ml-auto text-red-400 hover:text-red-600 text-xs px-1.5 py-0.5 rounded"
-                          >✕</button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[10px] text-gray-500 mb-0.5">Bezeichnung</label>
-                            <input
-                              type="text"
-                              value={w.name || ''}
-                              onChange={e => {
-                                const neu = [...(formData.wohnungen || [])];
-                                neu[idx] = { ...neu[idx], name: e.target.value };
-                                handleChange('wohnungen', neu);
-                              }}
-                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
-                              placeholder="z.B. EG links, OG rechts"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-gray-500 mb-0.5">Etage</label>
-                            <input
-                              type="text"
-                              value={w.etage || ''}
-                              onChange={e => {
-                                const neu = [...(formData.wohnungen || [])];
-                                neu[idx] = { ...neu[idx], etage: e.target.value };
-                                handleChange('wohnungen', neu);
-                              }}
-                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
-                              placeholder="z.B. EG, 1. OG, DG"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-gray-500 mb-0.5">Fläche (m²)</label>
-                            <input
-                              type="number"
-                              value={w.wohnflaeche || ''}
-                              onChange={e => {
-                                const neu = [...(formData.wohnungen || [])];
-                                neu[idx] = { ...neu[idx], wohnflaeche: parseFloat(e.target.value) || 0 };
-                                handleChange('wohnungen', neu);
-                              }}
-                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-right"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-gray-500 mb-0.5">Kaltmiete (€/mo)</label>
-                            <input
-                              type="number"
-                              value={w.kaltmiete || ''}
-                              onChange={e => {
-                                const neu = [...(formData.wohnungen || [])];
-                                neu[idx] = { ...neu[idx], kaltmiete: parseFloat(e.target.value) || 0 };
-                                handleChange('wohnungen', neu);
-                              }}
-                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-right"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {/* Summe */}
-                    <div className="bg-amber-100 rounded-xl px-4 py-2 flex justify-between items-center text-sm">
-                      <span className="text-amber-800 font-semibold">{(formData.wohnungen || []).length} Wohneinheiten gesamt</span>
-                      <span className="font-black text-amber-900">
-                        {formatCurrency((formData.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0))}/mo
-                        · {(formData.wohnungen || []).reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0)} m²
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Arbitrage-Daten für Mietimmobilie */}
             {formData.immobilienTyp === 'mietimmobilie' && (
@@ -1067,8 +1075,16 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   restschuldOverride: null,
                   aktiv: true,
                 };
+                // MFH: Kaltmiete, Fläche und Zimmeranzahl automatisch aus Wohnungen ableiten
+                const mfhAggregat = formData.immobilienTyp === 'mehrfamilienhaus' ? {
+                  kaltmiete: (formData.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0),
+                  wohnflaeche: (formData.wohnungen || []).reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0),
+                  zimmer: (formData.wohnungen || []).length,
+                  objektart: 'mehrfamilienhaus',
+                } : {};
                 onSave({
                   ...formData,
+                  ...mfhAggregat,
                   finanzierungsphasen: [erstePhase],
                   wohnungen: formData.wohnungen || [],
                 });
