@@ -3,7 +3,7 @@ import MieterFormular from './MieterFormular';
 import MieterAuszug from './MieterAuszug';
 import NKAbrechnungListe from './NKAbrechnungListe';
 
-const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate }) => {
+const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate, onMieterhoeungClick }) => {
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [showAuszug, setShowAuszug] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -111,6 +111,14 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0 flex-wrap">
+                    {mieter.aktiv !== false && onMieterhoeungClick && (
+                      <button
+                        onClick={() => onMieterhoeungClick(mieter)}
+                        className="px-3 py-1.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 font-semibold"
+                      >
+                        📈 Mieterhöhung
+                      </button>
+                    )}
                     <button
                       onClick={() => setExpandedNK(expandedNK === mieter.id ? null : mieter.id)}
                       className={`px-3 py-1.5 text-xs border rounded-lg ${expandedNK === mieter.id ? 'bg-teal-600 text-white border-teal-600' : 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'}`}

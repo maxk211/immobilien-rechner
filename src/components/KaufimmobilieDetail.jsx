@@ -6,6 +6,7 @@ import { getAktuelleMiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRendite } from '../utils/berechnung.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
+import MieterhoeungModal from './MieterhoeungModal';
 import KaufnebenkostenManager from './KaufnebenkostenManager';
 import MietKostenManager from './MietKostenManager';
 import CashflowUebersicht from './CashflowUebersicht';
@@ -270,6 +271,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
   const [activeTab, setActiveTab] = useState('uebersicht');
+  const [mieterhoeungMieter, setMieterhoeungMieter] = useState(null); // Mieterhöhungs-Modal
 
   const updateParams = (newParams) => {
     setParams(newParams);
@@ -1479,6 +1481,30 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 const updated = { ...params, dokumente: neueDokumente };
                 updateParams(updated);
                 await onSave(updated);
+              }}
+              onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
+            />
+          )}
+
+          {/* Mieterhöhungs-Modal */}
+          {mieterhoeungMieter && (
+            <MieterhoeungModal
+              mieter={mieterhoeungMieter}
+              immobilie={immobilie}
+              onClose={() => setMieterhoeungMieter(null)}
+              onSave={async (mieterUpdate, immoUpdate) => {
+                // 1. Mieter aktualisieren (letzte_mieterhoehung + kaltmiete)
+                await onSaveMieter({ ...mieterhoeungMieter, ...mieterUpdate });
+                // 2. Immobilie: mietAnpassungen erweitern
+                const neueAnpassung = immoUpdate.neueAnpassung;
+                const neueAnpassungen = [
+                  ...(params.mietAnpassungen || []),
+                  { datum: neueAnpassung.datum, kaltmiete: neueAnpassung.kaltmiete },
+                ];
+                const updated = { ...params, mietAnpassungen: neueAnpassungen };
+                updateParams(updated);
+                await onSave(updated);
+                setMieterhoeungMieter(null);
               }}
             />
           )}
