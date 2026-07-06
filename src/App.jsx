@@ -60,6 +60,7 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [showKalkulation, setShowKalkulation] = useState(false);
   const [selectedImmobilie, setSelectedImmobilie] = useState(null);
+  const [initialTab, setInitialTab] = useState(null);
   const [editImmobilie, setEditImmobilie] = useState(null);
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'error'
   const [activeView, setActiveView] = useState('portfolio'); // 'portfolio' | 'mieter'
@@ -1242,7 +1243,7 @@ function App() {
           portfolio={portfolio}
           mieterListe={mieterListe}
           nkAbrechnungen={nkAbrechnungen}
-          onSelectImmobilie={(immo) => setSelectedImmobilie(immo)}
+          onSelectImmobilie={(immo, tab) => { setSelectedImmobilie(immo); setInitialTab(tab || null); }}
         />
 
         {/* Navigation & Actions Bar */}
@@ -1408,7 +1409,8 @@ function App() {
         >
           <ImmobilienDetail
             immobilie={selectedImmobilie}
-            onClose={() => setSelectedImmobilie(null)}
+            initialTab={initialTab}
+            onClose={() => { setSelectedImmobilie(null); setInitialTab(null); }}
             onEdit={() => { setEditImmobilie(selectedImmobilie); setSelectedImmobilie(null); setShowForm(true); }}
             onSave={async (data) => {
               try {

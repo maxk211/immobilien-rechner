@@ -46,6 +46,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         sub: immo.name || immo.adresse || 'Immobilie',
         immoId: immo.id,
         badge: abgelaufen ? 'Dringend' : monate <= 3 ? 'Kritisch' : 'Bald',
+        targetTab: 'finanzierung',
       });
     });
   });
@@ -73,6 +74,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           sub: immo.name || immo.adresse || 'Immobilie',
           immoId: immo.id,
           badge: tag >= 15 ? `${tag}. des Monats` : 'Prüfen',
+          targetTab: 'mieteinnahmen',
         });
       }
     });
@@ -99,6 +101,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           sub: immo.name || immo.adresse || 'Immobilie',
           immoId: immo.id,
           badge: heute.getMonth() >= 5 ? 'Überfällig' : 'Offen',
+          targetTab: 'nkabrechnung',
         });
       }
     });
@@ -121,6 +124,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       sub: `${mieter.name} · ${formatCurrency(mieter.kaution_betrag)}`,
       immoId: mieter.immobilie_id,
       badge: wochenSeitAuszug >= 6 ? 'Überfällig' : 'Offen',
+      targetTab: 'kaution',
     });
   });
 
@@ -148,6 +152,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         sub: `${immo.name || immo.adresse} · ${Math.floor(monate)} Monate seit letzter Anpassung`,
         immoId: immo.id,
         badge: 'Möglich',
+        targetTab: 'mieter',
       });
     }
   });
@@ -169,6 +174,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           sub: `${mieter.name} · ${immo.name || immo.adresse} — Datum für 3-Jahres-Kappungsgrenze fehlt`,
           immoId: immo.id,
           badge: 'Eintragen',
+          targetTab: 'mieter',
         });
       } else {
         const letzte = new Date(mieter.letzte_mieterhoehung);
@@ -187,6 +193,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
             sub: `${mieter.name} · ${immoName} · letzte Erhöhung: ${letzte.toLocaleDateString('de-DE')}`,
             immoId: immo.id,
             badge: 'Jetzt möglich',
+            targetTab: 'mieter',
           });
         } else if (monateVerbleibend <= 3) {
           // Vorwarnung 3 Monate vorher
@@ -198,6 +205,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
             sub: `${mieter.name} · ${immoName} · möglich ab ${naechsteMoeglich.toLocaleDateString('de-DE')} — jetzt Schreiben vorbereiten`,
             immoId: immo.id,
             badge: 'Vorbereiten',
+            targetTab: 'mieter',
           });
         }
       }
@@ -218,6 +226,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         sub: immo.name || immo.adresse || 'Immobilie',
         immoId: immo.id,
         badge: 'Leerstand',
+        targetTab: 'mieter',
       });
     }
   });
@@ -237,6 +246,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         sub: `${mieter.name}`,
         immoId: mieter.immobilie_id,
         badge: monate <= 1 ? 'Dringend' : 'Bald',
+        targetTab: 'mieter',
       });
     }
   });
@@ -276,6 +286,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         sub: `${immo.name || immo.adresse} · ${Math.round(prozent)}% der Grenze (${formatCurrency(relevantKosten)} / ${formatCurrency(grenze)})`,
         immoId: immo.id,
         badge: 'Steuerfalle',
+        targetTab: 'investitionen',
       });
     } else if (prozent >= 75) {
       todos.push({
@@ -286,6 +297,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         sub: `${immo.name || immo.adresse} · 3-Jahres-Fenster läuft noch ${monate} Monate`,
         immoId: immo.id,
         badge: 'Achtung',
+        targetTab: 'investitionen',
       });
     }
   });
@@ -362,7 +374,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                 return (
                   <div
                     key={todo.id}
-                    onClick={() => immo && onSelectImmobilie && onSelectImmobilie(immo)}
+                    onClick={() => immo && onSelectImmobilie && onSelectImmobilie(immo, todo.targetTab)}
                     className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row} ${immo && onSelectImmobilie ? 'cursor-pointer' : ''}`}
                   >
                     {/* Priority dot */}

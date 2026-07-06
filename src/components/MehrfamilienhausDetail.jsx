@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite } from '../utils/berechnung.js';
 
-const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave }) => {
-  const [activeTab, setActiveTab] = useState('gebaeude');
+const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab }) => {
+  const [activeTab, setActiveTab] = useState(initialTab || 'gebaeude');
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);

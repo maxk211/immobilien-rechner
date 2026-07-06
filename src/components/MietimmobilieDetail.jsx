@@ -171,7 +171,7 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
-const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
+const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab }) => {
   const [params, setParams] = useState({
     eigeneWarmmiete: immobilie.eigeneWarmmiete || 1500,
     anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 3,
@@ -196,7 +196,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     dokumente: immobilie.dokumente || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState('uebersicht');
+  const [activeTab, setActiveTab] = useState(initialTab || 'uebersicht');
 
   const updateParams = (newParams) => {
     setParams(prev => ({ ...prev, ...newParams }));
