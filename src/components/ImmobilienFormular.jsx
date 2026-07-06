@@ -98,7 +98,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 >
                   <div className="text-lg mb-1">🏠</div>
                   <div className="font-semibold text-sm">Kaufimmobilie</div>
-                  <div className="text-xs text-gray-500">Eigene Immobilie vermieten</div>
+                  <div className="hidden sm:block text-xs text-gray-500">Eigene Immobilie vermieten</div>
                 </button>
                 <button
                   type="button"
@@ -110,8 +110,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   }`}
                 >
                   <div className="text-lg mb-1">🏘️</div>
-                  <div className="font-semibold text-sm">Mehrfamilienhaus</div>
-                  <div className="text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
+                  <div className="font-semibold text-sm">Mehrfamilien&shy;haus</div>
+                  <div className="hidden sm:block text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
                 </button>
                 <button
                   type="button"
@@ -124,7 +124,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 >
                   <div className="text-lg mb-1">🔄</div>
                   <div className="font-semibold text-sm">Mietimmobilie</div>
-                  <div className="text-xs text-gray-500">Arbitrage: Anmieten & Untervermieten</div>
+                  <div className="hidden sm:block text-xs text-gray-500">Arbitrage: Anmieten & Untervermieten</div>
                 </button>
               </div>
             </div>
@@ -558,7 +558,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 {!formData.geschenkt && !formData.vollEigenfinanziert && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="text-sm font-semibold text-blue-800 mb-3">🏦 Finanzierung</h4>
                   {/* Modus Toggle */}
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {[['berechnet','📐 Rate berechnen'],['festRate','🏦 Feste Rate (Bankvertrag)']].map(([val, label]) => (
                       <button key={val} type="button"
                         onClick={() => handleChange('finanzierungsModus', val)}

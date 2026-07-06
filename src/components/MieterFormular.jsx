@@ -169,16 +169,17 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
         </div>
 
         {/* Tab-Navigation */}
-        <div className="flex border-b border-gray-200 bg-gray-50 px-2 sm:px-4 flex-shrink-0">
+        <div className="flex border-b border-gray-200 bg-gray-50 px-2 sm:px-4 flex-shrink-0 overflow-x-auto">
           {[
-            { id: 'stammdaten', label: '👤 Stammdaten' },
-            { id: 'mietvertrag', label: '📄 Mietvertrag' },
-            { id: 'mietanpassungen', label: '📈 Anpassungen' },
-            { id: 'dokumente', label: `📎 Dokumente${pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : ''}` },
+            { id: 'stammdaten',     labelMobile: '👤 Daten',    label: '👤 Stammdaten' },
+            { id: 'mietvertrag',    labelMobile: '📄 Vertrag',  label: '📄 Mietvertrag' },
+            { id: 'mietanpassungen',labelMobile: '📈 Miete',    label: '📈 Anpassungen' },
+            { id: 'dokumente',      labelMobile: `📎 Docs${pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : ''}`, label: `📎 Dokumente${pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : ''}` },
           ].map(tab => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center ${activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              {tab.label}
+              className={`flex-shrink-0 sm:flex-1 px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center whitespace-nowrap ${activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              <span className="sm:hidden">{tab.labelMobile}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>

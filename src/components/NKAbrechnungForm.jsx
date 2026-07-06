@@ -54,29 +54,31 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Kostenpositionen</h4>
         <div className="space-y-2">
           {form.kostenpositionen.map(pos => (
-            <div key={pos.key} className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-5 text-sm text-gray-700 flex items-center gap-1">
-                <span>{pos.icon}</span>
-                <span className="truncate">{pos.label}</span>
+            <div key={pos.key} className="py-2 border-b border-gray-50 last:border-0">
+              {/* Label */}
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-sm text-gray-700 flex items-center gap-1 font-medium">
+                  <span>{pos.icon}</span>
+                  <span>{pos.label}</span>
+                </div>
+                <div className="text-xs font-semibold text-gray-600 min-w-[60px] text-right">
+                  {pos.gesamtkosten > 0 ? formatCurrency(pos.gesamtkosten * pos.mieteranteil / 100) : '—'}
+                </div>
               </div>
-              <div className="col-span-3">
-                <div className="flex items-center gap-1">
+              {/* Inputs nebeneinander */}
+              <div className="flex gap-2">
+                <div className="flex items-center gap-1 flex-1">
                   <input type="number" step="0.01" value={pos.gesamtkosten || ''} placeholder="0"
                     onChange={e => updatePos(pos.key, 'gesamtkosten', parseFloat(e.target.value) || 0)}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-base sm:text-xs text-right" />
-                  <span className="text-[10px] text-gray-400">€</span>
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-base sm:text-sm text-right" />
+                  <span className="text-xs text-gray-400 flex-shrink-0">€ gesamt</span>
                 </div>
-              </div>
-              <div className="col-span-3">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 w-28">
                   <input type="number" min={0} max={100} value={pos.mieteranteil}
                     onChange={e => updatePos(pos.key, 'mieteranteil', parseFloat(e.target.value) || 0)}
-                    className="w-full px-2 py-1.5 border border-gray-200 bg-gray-50 rounded text-base sm:text-xs text-right" />
-                  <span className="text-[10px] text-gray-400">%</span>
+                    className="w-full px-2 py-1.5 border border-gray-200 bg-gray-50 rounded text-base sm:text-sm text-right" />
+                  <span className="text-xs text-gray-400 flex-shrink-0">%</span>
                 </div>
-              </div>
-              <div className="col-span-1 text-right text-xs font-semibold text-gray-600">
-                {pos.gesamtkosten > 0 ? formatCurrency(pos.gesamtkosten * pos.mieteranteil / 100) : '—'}
               </div>
             </div>
           ))}

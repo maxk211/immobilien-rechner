@@ -1211,14 +1211,19 @@ function App() {
               <span className="text-red-400 text-xs">⚠️ Sync-Fehler</span>
             )}
             <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
-              <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">
-                {session.user.email.charAt(0).toUpperCase()}
-              </div>
-              <div className="hidden md:block">
-                <div className="text-xs text-slate-300 leading-tight max-w-[140px] truncate">{session.user.email}</div>
-                <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                  Abmelden
+              {/* Mobile: Avatar-Button tippt direkt auf Logout-Dropdown */}
+              <div className="relative group">
+                <button className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-indigo-500 transition-colors"
+                  title="Account">
+                  {session.user.email.charAt(0).toUpperCase()}
                 </button>
+                {/* Dropdown — sichtbar auf Mobile via group-focus-within, auf Desktop via group-hover */}
+                <div className="absolute right-0 top-9 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
+                  <div className="px-3 py-2 text-xs text-slate-400 truncate border-b border-slate-700">{session.user.email}</div>
+                  <button onClick={handleLogout} className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    Abmelden
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1249,7 +1254,7 @@ function App() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
-            {/* Desktop-only: Export-Funktionen (File-Downloads) */}
+            {/* Desktop: alle Buttons sichtbar */}
             {portfolio.length > 0 && (
               <>
                 <button
@@ -1284,6 +1289,28 @@ function App() {
                   📥 Import
                   <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                 </label>
+                {/* Mobile: Mehr-Menü */}
+                <div className="relative group sm:hidden">
+                  <button className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm shadow-sm font-semibold">
+                    ⋯ Mehr
+                  </button>
+                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
+                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold">📋 Selbstauskunft</button>
+                    <button onClick={handleExport} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">📤 Daten exportieren</button>
+                    {[...Array(3)].map((_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return (
+                        <button key={year} onClick={() => handleSteuerExport(year)} className="w-full text-left px-4 py-3 text-sm text-emerald-700 hover:bg-emerald-50 border-b border-gray-100 last:border-0">
+                          📊 Steuer {year}
+                        </button>
+                      );
+                    })}
+                    <label className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                      📥 Import
+                      <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                    </label>
+                  </div>
+                </div>
               </>
             )}
             <button
@@ -1457,46 +1484,46 @@ function App() {
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                 <p className="text-sm font-semibold text-emerald-800 mb-3">💰 Sonstige Vermögenswerte</p>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Bargeld / Bankguthaben (€)</label>
                       <input type="number" value={selbstauskunftDaten.bargeld} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, bargeld: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Institut / Erläuterung</label>
                       <input type="text" value={selbstauskunftDaten.bargeldBeschreibung} placeholder="z.B. N26, Trade Republic"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, bargeldBeschreibung: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Depot / Aktien & ETFs (€)</label>
                       <input type="number" value={selbstauskunftDaten.depot} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, depot: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Institut / Erläuterung</label>
                       <input type="text" value={selbstauskunftDaten.depotBeschreibung} placeholder="z.B. Scalable, Trade Republic"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, depotBeschreibung: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Beteiligung (€ Wert)</label>
                       <input type="number" value={selbstauskunftDaten.beteiligungWert} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, beteiligungWert: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Beschreibung</label>
                       <input type="text" value={selbstauskunftDaten.beteiligungBeschreibung} placeholder="z.B. GmbH via Holding (100 %)"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, beteiligungBeschreibung: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                   </div>
                   {(parseFloat(selbstauskunftDaten.bargeld)||0) + (parseFloat(selbstauskunftDaten.depot)||0) + (parseFloat(selbstauskunftDaten.beteiligungWert)||0) > 0 && (

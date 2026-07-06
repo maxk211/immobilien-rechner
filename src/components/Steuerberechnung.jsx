@@ -315,7 +315,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     <div className="space-y-4">
       {/* Header mit Jahresauswahl */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3 mb-4">
           <h3 className="font-bold text-lg text-gray-800">📋 Steuerberechnung</h3>
           {isGbR && (
             <div className="mt-2 mb-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">

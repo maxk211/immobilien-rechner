@@ -225,7 +225,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
       )}
 
       {/* Liste */}
-      <div className="max-h-48 overflow-y-auto">
+      <div className="overflow-y-auto">
         {investitionen.length === 0 ? (
           <div className="text-center text-gray-400 py-4 text-sm">
             Noch keine Reparaturen oder Investitionen erfasst
