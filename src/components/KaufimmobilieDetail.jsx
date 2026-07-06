@@ -258,6 +258,8 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     zaehler: immobilie.zaehler || [],
     bausparvertraege: immobilie.bausparvertraege || [],
     afaAnpassungen: immobilie.afaAnpassungen || [],
+    grundsteuerMonat: immobilie.grundsteuerMonat || 0,
+    versicherungMonat: immobilie.versicherungMonat || 0,
     eigentumsform: immobilie.eigentumsform || 'allein',
     userAnteil: immobilie.userAnteil ?? 100,
     gbrPartner: immobilie.gbrPartner || [],

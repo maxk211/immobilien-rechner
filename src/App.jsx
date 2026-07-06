@@ -852,14 +852,8 @@ function App() {
 
         const kaltmieteJahr = berechneJahresmiete(immo, jahr);
 
-        // Schuldzinsen (pro-rata)
-        const zinssatz = immo.zinssatz || 4;
-        const kaufnebenkosten = immo.kaufnebenkosten || 10;
-        const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
-        const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
-        const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
-        const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-        const schuldzinsenJahr = fremdkapital * (zinssatz / 100) * faktor;
+        // Schuldzinsen (annuitätisch korrekt, phasenbewusst)
+        const schuldzinsenJahr = berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
 
         // Kosten (pro-rata)
         const instandhaltung = (immo.instandhaltung || 0) * 12 * faktor;
@@ -1041,10 +1035,8 @@ function App() {
         const kaltmieteJahr = getAktuelleMiete(immo) * 12;
         const kaufpreis = immo.kaufpreis || 0;
         const afaJahr = kaufpreis * ((immo.gebaeudeAnteilProzent || 80) / 100) * ((immo.afaSatz || 2) / 100);
-        const gesamtinvestition = kaufpreis * (1 + (immo.kaufnebenkosten || 10) / 100);
-        const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
-        const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-        const schuldzinsen = fremdkapital * ((immo.zinssatz || 4) / 100);
+        // Schuldzinsen annuitätisch korrekt für das ausgewählte Jahr
+        const schuldzinsen = berechneJahresZinsenFuerSteuer(immo, jahr);
         const sonstigeKosten = ((immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0)) * 12;
 
         return [
