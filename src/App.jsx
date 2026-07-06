@@ -163,8 +163,10 @@ function App() {
       const saved = await saveNKAbrechnung(data);
       if (data.id) {
         setNkAbrechnungen(prev => prev.map(a => a.id === data.id ? saved : a));
+        toast.success('NK-Abrechnung aktualisiert ✓');
       } else {
         setNkAbrechnungen(prev => [saved, ...prev]);
+        toast.success('NK-Abrechnung gespeichert ✓');
       }
     } catch (error) {
       toast.error('Fehler beim Speichern der NK-Abrechnung: ' + error.message);
@@ -186,8 +188,10 @@ function App() {
       const saved = await saveMieter(data);
       if (data.id) {
         setMieterListe(prev => prev.map(m => m.id === data.id ? saved : m));
+        toast.success('Mieter aktualisiert ✓');
       } else {
         setMieterListe(prev => [saved, ...prev]);
+        toast.success('Mieter gespeichert ✓');
       }
       setShowMieterForm(false);
       setEditMieter(null);
@@ -1413,6 +1417,7 @@ function App() {
                 setPortfolio(prev => prev.map(i => i.id === selectedImmobilie.id ? updated : i));
                 setSelectedImmobilie(updated);
                 setSyncStatus('idle');
+                toast.success('Gespeichert ✓');
               } catch (error) {
                 console.error('Fehler beim Speichern:', error);
                 setSyncStatus('error');
