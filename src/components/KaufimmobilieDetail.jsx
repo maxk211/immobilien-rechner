@@ -276,9 +276,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
   const [activeTab, setActiveTab] = useState('uebersicht');
-  // useLayoutEffect: läuft synchron nach DOM-Mount, VOR dem ersten Browser-Paint
-  // → kein Flash, kein Batching-Problem, kein StrictMode-Problem
-  useLayoutEffect(() => { if (initialTab) setActiveTab(initialTab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    console.log('[KaufimmobilieDetail] mounted – initialTab:', initialTab);
+    if (initialTab) setActiveTab(initialTab);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [mieterhoeungMieter, setMieterhoeungMieter] = useState(null); // Mieterhöhungs-Modal
 
   const updateParams = (newParams) => {
