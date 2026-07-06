@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
-import { setTargetTab } from '../utils/tabNavigation.js';
 
 const PRIORITAET = { rot: 0, gelb: 1, gruen: 2 };
 
@@ -375,11 +374,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                 return (
                   <div
                     key={todo.id}
-                    onClick={() => {
-                      if (!immo || !onSelectImmobilie) return;
-                      setTargetTab(todo.targetTab); // synchron VOR dem State-Update setzen
-                      onSelectImmobilie(immo, todo.targetTab);
-                    }}
+                    onClick={() => immo && onSelectImmobilie && onSelectImmobilie(immo, todo.targetTab)}
                     className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row} ${immo && onSelectImmobilie ? 'cursor-pointer' : ''}`}
                   >
                     {/* Priority dot */}
