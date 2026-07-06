@@ -18,6 +18,9 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
   const heute = new Date();
   const heutStr = heute.toISOString().slice(0, 10);
 
+  // Ob ein echter Mieter-Datensatz vorhanden ist
+  const hatMieter = !!(mieter?.id || mieter?.name);
+
   const aktKaltmiete = parseFloat(mieter?.kaltmiete) || 0;
 
   // Wirksamkeitsdatum berechnen: frühestens Beginn des 3. Kalendermonats nach Zugang (§ 558b BGB)
@@ -37,6 +40,11 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
   }, []);
 
   const [form, setForm] = useState({
+    // Manuelle Mieter-Felder (nur wenn kein Datensatz übergeben)
+    mieterName: mieter?.name || '',
+    mieterAdresse: '',
+    aktuelleKaltmiete: aktKaltmiete > 0 ? aktKaltmiete.toString() : '',
+    // Mieterhöhung
     neueKaltmiete: aktKaltmiete > 0 ? Math.ceil(aktKaltmiete * 1.05) : '',
     wirksamkeitsDatum: frühestesWirksamkeitsDatum,
     begründungsTyp: 'mietspiegel',
@@ -48,9 +56,13 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     vermieterPlzOrt: '',
   });
 
+  // Effektive Werte: aus Mieter-Datensatz ODER aus manuellen Feldern
+  const effMieterName = mieter?.name || form.mieterName;
+  const effAktKaltmiete = hatMieter ? aktKaltmiete : (parseFloat(form.aktuelleKaltmiete) || 0);
+
   const neueKalt = parseFloat(form.neueKaltmiete) || 0;
-  const diff = neueKalt - aktKaltmiete;
-  const diffProzent = aktKaltmiete > 0 ? ((diff / aktKaltmiete) * 100).toFixed(1) : '—';
+  const diff = neueKalt - effAktKaltmiete;
+  const diffProzent = effAktKaltmiete > 0 ? ((diff / effAktKaltmiete) * 100).toFixed(1) : '—';
 
   const begründungsOptionen = [
     { value: 'mietspiegel', label: '📊 Ortsüblicher Mietspiegel (§ 558 BGB)', desc: 'Die Miete liegt unterhalb der ortsüblichen Vergleichsmiete laut Mietspiegel.' },
@@ -96,11 +108,12 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     // ── Empfänger (Mieter) ──
     writeLine('An:', margin, y, 9, 'normal', GRAY);
     y += 5;
-    writeLine(mieter?.name || 'Mieter', margin, y, 10, 'bold');
+    writeLine(effMieterName || 'Mieter', margin, y, 10, 'bold');
     y += 5;
+    const mieterAdr = form.mieterAdresse || immobilie?.adresse || '';
+    if (mieterAdr) { writeLine(mieterAdr, margin, y, 10); y += 5; }
     const immoAdresse = immobilie?.adresse || '';
-    if (immoAdresse) { writeLine(immoAdresse, margin, y, 10); y += 5; }
-    if (immobilie?.plz) { writeLine(immobilie.plz, margin, y, 10); y += 5; }
+    if (!form.mieterAdresse && immobilie?.plz) { writeLine(immobilie.plz, margin, y, 10); y += 5; }
     y += 10;
 
     // ── Betreff ──
@@ -109,7 +122,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     y += 10;
 
     // ── Anrede ──
-    writeLine(`Sehr geehrte/r ${mieter?.name || 'Mieterin/Mieter'},`, margin, y, 10);
+    writeLine(`Sehr geehrte/r ${effMieterName || 'Mieterin/Mieter'},`, margin, y, 10);
     y += 8;
 
     // ── Haupttext ──
@@ -125,7 +138,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
       margin: { left: margin, right: margin },
       head: [['', 'Betrag']],
       body: [
-        ['Bisherige Kaltmiete', `${aktKaltmiete.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`],
+        ['Bisherige Kaltmiete', `${effAktKaltmiete.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`],
         ['Neue Kaltmiete', `${neueKalt.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`],
         ['Erhöhung', `+${diff.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € (+${diffProzent} %)`],
       ],
@@ -179,7 +192,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     pdf.setFontSize(7.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...GRAY);
     pdf.text('Dieses Schreiben wurde mit dem Immobilien-Rechner erstellt. Kein Rechtsberatungsersatz.', margin, 285);
 
-    const dateiName = `Mieterhöhung_${(mieter?.name || 'Mieter').replace(/\s+/g, '_')}_${form.wirksamkeitsDatum}.pdf`;
+    const dateiName = `Mieterhöhung_${(effMieterName || 'Mieter').replace(/\s+/g, '_')}_${form.wirksamkeitsDatum}.pdf`;
     pdf.save(dateiName);
   };
 
@@ -188,10 +201,11 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     if (!neueKalt || neueKalt <= 0) { alert('Bitte eine gültige neue Kaltmiete eingeben.'); return; }
     if (!form.wirksamkeitsDatum) { alert('Bitte Wirksamkeitsdatum angeben.'); return; }
 
-    const mieterUpdate = {
+    const mieterUpdate = hatMieter ? {
       letzte_mieterhoehung: form.wirksamkeitsDatum,
       kaltmiete: neueKalt,
-    };
+    } : null;
+
     const immoUpdate = {
       neueAnpassung: { datum: form.wirksamkeitsDatum, kaltmiete: neueKalt },
     };
@@ -211,7 +225,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
         <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex-shrink-0 flex items-start justify-between">
           <div>
             <h2 className="text-lg font-black text-gray-900">📈 Mieterhöhung</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{mieter?.name} · {immobilie?.name || immobilie?.adresse}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{effMieterName ? `${effMieterName} · ` : ''}{immobilie?.name || immobilie?.adresse || 'Ohne Zuordnung'}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-2xl leading-none">×</button>
         </div>
@@ -219,13 +233,40 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
 
+            {/* Manuelle Mieter-Daten (nur wenn kein Datensatz) */}
+          {!hatMieter && (
+            <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+              <p className="text-xs font-semibold text-amber-700 mb-3 uppercase tracking-wide">🧑 Mieter-Angaben (für das Schreiben)</p>
+              <div className="space-y-2">
+                <input type="text" value={form.mieterName}
+                  onChange={e => setForm({ ...form, mieterName: e.target.value })}
+                  className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white"
+                  placeholder="Vorname Nachname (Mieter)" />
+                <input type="text" value={form.mieterAdresse}
+                  onChange={e => setForm({ ...form, mieterAdresse: e.target.value })}
+                  className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white"
+                  placeholder="Straße Hausnummer, PLZ Ort (Mieter-Adresse)" />
+              </div>
+            </div>
+          )}
+
           {/* Aktuelle Miete + neue Miete */}
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
             <p className="text-xs font-semibold text-blue-700 mb-3 uppercase tracking-wide">Mietänderung</p>
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <p className="text-[10px] text-gray-400 mb-1">Aktuelle Kaltmiete</p>
-                <p className="text-xl font-black text-gray-500 line-through">{formatCurrency(aktKaltmiete)}</p>
+                {hatMieter ? (
+                  <p className="text-xl font-black text-gray-500 line-through">{formatCurrency(effAktKaltmiete)}</p>
+                ) : (
+                  <input
+                    type="number"
+                    value={form.aktuelleKaltmiete}
+                    onChange={e => setForm({ ...form, aktuelleKaltmiete: e.target.value, neueKaltmiete: e.target.value ? Math.ceil(parseFloat(e.target.value) * 1.05) : '' })}
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-xl font-black text-gray-500 text-right focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    min={0} step={5} placeholder="0"
+                  />
+                )}
               </div>
               <span className="text-2xl text-gray-300">→</span>
               <div className="flex-1">
@@ -240,13 +281,13 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
                 />
               </div>
             </div>
-            {neueKalt > 0 && aktKaltmiete > 0 && (
+            {neueKalt > 0 && effAktKaltmiete > 0 && (
               <div className={`mt-3 flex justify-between items-center text-sm font-semibold px-1 ${diff > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 <span>Differenz:</span>
                 <span>{diff > 0 ? '+' : ''}{formatCurrency(diff)}/mo ({diffProzent} %)</span>
               </div>
             )}
-            {diff / aktKaltmiete > 0.2 && aktKaltmiete > 0 && (
+            {diff / effAktKaltmiete > 0.2 && effAktKaltmiete > 0 && (
               <p className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
                 ⚠️ Achtung: Die Erhöhung überschreitet 20 % — dies kann die Kappungsgrenze nach § 558 BGB verletzen (innerhalb von 3 Jahren max. 20 % bzw. 15 % in Gebieten mit Wohnungsmangel).
               </p>
@@ -358,7 +399,9 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
             </button>
           </div>
           <p className="text-[10px] text-gray-400 text-center">
-            Speichern trägt die neue Kaltmiete in den Mieteingänge-Verlauf ein und setzt das Datum der letzten Mieterhöhung.
+            {hatMieter
+              ? 'Speichern trägt die neue Kaltmiete in den Mieteingänge-Verlauf ein und setzt das Datum der letzten Mieterhöhung.'
+              : 'Ohne Mieter-Datensatz wird nur das PDF erstellt — keine Daten werden gespeichert.'}
           </p>
         </div>
       </div>

@@ -1468,33 +1468,46 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
           )}
 
           {activeTab === 'mieter' && (
-            <MieterDashboard
-              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
-              portfolio={[immobilie]}
-              onDelete={onDeleteMieter}
-              onSave={onSaveMieter}
-              nkAbrechnungen={nkAbrechnungen}
-              onSaveNK={onSaveNK}
-              onDeleteNK={onDeleteNK}
-              immobilieDokumente={params.dokumente || []}
-              onDokumentUpdate={async (neueDokumente) => {
-                const updated = { ...params, dokumente: neueDokumente };
-                updateParams(updated);
-                await onSave(updated);
-              }}
-              onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
-            />
+            <>
+              {/* Standalone Mieterhöhung ohne Mieter-Datensatz */}
+              <div className="flex justify-end mb-3">
+                <button
+                  onClick={() => setMieterhoeungMieter({})}
+                  className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold flex items-center gap-2 shadow-sm"
+                >
+                  📈 Mieterhöhungsschreiben erstellen
+                </button>
+              </div>
+              <MieterDashboard
+                mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+                portfolio={[immobilie]}
+                onDelete={onDeleteMieter}
+                onSave={onSaveMieter}
+                nkAbrechnungen={nkAbrechnungen}
+                onSaveNK={onSaveNK}
+                onDeleteNK={onDeleteNK}
+                immobilieDokumente={params.dokumente || []}
+                onDokumentUpdate={async (neueDokumente) => {
+                  const updated = { ...params, dokumente: neueDokumente };
+                  updateParams(updated);
+                  await onSave(updated);
+                }}
+                onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
+              />
+            </>
           )}
 
-          {/* Mieterhöhungs-Modal */}
-          {mieterhoeungMieter && (
+          {/* Mieterhöhungs-Modal — auch ohne Mieter-Datensatz (mieterhoeungMieter === {} oder echter Mieter) */}
+          {mieterhoeungMieter !== null && (
             <MieterhoeungModal
               mieter={mieterhoeungMieter}
               immobilie={immobilie}
               onClose={() => setMieterhoeungMieter(null)}
               onSave={async (mieterUpdate, immoUpdate) => {
-                // 1. Mieter aktualisieren (letzte_mieterhoehung + kaltmiete)
-                await onSaveMieter({ ...mieterhoeungMieter, ...mieterUpdate });
+                // 1. Mieter aktualisieren — nur wenn echter Datensatz mit ID
+                if (mieterUpdate && mieterhoeungMieter?.id) {
+                  await onSaveMieter({ ...mieterhoeungMieter, ...mieterUpdate });
+                }
                 // 2. Immobilie: mietAnpassungen erweitern
                 const neueAnpassung = immoUpdate.neueAnpassung;
                 const neueAnpassungen = [
