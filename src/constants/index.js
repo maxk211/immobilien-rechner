@@ -25,9 +25,9 @@ export const NK_STANDARD_POSITIONEN = [
   { bezeichnung: 'Heizung & Warmwasser', kategorie: 'heizung', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
   { bezeichnung: 'Wasser & Abwasser', kategorie: 'wasser', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
   { bezeichnung: 'Müll & Entsorgung', kategorie: 'muell', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
-  { bezeichnung: 'Grundsteuer', kategorie: 'muell', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+  { bezeichnung: 'Grundsteuer', kategorie: 'grundsteuer', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
   { bezeichnung: 'Gebäudeversicherung', kategorie: 'versicherung', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
-  { bezeichnung: 'Hausmeister', kategorie: 'versicherung', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
+  { bezeichnung: 'Hausmeister', kategorie: 'hausmeister', gesamtkosten: '', umlageschluessel: 'wohnflaeche', mieteranteil_fest: '' },
 ];
 
 // Changelog

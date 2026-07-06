@@ -309,7 +309,6 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       <option value="einfamilienhaus">Einfamilienhaus</option>
                       <option value="doppelhaushälfte">Doppelhaushälfte</option>
                       <option value="reihenhaus">Reihenhaus</option>
-                      <option value="mehrfamilienhaus">Mehrfamilienhaus</option>
                       <option value="grundstück">Grundstück</option>
                     </select>
                   </div>
@@ -624,7 +623,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   {/* Rate-Vorschau */}
                   {formData.finanzierungsModus === 'berechnet' && formData.zinssatz > 0 && formData.eigenkapital >= 0 && (
                     (() => {
-                      const kredit = Math.max(0, formData.kaufpreis * 1.1 - formData.eigenkapital);
+                      const kaufnkFaktor = 1 + ((formData.kaufnebenkosten || 10) / 100);
+                      const kredit = Math.max(0, formData.kaufpreis * kaufnkFaktor - formData.eigenkapital);
                       const mz = formData.zinssatz / 100 / 12;
                       const lm = (formData.laufzeit || 25) * 12;
                       const rate = kredit > 0 && mz > 0 ? kredit * (mz * Math.pow(1+mz,lm)) / (Math.pow(1+mz,lm)-1) : 0;
