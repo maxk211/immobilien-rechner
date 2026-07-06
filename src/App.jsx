@@ -10,7 +10,7 @@ import Auth from './Auth';
 import LandingPage from './LandingPage';
 import { formatCurrency, formatPercent } from './utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from './utils/miete.js';
-import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte } from './utils/berechnung.js';
+import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer } from './utils/berechnung.js';
 import { showConfirm, ConfirmDialog } from './utils/confirm.jsx';
 import { ZAEHLER_TYPEN, NK_KOSTENPOSITIONEN_DEFAULTS, NK_STANDARD_POSITIONEN, CHANGELOG_VERSION, CHANGELOG_EINTRAEGE } from './constants/index.js';
 import InputSliderCombo from './components/InputSliderCombo.jsx';
@@ -749,13 +749,8 @@ function App() {
       const kaltmiete = berechneJahresmiete(immo, jahr);
       gesamtEinnahmen += kaltmiete;
 
-      const zinssatz = immo.zinssatz || 4;
-      const kaufnebenkosten = immo.kaufnebenkosten || 10;
-      const kaufnebenkostenAbsolut = kaufpreis * (kaufnebenkosten / 100);
-      const gesamtinvestition = kaufpreis + kaufnebenkostenAbsolut;
-      const gesamtEK = (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0) || (immo.eigenkapital || kaufpreis * 0.2);
-      const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
-      sumSchuldzinsen   += fremdkapital * (zinssatz / 100) * faktor;
+      // Annuitätisch korrekte Schuldzinsen (sinken mit steigender Tilgung, phasenbewusst)
+      sumSchuldzinsen   += berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
       sumInstandhaltung += (immo.instandhaltung || 0) * 12 * faktor;
       sumVerwaltung     += (immo.verwaltung || 0) * 12 * faktor;
       sumHausgeld       += (immo.hausgeld || 0) * 12 * faktor;

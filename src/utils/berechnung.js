@@ -188,6 +188,78 @@ export const berechneJahresRateFuerPhasen = (phasen, fremdkapital, kreditStartJa
   return fallbackRate;
 };
 
+/**
+ * Berechnet die tatsächlichen Schuldzinsen (Zinsanteil der Annuität) für ein
+ * bestimmtes Steuerjahr — annuitätisch korrekt, mit Phasenberücksichtigung.
+ * Ersetzt die vereinfachte Formel fremdkapital × zinssatz im Steuerexport.
+ */
+export const berechneJahresZinsenFuerSteuer = (immo, targetJahr) => {
+  if (immo.geschenkt || immo.vollEigenfinanziert || !immo.kaufpreis) return 0;
+
+  const kaufjahr = immo.kaufdatum ? new Date(immo.kaufdatum).getFullYear() : null;
+  if (!kaufjahr || targetJahr < kaufjahr) return 0;
+
+  // Fremdkapital
+  const kNkProzent = immo.kaufnebenkosten ?? 10;
+  const gesamtEK = (immo.ekFuerNebenkosten != null && immo.ekFuerKaufpreis != null)
+    ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
+    : (immo.eigenkapital ?? immo.kaufpreis * 0.2);
+  const fk = immo.finanzierungsbetrag != null
+    ? immo.finanzierungsbetrag
+    : Math.max(0, immo.kaufpreis * (1 + kNkProzent / 100) - gesamtEK);
+
+  if (fk <= 0) return 0;
+
+  // Phasen-Timeline vorberechnen (startRelJahr, zinssatz, monthlyRate)
+  const phasen = immo.finanzierungsphasen || [];
+  const timeline = [];
+  let tempRS = fk;
+  let offset = 0;
+  if (phasen.length > 0) {
+    for (let p = 0; p < phasen.length; p++) {
+      const ph = phasen[p];
+      const pz = ph.sollzinssatz ?? ph.zinssatz ?? (immo.zinssatz || 4);
+      const phaseLaufzeit = ph.zinsbindung || 10;
+      const startRS = (p > 0 && ph.restschuldOverride != null) ? ph.restschuldOverride : tempRS;
+      const at = ph.anfangstilgung || (immo.tilgung || 2.0);
+      const mz = pz / 100 / 12;
+      const rate = ph.monatlicherBetrag > 0 ? ph.monatlicherBetrag : startRS * (mz + at / 100 / 12);
+      timeline.push({ startRelJahr: offset, zinssatz: pz, monthlyRate: rate });
+      let pr = startRS;
+      for (let m = 0; m < phaseLaufzeit * 12 && pr > 0; m++) {
+        const mzM = pr * mz;
+        pr = Math.max(0, pr - Math.min(rate - mzM, pr));
+      }
+      tempRS = pr;
+      offset += phaseLaufzeit;
+    }
+  } else {
+    const pz = immo.zinssatz || 4;
+    const mz = pz / 100 / 12;
+    const lauf = immo.laufzeit || 25;
+    const rate = mz > 0 ? fk * mz * Math.pow(1 + mz, lauf * 12) / (Math.pow(1 + mz, lauf * 12) - 1) : fk * (immo.tilgung || 2) / 100 / 12;
+    timeline.push({ startRelJahr: 0, zinssatz: pz, monthlyRate: rate });
+  }
+
+  // Jahresweise simulieren und Zinsanteil für targetJahr ermitteln
+  let rs = fk;
+  for (let yr = kaufjahr; yr <= targetJahr && rs > 0; yr++) {
+    const relJahr = yr - kaufjahr;
+    // Aktive Phase: letzter Eintrag mit startRelJahr ≤ relJahr
+    let active = timeline[timeline.length - 1];
+    for (const t of timeline) { if (relJahr >= t.startRelJahr) active = t; }
+    const monatszins = active.zinssatz / 100 / 12;
+    let jahresZinsen = 0;
+    for (let m = 0; m < 12 && rs > 0; m++) {
+      const mzM = rs * monatszins;
+      jahresZinsen += mzM;
+      rs = Math.max(0, rs - Math.min(active.monthlyRate - mzM, rs));
+    }
+    if (yr === targetJahr) return Math.round(jahresZinsen);
+  }
+  return 0;
+};
+
 // Rendite-Berechnung
 export const berechneRendite = (params) => {
   const {
@@ -311,7 +383,47 @@ export const berechneRendite = (params) => {
 
   const leverageEffekt = eigenkapitalRendite - nettorendite;
 
-  // Entwicklung über Zeit
+  // Entwicklung über Zeit — phasenbewusst
+  // Precompute phase-timeline damit im Loop kein quadratischer Aufwand entsteht
+  const phasenTimeline = (() => {
+    const phasen = params.finanzierungsphasen || [];
+    if (phasen.length === 0) return null;
+    const tl = [];
+    let tempRS = fremdkapital;
+    let offset = 0;
+    for (let p = 0; p < phasen.length; p++) {
+      const ph = phasen[p];
+      const pz = ph.sollzinssatz ?? ph.zinssatz ?? zinssatz ?? 4;
+      const phaseLaufzeit = ph.zinsbindung || 10;
+      const startRS = (p > 0 && ph.restschuldOverride != null) ? ph.restschuldOverride : tempRS;
+      const at = ph.anfangstilgung || tilgung || 2.0;
+      const mz = pz / 100 / 12;
+      const rate = ph.monatlicherBetrag > 0
+        ? ph.monatlicherBetrag
+        : (startRS > 0 ? startRS * (mz + at / 100 / 12) : 0);
+      tl.push({ startRelJahr: offset, zinssatz: pz, monthlyRate: rate, jahresrate: rate * 12 });
+      // Restschuld am Ende der Phase berechnen
+      let pr = startRS;
+      for (let m = 0; m < phaseLaufzeit * 12 && pr > 0; m++) {
+        const mzM = pr * mz;
+        pr = Math.max(0, pr - Math.min(rate - mzM, pr));
+      }
+      tempRS = pr;
+      offset += phaseLaufzeit;
+    }
+    return tl;
+  })();
+
+  const getPhasenDaten = (relJahr) => {
+    if (!phasenTimeline) return { zinssatz: zinssatz ?? 4, jahresrate: jahresannuitaet };
+    // Letzten Eintrag dessen startRelJahr ≤ relJahr finden
+    let active = phasenTimeline[phasenTimeline.length - 1];
+    for (const p of phasenTimeline) {
+      if (relJahr >= p.startRelJahr) active = p;
+    }
+    return active;
+  };
+
   const entwicklung = [];
   let aktuellerWert = kaufpreis;
   let aktuelleMiete = kaltmiete;
@@ -320,17 +432,18 @@ export const berechneRendite = (params) => {
   let gesamtZinsen = 0;
 
   for (let i = 0; i <= laufzeit; i++) {
-    const jahresZinsen = restschuld * (zinssatz / 100);
-    const jahresTilgung = Math.min(jahresannuitaet - jahresZinsen, restschuld);
+    const { zinssatz: jahresZinssatz, jahresrate } = getPhasenDaten(i);
+    const jahresZinsen = restschuld * (jahresZinssatz / 100);
+    const jahresTilgung = Math.min(jahresrate - jahresZinsen, restschuld);
 
     entwicklung.push({
-      jahr: kaufjahr + i, // Absolutes Jahr statt relativ
+      jahr: kaufjahr + i,
       jahrRelativ: i,
       immobilienwert: Math.round(aktuellerWert),
       restschuld: Math.round(restschuld),
       eigenkapital: Math.round(aktuellerWert - restschuld),
       jahresmiete: Math.round(aktuelleMiete * 12),
-      cashflow: Math.round((aktuelleMiete * 12) + jahresNKVomMieter - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet - jahresannuitaet)
+      cashflow: Math.round((aktuelleMiete * 12) + jahresNKVomMieter - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet - jahresrate)
     });
 
     aktuellerWert *= (1 + wertsteigerung / 100);
