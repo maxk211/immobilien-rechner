@@ -1404,7 +1404,8 @@ function App() {
 
       {selectedImmobilie && (
         <ModalErrorBoundary
-          onClose={() => setSelectedImmobilie(null)}
+          key={`${selectedImmobilie?.id}-${initialTab ?? 'default'}`}
+          onClose={() => { setSelectedImmobilie(null); setInitialTab(null); }}
           resetKey={selectedImmobilie?.id}
         >
           <ImmobilienDetail
