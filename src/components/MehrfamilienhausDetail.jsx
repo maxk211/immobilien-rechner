@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect } from 'react';
+import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite } from '../utils/berechnung.js';
 
@@ -6,13 +6,7 @@ import { berechneRendite } from '../utils/berechnung.js';
 const MFH_TAB_MAP = { mieter: 'gebaeude', mieteinnahmen: 'uebersicht', nkabrechnung: 'uebersicht' };
 
 const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab }) => {
-  const [activeTab, setActiveTab] = useState('gebaeude');
-  useLayoutEffect(() => {
-    if (initialTab) {
-      const resolved = MFH_TAB_MAP[initialTab] ?? initialTab;
-      setActiveTab(resolved);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [activeTab, setActiveTab] = useState(() => initialTab ? (MFH_TAB_MAP[initialTab] ?? initialTab) : 'gebaeude');
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);
