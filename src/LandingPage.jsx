@@ -59,8 +59,12 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
       a: 'Du kannst jederzeit kündigen. Deine Daten bleiben erhalten und du kannst weiterhin eine Immobilie im Free-Tier verwalten.',
     },
     {
-      q: 'Sind meine Daten sicher?',
-      a: 'Alle Daten werden verschlüsselt in der EU gespeichert (Supabase / PostgreSQL). Deine Daten gehören dir.',
+      q: 'Kann jemand mein Vermögen oder meine Immobilien sehen?',
+      a: 'Nein — absolut nicht. Jeder Account ist vollständig isoliert. Weder andere Nutzer noch wir als Betreiber können sehen, welche Immobilien du hast, was sie wert sind oder wie dein Cashflow aussieht. Die Datenbank ist so konfiguriert, dass jeder User technisch nur seine eigenen Daten lesen und schreiben kann (Row Level Security).',
+    },
+    {
+      q: 'Sind meine Finanzdaten sicher gespeichert?',
+      a: 'Ja. Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL via Supabase). Die Verbindung ist immer TLS-verschlüsselt. Deine Daten werden nicht verkauft oder für Werbung genutzt.',
     },
     {
       q: 'Gibt es eine mobile App?',
@@ -346,6 +350,82 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           <p className="text-center text-slate-400 text-xs sm:text-sm mt-5 sm:mt-6 px-2">
             Alle Preise inkl. MwSt. · Monatlich kündbar · Sichere Zahlung via Stripe
           </p>
+        </div>
+      </section>
+
+      {/* ── SICHERHEIT ── */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-slate-900 text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-12">
+            <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 text-sm text-emerald-400 mb-5">
+              <span>🔒</span> Deine Daten — nur für dich
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-3">
+              Niemand sieht dein Vermögen außer dir
+            </h2>
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">
+              Immobilienvermögen ist Privatsache. Wir haben die App von Grund auf so gebaut,
+              dass kein anderer Nutzer — und auch wir als Betreiber nicht — Einblick in deine Daten bekommt.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-10 sm:mb-12">
+            {[
+              {
+                icon: '🛡️',
+                title: 'Vollständige Datenisolierung',
+                desc: 'Jeder Account ist technisch komplett von anderen getrennt. Kein anderer Nutzer kann deine Immobilien, Preise oder Vermögenswerte sehen — das ist auf Datenbankebene erzwungen, nicht nur durch Passwörter.',
+              },
+              {
+                icon: '🏦',
+                title: 'Bankenstandard: Row Level Security',
+                desc: 'Wir nutzen Row Level Security (RLS) — denselben Mechanismus den Banken für Kontentrennung verwenden. Selbst wenn jemand deinen Account-Link kennt, sieht er nur eine leere Seite.',
+              },
+              {
+                icon: '🇪🇺',
+                title: 'EU-Server, verschlüsselt',
+                desc: 'Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL). Die Verbindung ist immer TLS-gesichert. Deine Daten werden nicht verkauft, nicht analysiert, nicht für Werbung genutzt.',
+              },
+              {
+                icon: '👁️‍🗨️',
+                title: 'Kein Einblick durch uns',
+                desc: 'Auch wir als Betreiber sehen nicht, welche Immobilien du hast oder was sie wert sind. Das ist kein Versprechen — es ist technisch so umgesetzt, dass es gar nicht anders geht.',
+              },
+              {
+                icon: '🔑',
+                title: 'Deine Daten gehören dir',
+                desc: 'Du kannst deine Daten jederzeit exportieren oder deinen Account löschen. Bei Kündigung werden auf Wunsch alle Daten vollständig entfernt.',
+              },
+              {
+                icon: '📵',
+                title: 'Kein Tracking, keine Werbung',
+                desc: 'Wir verkaufen keine Daten. Keine Weitergabe an Dritte, keine Verhaltensanalyse, kein Remarketing. Was in deinem Portfolio passiert, bleibt bei dir.',
+              },
+            ].map((item, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6 hover:bg-white/8 transition-all flex gap-4 sm:block">
+                <div className="text-2xl sm:text-3xl flex-shrink-0 sm:mb-3">{item.icon}</div>
+                <div>
+                  <h3 className="font-bold text-white mb-1 sm:mb-2 text-sm sm:text-base">{item.title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trust bar */}
+          <div className="border-t border-white/10 pt-8 sm:pt-10 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+            {[
+              { icon: '🔒', label: 'TLS-Verschlüsselung' },
+              { icon: '🇪🇺', label: 'EU-Datenhaltung' },
+              { icon: '🛡️', label: 'Row Level Security' },
+              { icon: '🚫', label: 'Kein Datenverkauf' },
+            ].map(item => (
+              <div key={item.label} className="flex flex-col items-center gap-2">
+                <span className="text-2xl">{item.icon}</span>
+                <span className="text-xs sm:text-sm text-slate-400 font-medium">{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
