@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { consumeTargetTab } from '../utils/tabNavigation.js';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite } from '../utils/berechnung.js';
 
@@ -6,9 +7,10 @@ import { berechneRendite } from '../utils/berechnung.js';
 const MFH_TAB_MAP = { mieter: 'gebaeude', mieteinnahmen: 'uebersicht', nkabrechnung: 'uebersicht' };
 
 const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab }) => {
-  const resolvedTab = initialTab ? (MFH_TAB_MAP[initialTab] ?? initialTab) : 'gebaeude';
+  const rawTarget = consumeTargetTab() || initialTab;
+  const resolvedTab = rawTarget ? (MFH_TAB_MAP[rawTarget] ?? rawTarget) : 'gebaeude';
   const [activeTab, setActiveTab] = useState(resolvedTab);
-  useEffect(() => { if (resolvedTab) setActiveTab(resolvedTab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (resolvedTab !== 'gebaeude') setActiveTab(resolvedTab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);
