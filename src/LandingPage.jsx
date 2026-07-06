@@ -174,6 +174,59 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
         </div>
       </section>
 
+      {/* ── APP MOCKUPS ── */}
+      <section className="py-14 sm:py-20 lg:py-24 bg-white overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+
+          {/* Header */}
+          <div className="text-center mb-10 sm:mb-14">
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 text-xs sm:text-sm text-blue-600 font-semibold mb-4">
+              🖥️ So sieht die App aus
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-gray-900 mb-3">
+              Kein Excel-Chaos. Kein Rätselraten.
+            </h2>
+            <p className="text-gray-500 text-base sm:text-lg max-w-2xl mx-auto">
+              Alle Zahlen deiner Immobilien auf einen Blick — klar strukturiert, professionell, in Sekunden.
+            </p>
+          </div>
+
+          {/* Main dashboard mockup */}
+          <div className="relative mb-8 sm:mb-12">
+            <div className="absolute inset-x-10 bottom-0 h-16 bg-blue-100/60 blur-2xl rounded-full pointer-events-none" />
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-blue-100/80 ring-1 ring-gray-200">
+              <img src="/mockup-dashboard.svg" alt="Portfolio-Übersicht Dashboard" className="w-full h-auto block" loading="lazy" />
+            </div>
+            <p className="text-center text-xs sm:text-sm text-gray-400 mt-3">
+              Portfolio-Übersicht mit Echtzeit-KPIs, Cashflow-Chart und allen Immobilien auf einen Blick
+            </p>
+          </div>
+
+          {/* Two feature mockups side by side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+            <div className="flex flex-col">
+              <div className="relative flex-1 rounded-2xl overflow-hidden shadow-xl shadow-gray-100 ring-1 ring-gray-200 mb-3">
+                <img src="/mockup-cashflow.svg" alt="Cashflow-Analyse" className="w-full h-auto block" loading="lazy" />
+              </div>
+              <div className="text-center px-2">
+                <p className="font-semibold text-gray-800 text-sm sm:text-base">💰 Cashflow-Analyse</p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">25-Jahres-Prognose und Jahresübersicht je Immobilie</p>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <div className="relative flex-1 rounded-2xl overflow-hidden shadow-xl shadow-gray-100 ring-1 ring-gray-200 mb-3">
+                <img src="/mockup-steuer.svg" alt="Steuerberechnung" className="w-full h-auto block" loading="lazy" />
+              </div>
+              <div className="text-center px-2">
+                <p className="font-semibold text-gray-800 text-sm sm:text-base">🧾 Steuerberechnung</p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">AfA, Schuldzinsen, Werbungskosten — automatisch berechnet</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* ── PROBLEM ── */}
       <section className="py-12 sm:py-16 lg:py-20 bg-slate-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
