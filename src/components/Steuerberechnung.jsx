@@ -102,7 +102,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     const jahresHausgeld = (params.hausgeld || 0) * 12;
     const jahresGrundsteuer = grundsteuerMonat * 12;
     const jahresVersicherung = versicherungMonat * 12;
-    const laufendeKosten = jahresInstandhaltung + jahresVerwaltung + jahresHausgeld + jahresGrundsteuer + jahresVersicherung;
+    const jahresNebenkosten = (params.nebenkosten || 0) * 12; // sonstige Betriebskosten (§ 9 EStG Z. 50)
+    const laufendeKosten = jahresInstandhaltung + jahresVerwaltung + jahresHausgeld + jahresGrundsteuer + jahresVersicherung + jahresNebenkosten;
 
     // Finanzierungskosten (nur Zinsen - Tilgung ist nicht absetzbar!)
     // Exakte Berechnung mit Anschlussfinanzierungs-Unterstützung (monatsgenaue Iteration)
@@ -182,8 +183,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       instandhaltung: Math.round(jahresInstandhaltung), // Z. 33 — Erhaltungsaufwand laufend
       verwaltung: Math.round(jahresVerwaltung),    // Z. 34 — Verwaltungskosten
       hausgeld: Math.round(jahresHausgeld),        // Z. 35 — Hausgeld/WEG
-      grundsteuer: Math.round(jahresGrundsteuer),  // Z. 36 — Grundsteuer
-      versicherung: Math.round(jahresVersicherung),// Z. 37 — Versicherungen
+      grundsteuer: Math.round(jahresGrundsteuer),  // Z. 34 — Grundsteuer
+      versicherung: Math.round(jahresVersicherung),// Z. 35 — Versicherungen
+      nebenkosten: Math.round(jahresNebenkosten),  // Z. 50 — Sonstige Werbungskosten
       fahrtkosten: Math.round(jahresFahrtkosten),  // Z. 40 — Fahrtkosten
       investitionenSofort: Math.round(sofortAbsetzbar), // Z. 33 — Erhaltungsaufwand einmalig
       investitionenAfa: Math.round(afaRelevant),
@@ -237,6 +239,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       ['Hausgeld / WEG-Rücklagen', 'Z. 36', ...alleJahreDaten.map(d => d.hausgeld)],
       ['Verwaltungskosten', 'Z. 37', ...alleJahreDaten.map(d => d.verwaltung)],
       ['Fahrtkosten (§ 9 Abs. 1 EStG)', 'Z. 40', ...alleJahreDaten.map(d => d.fahrtkosten)],
+      ['Sonstige Betriebskosten', 'Z. 50', ...alleJahreDaten.map(d => d.nebenkosten)],
       ['Summe Werbungskosten', 'Z. 53', ...alleJahreDaten.map(d => d.absetzbareKosten)],
       [],
       ['C. ERGEBNIS', '', ...verfuegbareJahre.map(() => '')],
@@ -280,6 +283,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         ['Hausgeld / WEG (Z. 36)', d.hausgeld],
         ['Verwaltungskosten (Z. 37)', d.verwaltung],
         ['Fahrtkosten §9 (Z. 40)', d.fahrtkosten],
+        ['Sonstige Betriebskosten (Z. 50)', d.nebenkosten],
         ['Summe Werbungskosten (Z. 53)', d.absetzbareKosten],
         [],
         ['C. ERGEBNIS'],
@@ -468,6 +472,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               )}
               {selectedDaten.fahrtkosten > 0 && (
                 <AnlageVZeile zeile="Z. 40" label="Fahrtkosten (§ 9 Abs. 1)" betrag={a(selectedDaten.fahrtkosten)} color="red" />
+              )}
+              {selectedDaten.nebenkosten > 0 && (
+                <AnlageVZeile zeile="Z. 50" label="Sonstige Betriebskosten" betrag={a(selectedDaten.nebenkosten)} color="red" />
               )}
               <AnlageVZeile zeile="Z. 53" label="Summe Werbungskosten" betrag={a(selectedDaten.absetzbareKosten)} color="red" bold />
             </div>

@@ -644,9 +644,9 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
 };
 
 // ─── Vermögenswerte-Helper ───────────────────────────────────────────────────
-// Berechnet Restschuld, Jahres-Tilgung und freies Vermögen für eine Kaufimmobilie
+// Berechnet Restschuld, Jahres-Tilgung und freies Vermögen für Kauf- und MFH-Immobilien
 export const berechneImmoVermoegenswerte = (immo) => {
-  if (immo.immobilienTyp !== 'kaufimmobilie') return null;
+  if (immo.immobilienTyp === 'mietimmobilie') return null;
   const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
   const kaufnebenkostenAbsolut = (immo.kaufpreis || 0) * (kaufnebenkosten / 100);
   const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
