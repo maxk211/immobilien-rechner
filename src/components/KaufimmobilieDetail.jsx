@@ -1517,8 +1517,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               onClose={() => setMieterhoeungMieter(null)}
               onSave={async (mieterUpdate, immoUpdate) => {
                 // 1. Mieter aktualisieren — nur wenn echter Datensatz mit ID
+                // WICHTIG: mieterhoeungMieter ist ein DB-Record (snake_case), aber onSaveMieter
+                // erwartet camelCase. Deshalb explizit mappen statt nur zu spreaden.
                 if (mieterUpdate && mieterhoeungMieter?.id) {
-                  await onSaveMieter({ ...mieterhoeungMieter, ...mieterUpdate });
+                  await onSaveMieter({
+                    ...mieterhoeungMieter,
+                    // camelCase-Felder die saveMieter erwartet:
+                    mietanpassungenMieter: mieterhoeungMieter.mietanpassungen_mieter || [],
+                    naechsteAnpassungDatum: mieterhoeungMieter.naechste_anpassung_datum || '',
+                    letzteMieterhoehung: mieterUpdate.letzte_mieterhoehung,
+                    kaltmiete: mieterUpdate.kaltmiete,
+                  });
                 }
                 // 2. Immobilie: mietAnpassungen erweitern
                 const neueAnpassung = immoUpdate.neueAnpassung;

@@ -28,9 +28,9 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
     // Neue Mietvertrag-Felder
     vertragstyp: mieter?.vertragstyp || 'unbefristet',
     kuendigungsfrist: mieter?.kuendigungsfrist || '3 Monate',
-    naechsteAnpassungDatum: mieter?.naechsteAnpassungDatum || '',
-    mietanpassungenMieter: mieter?.mietanpassungen_mieter || [],
-    letzteMieterhoehung: mieter?.letzte_mieterhoehung || '',
+    naechsteAnpassungDatum: mieter?.naechste_anpassung_datum || mieter?.naechsteAnpassungDatum || '',
+    mietanpassungenMieter: mieter?.mietanpassungen_mieter || mieter?.mietanpassungenMieter || [],
+    letzteMieterhoehung: mieter?.letzte_mieterhoehung || mieter?.letzteMieterhoehung || '',
   });
   const [saving, setSaving] = useState(false);
   const [newAnpassung, setNewAnpassung] = useState({ datum: '', betrag: '', grund: '' });
