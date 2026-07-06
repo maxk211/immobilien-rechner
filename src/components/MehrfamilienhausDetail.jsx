@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite } from '../utils/berechnung.js';
 
-const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
+const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave }) => {
   const [activeTab, setActiveTab] = useState('gebaeude');
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
@@ -96,6 +96,13 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onSave }) => {
               {immobilie.adresse && <p className="text-sm text-white/80 mt-0.5">📍 {immobilie.adresse}</p>}
             </div>
             <div className="flex items-center gap-2 ml-3 shrink-0">
+              {onEdit && (
+                <button onClick={onEdit}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
+                  title="Stammdaten bearbeiten">
+                  ✏️ Bearbeiten
+                </button>
+              )}
               {hasChanges && (
                 <button onClick={handleSave} className="px-3 py-1.5 bg-white text-amber-700 rounded-xl text-xs font-bold shadow-sm">
                   Speichern

@@ -171,7 +171,7 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
-const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
+const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
   const [params, setParams] = useState({
     eigeneWarmmiete: immobilie.eigeneWarmmiete || 1500,
     anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 3,
@@ -261,6 +261,13 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                 )}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
+                {onEdit && (
+                  <button onClick={onEdit}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
+                    title="Stammdaten bearbeiten">
+                    ✏️ Bearbeiten
+                  </button>
+                )}
                 {hasChanges && (
                   <button onClick={handleSave}
                     className="px-4 py-2 bg-white text-emerald-700 rounded-xl hover:bg-emerald-50 font-bold text-sm shadow-sm transition-colors">

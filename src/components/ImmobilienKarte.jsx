@@ -2,7 +2,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow } from '../utils/berechnung.js';
 
-const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
+const ImmobilienKarte = ({ immobilie, onClick, onDelete, onEdit }) => {
   const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
   const isMFH = immobilie.immobilienTyp === 'mehrfamilienhaus';
   const aktuellerWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
@@ -55,13 +55,22 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete }) => {
               </p>
             )}
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="text-white/50 hover:text-white/90 text-lg leading-none ml-2 mt-0.5 transition-colors"
-            title="Löschen"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-1 ml-2 shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }}
+              className="w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 rounded-lg transition-colors text-sm"
+              title="Bearbeiten"
+            >
+              ✏️
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="w-7 h-7 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 rounded-lg text-xl leading-none transition-colors"
+              title="Löschen"
+            >
+              ×
+            </button>
+          </div>
         </div>
       </div>
 

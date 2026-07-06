@@ -216,10 +216,12 @@ function App() {
         const updated = await saveImmobilie({ ...data, id: editImmobilie.id });
         setPortfolio(prev => prev.map(i => i.id === editImmobilie.id ? updated : i));
         setEditImmobilie(null);
+        toast.success('Immobilie aktualisiert ✓');
       } else {
         // Neue Immobilie erstellen
         const created = await saveImmobilie(data);
         setPortfolio(prev => [...prev, created]);
+        toast.success('Immobilie gespeichert ✓');
       }
       setShowForm(false);
       setSyncStatus('idle');
@@ -1349,6 +1351,7 @@ function App() {
                   immobilie={immobilie}
                   onClick={() => setSelectedImmobilie(immobilie)}
                   onDelete={() => handleDelete(immobilie.id)}
+                  onEdit={() => { setEditImmobilie(immobilie); setShowForm(true); }}
                 />
               ))}
             </div>
@@ -1366,6 +1369,7 @@ function App() {
                         immobilie={immobilie}
                         onClick={() => setSelectedImmobilie(immobilie)}
                         onDelete={() => handleDelete(immobilie.id)}
+                        onEdit={() => { setEditImmobilie(immobilie); setShowForm(true); }}
                       />
                     ))}
                   </div>
@@ -1401,6 +1405,7 @@ function App() {
           <ImmobilienDetail
             immobilie={selectedImmobilie}
             onClose={() => setSelectedImmobilie(null)}
+            onEdit={() => { setEditImmobilie(selectedImmobilie); setSelectedImmobilie(null); setShowForm(true); }}
             onSave={async (data) => {
               try {
                 setSyncStatus('syncing');

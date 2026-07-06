@@ -183,7 +183,7 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
-const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
+const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [] }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
 
@@ -410,6 +410,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
                   <button onClick={handleSave}
                     className="px-4 py-2 bg-white text-slate-700 rounded-xl hover:bg-slate-50 font-bold text-sm shadow-sm transition-colors">
                     Speichern
+                  </button>
+                )}
+                {onEdit && (
+                  <button onClick={onEdit}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
+                    title="Stammdaten bearbeiten">
+                    ✏️ Bearbeiten
                   </button>
                 )}
                 <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl leading-none">&times;</button>
