@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete } from '../utils/miete.js';
-import { berechneMtlCashflow, berechneImmoVermoegenswerte } from '../utils/berechnung.js';
+import { berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
 
 const PortfolioOverview = ({ portfolio }) => {
@@ -55,45 +55,24 @@ const PortfolioOverview = ({ portfolio }) => {
         const nkMieterJahr = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) * 12 : 0;
         gesamtMiete += (getAktuelleMiete(immo) + (nkMieterJahr / 12)) * 12;
 
-        // Cashflow-Berechnung pro Kaufimmobilie
-        const zinssatz = immo.zinssatz ?? 4.0;
-        const tilgung = immo.tilgung ?? 2.0;
-        const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
-        const instandhaltung = immo.instandhaltung ?? 100;
-        const verwaltung = immo.verwaltung ?? 30;
-        const hausgeld = immo.hausgeld ?? 0;
-        const strom = immo.strom ?? 0;
-        const internet = immo.internet ?? 0;
+        // Einheitliche Berechnung — eine Quelle für Rate + Cashflow
+        const immoGesamtMiete = immo.immobilienTyp === 'mehrfamilienhaus'
+          ? (immo.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0)
+          : getAktuelleMiete(immo);
+        const rendite = berechneRendite({ ...immo, kaltmiete: immoGesamtMiete });
 
-        // Fremdkapital berechnen
-        const kaufnebenkostenAbsolut = (immo.kaufpreis || 0) * (kaufnebenkosten / 100);
-        const gesamtinvestition = (immo.kaufpreis || 0) + kaufnebenkostenAbsolut;
+        const monatlicheKosten = (immo.instandhaltung || 0) + (immo.verwaltung || 0)
+          + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0);
         const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
           ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
           : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);
-        const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, gesamtinvestition - gesamtEK);
 
-        // Monatliche Kreditrate (Annuität)
-        const monatszins = zinssatz / 100 / 12;
-        const laufzeit = immo.laufzeit ?? 25;
-        let monatlicheRate = 0;
-        if (fremdkapital > 0 && monatszins > 0) {
-          monatlicheRate = fremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) /
-                          (Math.pow(1 + monatszins, laufzeit * 12) - 1);
-        }
-
-        // Monatliche Kosten (inkl. zusätzliche Kosten bei möblierter Vermietung)
-        const monatlicheKosten = instandhaltung + verwaltung + hausgeld + strom + internet;
-
-        // NK-Vorauszahlung vom Mieter (nur bei Modell kaltmiete_nk)
-        const nkVomMieter = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) : 0;
-
-        // Monatlicher Cashflow — einheitlich via berechneMtlCashflow (inkl. Bauspar, Phase-aware Rate)
+        // berechneMtlCashflow für Cashflow (inkl. Bauspar, Stellplatz, Phasenwechsel)
         const monatsCashflow = berechneMtlCashflow(immo);
 
-        gesamtCashflow += monatsCashflow * 12;
-        gesamtKreditrate += monatlicheRate * 12;
-        gesamtKosten += monatlicheKosten * 12;
+        gesamtCashflow    += monatsCashflow * 12;
+        gesamtKreditrate  += rendite.monatlicheRate * 12;   // phasenbewusst, vollEK-aware
+        gesamtKosten      += monatlicheKosten * 12;
         gesamtEigenkapital += gesamtEK;
       }
     });

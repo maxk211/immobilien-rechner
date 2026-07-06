@@ -227,10 +227,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
       {
         id: 1,
         name: 'Erstfinanzierung',
+        darlehensTyp: 'annuitaet',
         zinsbindung: immobilie.laufzeit ?? 10,
-        zinssatz: immobilie.zinssatz ?? 4.0,
-        tilgung: immobilie.tilgung ?? 2.0,
+        sollzinssatz: immobilie.zinssatz ?? 4.0,
+        anfangstilgung: immobilie.tilgung ?? 2.0,
+        monatlicherBetrag: null,
         sondertilgungJaehrlich: 0,
+        restschuldOverride: null,
         aktiv: true
       }
     ],

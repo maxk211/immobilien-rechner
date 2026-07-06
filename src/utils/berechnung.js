@@ -270,7 +270,9 @@ export const berechneRendite = (params) => {
     finanzierungsbetrag, kaufdatum,
     ekFuerNebenkosten, ekFuerKaufpreis, eigenkapital,
     vermietungsmodell = 'kaltmiete',
-    nebenkostenVomMieter = 0
+    nebenkostenVomMieter = 0,
+    vollEigenfinanziert = false,
+    geschenkt = false,
   } = params;
 
   // Kaufjahr für Chart-Darstellung
@@ -284,10 +286,12 @@ export const berechneRendite = (params) => {
     ? (ekFuerNebenkosten || 0) + (ekFuerKaufpreis || 0)
     : (eigenkapital || 0);
 
-  // Finanzierungsbetrag: Entweder manuell eingegeben oder berechnet
-  const fremdkapital = finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
-    ? finanzierungsbetrag
-    : Math.max(0, gesamtinvestition - gesamtEK);
+  // Finanzierungsbetrag: kein Kredit bei vollEigenfinanziert/geschenkt, sonst manuell oder berechnet
+  const fremdkapital = (vollEigenfinanziert || geschenkt)
+    ? 0
+    : (finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
+        ? finanzierungsbetrag
+        : Math.max(0, gesamtinvestition - gesamtEK));
 
   // Einnahmen basierend auf Vermietungsmodell:
   // - kaltmiete: Nur Kaltmiete (NK werden via Abrechnung umgelegt, kein direkter Cashflow)
