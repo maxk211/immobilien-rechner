@@ -190,7 +190,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onSave, mieterListe = [], onS
     // Mietanpassungen: [{datum, eigeneWarmmiete?, untermieteProZimmer?}]
     mietAnpassungen: immobilie.mietAnpassungen || [],
     mietEingaenge: immobilie.mietEingaenge || [],
-    steuersatz: immobilie.steuersatz || 30,
+    steuersatz: immobilie.steuersatz || 42,
     dauerauftrag: immobilie.dauerauftrag || false,
     dauerauftragBetrag: immobilie.dauerauftragBetrag || 0,
     dokumente: immobilie.dokumente || [],

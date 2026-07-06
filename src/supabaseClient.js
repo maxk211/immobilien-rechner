@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt'];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
@@ -162,6 +162,9 @@ function dbToApp(db) {
     userAnteil: db.user_anteil ?? 100,
     gbrPartner: db.gbr_partner || [],
     dokumente: db.dokumente || [],
+    wohnungen: db.wohnungen || [],
+    vollEigenfinanziert: db.voll_eigenfinanziert || false,
+    geschenkt: db.geschenkt || false,
   };
 }
 
@@ -240,6 +243,9 @@ function appToDb(app) {
     user_anteil: app.userAnteil ?? 100,
     gbr_partner: app.gbrPartner || [],
     dokumente: app.dokumente || [],
+    wohnungen: app.wohnungen || [],
+    voll_eigenfinanziert: app.vollEigenfinanziert || false,
+    geschenkt: app.geschenkt || false,
   };
 }
 
