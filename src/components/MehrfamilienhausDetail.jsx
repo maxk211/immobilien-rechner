@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite } from '../utils/berechnung.js';
 
+// Manche targetTabs aus VermieterTodos existieren im MFH nicht → auf nächstbestes mappen
+const MFH_TAB_MAP = { mieter: 'gebaeude', mieteinnahmen: 'uebersicht', nkabrechnung: 'uebersicht' };
+
 const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab }) => {
-  const [activeTab, setActiveTab] = useState(initialTab || 'gebaeude');
+  const resolvedTab = initialTab ? (MFH_TAB_MAP[initialTab] ?? initialTab) : 'gebaeude';
+  const [activeTab, setActiveTab] = useState(resolvedTab);
+  useEffect(() => { if (resolvedTab) setActiveTab(resolvedTab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);

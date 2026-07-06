@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from '../utils/miete.js';
 import MieterDashboard from './MieterDashboard';
@@ -197,6 +197,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab || 'uebersicht');
+  useEffect(() => { if (initialTab) setActiveTab(initialTab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateParams = (newParams) => {
     setParams(prev => ({ ...prev, ...newParams }));

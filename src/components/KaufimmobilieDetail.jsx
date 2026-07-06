@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../utils/format.js';
@@ -276,6 +276,8 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
   const [activeTab, setActiveTab] = useState(initialTab || 'uebersicht');
+  // Sicherheitsnetz: initialTab nach Mount anwenden (falls Batching-Timing den useState nicht erreicht hat)
+  useEffect(() => { if (initialTab) setActiveTab(initialTab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [mieterhoeungMieter, setMieterhoeungMieter] = useState(null); // Mieterhöhungs-Modal
 
   const updateParams = (newParams) => {
