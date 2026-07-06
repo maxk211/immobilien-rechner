@@ -1197,7 +1197,7 @@ function App() {
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-lg">🏠</div>
             <div>
               <div className="font-bold text-white text-base leading-tight">Immobilien Portfolio</div>
-              <div className="text-slate-400 text-xs">Rendite · Cashflow · Wertentwicklung</div>
+              <div className="text-slate-400 text-xs hidden sm:block">Rendite · Cashflow · Wertentwicklung</div>
             </div>
           </div>
           <div className="flex items-center gap-4">

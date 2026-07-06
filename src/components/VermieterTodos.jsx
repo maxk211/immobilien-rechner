@@ -373,7 +373,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
 
                     {/* Text */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-800 text-sm leading-snug">{todo.titel}</div>
+                      <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
                       <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
                     </div>
 
