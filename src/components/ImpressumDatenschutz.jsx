@@ -2,9 +2,9 @@ import { useState } from 'react';
 
 // ─── Impressum & Datenschutz Modals ─────────────────────────────────────────
 // § 5 TMG + DSGVO-konforme Datenschutzerklärung
-// Gesellschaft: Brother from another Mother GbR
+// Gesellschaft: ImmoBros GbR
 
-const FIRMA = 'Brother from another Mother GbR';
+const FIRMA = 'ImmoBros GbR';
 const ADRESSE = 'An der Hülling 6, 93047 Regensburg';
 const GESELLSCHAFTER = 'David Schmidbauer, Maximilian Kammel';
 const EMAIL = 'info@immobilienportfolio.app'; // ggf. anpassen
