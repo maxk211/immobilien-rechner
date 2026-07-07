@@ -67,6 +67,12 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Zahl-Inputs: leeres Feld bleibt leer (kein Auto-0)
+  const numInp = (v, fb = 0) => v === '' ? '' : (parseFloat(v) || fb);
+  const intInp = (v, fb = 0) => v === '' ? '' : (parseInt(v) || fb);
+  // Beim Speichern: '' → Fallback-Zahl
+  const toN = (v, fb = 0) => { const x = parseFloat(v); return isNaN(x) ? fb : x; };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
       <div className="bg-white w-full rounded-t-3xl sm:rounded-xl shadow-2xl sm:max-w-2xl h-[93vh] sm:max-h-[90vh] flex flex-col">
@@ -238,13 +244,13 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <div>
                             <label className="block text-[10px] text-gray-500 mb-0.5">Fläche (m²)</label>
                             <input type="number" value={w.wohnflaeche || ''}
-                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], wohnflaeche: parseFloat(e.target.value) || 0 }; handleChange('wohnungen', neu); }}
+                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], wohnflaeche: numInp(e.target.value) }; handleChange('wohnungen', neu); }}
                               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-right" />
                           </div>
                           <div>
                             <label className="block text-[10px] text-gray-500 mb-0.5">Kaltmiete (€/mo)</label>
                             <input type="number" value={w.kaltmiete || ''}
-                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], kaltmiete: parseFloat(e.target.value) || 0 }; handleChange('wohnungen', neu); }}
+                              onChange={e => { const neu = [...(formData.wohnungen || [])]; neu[idx] = { ...neu[idx], kaltmiete: numInp(e.target.value) }; handleChange('wohnungen', neu); }}
                               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-right" />
                           </div>
                         </div>
@@ -293,11 +299,11 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Baujahr</label>
-                    <input type="number" value={formData.baujahr} onChange={(e) => handleChange('baujahr', parseInt(e.target.value) || 2000)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
+                    <input type="number" value={formData.baujahr} onChange={(e) => handleChange('baujahr', intInp(e.target.value, 2000))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Grundstück (m²)</label>
-                    <input type="number" value={formData.grundstueck} onChange={(e) => handleChange('grundstueck', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
+                    <input type="number" value={formData.grundstueck} onChange={(e) => handleChange('grundstueck', numInp(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Energieeffizienz</label>
@@ -348,7 +354,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.wohnflaeche}
-                      onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('wohnflaeche', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -357,7 +363,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.grundstueck}
-                      onChange={(e) => handleChange('grundstueck', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('grundstueck', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -366,7 +372,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.zimmer}
-                      onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('zimmer', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -375,7 +381,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.baujahr}
-                      onChange={(e) => handleChange('baujahr', parseInt(e.target.value) || 2000)}
+                      onChange={(e) => handleChange('baujahr', intInp(e.target.value, 2000))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -384,7 +390,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.stockwerk}
-                      onChange={(e) => handleChange('stockwerk', parseInt(e.target.value) || 0)}
+                      onChange={(e) => handleChange('stockwerk', intInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -444,7 +450,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.wohnflaeche}
-                      onChange={(e) => handleChange('wohnflaeche', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('wohnflaeche', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -453,7 +459,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.zimmer}
-                      onChange={(e) => handleChange('zimmer', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('zimmer', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -470,7 +476,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   <input
                     type="number"
                     value={formData.geschaetzterWert || ''}
-                    onChange={(e) => handleChange('geschaetzterWert', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleChange('geschaetzterWert', numInp(e.target.value))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     placeholder="z.B. 350000"
                   />
@@ -544,9 +550,9 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.kaufpreis}
                       onChange={(e) => {
-                        const v = parseFloat(e.target.value) || 0;
+                        const v = numInp(e.target.value);
                         handleChange('kaufpreis', v);
-                        if (formData.geschenkt || formData.vollEigenfinanziert) handleChange('eigenkapital', v);
+                        if (formData.geschenkt || formData.vollEigenfinanziert) handleChange('eigenkapital', v === '' ? '' : v);
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
@@ -557,7 +563,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.eigenkapital}
-                      onChange={(e) => handleChange('eigenkapital', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('eigenkapital', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -588,7 +594,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       <label className="block text-xs text-gray-600 mb-1">Zinssatz</label>
                       <div className="flex items-center gap-1">
                         <input type="number" min={0} max={15} step={0.1} value={formData.zinssatz}
-                          onChange={(e) => handleChange('zinssatz', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleChange('zinssatz', numInp(e.target.value))}
                           className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
                         <span className="text-xs text-gray-500">%</span>
                       </div>
@@ -599,7 +605,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <label className="block text-xs text-gray-600 mb-1">Anfangstilgung</label>
                           <div className="flex items-center gap-1">
                             <input type="number" min={0} max={10} step={0.5} value={formData.tilgung}
-                              onChange={(e) => handleChange('tilgung', parseFloat(e.target.value) || 0)}
+                              onChange={(e) => handleChange('tilgung', numInp(e.target.value))}
                               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
                             <span className="text-xs text-gray-500">%</span>
                           </div>
@@ -608,7 +614,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <label className="block text-xs text-gray-600 mb-1">Gesamtlaufzeit</label>
                           <div className="flex items-center gap-1">
                             <input type="number" min={5} max={40} step={1} value={formData.laufzeit}
-                              onChange={(e) => handleChange('laufzeit', parseInt(e.target.value) || 25)}
+                              onChange={(e) => handleChange('laufzeit', intInp(e.target.value, 25))}
                               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
                             <span className="text-xs text-gray-500">J.</span>
                           </div>
@@ -620,7 +626,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         <div className="flex items-center gap-1">
                           <input type="number" min={0} step={10} value={formData.monatlicherBetrag || ''}
                             placeholder="z.B. 650"
-                            onChange={(e) => handleChange('monatlicherBetrag', parseFloat(e.target.value) || null)}
+                            onChange={(e) => handleChange('monatlicherBetrag', e.target.value === '' ? '' : (parseFloat(e.target.value) || null))}
                             className="w-full px-2 py-1.5 border-2 border-blue-400 bg-white rounded text-sm text-right font-semibold" />
                           <span className="text-xs text-gray-500">€</span>
                         </div>
@@ -630,7 +636,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       <label className="block text-xs text-gray-600 mb-1">Zinsbindung</label>
                       <div className="flex items-center gap-1">
                         <input type="number" min={1} max={30} step={1} value={formData.zinsbindung}
-                          onChange={(e) => handleChange('zinsbindung', parseInt(e.target.value) || 10)}
+                          onChange={(e) => handleChange('zinsbindung', intInp(e.target.value, 10))}
                           className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right" />
                         <span className="text-xs text-gray-500">J.</span>
                       </div>
@@ -670,7 +676,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <input
                       type="number"
                       value={formData.kaltmiete}
-                      onChange={(e) => handleChange('kaltmiete', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('kaltmiete', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -711,7 +717,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       <input
                         type="number"
                         value={formData.nebenkostenVomMieter || 0}
-                        onChange={(e) => handleChange('nebenkostenVomMieter', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => handleChange('nebenkostenVomMieter', numInp(e.target.value))}
                         className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                         placeholder="z.B. 200"
                       />
@@ -791,7 +797,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                             max={100}
                             step={0.5}
                             value={formData.userAnteil ?? 100}
-                            onChange={(e) => handleChange('userAnteil', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => handleChange('userAnteil', numInp(e.target.value))}
                             className="w-full px-2 py-1.5 border border-indigo-300 rounded-lg text-sm text-right font-semibold focus:ring-2 focus:ring-indigo-500"
                           />
                           <span className="text-sm text-gray-500 font-semibold">%</span>
@@ -823,7 +829,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                               value={partner.anteil}
                               onChange={(e) => {
                                 const updated = [...formData.gbrPartner];
-                                updated[idx] = { ...updated[idx], anteil: parseFloat(e.target.value) || 0 };
+                                updated[idx] = { ...updated[idx], anteil: numInp(e.target.value) };
                                 handleChange('gbrPartner', updated);
                               }}
                               className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-400"
@@ -907,7 +913,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <label className="block text-xs text-gray-500 mb-1">Anzahl</label>
                           <input type="number" min={1} max={20}
                             value={sp.anzahl || 1}
-                            onChange={e => updateSp({ anzahl: parseInt(e.target.value) || 1 })}
+                            onChange={e => updateSp({ anzahl: intInp(e.target.value, 1) })}
                             className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
@@ -915,7 +921,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <label className="block text-xs text-gray-500 mb-1">Kaufpreis-Anteil (€)</label>
                           <input type="number" min={0} step={1000}
                             value={sp.kaufpreisAnteil || 0}
-                            onChange={e => updateSp({ kaufpreisAnteil: parseFloat(e.target.value) || 0 })}
+                            onChange={e => updateSp({ kaufpreisAnteil: numInp(e.target.value) })}
                             className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
                             placeholder="0"
                           />
@@ -924,7 +930,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <label className="block text-xs text-gray-500 mb-1">Miete/SP/Mo (€)</label>
                           <input type="number" min={0} step={5}
                             value={sp.monatlicheMiete || 0}
-                            onChange={e => updateSp({ monatlicheMiete: parseFloat(e.target.value) || 0 })}
+                            onChange={e => updateSp({ monatlicheMiete: numInp(e.target.value) })}
                             className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
                             placeholder="0"
                           />
@@ -964,7 +970,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       <input
                         type="number"
                         value={formData.eigeneWarmmiete}
-                        onChange={(e) => handleChange('eigeneWarmmiete', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => handleChange('eigeneWarmmiete', numInp(e.target.value))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                         placeholder="z.B. 1500"
                       />
@@ -980,7 +986,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         <input
                           type="number"
                           value={formData.anzahlZimmerVermietet}
-                          onChange={(e) => handleChange('anzahlZimmerVermietet', parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleChange('anzahlZimmerVermietet', intInp(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                           min="0"
                           max={formData.zimmer}
@@ -991,7 +997,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         <input
                           type="number"
                           value={formData.untermieteProZimmer}
-                          onChange={(e) => handleChange('untermieteProZimmer', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleChange('untermieteProZimmer', numInp(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                           placeholder="z.B. 600"
                         />
@@ -1008,7 +1014,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         <input
                           type="number"
                           value={formData.arbitrageStrom || 0}
-                          onChange={(e) => handleChange('arbitrageStrom', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleChange('arbitrageStrom', numInp(e.target.value))}
                           className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                           placeholder="0"
                         />
@@ -1018,7 +1024,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         <input
                           type="number"
                           value={formData.arbitrageInternet || 0}
-                          onChange={(e) => handleChange('arbitrageInternet', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleChange('arbitrageInternet', numInp(e.target.value))}
                           className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                           placeholder="0"
                         />
@@ -1028,7 +1034,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         <input
                           type="number"
                           value={formData.arbitrageGEZ ?? 18.36}
-                          onChange={(e) => handleChange('arbitrageGEZ', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleChange('arbitrageGEZ', numInp(e.target.value))}
                           className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                           placeholder="18.36"
                         />
@@ -1120,10 +1126,12 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   id: 1,
                   name: 'Erstfinanzierung',
                   darlehensTyp: 'annuitaet',
-                  sollzinssatz: formData.zinssatz ?? 4.0,
-                  anfangstilgung: formData.tilgung ?? 2.0,
-                  zinsbindung: formData.zinsbindung || 10,
-                  monatlicherBetrag: formData.finanzierungsModus === 'festRate' ? (formData.monatlicherBetrag || null) : null,
+                  sollzinssatz: toN(formData.zinssatz, 4.0),
+                  anfangstilgung: toN(formData.tilgung, 2.0),
+                  zinsbindung: toN(formData.zinsbindung, 10),
+                  monatlicherBetrag: formData.finanzierungsModus === 'festRate'
+                    ? (formData.monatlicherBetrag === '' || formData.monatlicherBetrag == null ? null : toN(formData.monatlicherBetrag, null))
+                    : null,
                   monatlicheTilgung: null,
                   tilgungssatz: 2.0,
                   laufzeit: 10,
@@ -1142,12 +1150,45 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 const ekAggregat = (formData.vollEigenfinanziert && !formData.geschenkt) ? {
                   eigenkapital: formData.kaufpreis,
                 } : {};
+                // Numerische Felder normalisieren: '' → Fallback-Zahl
                 onSave({
                   ...formData,
+                  kaufpreis:              toN(formData.kaufpreis),
+                  eigenkapital:           toN(formData.eigenkapital),
+                  kaltmiete:              toN(formData.kaltmiete),
+                  nebenkostenVomMieter:   toN(formData.nebenkostenVomMieter),
+                  zinssatz:               toN(formData.zinssatz, 4.0),
+                  tilgung:                toN(formData.tilgung, 2.0),
+                  laufzeit:               toN(formData.laufzeit, 25),
+                  zinsbindung:            toN(formData.zinsbindung, 10),
+                  wohnflaeche:            toN(formData.wohnflaeche),
+                  grundstueck:            toN(formData.grundstueck),
+                  zimmer:                 toN(formData.zimmer),
+                  baujahr:                toN(formData.baujahr, 2000),
+                  stockwerk:              toN(formData.stockwerk),
+                  geschaetzterWert:       toN(formData.geschaetzterWert),
+                  userAnteil:             toN(formData.userAnteil, 100),
+                  eigeneWarmmiete:        toN(formData.eigeneWarmmiete),
+                  anzahlZimmerVermietet:  toN(formData.anzahlZimmerVermietet),
+                  untermieteProZimmer:    toN(formData.untermieteProZimmer),
+                  arbitrageStrom:         toN(formData.arbitrageStrom),
+                  arbitrageInternet:      toN(formData.arbitrageInternet),
+                  arbitrageGEZ:           toN(formData.arbitrageGEZ, 18.36),
+                  gbrPartner: (formData.gbrPartner || []).map(p => ({ ...p, anteil: toN(p.anteil) })),
+                  stellplatz: formData.stellplatz ? {
+                    ...formData.stellplatz,
+                    kaufpreisAnteil:   toN(formData.stellplatz.kaufpreisAnteil),
+                    monatlicheMiete:   toN(formData.stellplatz.monatlicheMiete),
+                    anzahl:            toN(formData.stellplatz.anzahl, 1),
+                  } : formData.stellplatz,
                   ...mfhAggregat,
                   ...ekAggregat,
                   finanzierungsphasen: [erstePhase],
-                  wohnungen: formData.wohnungen || [],
+                  wohnungen: (formData.wohnungen || []).map(w => ({
+                    ...w,
+                    wohnflaeche: toN(w.wohnflaeche),
+                    kaltmiete:   toN(w.kaltmiete),
+                  })),
                 });
               }}
               className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
