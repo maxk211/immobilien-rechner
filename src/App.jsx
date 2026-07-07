@@ -37,6 +37,7 @@ import NKAbrechnungModal from './components/NKAbrechnungModal';
 import KautionsManager from './components/KautionsManager';
 import ImmobilienDetail from './components/ImmobilienDetail';
 import { ModalErrorBoundary } from './components/ErrorBoundary';
+import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 import KalkulationsModal from './components/KalkulationsModal';
 import ImmobilienFormular from './components/ImmobilienFormular';
 import ImmobilienKarte from './components/ImmobilienKarte';
@@ -1581,6 +1582,9 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p>Erstellt mit ❤️ für Immobilieninvestoren</p>
           <p className="text-sm mt-2">Alle Berechnungen ohne Gewähr. Keine Anlageberatung.</p>
+          <div className="mt-3 flex justify-center">
+            <ImpressumDatenschutzLinks className="text-gray-500 hover:text-gray-300" />
+          </div>
         </div>
       </footer>
     </div>

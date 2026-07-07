@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
   const [billingOpen, setBillingOpen] = useState(null);
@@ -540,7 +541,11 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             <button onClick={onLogin} className="hover:text-slate-300 transition-colors">Einloggen</button>
             <button onClick={onGetStarted} className="hover:text-slate-300 transition-colors">Registrieren</button>
           </div>
-          <div className="text-xs sm:text-sm">© {new Date().getFullYear()} ImmobilienPortfolio</div>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs">
+            <ImpressumDatenschutzLinks className="text-slate-500 hover:text-slate-300" />
+            <span className="hidden sm:inline opacity-40">·</span>
+            <span>© {new Date().getFullYear()} Brother from another Mother GbR</span>
+          </div>
         </div>
       </footer>
 
