@@ -218,24 +218,26 @@ function App() {
   const handleSave = async (data) => {
     try {
       setSyncStatus('syncing');
+      let saved;
       if (editImmobilie) {
-        // Update existierende Immobilie
-        const updated = await saveImmobilie({ ...data, id: editImmobilie.id });
-        setPortfolio(prev => prev.map(i => i.id === editImmobilie.id ? updated : i));
+        saved = await saveImmobilie({ ...data, id: editImmobilie.id });
+        setPortfolio(prev => prev.map(i => i.id === editImmobilie.id ? saved : i));
         setEditImmobilie(null);
         toast.success('Immobilie aktualisiert ✓');
+        setShowForm(false); // beim Bearbeiten direkt schließen
       } else {
-        // Neue Immobilie erstellen
-        const created = await saveImmobilie(data);
-        setPortfolio(prev => [...prev, created]);
+        saved = await saveImmobilie(data);
+        setPortfolio(prev => [...prev, saved]);
         toast.success('Immobilie gespeichert ✓');
+        // Formular bleibt offen — ImmobilienFormular zeigt den Nachfrage-Dialog
       }
-      setShowForm(false);
       setSyncStatus('idle');
+      return saved; // wichtig: gespeicherte Immobilie zurückgeben
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
       setSyncStatus('error');
       toast.error('Fehler beim Speichern: ' + error.message);
+      return null;
     }
   };
 
@@ -1395,6 +1397,12 @@ function App() {
           <ImmobilienFormular
             onSave={handleSave}
             onClose={() => { setShowForm(false); setEditImmobilie(null); }}
+            onOpenDetail={(immo) => {
+              setShowForm(false);
+              setEditImmobilie(null);
+              setSelectedImmobilie(immo);
+              setInitialTab(null);
+            }}
             initialData={editImmobilie}
           />
         </ModalErrorBoundary>

@@ -4,13 +4,18 @@ import {
   ParkingCircle, Car, Shuffle, BedDouble, TrendingDown,
   BarChart3, Zap, TrendingUp, ClipboardList, Wallet,
   User, Users, Check, X, Gift, Landmark, Globe, Tv, Search,
+  Plus, CheckCircle2,
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { schaetzeImmobilienwert } from '../utils/berechnung.js';
 
-const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
+const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
   // Beim Bearbeiten direkt alle Details zeigen, beim Anlegen erst auf Basis-Modus
   const [showDetails, setShowDetails] = useState(!!initialData);
+  // Schnellstart vs. Expertenansicht
+  const [formModus, setFormModus] = useState(initialData ? 'experte' : 'schnell');
+  // Nach Schnellstart-Speichern: gespeicherte Immobilie für Nachfrage-Dialog
+  const [gespeicherteImmo, setGespeicherteImmo] = useState(null);
   const [formData, setFormData] = useState(initialData || {
     name: '',
     plz: '',
@@ -86,15 +91,260 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
         <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
           <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
         </div>
-        <div className="p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-800">
+        <div className="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex justify-between items-start gap-3 mb-3">
+            <h2 className="text-xl font-bold text-gray-800">
               {initialData ? 'Immobilie bearbeiten' : 'Neue Immobilie'}
             </h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 mt-0.5 flex-shrink-0">
+              <X size={20}/>
+            </button>
           </div>
+          {/* Modus-Toggle — nur bei neuen Immobilien */}
+          {!initialData && (
+            <div className="flex rounded-xl bg-gray-100 p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setFormModus('schnell')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                  formModus === 'schnell'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Zap size={14}/>
+                <span>Schnellstart</span>
+                <span className="hidden sm:inline text-xs font-normal opacity-60">· 2 Min.</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormModus('experte')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                  formModus === 'experte'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Settings size={14}/>
+                <span>Alle Details</span>
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* ── SCHNELLSTART-MODUS ─────────────────────────────────────────── */}
+        {formModus === 'schnell' && (
+          <div className="p-5 space-y-5 overflow-y-auto flex-grow">
+            {/* Immobilientyp */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-100">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Immobilientyp</label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'kaufimmobilie')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'kaufimmobilie'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex justify-center mb-1"><Home size={20}/></div>
+                  <div className="font-semibold text-sm">Kaufimmobilie</div>
+                  <div className="hidden sm:block text-xs text-gray-500">Eigene Immobilie vermieten</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'mehrfamilienhaus')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'mehrfamilienhaus'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex justify-center mb-1"><Building2 size={20}/></div>
+                  <div className="font-semibold text-sm">Mehrfamilien&shy;haus</div>
+                  <div className="hidden sm:block text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('immobilienTyp', 'mietimmobilie')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    formData.immobilienTyp === 'mietimmobilie'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex justify-center mb-1"><ArrowLeftRight size={20}/></div>
+                  <div className="font-semibold text-sm">Mietimmobilie</div>
+                  <div className="hidden sm:block text-xs text-gray-500">Arbitrage: Anmieten &amp; Untervermieten</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Basis */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Basis</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bezeichnung</label>
+                  <input type="text" value={formData.name}
+                    onChange={e => handleChange('name', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                    placeholder="z.B. Wohnung München Schwabing" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PLZ</label>
+                  <input type="text" value={formData.plz}
+                    onChange={e => handleChange('plz', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                    placeholder="80331" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Adresse <span className="text-red-400">*</span></label>
+                  <input type="text" value={formData.adresse}
+                    onChange={e => handleChange('adresse', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                    placeholder="Musterstraße 12" />
+                </div>
+              </div>
+            </div>
+
+            {/* Finanzen */}
+            {formData.immobilienTyp !== 'mietimmobilie' && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Finanzen</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kaufpreis (€)</label>
+                    <input type="number" value={formData.kaufpreis ?? ''}
+                      onChange={e => handleChange('kaufpreis', numInp(e.target.value))}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                      placeholder="300000" />
+                  </div>
+                  {formData.immobilienTyp !== 'mehrfamilienhaus' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kaltmiete (€/Mon.)</label>
+                      <input type="number" value={formData.kaltmiete ?? ''}
+                        onChange={e => handleChange('kaltmiete', numInp(e.target.value))}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                        placeholder="1000" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* MFH: Wohnungen (vereinfacht) */}
+            {formData.immobilienTyp === 'mehrfamilienhaus' && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Wohnungen</h3>
+                {(formData.wohnungen || []).map((w, idx) => (
+                  <div key={idx} className="grid grid-cols-3 gap-2 p-3 bg-gray-50 rounded-lg">
+                    <input type="text" placeholder={`WE ${idx+1} Name`}
+                      value={w.name || ''} onChange={e => { const wu = [...(formData.wohnungen||[])]; wu[idx]={...wu[idx], name: e.target.value}; handleChange('wohnungen', wu); }}
+                      className="col-span-1 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
+                    <input type="number" placeholder="Kaltmiete €"
+                      value={w.kaltmiete ?? ''} onChange={e => { const wu = [...(formData.wohnungen||[])]; wu[idx]={...wu[idx], kaltmiete: numInp(e.target.value)}; handleChange('wohnungen', wu); }}
+                      className="col-span-1 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
+                    <button type="button" onClick={() => handleChange('wohnungen', (formData.wohnungen||[]).filter((_,i)=>i!==idx))}
+                      className="flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
+                      <X size={16}/>
+                    </button>
+                  </div>
+                ))}
+                <button type="button"
+                  onClick={() => handleChange('wohnungen', [...(formData.wohnungen||[]), { name: `WE ${(formData.wohnungen||[]).length+1}`, kaltmiete: 0, wohnflaeche: 0 }])}
+                  className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center justify-center gap-1.5">
+                  <Plus size={14}/> Wohnung hinzufügen
+                </button>
+              </div>
+            )}
+
+            {/* Mietimmobilie */}
+            {formData.immobilienTyp === 'mietimmobilie' && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Arbitrage</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Eigene Warmmiete (€/Mon.)</label>
+                    <input type="number" value={formData.eigeneWarmmiete ?? ''}
+                      onChange={e => handleChange('eigeneWarmmiete', numInp(e.target.value))}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                      placeholder="1500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zimmer vermietet</label>
+                    <input type="number" value={formData.anzahlZimmerVermietet ?? ''}
+                      onChange={e => handleChange('anzahlZimmerVermietet', intInp(e.target.value))}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                      placeholder="3" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Preis/Zimmer (€/Mon.)</label>
+                    <input type="number" value={formData.untermieteProZimmer ?? ''}
+                      onChange={e => handleChange('untermieteProZimmer', numInp(e.target.value))}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base"
+                      placeholder="600" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Finanzierung (nur für Kauf/MFH) */}
+            {formData.immobilienTyp !== 'mietimmobilie' && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Finanzierung</h3>
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <input type="checkbox" checked={!!formData.kreditLaeuftBereits}
+                    onChange={e => handleChange('kreditLaeuftBereits', e.target.checked)}
+                    className="w-4 h-4 accent-indigo-600" />
+                  <div>
+                    <span className="text-sm font-semibold text-gray-800">Kredit läuft bereits</span>
+                    <p className="text-xs text-gray-500">Ich kenne meine aktuelle Restschuld und Rate</p>
+                  </div>
+                </label>
+                {formData.kreditLaeuftBereits ? (
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Restschuld (€)</label>
+                      <input type="number" value={formData.aktuelleRestschuld ?? ''}
+                        onChange={e => handleChange('aktuelleRestschuld', numInp(e.target.value))}
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                        placeholder="85000" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Rate (€/Mon.)</label>
+                      <input type="number" value={formData.kreditMonatsrate ?? ''}
+                        onChange={e => handleChange('kreditMonatsrate', numInp(e.target.value))}
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                        placeholder="650" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Eigenkapital (€)</label>
+                      <input type="number" value={formData.eigenkapital ?? ''}
+                        onChange={e => handleChange('eigenkapital', numInp(e.target.value))}
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                        placeholder="60000" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Zinssatz (% p.a.)</label>
+                      <input type="number" step="0.1" value={formData.zinssatz ?? ''}
+                        onChange={e => handleChange('zinssatz', numInp(e.target.value))}
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                        placeholder="4.0" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── EXPERTENANSICHT ─────────────────────────────────────────────── */}
+        {formModus === 'experte' && (
         <div className="p-6 overflow-y-auto flex-grow">
           <div className="space-y-6">
             {/* Immobilientyp Auswahl */}
@@ -1171,6 +1421,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
             </>)}
           </div>
         </div>
+        )}
 
         <div className="p-6 border-t border-gray-200 flex-shrink-0">
           <div className="flex gap-3 justify-end">
@@ -1181,7 +1432,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               Abbrechen
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 // Finanzierungskonditionen in erste Phase übertragen (Feldnamen müssen zur Finanzierungstab-Logik passen)
                 const erstePhase = {
                   id: 1,
@@ -1212,7 +1463,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   eigenkapital: formData.kaufpreis,
                 } : {};
                 // Numerische Felder normalisieren: '' → Fallback-Zahl
-                onSave({
+                const datenZumSpeichern = {
                   ...formData,
                   kaufpreis:              toN(formData.kaufpreis),
                   eigenkapital:           toN(formData.eigenkapital),
@@ -1254,15 +1505,65 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     wohnflaeche: toN(w.wohnflaeche),
                     kaltmiete:   toN(w.kaltmiete),
                   })),
-                });
+                };
+
+                if (formModus === 'schnell' && !initialData) {
+                  // Schnellstart: Speichern, dann Nachfrage-Dialog zeigen
+                  const saved = await onSave(datenZumSpeichern);
+                  if (saved) setGespeicherteImmo(saved);
+                } else {
+                  // Expertenansicht oder Bearbeiten: direkt speichern + schließen
+                  await onSave(datenZumSpeichern);
+                  onClose();
+                }
               }}
               className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
             >
-              Speichern
+              {formModus === 'schnell' && !initialData ? 'Speichern →' : 'Speichern'}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Nachfrage nach Schnellstart-Speichern */}
+      {gespeicherteImmo && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 size={28} className="text-emerald-600" />
+              </div>
+            </div>
+            <h3 className="text-lg font-bold text-center text-gray-900 mb-1">
+              Immobilie gespeichert!
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Möchtest du jetzt weitere Details ergänzen — Objektdaten, Eigentumsstruktur, Stellplatz und mehr?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  const immo = gespeicherteImmo;
+                  setGespeicherteImmo(null);
+                  onOpenDetail?.(immo);
+                }}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors"
+              >
+                Ja, Details ergänzen
+              </button>
+              <button
+                onClick={() => {
+                  setGespeicherteImmo(null);
+                  onClose();
+                }}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
+              >
+                Nein, zur Übersicht
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
