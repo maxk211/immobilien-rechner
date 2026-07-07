@@ -26,8 +26,10 @@ export async function loadImmobilien() {
   return data.map(dbToApp);
 }
 
-// Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt', 'afa_modus', 'afa_degressiv_wechseljahr', 'kredit_laeuft_bereits', 'aktuelle_restschuld', 'kredit_monatsrate', 'zinsbindung_bis'];
+// Felder aus Migration 001–005 (sollten in jeder DB vorhanden sein)
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt', 'afa_modus', 'afa_degressiv_wechseljahr'];
+// Felder aus Migration 006 — noch nicht bei allen Usern vorhanden
+const MIGRATION_FIELDS_006 = ['kredit_laeuft_bereits', 'aktuelle_restschuld', 'kredit_monatsrate', 'zinsbindung_bis'];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
@@ -62,15 +64,29 @@ export async function saveImmobilie(immobilie) {
   try {
     return await doSave(dbData);
   } catch (error) {
-    // Fallback: SQL-Migration noch nicht ausgeführt → ohne neue Spalten speichern
     const isSchemaProblem = error.message && (
       error.message.includes('column') ||
       error.message.includes('schema cache')
     );
     if (isSchemaProblem) {
-      const fallbackData = { ...dbData };
-      MIGRATION_FIELDS.forEach(f => delete fallbackData[f]);
-      return await doSave(fallbackData);
+      // Stufe 1: Nur Migration-006-Felder weglassen (wohnungen etc. bleiben erhalten)
+      const fallback1 = { ...dbData };
+      MIGRATION_FIELDS_006.forEach(f => delete fallback1[f]);
+      try {
+        return await doSave(fallback1);
+      } catch (e2) {
+        const isStillSchemaProblem = e2.message && (
+          e2.message.includes('column') ||
+          e2.message.includes('schema cache')
+        );
+        if (isStillSchemaProblem) {
+          // Stufe 2: Auch ältere Migrations-Felder weglassen
+          const fallback2 = { ...fallback1 };
+          MIGRATION_FIELDS.forEach(f => delete fallback2[f]);
+          return await doSave(fallback2);
+        }
+        throw e2;
+      }
     }
     throw error;
   }
