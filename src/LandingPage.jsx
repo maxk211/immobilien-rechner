@@ -555,7 +555,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs">
             <ImpressumDatenschutzLinks className="text-slate-500 hover:text-slate-300" />
             <span className="hidden sm:inline opacity-40">·</span>
-            <span>© {new Date().getFullYear()} Brother from another Mother GbR</span>
+            <span>© {new Date().getFullYear()} Immobilien-Portfolio</span>
           </div>
         </div>
       </footer>

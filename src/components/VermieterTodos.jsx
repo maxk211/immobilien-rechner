@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   CheckCircle2, ChevronDown, Landmark, TrendingDown, ClipboardList,
   Key, TrendingUp, CalendarDays, AlertTriangle, Building2, ScrollText,
@@ -328,17 +328,43 @@ const PRIORITY_STYLE = {
   gruen: { dot: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700', row: 'border-emerald-100 hover:bg-emerald-50' },
 };
 
+const LS_KEY = 'vermieter-todos-erledigt';
+
 const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSelectImmobilie }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [erledigteIds, setErledigteIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]')); }
+    catch { return new Set(); }
+  });
+  const [zeigeErledigt, setZeigeErledigt] = useState(true);
+
+  const toggleErledigt = useCallback((id, e) => {
+    e.stopPropagation();
+    setErledigteIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      try { localStorage.setItem(LS_KEY, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, []);
+
+  const alleZuruecksetzen = useCallback((e) => {
+    e.stopPropagation();
+    setErledigteIds(new Set());
+    try { localStorage.removeItem(LS_KEY); } catch {}
+  }, []);
 
   const todos = useMemo(
     () => generiereAufgaben(portfolio, mieterListe, nkAbrechnungen),
     [portfolio, mieterListe, nkAbrechnungen]
   );
 
-  const anzahlRot = todos.filter(t => t.priority === 'rot').length;
-  const anzahlGelb = todos.filter(t => t.priority === 'gelb').length;
-  const anzahlGruen = todos.filter(t => t.priority === 'gruen').length;
+  const offeneTodos = todos.filter(t => !erledigteIds.has(t.id));
+  const erledigteTodos = todos.filter(t => erledigteIds.has(t.id));
+
+  const anzahlRot = offeneTodos.filter(t => t.priority === 'rot').length;
+  const anzahlGelb = offeneTodos.filter(t => t.priority === 'gelb').length;
+  const anzahlGruen = offeneTodos.filter(t => t.priority === 'gruen').length;
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
@@ -350,7 +376,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
         <div className="flex items-center gap-3">
           <CheckCircle2 size={18} className="text-emerald-500" />
           <span className="font-bold text-gray-800">Vermieter-Aufgaben</span>
-          {todos.length > 0 && (
+          {offeneTodos.length > 0 && (
             <div className="flex items-center gap-1.5">
               {anzahlRot > 0 && (
                 <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
@@ -368,6 +394,11 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                 </span>
               )}
             </div>
+          )}
+          {erledigteIds.size > 0 && offeneTodos.length === 0 && (
+            <span className="text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+              Alles erledigt ✓
+            </span>
           )}
         </div>
         <span className={`text-gray-400 transition-transform inline-flex ${collapsed ? '' : 'rotate-180'}`}>
@@ -387,42 +418,117 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
               <div className="text-sm text-gray-400">Keine offenen Aufgaben. Gut gemacht.</div>
             </div>
           ) : (
-            <div className="divide-y divide-gray-50">
-              {todos.map(todo => {
-                const style = PRIORITY_STYLE[todo.priority];
-                const immo = portfolio.find(i => i.id === todo.immoId);
-                return (
-                  <div
-                    key={todo.id}
-                    onClick={() => immo && onSelectImmobilie && onSelectImmobilie(immo, todo.targetTab)}
-                    className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row} ${immo && onSelectImmobilie ? 'cursor-pointer' : ''}`}
+            <div>
+              {/* Offene Aufgaben */}
+              <div className="divide-y divide-gray-50">
+                {offeneTodos.map(todo => {
+                  const style = PRIORITY_STYLE[todo.priority];
+                  const immo = portfolio.find(i => i.id === todo.immoId);
+                  return (
+                    <div
+                      key={todo.id}
+                      onClick={() => immo && onSelectImmobilie && onSelectImmobilie(immo, todo.targetTab)}
+                      className={`flex items-center gap-3 px-4 py-3.5 transition-all ${style.row} ${immo && onSelectImmobilie ? 'cursor-pointer' : ''}`}
+                    >
+                      {/* Erledigt-Checkbox */}
+                      <button
+                        onClick={(e) => toggleErledigt(todo.id, e)}
+                        className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-300 hover:border-emerald-400 transition-colors flex items-center justify-center"
+                        title="Als erledigt markieren"
+                      />
+
+                      {/* Priority dot */}
+                      <div className={`flex-shrink-0 w-2 h-2 rounded-full ${style.dot}`} />
+
+                      {/* Icon */}
+                      <div className="flex-shrink-0 w-6 flex items-center justify-center text-gray-500">
+                        {todo.icon}
+                      </div>
+
+                      {/* Text */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
+                        <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
+                      </div>
+
+                      {/* Badge */}
+                      <div className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${style.badge}`}>
+                        {todo.badge}
+                      </div>
+
+                      {/* Arrow wenn klickbar */}
+                      {immo && onSelectImmobilie && (
+                        <div className="flex-shrink-0 text-gray-300 text-sm">›</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Offene Todos leer aber es gibt erledigte */}
+              {offeneTodos.length === 0 && erledigteIds.size > 0 && (
+                <div className="text-center py-6 px-5">
+                  <CheckCircle2 size={32} className="text-emerald-400 mx-auto mb-2" />
+                  <div className="font-bold text-gray-700 mb-1">Alle Aufgaben erledigt!</div>
+                  <div className="text-sm text-gray-400">Gut gemacht.</div>
+                </div>
+              )}
+
+              {/* Erledigte Aufgaben — einklappbar */}
+              {erledigteIds.size > 0 && (
+                <div className="border-t border-gray-100">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setZeigeErledigt(v => !v); }}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
                   >
-                    {/* Priority dot */}
-                    <div className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${style.dot}`} />
-
-                    {/* Icon */}
-                    <div className="flex-shrink-0 w-7 flex items-center justify-center text-gray-500">
-                      {todo.icon}
+                    <span>{erledigteIds.size} als erledigt markiert</span>
+                    <div className="flex items-center gap-3">
+                      <span
+                        onClick={alleZuruecksetzen}
+                        className="text-indigo-400 hover:text-indigo-600 font-medium"
+                      >
+                        Alle zurücksetzen
+                      </span>
+                      <span className={`transition-transform inline-flex ${zeigeErledigt ? 'rotate-180' : ''}`}>
+                        <ChevronDown size={12} />
+                      </span>
                     </div>
+                  </button>
+                  {zeigeErledigt && (
+                    <div className="divide-y divide-gray-50">
+                      {erledigteTodos.map(todo => {
+                        const immo = portfolio.find(i => i.id === todo.immoId);
+                        return (
+                          <div
+                            key={todo.id}
+                            className="flex items-center gap-3 px-4 py-3 opacity-40"
+                          >
+                            {/* Erledigt-Checkbox (gefüllt) */}
+                            <button
+                              onClick={(e) => toggleErledigt(todo.id, e)}
+                              className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                              title="Als offen markieren"
+                            >
+                              <CheckCircle2 size={12} className="text-white" />
+                            </button>
 
-                    {/* Text */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
-                      <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
+                            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300" />
+
+                            <div className="flex-shrink-0 w-6 flex items-center justify-center text-gray-400">
+                              {todo.icon}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-500 text-sm leading-snug truncate line-through">{todo.titel}</div>
+                              <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-
-                    {/* Badge */}
-                    <div className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${style.badge}`}>
-                      {todo.badge}
-                    </div>
-
-                    {/* Arrow wenn klickbar */}
-                    {immo && onSelectImmobilie && (
-                      <div className="flex-shrink-0 text-gray-300 text-sm">›</div>
-                    )}
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
