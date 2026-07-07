@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite } from '../utils/berechnung.js';
+import {
+  Building2, BarChart3, Key, Wallet, MapPin, Pencil, X, Check,
+  CheckCircle2, AlertTriangle, User, Trash2, Lightbulb, Circle,
+} from 'lucide-react';
 
 // Manche targetTabs aus VermieterTodos existieren im MFH nicht → auf nächstbestes mappen
 const MFH_TAB_MAP = { mieter: 'gebaeude', mieteinnahmen: 'uebersicht', nkabrechnung: 'uebersicht' };
@@ -89,21 +93,21 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
           <div className="flex justify-between items-start">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-2xl">🏘️</span>
+                <Building2 size={22}/>
                 <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">MFH · {wohnungen.length} WE</span>
                 {kautionOffenAnzahl > 0 && (
-                  <span className="text-xs font-semibold bg-red-500/80 px-2 py-0.5 rounded-full">🔴 {kautionOffenAnzahl}× Kaution offen</span>
+                  <span className="text-xs font-semibold bg-red-500/80 px-2 py-0.5 rounded-full flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-red-300"/> {kautionOffenAnzahl}× Kaution offen</span>
                 )}
               </div>
               <h2 className="text-base sm:text-xl font-black truncate">{immobilie.name}</h2>
-              {immobilie.adresse && <p className="text-sm text-white/80 mt-0.5">📍 {immobilie.adresse}</p>}
+              {immobilie.adresse && <p className="text-sm text-white/80 mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.adresse}</p>}
             </div>
             <div className="flex items-center gap-2 ml-3 shrink-0">
               {onEdit && (
                 <button onClick={onEdit}
                   className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
                   title="Stammdaten bearbeiten">
-                  ✏️ Bearbeiten
+                  <Pencil size={14} className="inline mr-1"/>Bearbeiten
                 </button>
               )}
               {hasChanges && (
@@ -111,7 +115,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                   Speichern
                 </button>
               )}
-              <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl">&times;</button>
+              <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
             </div>
           </div>
 
@@ -141,14 +145,14 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
         {/* Tabs */}
         <div className="flex gap-1 bg-slate-100 p-1 flex-shrink-0 overflow-x-auto">
           {[
-            { id: 'gebaeude', label: '🏘️ Gebäude' },
-            { id: 'uebersicht', label: '📊 Übersicht' },
-            { id: 'kaution', label: `🔑 Kaution${kautionOffenAnzahl > 0 ? ` (${kautionOffenAnzahl})` : ''}` },
-            { id: 'cashflow', label: '💰 Cashflow' },
+            { id: 'gebaeude',   icon: <Building2 size={13}/>, label: 'Gebäude' },
+            { id: 'uebersicht', icon: <BarChart3 size={13}/>, label: 'Übersicht' },
+            { id: 'kaution',    icon: <Key size={13}/>, label: `Kaution${kautionOffenAnzahl > 0 ? ` (${kautionOffenAnzahl})` : ''}` },
+            { id: 'cashflow',   icon: <Wallet size={13}/>, label: 'Cashflow' },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-2 px-2 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap min-w-max ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-              {tab.label}
+              <span className="flex items-center justify-center gap-1">{tab.icon}{tab.label}</span>
             </button>
           ))}
         </div>
@@ -169,7 +173,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
 
               {wohnungen.length === 0 ? (
                 <div className="text-center py-14 text-gray-400">
-                  <p className="text-5xl mb-3">🏘️</p>
+                  <Building2 size={48} className="mx-auto mb-3 text-gray-300"/>
                   <p className="text-base font-semibold">Noch keine Wohneinheiten</p>
                   <p className="text-sm mt-1">Füge deine Wohneinheiten hinzu</p>
                   <button onClick={() => openWohnungForm()}
@@ -204,12 +208,12 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                               {/* Status-Badge */}
                               <div className="flex items-start justify-between mb-2">
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${belegt ? 'bg-emerald-100 text-emerald-700' : ausgezogen ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-600'}`}>
-                                  {belegt ? '✓ Vermietet' : ausgezogen ? '↩ Ausgezogen' : '⚠ Leerstand'}
+                                  {belegt ? <span className='flex items-center gap-0.5'><Check size={10}/>Vermietet</span> : ausgezogen ? 'Ausgezogen' : <span className='flex items-center gap-0.5'><AlertTriangle size={10}/>Leerstand</span>}
                                 </span>
                                 <button
                                   onClick={e => { e.stopPropagation(); deleteWohnung(w.originalIdx); }}
                                   className="text-gray-300 hover:text-red-500 text-xs p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                  title="Löschen">✕</button>
+                                  title="Löschen"><X size={12}/></button>
                               </div>
 
                               {/* WE-Name + Größe */}
@@ -224,7 +228,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
 
                               {/* Mieter */}
                               {w.mieterName && (
-                                <p className="text-xs text-gray-600 mt-1 truncate">👤 {w.mieterName}</p>
+                                <p className="text-xs text-gray-600 mt-1 truncate flex items-center gap-1"><User size={10}/> {w.mieterName}</p>
                               )}
                               {w.mietbeginn && belegt && (
                                 <p className="text-[10px] text-gray-400">seit {new Date(w.mietbeginn).toLocaleDateString('de-DE')}</p>
@@ -233,14 +237,14 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                               {/* Kaution */}
                               {w.kautionBetrag > 0 && (
                                 <span className={`mt-2 inline-block text-[10px] px-1.5 py-0.5 rounded-full ${w.kautionBezahlt ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                                  {w.kautionBezahlt ? '✅' : '🔴'} Kaution {formatCurrency(w.kautionBetrag)}
+                                  {w.kautionBezahlt ? <CheckCircle2 size={12} className='text-emerald-600 inline mr-0.5'/> : <span className='inline-block w-2 h-2 rounded-full bg-red-500 mr-0.5'/>} Kaution {formatCurrency(w.kautionBetrag)}
                                 </span>
                               )}
 
                               {/* Bearbeiten */}
                               <div className="mt-2 pt-2 border-t border-current border-opacity-10 flex justify-between items-center">
                                 <span className="text-[10px] text-gray-400">Klicken zum Bearbeiten</span>
-                                <span className="text-gray-400 text-xs">✏️</span>
+                                <Pencil size={12} className="text-gray-300"/>
                               </div>
                             </div>
                           );
@@ -264,8 +268,8 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                   <div style={{ width: `${100 - auslastung}%` }} className="bg-red-200 transition-all" />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span className="text-emerald-600 font-semibold">✓ {belegtWE} belegt</span>
-                  <span className="text-red-500 font-semibold">⚠ {leerstandWE} leer</span>
+                  <span className="text-emerald-600 font-semibold flex items-center gap-0.5"><Check size={12}/> {belegtWE} belegt</span>
+                  <span className="text-red-500 font-semibold flex items-center gap-0.5"><AlertTriangle size={12}/> {leerstandWE} leer</span>
                 </div>
               </div>
 
@@ -300,7 +304,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                           <td className="py-2 px-3 text-gray-600 truncate max-w-[120px]">{w.mieterName || <span className="text-red-400">Kein Mieter</span>}</td>
                           <td className="py-2 px-2 text-center">
                             <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${belegt ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                              {belegt ? '✓' : '○'}
+                              {belegt ? <Check size={12}/> : <Circle size={12}/>}
                             </span>
                           </td>
                         </tr>
@@ -350,14 +354,14 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                     </div>
                     <div className="text-right">
                       {kStatus === 'keine' && <span className="text-xs text-gray-400">Keine Kaution</span>}
-                      {kStatus === 'offen' && <span className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded-full">🔴 {Number(w.kautionBetrag).toLocaleString('de-DE')} € offen</span>}
-                      {kStatus === 'bezahlt' && <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full">✅ {Number(w.kautionBetrag).toLocaleString('de-DE')} € bezahlt</span>}
+                      {kStatus === 'offen' && <span className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded-full"><span className='inline-block w-2 h-2 rounded-full bg-red-500 mr-1'/>{Number(w.kautionBetrag).toLocaleString('de-DE')} € offen</span>}
+                      {kStatus === 'bezahlt' && <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full"><CheckCircle2 size={12} className='text-emerald-700 inline mr-0.5'/>{Number(w.kautionBetrag).toLocaleString('de-DE')} € bezahlt</span>}
                     </div>
                   </div>
                 );
               })}
               <div className="bg-amber-50 rounded-xl p-3 text-xs text-amber-700 border border-amber-100">
-                💡 Kaution je Wohnung bearbeiten: Gebäude-Tab → Wohnung anklicken
+                <Lightbulb size={14} className="inline mr-1"/> Kaution je Wohnung bearbeiten: Gebäude-Tab → Wohnung anklicken
               </div>
             </div>
           )}
@@ -389,7 +393,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                           </tr>
                           {leerstandKosten > 0 && (
                             <tr className="bg-red-50/50">
-                              <td className="py-3 px-4 text-red-500">○ Mietausfall Leerstand ({leerstandWE} WE)</td>
+                              <td className="py-3 px-4 text-red-500"><Circle size={10} className="inline mr-1"/> Mietausfall Leerstand ({leerstandWE} WE)</td>
                               <td className="py-3 px-4 text-right font-semibold text-red-500">−{formatCurrency(leerstandKosten)}</td>
                             </tr>
                           )}
@@ -434,7 +438,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
             </div>
             <div className="flex-1 overflow-y-auto min-h-0 p-5">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
-                {editWohnungIdx !== null ? `✏️ ${wohnungen[editWohnungIdx]?.name || 'Wohnung'} bearbeiten` : '+ Wohnung hinzufügen'}
+                {editWohnungIdx !== null ? <><Pencil size={16} className="inline mr-1"/>{wohnungen[editWohnungIdx]?.name || 'Wohnung'} bearbeiten</> : '+ Wohnung hinzufügen'}
               </h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
@@ -479,7 +483,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
                   </div>
                 </div>
                 <div className="border-t pt-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-2">🔑 Kaution</p>
+                  <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1"><Key size={12}/> Kaution</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Betrag (€)</label>
@@ -500,7 +504,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
               <button onClick={() => setShowWohnungForm(false)} className="flex-1 py-3 bg-gray-100 rounded-xl text-sm font-semibold">Abbrechen</button>
               {editWohnungIdx !== null && (
                 <button onClick={() => { deleteWohnung(editWohnungIdx); setShowWohnungForm(false); }}
-                  className="py-3 px-4 bg-red-50 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-100">🗑️</button>
+                  className="py-3 px-4 bg-red-50 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-100"><Trash2 size={16}/></button>
               )}
               <button onClick={saveWohnung} className="flex-1 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600">Speichern</button>
             </div>

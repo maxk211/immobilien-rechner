@@ -6,14 +6,15 @@ import MieteinnahmenTracker from './MieteinnahmenTracker';
 import ArbitrageCashflow from './ArbitrageCashflow';
 import ArbitrageSteuern from './ArbitrageSteuern';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
+import {
+  BarChart3, Wallet, User, FileText, Receipt, MapPin, AlertTriangle,
+  Pencil, X, Check, TrendingUp, RefreshCw, Upload, Download, Trash2,
+  FolderOpen, Loader2, Zap, Globe, Key, Lightbulb, ClipboardList,
+  CalendarDays, Settings,
+} from 'lucide-react';
 
 // ─── Dokumente-Tab (Arbitrage) ────────────────────────────────────────────────
 const ARB_DOK_TYPEN = ['Hauptmietvertrag', 'Untermietvertrag', 'Stromvertrag', 'WLAN-Vertrag', 'GEZ-Dokument', 'Übergabeprotokoll', 'Kaution', 'Versicherung', 'Sonstiges'];
-const ARB_DOK_ICONS = {
-  'Hauptmietvertrag': '📋', 'Untermietvertrag': '📄', 'Stromvertrag': '⚡',
-  'WLAN-Vertrag': '🌐', 'GEZ-Dokument': '📺', 'Übergabeprotokoll': '🔑',
-  'Kaution': '💰', 'Versicherung': '🛡️', 'Sonstiges': '📎',
-};
 
 const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   const [uploading, setUploading] = useState(false);
@@ -79,7 +80,7 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-slate-800">📎 Dokumente</h3>
+          <h3 className="text-base font-bold text-slate-800 flex items-center gap-1.5"><FileText size={16}/> Dokumente</h3>
           <p className="text-xs text-slate-500 mt-0.5">Mietvertrag, Untermietverträge & alle weiteren Unterlagen</p>
         </div>
         <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full font-semibold">
@@ -102,14 +103,14 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
               className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all ${
                 gewaehltTyp === t ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}>
-              {ARB_DOK_ICONS[t]} {t}
+              {t}
             </button>
           ))}
         </div>
 
         <label className={`flex flex-col items-center justify-center gap-2 cursor-pointer py-2 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
-          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-2xl">
-            {uploading ? '⏳' : '📤'}
+          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+            {uploading ? <Loader2 size={24} className="animate-spin text-emerald-400"/> : <Upload size={24} className="text-emerald-400"/>}
           </div>
           <p className="text-sm font-semibold text-slate-700">{uploading ? 'Wird hochgeladen…' : 'Datei hochladen'}</p>
           <p className="text-xs text-slate-400">{uploading ? 'Bitte warten' : 'Klicken oder Datei hierher ziehen · max. 20 MB'}</p>
@@ -119,14 +120,14 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
         </label>
 
         {uploadFehler && (
-          <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center">⚠️ {uploadFehler}</div>
+          <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center flex items-center justify-center gap-1"><AlertTriangle size={14}/>{uploadFehler}</div>
         )}
       </div>
 
       {/* Dokumentenliste — nach Typ gruppiert */}
       {dokumente.length === 0 ? (
         <div className="text-center py-10 text-slate-400">
-          <p className="text-4xl mb-2">🗂️</p>
+          <FolderOpen size={36} className="mx-auto mb-2 text-slate-300"/>
           <p className="text-sm font-medium">Noch keine Dokumente hochgeladen</p>
           <p className="text-xs mt-1">Lade deinen Mietvertrag, Untermietverträge, Strom- & WLAN-Verträge hoch</p>
         </div>
@@ -135,14 +136,14 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
           {gruppen.map(({ typ, liste }) => (
             <div key={typ}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-base">{ARB_DOK_ICONS[typ] || '📎'}</span>
+                <FileText size={14} className="text-slate-400"/>
                 <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">{typ}</span>
                 <span className="text-xs text-slate-400">({liste.length})</span>
               </div>
               <div className="space-y-1.5">
                 {[...liste].reverse().map(doc => (
                   <div key={doc.id} className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 hover:border-emerald-200 hover:shadow-sm transition-all group">
-                    <span className="text-lg flex-shrink-0">{ARB_DOK_ICONS[doc.typ] || '📎'}</span>
+                    <FileText size={16} className="flex-shrink-0 text-slate-400"/>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-800 truncate">{doc.name}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -153,11 +154,11 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
                     <div className="flex gap-1 flex-shrink-0">
                       <button onClick={() => handleDownload(doc)} disabled={ladeId === doc.id}
                         className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 disabled:opacity-50" title="Öffnen">
-                        {ladeId === doc.id ? '⏳' : '⬇️'}
+                        {ladeId === doc.id ? <Loader2 size={16} className="animate-spin"/> : <Download size={16}/>}
                       </button>
                       <button onClick={() => handleDelete(doc)}
                         className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity" title="Löschen">
-                        🗑️
+                        <Trash2 size={16}/>
                       </button>
                     </div>
                   </div>
@@ -247,17 +248,17 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">🔄 Arbitrage</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1"><RefreshCw size={11}/> Arbitrage</span>
                   {vertragsBeendet && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/80 text-white">🔴 Vertrag beendet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/80 text-white flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-red-300"/> Vertrag beendet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
                   )}
                   {vertragsende && !vertragsBeendet && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-400/80 text-amber-900">⏳ Endet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-400/80 text-amber-900 flex items-center gap-1"><Loader2 size={11}/> Endet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
                   )}
                 </div>
                 <h2 className="text-lg sm:text-2xl font-black text-white truncate">{params.name || 'Mietimmobilie'}</h2>
                 {(params.plz || params.adresse) && (
-                  <p className="text-emerald-100 text-sm mt-0.5">📍 {params.plz} {params.adresse}</p>
+                  <p className="text-emerald-100 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {params.plz} {params.adresse}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
@@ -265,7 +266,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <button onClick={onEdit}
                     className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
                     title="Stammdaten bearbeiten">
-                    ✏️ Bearbeiten
+                    <Pencil size={14} className="inline mr-1"/>Bearbeiten
                   </button>
                 )}
                 {hasChanges && (
@@ -274,7 +275,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     Speichern
                   </button>
                 )}
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white text-2xl leading-none">&times;</button>
+<button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
               </div>
             </div>
           </div>
@@ -304,16 +305,16 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           <div className="overflow-x-auto flex-shrink-0">
             <div className="flex gap-1 bg-slate-100 p-1 min-w-max">
               {[
-                { id: 'uebersicht', label: '📊 Übersicht' },
-                { id: 'mieteingaenge', label: '💶 Eingänge' },
-                { id: 'cashflow', label: '📈 Cashflow' },
-                { id: 'steuern', label: '🧾 Steuern' },
-                { id: 'dokumente', label: `📎 Dokumente${params.dokumente?.length > 0 ? ` (${params.dokumente.length})` : ''}` },
-                { id: 'mieter', label: `👤 Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
+                { id: 'uebersicht',   icon: <BarChart3 size={13}/>, label: 'Übersicht' },
+                { id: 'mieteingaenge',icon: <TrendingUp size={13}/>, label: 'Eingänge' },
+                { id: 'cashflow',     icon: <TrendingUp size={13}/>, label: 'Cashflow' },
+                { id: 'steuern',      icon: <Receipt size={13}/>, label: 'Steuern' },
+                { id: 'dokumente',    icon: <FileText size={13}/>, label: `Dokumente${params.dokumente?.length > 0 ? ` (${params.dokumente.length})` : ''}` },
+                { id: 'mieter',       icon: <User size={13}/>, label: `Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
               ].map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`py-2 px-3 sm:px-4 text-[11px] sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                  {tab.label}
+                  <span className="flex items-center gap-1">{tab.icon}{tab.label}</span>
                 </button>
               ))}
             </div>
@@ -355,7 +356,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             return (
               <div>
                 <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2">
-                  <span className="text-base">💡</span>
+                  <Lightbulb size={16} className="text-emerald-700 flex-shrink-0"/>
                   <p className="text-xs text-emerald-800">
                     Hier trackst du die eingehenden Zahlungen deiner Untermieter. Erwartet werden monatlich <strong>{formatCurrency(einnahmen)}</strong> ({params.anzahlZimmerVermietet} Zimmer × {formatCurrency(aktUntermiete)}).
                   </p>
@@ -449,7 +450,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Grunddaten */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">📍 Grunddaten</h3>
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><MapPin size={14}/> Grunddaten</h3>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Name/Bezeichnung</label>
@@ -494,9 +495,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       <button
                         type="button"
                         onClick={() => updateParams({ mietvertragEnde: '' })}
-                        className="text-xs text-gray-400 hover:text-red-500 mt-1"
+                        className="text-xs text-gray-400 hover:text-red-500 mt-1 flex items-center gap-1"
                       >
-                        ✕ Datum entfernen
+                        <X size={12}/> Datum entfernen
                       </button>
                     )}
                   </div>
@@ -548,7 +549,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
             {/* Finanzdaten */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">💰 Arbitrage-Kalkulation</h3>
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><Wallet size={14}/> Arbitrage-Kalkulation</h3>
               <div className="space-y-4">
                 <div className="p-3 bg-red-50 rounded-lg border border-red-100">
                   <label className="block text-sm font-medium text-red-700 mb-1">Eigene Warmmiete (€/Monat)</label>
@@ -594,10 +595,10 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">📊 Zusätzliche Kosten (für Steuerberater)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1"><Settings size={14}/> Zusätzliche Kosten (für Steuerberater)</label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">⚡ Strom</label>
+                      <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1"><Zap size={11}/> Strom</label>
                       <input
                         type="number"
                         value={params.arbitrageStrom || 0}
@@ -607,7 +608,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">🌐 Internet</label>
+                      <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1"><Globe size={11}/> Internet</label>
                       <input
                         type="number"
                         value={params.arbitrageInternet || 0}
@@ -617,7 +618,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">📺 GEZ</label>
+                      <label className="block text-xs text-gray-500 mb-1">GEZ</label>
                       <input
                         type="number"
                         value={params.arbitrageGEZ ?? 18.36}
@@ -635,7 +636,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {/* Mietanpassungen */}
                 <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-sm font-medium text-yellow-800">📅 Mietanpassungen</label>
+                    <label className="text-sm font-medium text-yellow-800 flex items-center gap-1"><CalendarDays size={13}/> Mietanpassungen</label>
                     <button
                       type="button"
                       onClick={() => {
@@ -675,9 +676,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                                   const neu = (params.mietAnpassungen || []).filter((_, i) => i !== anp.originalIdx);
                                   updateParams({ mietAnpassungen: neu });
                                 }}
-                                className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"
+                                className="text-red-400 hover:text-red-600 px-1 shrink-0"
                               >
-                                ✕
+                                <X size={12}/>
                               </button>
                             </div>
                             <div className="grid grid-cols-2 gap-2">
@@ -725,7 +726,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
           {/* Prognose */}
           <div className="mt-5 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">📈 Kumulierter Cashflow</h3>
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><TrendingUp size={14}/> Kumulierter Cashflow</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[[1,'1 Jahr'],[2,'2 Jahre'],[3,'3 Jahre'],[5,'5 Jahre']].map(([mult, label]) => (
                 <div key={mult} className={`rounded-xl p-4 text-center border ${jahresCashflow >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>

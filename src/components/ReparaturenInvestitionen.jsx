@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Wrench, Home, ClipboardList, Leaf, Package, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 
 const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
@@ -12,11 +13,11 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
   });
 
   const kategorien = {
-    'erhaltung': { label: 'Erhaltungsaufwand', color: 'orange', icon: '🔧', steuer: 'sofort', hint: 'Sofort absetzbar im Zahlungsjahr' },
-    'herstellung': { label: 'Herstellungskosten', color: 'blue', icon: '🏠', steuer: 'afa', hint: 'Erhöht AfA-Bemessungsgrundlage' },
-    'anschaffung': { label: 'Anschaffungsnebenk.', color: 'purple', icon: '📋', steuer: 'afa', hint: 'Erhöht AfA-Bemessungsgrundlage' },
-    'modernisierung': { label: 'Modernisierung', color: 'green', icon: '🌱', steuer: 'afa', hint: 'Wird über AfA abgeschrieben' },
-    'nicht_relevant': { label: 'Nicht steuerlich', color: 'gray', icon: '📦', steuer: 'keine', hint: 'Keine Steuerwirkung' }
+    'erhaltung': { label: 'Erhaltungsaufwand', color: 'orange', icon: <Wrench size={14}/>, steuer: 'sofort', hint: 'Sofort absetzbar im Zahlungsjahr' },
+    'herstellung': { label: 'Herstellungskosten', color: 'blue', icon: <Home size={14}/>, steuer: 'afa', hint: 'Erhöht AfA-Bemessungsgrundlage' },
+    'anschaffung': { label: 'Anschaffungsnebenk.', color: 'purple', icon: <ClipboardList size={14}/>, steuer: 'afa', hint: 'Erhöht AfA-Bemessungsgrundlage' },
+    'modernisierung': { label: 'Modernisierung', color: 'green', icon: <Leaf size={14}/>, steuer: 'afa', hint: 'Wird über AfA abgeschrieben' },
+    'nicht_relevant': { label: 'Nicht steuerlich', color: 'gray', icon: <Package size={14}/>, steuer: 'keine', hint: 'Keine Steuerwirkung' }
   };
 
   const handleAdd = () => {
@@ -100,10 +101,10 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-gray-800">🔧 Reparaturen & Investitionen</h3>
+        <h3 className="font-semibold text-gray-800 flex items-center gap-1"><Wrench size={16} /> Reparaturen & Investitionen</h3>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+          className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
         >
           + Hinzufügen
         </button>
@@ -121,9 +122,9 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
           <div className="flex items-start justify-between gap-2 mb-2">
             <div>
               <span className="font-bold text-sm">
-                {regel15.ueberschritten ? '🚨' : regel15.warnung ? '⚠️' : 'ℹ️'} 15%-Regel (§ 6 Abs. 1 Nr. 1a EStG)
+                {regel15.ueberschritten ? <AlertCircle size={14} className="inline mr-1"/> : regel15.warnung ? <AlertTriangle size={14} className="inline mr-1"/> : <Info size={14} className="inline mr-1"/>} 15%-Regel (§ 6 Abs. 1 Nr. 1a EStG)
               </span>
-              <div className={`text-xs mt-0.5 ${regel15.ueberschritten ? 'text-red-700' : regel15.warnung ? 'text-amber-700' : 'text-blue-700'}`}>
+              <div className={`text-xs mt-0.5 ${regel15.ueberschritten ? 'text-red-700' : regel15.warnung ? 'text-amber-700' : 'text-indigo-700'}`}>
                 {regel15.ueberschritten
                   ? 'Grenze überschritten — Kosten werden zu Herstellungskosten (AfA statt Sofortabzug)!'
                   : regel15.warnung
@@ -133,7 +134,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
                       : 'Fenster kürzlich abgelaufen — Endstand der Kosten'}
               </div>
             </div>
-            <div className={`text-right shrink-0 text-xs font-bold ${regel15.ueberschritten ? 'text-red-700' : regel15.warnung ? 'text-amber-700' : 'text-blue-700'}`}>
+            <div className={`text-right shrink-0 text-xs font-bold ${regel15.ueberschritten ? 'text-red-700' : regel15.warnung ? 'text-amber-700' : 'text-indigo-700'}`}>
               {formatCurrency(regel15.relevantKosten)}<br />
               <span className="font-normal text-gray-500">/ {formatCurrency(regel15.grenze)}</span>
             </div>
@@ -141,7 +142,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
           {/* Fortschrittsbalken */}
           <div className="w-full bg-white/70 rounded-full h-2 overflow-hidden">
             <div
-              className={`h-2 rounded-full transition-all duration-700 ${regel15.ueberschritten ? 'bg-red-500' : regel15.warnung ? 'bg-amber-400' : 'bg-blue-500'}`}
+              className={`h-2 rounded-full transition-all duration-700 ${regel15.ueberschritten ? 'bg-red-500' : regel15.warnung ? 'bg-amber-400' : 'bg-indigo-500'}`}
               style={{ width: `${regel15.prozent}%` }}
             />
           </div>
@@ -171,7 +172,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
                 className="w-full px-2 py-1 border rounded text-base sm:text-sm"
               >
                 {Object.entries(kategorien).map(([key, val]) => (
-                  <option key={key} value={key}>{val.icon} {val.label}</option>
+                  <option key={key} value={key}>{val.label}</option>
                 ))}
               </select>
             </div>
@@ -245,9 +246,9 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
                   <span className="font-semibold text-orange-600">{formatCurrency(inv.betrag)}</span>
                   <button
                     onClick={() => handleDelete(inv.id)}
-                    className="text-red-400 hover:text-red-600 text-sm"
+                    className="text-red-400 hover:text-red-600"
                   >
-                    ×
+                    <X size={14} />
                   </button>
                 </div>
               </div>

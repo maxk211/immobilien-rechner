@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
+import { Home, Check } from 'lucide-react';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -84,11 +85,11 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         {/* Logo & Titel */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🏠</div>
+          <div className="flex justify-center mb-3"><Home size={40} className="text-indigo-600" /></div>
           <h1 className="text-2xl font-bold text-gray-800">Immobilien Portfolio</h1>
           <p className="text-gray-500 mt-1">
             {isResetMode
@@ -124,7 +125,7 @@ export default function Auth() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base sm:text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-base sm:text-sm"
                 placeholder="max@beispiel.de"
                 required={!isResetMode}
               />
@@ -139,7 +140,7 @@ export default function Auth() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base sm:text-sm"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-base sm:text-sm"
               placeholder="••••••••"
               required
               minLength={6}
@@ -150,7 +151,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-indigo-600 hover:text-indigo-800"
             >
               Passwort vergessen?
             </button>
@@ -159,7 +160,7 @@ export default function Auth() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -193,12 +194,12 @@ export default function Auth() {
               {isLogin ? (
                 <>
                   Noch kein Account?{' '}
-                  <span className="text-blue-600 font-semibold">Jetzt registrieren</span>
+                  <span className="text-indigo-600 font-semibold">Jetzt registrieren</span>
                 </>
               ) : (
                 <>
                   Bereits registriert?{' '}
-                  <span className="text-blue-600 font-semibold">Zum Login</span>
+                  <span className="text-indigo-600 font-semibold">Zum Login</span>
                 </>
               )}
             </button>
@@ -210,16 +211,16 @@ export default function Auth() {
           <p className="text-xs text-gray-500 text-center mb-3">Was dich erwartet:</p>
           <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
             <div className="flex items-center gap-1">
-              <span className="text-green-500">✓</span> Portfolio-Übersicht
+              <Check size={12} className="text-green-500" /> Portfolio-Übersicht
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-green-500">✓</span> Rendite-Berechnung
+              <Check size={12} className="text-green-500" /> Rendite-Berechnung
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-green-500">✓</span> Steuer-Export
+              <Check size={12} className="text-green-500" /> Steuer-Export
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-green-500">✓</span> Cloud-Speicherung
+              <Check size={12} className="text-green-500" /> Cloud-Speicherung
             </div>
           </div>
         </div>

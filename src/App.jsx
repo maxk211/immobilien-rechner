@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 import * as XLSX from 'xlsx';
@@ -1121,7 +1122,7 @@ function App() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
-          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-lg">🏠</div>
+          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg"><Home size={32} className="text-white" /></div>
           <div className="animate-spin h-6 w-6 border-3 border-indigo-400 border-t-transparent rounded-full mx-auto" style={{borderWidth:'3px'}}></div>
           <p className="mt-4 text-slate-400 text-sm">Portfolio wird geladen…</p>
         </div>
@@ -1171,7 +1172,7 @@ function App() {
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-start gap-3 mb-4">
-              <div className="text-3xl">🎉</div>
+              <div className="text-indigo-500"><PartyPopper size={28} /></div>
               <div>
                 <h2 className="text-lg font-black text-gray-900">Was ist neu?</h2>
                 <p className="text-xs text-gray-400">Version {CHANGELOG_VERSION}</p>
@@ -1202,7 +1203,7 @@ function App() {
       <header className="bg-slate-900 text-white px-4 shadow-xl">
         <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-lg">🏠</div>
+            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center"><Home size={18} className="text-white" /></div>
             <div>
               <div className="font-bold text-white text-base leading-tight">Immobilien Portfolio</div>
               <div className="text-slate-400 text-xs hidden sm:block">Rendite · Cashflow · Wertentwicklung</div>
@@ -1216,7 +1217,7 @@ function App() {
               </div>
             )}
             {syncStatus === 'error' && (
-              <span className="text-red-400 text-xs">⚠️ Sync-Fehler</span>
+              <span className="text-red-400 text-xs flex items-center gap-1"><AlertTriangle size={12} /> Sync-Fehler</span>
             )}
             <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
               {/* Mobile: Avatar-Button tippt direkt auf Logout-Dropdown */}
@@ -1253,9 +1254,9 @@ function App() {
           <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
             <button
               onClick={() => setActiveView('portfolio')}
-              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all ${activeView === 'portfolio' ? 'bg-slate-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeView === 'portfolio' ? 'bg-slate-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
             >
-              🏠 Immobilien
+              <Home size={15} /> Immobilien
               {portfolio.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'portfolio' ? 'bg-white/20' : 'bg-gray-100'}`}>{aktiveImmobilien.length}</span>}
             </button>
           </div>
@@ -1269,17 +1270,17 @@ function App() {
                   onClick={handleSelbstauskunft}
                   className="hidden sm:flex px-3 py-2 bg-white border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-50 items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
                 >
-                  📋 Selbstauskunft
+                  <ClipboardList size={16} /> Selbstauskunft
                 </button>
                 <button
                   onClick={handleExport}
                   className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors"
                 >
-                  📤 Export
+                  <Upload size={16} /> Export
                 </button>
                 <div className="relative group hidden sm:block">
                   <button className="px-3 py-2 bg-white border border-gray-200 text-emerald-700 rounded-xl hover:bg-emerald-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
-                    📊 Steuer-Export
+                    <BarChart3 size={16} /> Steuer-Export
                   </button>
                   <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                     {[...Array(5)].map((_, i) => {
@@ -1294,7 +1295,7 @@ function App() {
                   </div>
                 </div>
                 <label className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors cursor-pointer">
-                  📥 Import
+                  <Download size={16} /> Import
                   <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                 </label>
                 {/* Mobile: Mehr-Menü */}
@@ -1303,18 +1304,18 @@ function App() {
                     ⋯ Mehr
                   </button>
                   <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
-                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold">📋 Selbstauskunft</button>
-                    <button onClick={handleExport} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">📤 Daten exportieren</button>
+                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold flex items-center gap-1.5"><ClipboardList size={15} /> Selbstauskunft</button>
+                    <button onClick={handleExport} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5"><Upload size={15} /> Daten exportieren</button>
                     {[...Array(3)].map((_, i) => {
                       const year = new Date().getFullYear() - i;
                       return (
-                        <button key={year} onClick={() => handleSteuerExport(year)} className="w-full text-left px-4 py-3 text-sm text-emerald-700 hover:bg-emerald-50 border-b border-gray-100 last:border-0">
-                          📊 Steuer {year}
+                        <button key={year} onClick={() => handleSteuerExport(year)} className="w-full text-left px-4 py-3 text-sm text-emerald-700 hover:bg-emerald-50 border-b border-gray-100 last:border-0 flex items-center gap-1.5">
+                          <BarChart3 size={15} /> Steuer {year}
                         </button>
                       );
                     })}
-                    <label className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                      📥 Import
+                    <label className="w-full flex items-center gap-1.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                      <Download size={15} /> Import
                       <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                     </label>
                   </div>
@@ -1325,7 +1326,7 @@ function App() {
               onClick={() => setShowKalkulation(true)}
               className="hidden sm:flex px-3 py-2 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-100 items-center gap-1.5 text-sm shadow-sm transition-colors"
             >
-              🧮 Kalkulation
+              <Calculator size={16} /> Kalkulation
             </button>
             <button
               onClick={() => canAddImmo ? setShowForm(true) : setShowUpgradeModal(true)}
@@ -1338,7 +1339,7 @@ function App() {
 
         {activeView === 'portfolio' && (portfolio.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 sm:p-16 text-center shadow-sm border border-gray-200">
-            <div className="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5">🏡</div>
+            <div className="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-5"><Home size={40} className="text-indigo-400" /></div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Noch keine Immobilien</h3>
             <p className="text-gray-400 mb-6 max-w-sm mx-auto">Füge deine erste Immobilie hinzu, um Rendite und Cashflow zu berechnen.</p>
             <button
@@ -1365,7 +1366,7 @@ function App() {
             {inaktiveImmobilien.length > 0 && (
               <details className="mt-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                 <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-gray-400 hover:text-gray-600 flex items-center gap-2 select-none">
-                  <span className="text-base">🗄️</span>
+                  <Archive size={16} />
                   Inaktive / beendete Immobilien ({inaktiveImmobilien.length})
                 </summary>
                 <div className="px-5 pb-5 pt-2">
@@ -1447,10 +1448,10 @@ function App() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="bg-amber-700 text-white px-5 py-4 flex justify-between items-center flex-shrink-0">
               <div>
-                <h2 className="text-lg font-bold">📋 Selbstauskunft generieren</h2>
+                <h2 className="text-lg font-bold flex items-center gap-2"><ClipboardList size={18} /> Selbstauskunft generieren</h2>
                 <p className="text-amber-200 text-xs mt-0.5">Angaben werden lokal gespeichert und beim nächsten Mal vorausgefüllt</p>
               </div>
-              <button onClick={() => setShowSelbstauskunftModal(false)} className="text-white text-2xl hover:text-amber-200">&times;</button>
+              <button onClick={() => setShowSelbstauskunftModal(false)} className="text-white hover:text-amber-200"><X size={20} /></button>
             </div>
             <div className="overflow-y-auto flex-1 p-5 space-y-5">
               {/* Persönliche Daten */}
@@ -1552,7 +1553,7 @@ function App() {
 
               {/* Sonstige Verbindlichkeiten */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">⚠️ Sonstige Verbindlichkeiten</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5"><AlertTriangle size={14} /> Sonstige Verbindlichkeiten</label>
                 <textarea value={selbstauskunftDaten.sonstigeVerbindlichkeiten} rows={2}
                   onChange={e => setSelbstauskunftDaten(d => ({ ...d, sonstigeVerbindlichkeiten: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
@@ -1570,8 +1571,8 @@ function App() {
                   setShowSelbstauskunftModal(false);
                   generateSelbstauskunftPDF(selbstauskunftDaten);
                 }}
-                className="flex-1 px-4 py-3 bg-amber-700 text-white rounded-xl hover:bg-amber-800 font-semibold">
-                📥 PDF generieren
+                className="flex-1 px-4 py-3 bg-amber-700 text-white rounded-xl hover:bg-amber-800 font-semibold flex items-center justify-center gap-2">
+                <Download size={16} /> PDF generieren
               </button>
             </div>
           </div>
@@ -1580,7 +1581,7 @@ function App() {
 
       <footer className="bg-gray-800 text-gray-400 py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p>Erstellt mit ❤️ für Immobilieninvestoren</p>
+          <p className="flex items-center justify-center gap-1">Erstellt mit <Heart size={14} className="text-red-400" /> für Immobilieninvestoren</p>
           <p className="text-sm mt-2">Alle Berechnungen ohne Gewähr. Keine Anlageberatung.</p>
           <div className="mt-3 flex justify-center">
             <ImpressumDatenschutzLinks className="text-gray-500 hover:text-gray-300" />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Receipt, Lightbulb, FileText, Wallet, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { NK_KOSTENPOSITIONEN_DEFAULTS } from '../constants/index.js';
 
@@ -57,11 +58,11 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h3 className="text-base font-bold text-gray-800">🧾 NK-Abrechnungen</h3>
+            <h3 className="text-base font-bold text-gray-800 flex items-center gap-2"><Receipt size={16} /> NK-Abrechnungen</h3>
             <p className="text-xs text-gray-500 mt-0.5">Jährliche Betriebskostenabrechnung mit dem Mieter</p>
           </div>
           <button onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors">
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors">
             + Neue Abrechnung
           </button>
         </div>
@@ -79,8 +80,8 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
       {/* NK-Vorauszahlungen Info */}
       {nkVomMieter > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm">
-          <div className="font-semibold text-blue-800">💡 Vorauszahlungen {filterJahr}</div>
-          <div className="text-blue-700 mt-1">
+          <div className="font-semibold text-blue-800 flex items-center gap-1"><Lightbulb size={14} /> Vorauszahlungen {filterJahr}</div>
+          <div className="text-indigo-700 mt-1">
             {nkVomMieter > 0 ? `${formatCurrency(nkVomMieter)}/Monat × 12 = ` : ''}<strong>{formatCurrency(vorauszahlungenGesamt)}</strong> Vorauszahlungen erhalten
           </div>
         </div>
@@ -89,11 +90,11 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
       {/* Abrechnungsliste */}
       {jahresAbrechnungen.length === 0 ? (
         <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-10 text-center">
-          <div className="text-4xl mb-3">📄</div>
+          <div className="flex justify-center mb-3"><FileText size={40} className="text-gray-300" /></div>
           <div className="text-gray-500 font-semibold">Noch keine NK-Abrechnung für {filterJahr}</div>
           <div className="text-gray-400 text-sm mt-1">Erstelle die jährliche Betriebskostenabrechnung für den Mieter</div>
           <button onClick={() => setShowForm(true)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700">
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700">
             Abrechnung erstellen
           </button>
         </div>
@@ -111,7 +112,7 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
                     {abr.mieterName && <div className="text-sm text-gray-500">Mieter: {abr.mieterName}</div>}
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setEditAbrechnung(abr); setShowForm(true); }} className="text-blue-500 hover:text-blue-700 text-xs font-semibold">Bearbeiten</button>
+                    <button onClick={() => { setEditAbrechnung(abr); setShowForm(true); }} className="text-indigo-500 hover:text-indigo-700 text-xs font-semibold">Bearbeiten</button>
                     <button onClick={() => deleteAbrechnung(abr.id)} className="text-red-400 hover:text-red-600 text-xs">Löschen</button>
                   </div>
                 </div>
@@ -135,10 +136,10 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Vorauszahlungen</span>
-                    <span className="font-semibold text-blue-600">−{formatCurrency(abr.vorauszahlungen || 0)}</span>
+                    <span className="font-semibold text-indigo-600">−{formatCurrency(abr.vorauszahlungen || 0)}</span>
                   </div>
                   <div className={`flex justify-between text-sm font-bold p-2 rounded-lg ${istErstattung ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'}`}>
-                    <span>{istErstattung ? '💰 Erstattung an Mieter' : '💸 Nachzahlung vom Mieter'}</span>
+                    <span className="flex items-center gap-1">{istErstattung ? <><Wallet size={14} /> Erstattung an Mieter</> : <><TrendingDown size={14} /> Nachzahlung vom Mieter</>}</span>
                     <span>{formatCurrency(Math.abs(saldo))}</span>
                   </div>
                 </div>

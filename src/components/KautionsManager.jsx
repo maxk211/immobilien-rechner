@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Undo2, CheckCircle2, AlertCircle, Pencil, Trash2, Check } from 'lucide-react';
 
 const KautionsManager = ({ params, updateParams }) => {
   const kautionen = params.kautionen || [];
@@ -38,9 +39,9 @@ const KautionsManager = ({ params, updateParams }) => {
   };
 
   const statusBadge = (k) => {
-    if (k.zurueckgegeben) return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">↩️ Zurückgegeben</span>;
-    if (k.eingegangen) return <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">✅ Eingegangen</span>;
-    return <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">🔴 Ausstehend</span>;
+    if (k.zurueckgegeben) return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1"><Undo2 size={11} /> Zurückgegeben</span>;
+    if (k.eingegangen) return <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700 inline-flex items-center gap-1"><CheckCircle2 size={11} /> Eingegangen</span>;
+    return <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600 inline-flex items-center gap-1"><AlertCircle size={11} /> Ausstehend</span>;
   };
 
   return (
@@ -56,14 +57,14 @@ const KautionsManager = ({ params, updateParams }) => {
           <p className={`text-2xl font-black ${anzahlOffen > 0 ? 'text-red-600' : 'text-gray-400'}`}>{anzahlOffen}</p>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-blue-600 font-semibold uppercase mb-1">Gesamt Einträge</p>
-          <p className="text-2xl font-black text-blue-700">{kautionen.length}</p>
+          <p className="text-xs text-indigo-600 font-semibold uppercase mb-1">Gesamt Einträge</p>
+          <p className="text-2xl font-black text-indigo-700">{kautionen.length}</p>
         </div>
       </div>
 
       <button
         onClick={() => openForm()}
-        className="w-full py-2 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 text-sm font-semibold hover:bg-blue-50"
+        className="w-full py-2 border-2 border-dashed border-blue-300 rounded-xl text-indigo-600 text-sm font-semibold hover:bg-blue-50"
       >
         + Kaution hinzufügen
       </button>
@@ -101,8 +102,8 @@ const KautionsManager = ({ params, updateParams }) => {
               </div>
               {k.abzugGrund && <p className="text-xs text-gray-500 mb-2">Abzugsgrund: {k.abzugGrund}</p>}
               <div className="flex gap-2">
-                <button onClick={() => openForm(idx)} className="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-gray-200">✏️ Bearbeiten</button>
-                <button onClick={() => deleteKaution(idx)} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100">🗑️ Löschen</button>
+                <button onClick={() => openForm(idx)} className="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-1"><Pencil size={11} /> Bearbeiten</button>
+                <button onClick={() => deleteKaution(idx)} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center gap-1"><Trash2 size={11} /> Löschen</button>
               </div>
             </div>
           ))}
@@ -113,7 +114,7 @@ const KautionsManager = ({ params, updateParams }) => {
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">{editIdx !== null ? '✏️ Kaution bearbeiten' : '+ Kaution erfassen'}</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">{editIdx !== null ? <><Pencil size={16} /> Kaution bearbeiten</> : '+ Kaution erfassen'}</h3>
             <div className="space-y-3">
               <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
                 <input value={form.mieterName} onChange={e => setForm({...form, mieterName: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Name" />
@@ -132,7 +133,7 @@ const KautionsManager = ({ params, updateParams }) => {
               <div className="border-t pt-3">
                 <label className="flex items-center gap-2 cursor-pointer mb-2">
                   <input type="checkbox" checked={form.eingegangen} onChange={e => setForm({...form, eingegangen: e.target.checked})} className="w-4 h-4 rounded accent-emerald-500" />
-                  <span className="text-sm font-semibold text-emerald-700">✅ Kaution eingegangen</span>
+                  <span className="text-sm font-semibold text-emerald-700 flex items-center gap-1"><Check size={14} /> Kaution eingegangen</span>
                 </label>
                 {form.eingegangen && (
                   <div className="grid grid-cols-2 gap-3">
@@ -148,7 +149,7 @@ const KautionsManager = ({ params, updateParams }) => {
               <div className="border-t pt-3">
                 <label className="flex items-center gap-2 cursor-pointer mb-2">
                   <input type="checkbox" checked={form.zurueckgegeben} onChange={e => setForm({...form, zurueckgegeben: e.target.checked})} className="w-4 h-4 rounded" />
-                  <span className="text-sm font-semibold text-gray-700">↩️ Kaution zurückgegeben</span>
+                  <span className="text-sm font-semibold text-gray-700 flex items-center gap-1"><Undo2 size={14} /> Kaution zurückgegeben</span>
                 </label>
                 {form.zurueckgegeben && (
                   <div className="space-y-2">
@@ -169,7 +170,7 @@ const KautionsManager = ({ params, updateParams }) => {
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowForm(false)} className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Abbrechen</button>
-              <button onClick={saveForm} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">Speichern</button>
+              <button onClick={saveForm} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold">Speichern</button>
             </div>
           </div>
         </div>

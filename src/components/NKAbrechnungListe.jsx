@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FileText } from 'lucide-react';
 import { showConfirm } from '../utils/confirm.jsx';
 import NKAbrechnungFormular, { berechneMieteranteil } from './NKAbrechnungFormular';
 import NKAbrechnungDetail from './NKAbrechnungDetail';
@@ -13,7 +14,7 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
 
   const statusColor = {
     entwurf: 'bg-yellow-100 text-yellow-700',
-    versendet: 'bg-blue-100 text-blue-700',
+    versendet: 'bg-blue-100 text-indigo-700',
     abgeschlossen: 'bg-green-100 text-green-700'
   };
   const statusLabel = { entwurf: 'Entwurf', versendet: 'Versendet', abgeschlossen: 'Abgeschlossen' };
@@ -21,7 +22,7 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
   return (
     <div className="mt-4">
       <div className="flex justify-between items-center mb-3">
-        <p className="text-sm font-semibold text-gray-700">📄 NK-Abrechnungen</p>
+        <p className="text-sm font-semibold text-gray-700 flex items-center gap-1"><FileText size={14} /> NK-Abrechnungen</p>
         <button onClick={() => { setEditAbrechnung(null); setShowForm(true); }}
           className="text-xs px-3 py-1 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200">
           + Neue Abrechnung

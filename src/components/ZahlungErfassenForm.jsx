@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Wallet, User } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 
 const ZahlungErfassenForm = ({ monatKey, forderungBetrag, onSave, mieterListe = [] }) => {
@@ -12,7 +13,7 @@ const ZahlungErfassenForm = ({ monatKey, forderungBetrag, onSave, mieterListe = 
 
   return (
     <div className="bg-white rounded-xl border-2 border-blue-200 p-3 mt-2">
-      <p className="text-xs font-semibold text-blue-700 mb-2">💰 Zahlung erfassen</p>
+      <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1"><Wallet size={14} /> Zahlung erfassen</p>
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
           <label className="block text-[10px] text-gray-500 mb-1">Betrag eingegangen</label>
@@ -29,7 +30,7 @@ const ZahlungErfassenForm = ({ monatKey, forderungBetrag, onSave, mieterListe = 
         </div>
         {mieterListe.length > 0 && (
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1">👤 Mieter (optional)</label>
+            <label className="block text-[10px] text-gray-500 mb-1 flex items-center gap-1"><User size={12} /> Mieter (optional)</label>
             <select value={mieterId} onChange={e => setMieterId(e.target.value)}
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm bg-white">
               <option value="">— Mieter wählen —</option>
@@ -52,7 +53,7 @@ const ZahlungErfassenForm = ({ monatKey, forderungBetrag, onSave, mieterListe = 
           </span>
         )}
         <button onClick={() => onSave({ datum, betrag, notiz, typ: 'kaltmiete', mieterId: mieterId || undefined })}
-          className="ml-auto px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">
+          className="ml-auto px-4 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700">
           Zahlung buchen
         </button>
       </div>

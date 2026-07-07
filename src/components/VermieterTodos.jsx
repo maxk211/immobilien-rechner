@@ -1,4 +1,8 @@
 import { useMemo, useState } from 'react';
+import {
+  CheckCircle2, ChevronDown, Landmark, TrendingDown, ClipboardList,
+  Key, TrendingUp, CalendarDays, AlertTriangle, Building2, ScrollText,
+} from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 
 const PRIORITAET = { rot: 0, gelb: 1, gruen: 2 };
@@ -39,7 +43,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       todos.push({
         id: `zinsbindung-${immo.id}-${idx}`,
         priority: abgelaufen || monate <= 6 ? 'rot' : 'gelb',
-        icon: '🏦',
+        icon: <Landmark size={16} />,
         titel: abgelaufen
           ? 'Zinsbindung bereits abgelaufen!'
           : `Zinsbindung läuft in ${Math.ceil(monate)} Monaten ab`,
@@ -69,7 +73,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         todos.push({
           id: `miete-ausstehend-${immo.id}`,
           priority: tag >= 15 ? 'rot' : 'gelb',
-          icon: '💸',
+          icon: <TrendingDown size={16} />,
           titel: `Mieteingang ${aktuellerMonat}/${aktuellesJahr} noch nicht verbucht`,
           sub: immo.name || immo.adresse || 'Immobilie',
           immoId: immo.id,
@@ -96,7 +100,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         todos.push({
           id: `nk-abrechnung-${immo.id}`,
           priority: heute.getMonth() >= 5 ? 'rot' : 'gelb', // Ab Juni rot
-          icon: '📋',
+          icon: <ClipboardList size={16} />,
           titel: `NK-Abrechnung ${letztesJahr} noch ausstehend`,
           sub: immo.name || immo.adresse || 'Immobilie',
           immoId: immo.id,
@@ -119,7 +123,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     todos.push({
       id: `kaution-${mieter.id}`,
       priority: wochenSeitAuszug >= 6 ? 'rot' : 'gelb',
-      icon: '🔑',
+      icon: <Key size={16} />,
       titel: 'Kaution noch nicht zurückgegeben',
       sub: `${mieter.name} · ${formatCurrency(mieter.kaution_betrag)}`,
       immoId: mieter.immobilie_id,
@@ -154,7 +158,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       todos.push({
         id: `mieterhoehung-${immo.id}`,
         priority: 'gruen',
-        icon: '📈',
+        icon: <TrendingUp size={16} />,
         titel: `Mieterhöhung möglich`,
         sub: `${immo.name || immo.adresse} · ${Math.floor(monate)} Monate seit letzter Anpassung`,
         immoId: immo.id,
@@ -181,7 +185,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         todos.push({
           id: `mieterhoehung-datum-${mieter.id}`,
           priority: 'gelb',
-          icon: '📜',
+          icon: <ScrollText size={16} />,
           titel: 'Letzte Mieterhöhung nicht hinterlegt',
           sub: `${mieter.name} · ${immo.name || immo.adresse} — Datum für 3-Jahres-Kappungsgrenze fehlt`,
           immoId: immo.id,
@@ -200,7 +204,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           todos.push({
             id: `mieterhoehung-3j-${mieter.id}`,
             priority: 'gruen',
-            icon: '📈',
+            icon: <TrendingUp size={16} />,
             titel: '3-Jahres-Mieterhöhung möglich',
             sub: `${mieter.name} · ${immoName} · letzte Erhöhung: ${letzte.toLocaleDateString('de-DE')}`,
             immoId: immo.id,
@@ -212,7 +216,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           todos.push({
             id: `mieterhoehung-3j-warnung-${mieter.id}`,
             priority: 'gruen',
-            icon: '📅',
+            icon: <CalendarDays size={16} />,
             titel: `Mieterhöhungs-Fenster öffnet in ${Math.ceil(monateVerbleibend)} Monat${Math.ceil(monateVerbleibend) !== 1 ? 'en' : ''}`,
             sub: `${mieter.name} · ${immoName} · möglich ab ${naechsteMoeglich.toLocaleDateString('de-DE')} — jetzt Schreiben vorbereiten`,
             immoId: immo.id,
@@ -233,7 +237,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       todos.push({
         id: `leerstand-${immo.id}`,
         priority: 'gelb',
-        icon: '🏚️',
+        icon: <Building2 size={16} />,
         titel: 'Immobilie steht leer',
         sub: immo.name || immo.adresse || 'Immobilie',
         immoId: immo.id,
@@ -253,7 +257,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       todos.push({
         id: `vertragsende-${mieter.id}`,
         priority: monate <= 1 ? 'rot' : 'gelb',
-        icon: '📅',
+        icon: <CalendarDays size={16} />,
         titel: `Mietvertrag läuft in ${Math.ceil(monate)} Monat${monate > 1 ? 'en' : ''} aus`,
         sub: `${mieter.name}`,
         immoId: mieter.immobilie_id,
@@ -293,7 +297,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       todos.push({
         id: `regel15-${immo.id}`,
         priority: 'rot',
-        icon: '🚨',
+        icon: <AlertTriangle size={16} />,
         titel: '15%-Grenze überschritten! Steuerlicher Verlust droht',
         sub: `${immo.name || immo.adresse} · ${Math.round(prozent)}% der Grenze (${formatCurrency(relevantKosten)} / ${formatCurrency(grenze)})`,
         immoId: immo.id,
@@ -304,7 +308,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       todos.push({
         id: `regel15-${immo.id}`,
         priority: 'gelb',
-        icon: '⚠️',
+        icon: <AlertTriangle size={16} />,
         titel: `15%-Regel: ${Math.round(prozent)}% der Grenze — noch ${formatCurrency(grenze - relevantKosten)} Spielraum`,
         sub: `${immo.name || immo.adresse} · 3-Jahres-Fenster läuft noch ${monate} Monate`,
         immoId: immo.id,
@@ -344,7 +348,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
         onClick={() => setCollapsed(c => !c)}
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg">✅</span>
+          <CheckCircle2 size={18} className="text-emerald-500" />
           <span className="font-bold text-gray-800">Vermieter-Aufgaben</span>
           {todos.length > 0 && (
             <div className="flex items-center gap-1.5">
@@ -366,7 +370,9 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
             </div>
           )}
         </div>
-        <span className={`text-gray-400 text-sm transition-transform ${collapsed ? '' : 'rotate-180'}`}>▼</span>
+        <span className={`text-gray-400 transition-transform inline-flex ${collapsed ? '' : 'rotate-180'}`}>
+          <ChevronDown size={14} />
+        </span>
       </div>
 
       {/* Content */}
@@ -374,7 +380,9 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
         <div className="border-t border-gray-100">
           {todos.length === 0 ? (
             <div className="text-center py-10 px-5">
-              <div className="text-4xl mb-3">🎉</div>
+              <div className="flex justify-center mb-3">
+                <CheckCircle2 size={40} className="text-emerald-400" />
+              </div>
               <div className="font-bold text-gray-700 mb-1">Alles erledigt!</div>
               <div className="text-sm text-gray-400">Keine offenen Aufgaben. Gut gemacht.</div>
             </div>
@@ -393,7 +401,9 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                     <div className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${style.dot}`} />
 
                     {/* Icon */}
-                    <div className="flex-shrink-0 text-xl w-7 text-center">{todo.icon}</div>
+                    <div className="flex-shrink-0 w-7 flex items-center justify-center text-gray-500">
+                      {todo.icon}
+                    </div>
 
                     {/* Text */}
                     <div className="flex-1 min-w-0">

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Wallet, Home, TrendingUp, BarChart3, Target, ChevronDown, Check, CheckCircle2, Trophy } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneMtlCashflow, berechneImmoVermoegenswerte } from '../utils/berechnung.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete } from '../utils/miete.js';
@@ -9,7 +10,7 @@ const ZIEL_TYPEN = [
   {
     id: 'cashflow',
     label: 'Monatlicher Cashflow',
-    icon: '💰',
+    icon: <Wallet size={16}/>,
     unit: '€/Mo',
     color: 'emerald',
     defaultZiel: 2000,
@@ -19,7 +20,7 @@ const ZIEL_TYPEN = [
   {
     id: 'anzahl',
     label: 'Anzahl Immobilien',
-    icon: '🏠',
+    icon: <Home size={16}/>,
     unit: 'Objekte',
     color: 'blue',
     defaultZiel: 5,
@@ -29,7 +30,7 @@ const ZIEL_TYPEN = [
   {
     id: 'vermoegen',
     label: 'Aufgebautes Vermögen',
-    icon: '📈',
+    icon: <TrendingUp size={16}/>,
     unit: '€',
     color: 'amber',
     defaultZiel: 250000,
@@ -39,7 +40,7 @@ const ZIEL_TYPEN = [
   {
     id: 'rendite',
     label: 'Ø Brutto-Rendite',
-    icon: '📊',
+    icon: <BarChart3 size={16}/>,
     unit: '%',
     color: 'violet',
     defaultZiel: 5,
@@ -136,10 +137,10 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
       return (
         <div className="h-full rounded-2xl bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 p-4 flex items-center justify-between gap-4 shadow-sm">
           <div>
-            <div className="text-white font-bold text-sm mb-0.5">🎯 Portfolio-Ziele</div>
+            <div className="text-white font-bold text-sm mb-0.5 flex items-center gap-1"><Target size={14}/>Portfolio-Ziele</div>
             <div className="text-slate-400 text-xs">Cashflow, Immobilien, Vermögen & Rendite tracken</div>
           </div>
-          <button onClick={startEdit} className="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-all">
+          <button onClick={startEdit} className="flex-shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-all">
             Ziele setzen
           </button>
         </div>
@@ -150,7 +151,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
       return (
         <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="font-bold text-gray-800 text-sm">🎯 Ziele bearbeiten</span>
+            <span className="font-bold text-gray-800 text-sm flex items-center gap-1"><Target size={14}/>Ziele bearbeiten</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {ZIEL_TYPEN.map(typ => {
@@ -158,7 +159,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
               return (
                 <div key={typ.id} className={`p-3 rounded-xl border ${c.border} ${c.bg}`}>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-gray-600">{typ.icon} {typ.label}</span>
+                    <span className="text-xs font-semibold text-gray-600 flex items-center gap-1">{typ.icon} {typ.label}</span>
                     <button
                       onClick={() => {
                         const u = { ...editZiele };
@@ -166,15 +167,15 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                         else u[typ.id] = typ.defaultZiel;
                         setEditZiele(u);
                       }}
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-all ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-gray-400 bg-gray-100'}`}
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-all flex items-center gap-0.5 ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-gray-400 bg-gray-100'}`}
                     >
-                      {editZiele[typ.id] != null ? '✓' : '○'}
+                      {editZiele[typ.id] != null ? <Check size={10}/> : '○'}
                     </button>
                   </div>
                   {editZiele[typ.id] != null && (
                     <input type="number" value={editZiele[typ.id]} step={typ.step}
                       onChange={e => setEditZiele({ ...editZiele, [typ.id]: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-right focus:ring-1 focus:ring-blue-400"
+                      className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-right focus:ring-1 focus:ring-indigo-400"
                     />
                   )}
                 </div>
@@ -183,7 +184,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
           </div>
           <div className="flex gap-2 mt-3">
             <button onClick={() => setEditMode(false)} className="flex-1 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">Abbrechen</button>
-            <button onClick={saveEdit} className="flex-1 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700">Speichern</button>
+            <button onClick={saveEdit} className="flex-1 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700">Speichern</button>
           </div>
         </div>
       );
@@ -194,8 +195,8 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
     return (
       <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-3 sm:p-4 h-full">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">🎯 Portfolio-Ziele</span>
-          <button onClick={startEdit} className="text-xs text-blue-500 hover:text-blue-700 font-semibold">Bearbeiten</button>
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Target size={12}/>Portfolio-Ziele</span>
+          <button onClick={startEdit} className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold">Bearbeiten</button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {aktiveZiele.map(typ => {
@@ -231,10 +232,10 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
     return (
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-5 mb-4 flex items-center justify-between gap-4 shadow">
         <div>
-          <div className="text-white font-bold text-base mb-0.5">🎯 Portfolio-Ziele</div>
+          <div className="text-white font-bold text-base mb-0.5 flex items-center gap-1"><Target size={16}/>Portfolio-Ziele</div>
           <div className="text-slate-400 text-sm">Setze dir Ziele — Cashflow, Immobilien-Anzahl, Vermögen & Rendite.</div>
         </div>
-        <button onClick={startEdit} className="flex-shrink-0 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-all">
+        <button onClick={startEdit} className="flex-shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-all">
           Ziele setzen
         </button>
       </div>
@@ -245,13 +246,13 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-all select-none" onClick={() => !editMode && setCollapsed(c => !c)}>
         <div className="flex items-center gap-2">
-          <span className="text-lg">🎯</span>
+          <Target size={16} className="text-gray-500"/>
           <span className="font-bold text-gray-800">Portfolio-Ziele</span>
           {hatZiele && !editMode && <span className="text-xs text-gray-400 ml-1">{ZIEL_TYPEN.filter(t => ziele[t.id] != null).length} aktive Ziele</span>}
         </div>
         <div className="flex items-center gap-2">
-          {!editMode && <button onClick={e => { e.stopPropagation(); startEdit(); }} className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 rounded-lg hover:bg-blue-50 transition-all">Bearbeiten</button>}
-          {!editMode && <span className={`text-gray-400 text-sm transition-transform ${collapsed ? '' : 'rotate-180'}`}>▼</span>}
+          {!editMode && <button onClick={e => { e.stopPropagation(); startEdit(); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold px-2 py-1 rounded-lg hover:bg-indigo-50 transition-all">Bearbeiten</button>}
+          {!editMode && <span className={`text-gray-400 text-sm transition-transform ${collapsed ? '' : 'rotate-180'}`}><ChevronDown size={14}/></span>}
         </div>
       </div>
 
@@ -264,16 +265,16 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
               return (
                 <div key={typ.id} className={`p-4 rounded-xl border ${c.border} ${c.bg}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2"><span>{typ.icon}</span><span className={`font-semibold text-sm ${c.text}`}>{typ.label}</span></div>
+                    <div className="flex items-center gap-2">{typ.icon}<span className={`font-semibold text-sm ${c.text}`}>{typ.label}</span></div>
                     <button onClick={() => { const u = { ...editZiele }; if (u[typ.id] != null) u[typ.id] = null; else u[typ.id] = typ.defaultZiel; setEditZiele(u); }}
-                      className={`text-xs px-2 py-0.5 rounded-full font-semibold transition-all ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-gray-400 bg-gray-100'}`}>
-                      {editZiele[typ.id] != null ? '✓ Aktiv' : 'Inaktiv'}
+                      className={`text-xs px-2 py-0.5 rounded-full font-semibold transition-all flex items-center gap-1 ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-gray-400 bg-gray-100'}`}>
+                      {editZiele[typ.id] != null ? <><Check size={10}/>Aktiv</> : 'Inaktiv'}
                     </button>
                   </div>
                   {editZiele[typ.id] != null && (
                     <div className="flex items-center gap-2 mt-2">
                       <input type="number" value={editZiele[typ.id]} step={typ.step} onChange={e => setEditZiele({ ...editZiele, [typ.id]: parseFloat(e.target.value) || 0 })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm font-bold text-right focus:ring-2 focus:ring-blue-400" />
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm font-bold text-right focus:ring-2 focus:ring-indigo-400" />
                       <span className="text-sm text-gray-500 whitespace-nowrap">{typ.unit}</span>
                     </div>
                   )}
@@ -284,7 +285,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
           </div>
           <div className="flex gap-2 mt-4">
             <button onClick={() => setEditMode(false)} className="flex-1 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Abbrechen</button>
-            <button onClick={saveEdit} className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all">Speichern</button>
+            <button onClick={saveEdit} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">Speichern</button>
           </div>
         </div>
       )}
@@ -301,7 +302,9 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
               return (
                 <div key={typ.id} className={`p-4 rounded-xl border ${c.border} ${c.bg}`}>
                   <div className="flex items-center justify-between mb-1">
-                    <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center text-base`}>{erreicht ? '✅' : typ.icon}</div>
+                    <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center`}>
+                      {erreicht ? <CheckCircle2 size={16} className="text-emerald-500"/> : typ.icon}
+                    </div>
                     <span className={`text-xs font-bold ${erreicht ? 'text-emerald-600' : c.text}`}>{prozent.toFixed(0)}%</span>
                   </div>
                   <div className="mt-2 mb-1">
@@ -312,7 +315,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                   <div className="w-full bg-white/70 rounded-full h-2 mt-2 overflow-hidden">
                     <div className={`h-2 rounded-full transition-all duration-700 ${erreicht ? 'bg-emerald-500' : c.bar}`} style={{ width: `${prozent}%` }} />
                   </div>
-                  {erreicht && <div className="text-xs text-emerald-600 font-semibold mt-1">🎉 Ziel erreicht!</div>}
+                  {erreicht && <div className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1"><Trophy size={12}/>Ziel erreicht!</div>}
                 </div>
               );
             })}

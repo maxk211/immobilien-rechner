@@ -1,4 +1,10 @@
 import { useState, useMemo } from 'react';
+import {
+  Home, Building2, ArrowLeftRight, Settings, ChevronUp,
+  ParkingCircle, Car, Shuffle, BedDouble, TrendingDown,
+  BarChart3, Zap, TrendingUp, ClipboardList, Wallet,
+  User, Users, Check, X, Gift, Landmark, Globe, Tv, Search,
+} from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { schaetzeImmobilienwert } from '../utils/berechnung.js';
 
@@ -100,11 +106,11 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   onClick={() => handleChange('immobilienTyp', 'kaufimmobilie')}
                   className={`p-3 rounded-lg border-2 transition-all ${
                     formData.immobilienTyp === 'kaufimmobilie'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-lg mb-1">🏠</div>
+                  <div className="flex justify-center mb-1"><Home size={20}/></div>
                   <div className="font-semibold text-sm">Kaufimmobilie</div>
                   <div className="hidden sm:block text-xs text-gray-500">Eigene Immobilie vermieten</div>
                 </button>
@@ -117,7 +123,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-lg mb-1">🏘️</div>
+                  <div className="flex justify-center mb-1"><Building2 size={20}/></div>
                   <div className="font-semibold text-sm">Mehrfamilien&shy;haus</div>
                   <div className="hidden sm:block text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
                 </button>
@@ -130,7 +136,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-lg mb-1">🔄</div>
+                  <div className="flex justify-center mb-1"><ArrowLeftRight size={20}/></div>
                   <div className="font-semibold text-sm">Mietimmobilie</div>
                   <div className="hidden sm:block text-xs text-gray-500">Arbitrage: Anmieten & Untervermieten</div>
                 </button>
@@ -146,7 +152,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     placeholder={formData.immobilienTyp === 'mietimmobilie' ? 'z.B. Mitarbeiter-WG München' : 'z.B. Wohnung München'}
                   />
                 </div>
@@ -156,7 +162,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="text"
                     value={formData.plz}
                     onChange={(e) => handleChange('plz', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     placeholder="z.B. 80331"
                   />
                 </div>
@@ -166,7 +172,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="text"
                     value={formData.adresse}
                     onChange={(e) => handleChange('adresse', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     placeholder="z.B. Musterstraße 123"
                   />
                 </div>
@@ -178,7 +184,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="date"
                     value={formData.immobilienTyp === 'mietimmobilie' ? formData.mietvertragStart : formData.kaufdatum}
                     onChange={(e) => handleChange(formData.immobilienTyp === 'mietimmobilie' ? 'mietvertragStart' : 'kaufdatum', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                   />
                 </div>
               </div>
@@ -189,7 +195,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               <div className="bg-amber-50 p-4 rounded-xl border-2 border-amber-300">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="text-base font-bold text-amber-800">🏘️ Wohnungsaufteilung</h3>
+                    <h3 className="text-base font-bold text-amber-800 flex items-center gap-1"><Building2 size={16}/>Wohnungsaufteilung</h3>
                     <p className="text-xs text-amber-600 mt-0.5">Fläche, Zimmer und Kaltmiete ergeben sich automatisch aus der Summe der WEs</p>
                   </div>
                   <button type="button"
@@ -215,7 +221,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 </div>
                 {(!formData.wohnungen || formData.wohnungen.length === 0) ? (
                   <div className="text-center py-5 text-amber-600 text-sm bg-white/60 rounded-xl border border-amber-100">
-                    <p className="text-2xl mb-1">🏠</p>
+                    <div className="flex justify-center mb-1"><Home size={32} className="text-amber-400"/></div>
                     <p>Noch keine Wohneinheiten — klicke "+ Wohnung" zum Anlegen</p>
                   </div>
                 ) : (
@@ -223,7 +229,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     {(formData.wohnungen || []).map((w, idx) => (
                       <div key={w.id || idx} className="bg-white rounded-xl border border-amber-200 p-3 shadow-sm">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-bold text-amber-800">🏠 WE {idx + 1}</span>
+                          <span className="text-sm font-bold text-amber-800 flex items-center gap-1"><Home size={14}/>WE {idx + 1}</span>
                           <button type="button"
                             onClick={() => handleChange('wohnungen', (formData.wohnungen || []).filter((_, i) => i !== idx))}
                             className="ml-auto text-red-400 hover:text-red-600 text-xs px-1.5 py-0.5 rounded">✕</button>
@@ -274,7 +280,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 onClick={() => setShowDetails(true)}
                 className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm font-semibold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center justify-center gap-2"
               >
-                <span>⚙️ Erweiterte Details anzeigen</span>
+                <Settings size={16}/> Erweiterte Details anzeigen
                 <span className="text-xs font-normal opacity-60">(Objektdetails, Eigentumsstruktur, Vermietungsmodell, Stellplatz)</span>
               </button>
             )}
@@ -325,7 +331,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <select
                       value={formData.objektart}
                       onChange={(e) => handleChange('objektart', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     >
                       <option value="eigentumswohnung">Eigentumswohnung</option>
                       <option value="einfamilienhaus">Einfamilienhaus</option>
@@ -339,7 +345,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <select
                       value={formData.zustand}
                       onChange={(e) => handleChange('zustand', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     >
                       <option value="neuwertig">Neuwertig</option>
                       <option value="sehr gut">Sehr gut</option>
@@ -355,7 +361,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.wohnflaeche}
                       onChange={(e) => handleChange('wohnflaeche', numInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -364,7 +370,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.grundstueck}
                       onChange={(e) => handleChange('grundstueck', numInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -373,7 +379,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.zimmer}
                       onChange={(e) => handleChange('zimmer', numInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -382,7 +388,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.baujahr}
                       onChange={(e) => handleChange('baujahr', intInp(e.target.value, 2000))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -391,7 +397,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.stockwerk}
                       onChange={(e) => handleChange('stockwerk', intInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -399,7 +405,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     <select
                       value={formData.energieeffizienz}
                       onChange={(e) => handleChange('energieeffizienz', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     >
                       {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (
                         <option key={e} value={e}>{e}</option>
@@ -414,7 +420,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="checkbox"
                       checked={formData.balkon}
                       onChange={(e) => handleChange('balkon', e.target.checked)}
-                      className="w-4 h-4 text-blue-600"
+                      className="w-4 h-4 text-indigo-600"
                     />
                     <span className="text-sm text-gray-700">Balkon/Terrasse</span>
                   </label>
@@ -423,7 +429,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="checkbox"
                       checked={formData.garage}
                       onChange={(e) => handleChange('garage', e.target.checked)}
-                      className="w-4 h-4 text-blue-600"
+                      className="w-4 h-4 text-indigo-600"
                     />
                     <span className="text-sm text-gray-700">Garage/Stellplatz</span>
                   </label>
@@ -432,7 +438,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="checkbox"
                       checked={formData.keller}
                       onChange={(e) => handleChange('keller', e.target.checked)}
-                      className="w-4 h-4 text-blue-600"
+                      className="w-4 h-4 text-indigo-600"
                     />
                     <span className="text-sm text-gray-700">Keller</span>
                   </label>
@@ -451,7 +457,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.wohnflaeche}
                       onChange={(e) => handleChange('wohnflaeche', numInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
@@ -460,7 +466,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.zimmer}
                       onChange={(e) => handleChange('zimmer', numInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
@@ -477,7 +483,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     type="number"
                     value={formData.geschaetzterWert || ''}
                     onChange={(e) => handleChange('geschaetzterWert', numInp(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     placeholder="z.B. 350000"
                   />
                 </div>
@@ -485,9 +491,9 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   href={`https://www.homeday.de/de/preisatlas/${formData.plz ? '?search=' + formData.plz : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
                 >
-                  <span>🔍</span> Preis bei Homeday recherchieren
+                  <Search size={14}/> Preis bei Homeday recherchieren
                 </a>
                 <p className="text-xs text-blue-600 mt-2">
                   Recherchiere den aktuellen Marktwert und trage ihn oben ein.
@@ -517,7 +523,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       className="w-4 h-4 rounded accent-amber-500 mt-0.5 shrink-0"
                     />
                     <div>
-                      <span className="font-semibold text-amber-800 text-sm">🎁 Schenkung / Erbschaft</span>
+                      <span className="font-semibold text-amber-800 text-sm flex items-center gap-1"><Gift size={14}/>Schenkung / Erbschaft</span>
                       <p className="text-xs text-amber-600 mt-0.5">Kein Kaufpreis — trage den Verkehrswert ein.</p>
                     </div>
                   </label>
@@ -536,7 +542,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       className="w-4 h-4 rounded accent-green-500 mt-0.5 shrink-0"
                     />
                     <div>
-                      <span className="font-semibold text-green-800 text-sm">💰 100 % Eigenkapital</span>
+                      <span className="font-semibold text-green-800 text-sm flex items-center gap-1"><Wallet size={14}/>100 % Eigenkapital</span>
                       <p className="text-xs text-green-600 mt-0.5">Kein Kredit — vollständig aus eigenen Mitteln.</p>
                     </div>
                   </label>
@@ -554,7 +560,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         handleChange('kaufpreis', v);
                         if (formData.geschenkt || formData.vollEigenfinanziert) handleChange('eigenkapital', v === '' ? '' : v);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   {!formData.geschenkt && !formData.vollEigenfinanziert && (
@@ -564,7 +570,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.eigenkapital}
                       onChange={(e) => handleChange('eigenkapital', numInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   )}
@@ -578,13 +584,13 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   )}
                 {/* Finanzierungskonditionen — nur wenn nicht geschenkt und nicht vollständig eigenfinanziert */}
                 {!formData.geschenkt && !formData.vollEigenfinanziert && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="text-sm font-semibold text-blue-800 mb-3">🏦 Finanzierung</h4>
+                  <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-1"><Landmark size={14}/>Finanzierung</h4>
                   {/* Modus Toggle */}
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {[['berechnet','📐 Rate berechnen'],['festRate','🏦 Feste Rate (Bankvertrag)']].map(([val, label]) => (
+                    {[['berechnet','Rate berechnen'],['festRate','Feste Rate (Bankvertrag)']].map(([val, label]) => (
                       <button key={val} type="button"
                         onClick={() => handleChange('finanzierungsModus', val)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${formData.finanzierungsModus === val ? 'border-blue-500 bg-white text-blue-700' : 'border-gray-200 bg-white text-gray-500'}`}>
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${formData.finanzierungsModus === val ? 'border-indigo-500 bg-white text-indigo-700' : 'border-gray-200 bg-white text-gray-500'}`}>
                         {label}
                       </button>
                     ))}
@@ -677,7 +683,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       type="number"
                       value={formData.kaltmiete}
                       onChange={(e) => handleChange('kaltmiete', numInp(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
                   )}
@@ -685,7 +691,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
 
                 {/* Vermietungsmodell */}
                 <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <label className="block text-sm font-semibold text-blue-800 mb-2">🏠 Vermietungsmodell</label>
+                  <label className="block text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1"><Home size={14}/>Vermietungsmodell</label>
                   <div className="grid grid-cols-3 gap-2 mb-3">
                     {[
                       { value: 'kaltmiete', label: 'Kaltmiete', desc: 'Mieter zahlt nur Kaltmiete' },
@@ -698,7 +704,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         onClick={() => handleChange('vermietungsmodell', opt.value)}
                         className={`p-2 rounded-lg border-2 text-xs transition-all text-left ${
                           formData.vermietungsmodell === opt.value
-                            ? 'border-blue-500 bg-white text-blue-700 font-semibold'
+                            ? 'border-indigo-500 bg-white text-indigo-700 font-semibold'
                             : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                         }`}
                       >
@@ -708,23 +714,23 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     ))}
                   </div>
                   {formData.vermietungsmodell === 'kaltmiete' && (
-                    <p className="text-xs text-blue-600">📋 Betriebskosten werden via Nebenkostenabrechnung auf Mieter umgelegt (cashflow-neutral)</p>
+                    <p className="text-xs text-blue-600 flex items-center gap-1"><ClipboardList size={12}/>Betriebskosten werden via Nebenkostenabrechnung auf Mieter umgelegt (cashflow-neutral)</p>
                   )}
                   {formData.vermietungsmodell === 'kaltmiete_nk' && (
                     <div>
-                      <p className="text-xs text-blue-600 mb-2">📋 Mieter zahlt NK-Vorauszahlung direkt an dich</p>
+                      <p className="text-xs text-blue-600 mb-2 flex items-center gap-1"><ClipboardList size={12}/>Mieter zahlt NK-Vorauszahlung direkt an dich</p>
                       <label className="block text-xs font-medium text-gray-700 mb-1">NK-Vorauszahlung vom Mieter (€/Monat)</label>
                       <input
                         type="number"
                         value={formData.nebenkostenVomMieter || 0}
                         onChange={(e) => handleChange('nebenkostenVomMieter', numInp(e.target.value))}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                         placeholder="z.B. 200"
                       />
                     </div>
                   )}
                   {formData.vermietungsmodell === 'warmmiete' && (
-                    <p className="text-xs text-blue-600">📋 Vermieter trägt alle Betriebskosten (Hausgeld, Strom etc.) aus der Warmmiete</p>
+                    <p className="text-xs text-blue-600 flex items-center gap-1"><ClipboardList size={12}/>Vermieter trägt alle Betriebskosten (Hausgeld, Strom etc.) aus der Warmmiete</p>
                   )}
                 </div>
               </div>
@@ -738,8 +744,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 {/* Toggle Alleineigentümer / GbR */}
                 <div className="flex gap-2 mb-4">
                   {[
-                    { value: 'allein', label: '👤 Alleineigentümer', desc: 'Du bist alleiniger Eigentümer' },
-                    { value: 'gbr',    label: '🤝 GbR',              desc: 'Gesellschaft bürgerlichen Rechts' },
+                    { value: 'allein', label: 'Alleineigentümer', icon: <User size={14}/>, desc: 'Du bist alleiniger Eigentümer' },
+                    { value: 'gbr',    label: 'GbR',              icon: <Users size={14}/>, desc: 'Gesellschaft bürgerlichen Rechts' },
                   ].map(opt => (
                     <button
                       key={opt.value}
@@ -761,8 +767,8 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                     >
-                      <div className={`font-semibold text-sm ${formData.eigentumsform === opt.value ? 'text-indigo-700' : 'text-gray-700'}`}>
-                        {opt.label}
+                      <div className={`font-semibold text-sm flex items-center gap-1 ${formData.eigentumsform === opt.value ? 'text-indigo-700' : 'text-gray-700'}`}>
+                        {opt.icon}{opt.label}
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
                     </button>
@@ -842,10 +848,10 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                               const updated = formData.gbrPartner.filter((_, i) => i !== idx);
                               handleChange('gbrPartner', updated);
                             }}
-                            className="text-red-400 hover:text-red-600 text-lg leading-none px-1"
+                            className="text-red-400 hover:text-red-600 px-1"
                             title="Gesellschafter entfernen"
                           >
-                            ×
+                            <X size={16}/>
                           </button>
                         </div>
                       ))}
@@ -869,7 +875,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         anteilOk ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}>
                         <span>Gesamt:</span>
-                        <span>{anteilOk ? '✓ 100 %' : `${gesamtAnteil.toFixed(1)} % — ${Math.abs(100 - gesamtAnteil).toFixed(1)} % ${gesamtAnteil < 100 ? 'fehlen' : 'zu viel'}`}</span>
+                        <span className="flex items-center gap-1">{anteilOk ? <><Check size={12}/>100 %</> : `${gesamtAnteil.toFixed(1)} % — ${Math.abs(100 - gesamtAnteil).toFixed(1)} % ${gesamtAnteil < 100 ? 'fehlen' : 'zu viel'}`}</span>
                       </div>
                     </div>
                   );
@@ -884,11 +890,11 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
               return (
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-semibold text-gray-700">🅿️ Stellplatz</h3>
+                    <h3 className="text-base font-semibold text-gray-700 flex items-center gap-1"><ParkingCircle size={16}/>Stellplatz</h3>
                     <button
                       type="button"
                       onClick={() => updateSp({ vorhanden: !sp.vorhanden })}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sp.vorhanden ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sp.vorhanden ? 'bg-indigo-600' : 'bg-gray-300'}`}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${sp.vorhanden ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
@@ -901,12 +907,12 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <select
                             value={sp.typ || 'tiefgarage'}
                             onChange={e => updateSp({ typ: e.target.value })}
-                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-500"
                           >
-                            <option value="tiefgarage">🏢 Tiefgarage</option>
-                            <option value="aussen">🅿️ Außen</option>
-                            <option value="carport">🚗 Carport</option>
-                            <option value="doppelparker">🔀 Doppelparker</option>
+                            <option value="tiefgarage">Tiefgarage</option>
+                            <option value="aussen">Außen</option>
+                            <option value="carport">Carport</option>
+                            <option value="doppelparker">Doppelparker</option>
                           </select>
                         </div>
                         <div>
@@ -914,7 +920,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <input type="number" min={1} max={20}
                             value={sp.anzahl || 1}
                             onChange={e => updateSp({ anzahl: intInp(e.target.value, 1) })}
-                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
                         <div>
@@ -922,7 +928,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <input type="number" min={0} step={1000}
                             value={sp.kaufpreisAnteil || 0}
                             onChange={e => updateSp({ kaufpreisAnteil: numInp(e.target.value) })}
-                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-indigo-500"
                             placeholder="0"
                           />
                         </div>
@@ -931,7 +937,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                           <input type="number" min={0} step={5}
                             value={sp.monatlicheMiete || 0}
                             onChange={e => updateSp({ monatlicheMiete: numInp(e.target.value) })}
-                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-2 border rounded-lg text-base sm:text-sm text-right focus:ring-2 focus:ring-indigo-500"
                             placeholder="0"
                           />
                         </div>
@@ -957,14 +963,14 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
             {/* Arbitrage-Daten für Mietimmobilie */}
             {formData.immobilienTyp === 'mietimmobilie' && (
               <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                <h3 className="text-lg font-semibold mb-3 text-purple-800">🔄 Arbitrage-Kalkulation</h3>
+                <h3 className="text-lg font-semibold mb-3 text-purple-800 flex items-center gap-1"><ArrowLeftRight size={16}/>Arbitrage-Kalkulation</h3>
                 <p className="text-sm text-purple-600 mb-4">
                   Berechne deinen Cashflow aus der Untervermietung an Mitarbeiter oder Gäste (Warmmiete).
                 </p>
 
                 <div className="space-y-4">
                   <div className="bg-white p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">💸 Deine Mietkosten</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1"><TrendingDown size={14}/>Deine Mietkosten</h4>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Eigene Warmmiete (€/Monat)</label>
                       <input
@@ -979,7 +985,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   </div>
 
                   <div className="bg-white p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">🛏️ Untervermietung</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1"><BedDouble size={14}/>Untervermietung</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Vermietete Zimmer</label>
@@ -1007,10 +1013,10 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   </div>
 
                   <div className="bg-white p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">📊 Zusätzliche Kosten (für Steuerberater)</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1"><BarChart3 size={14}/>Zusätzliche Kosten (für Steuerberater)</h4>
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">⚡ Strom (€/Mon.)</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Zap size={12}/>Strom (€/Mon.)</label>
                         <input
                           type="number"
                           value={formData.arbitrageStrom || 0}
@@ -1020,7 +1026,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">🌐 Internet (€/Mon.)</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Globe size={12}/>Internet (€/Mon.)</label>
                         <input
                           type="number"
                           value={formData.arbitrageInternet || 0}
@@ -1030,7 +1036,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">📺 GEZ (€/Mon.)</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Tv size={12}/>GEZ (€/Mon.)</label>
                         <input
                           type="number"
                           value={formData.arbitrageGEZ ?? 18.36}
@@ -1047,7 +1053,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
 
                   {/* Vorschau-Berechnung */}
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
-                    <h4 className="text-sm font-semibold text-green-800 mb-3">📈 Cashflow-Vorschau</h4>
+                    <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-1"><TrendingUp size={14}/>Cashflow-Vorschau</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Einnahmen ({formData.anzahlZimmerVermietet || 0} × {formatCurrency(formData.untermieteProZimmer || 0)}):</span>
@@ -1104,7 +1110,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 onClick={() => setShowDetails(false)}
                 className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-1"
               >
-                <span>▲ Erweiterte Details ausblenden</span>
+                <ChevronUp size={14}/> Erweiterte Details ausblenden
               </button>
             )}
             </>)}
@@ -1191,7 +1197,7 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                   })),
                 });
               }}
-              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
             >
               Speichern
             </button>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Wallet, Landmark, AlertTriangle, ParkingSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung } from '../utils/berechnung.js';
@@ -9,7 +10,7 @@ function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = fa
   const colors = {
     green: 'text-emerald-600',
     red: 'text-red-500',
-    blue: 'text-blue-600',
+    blue: 'text-indigo-600',
     orange: 'text-orange-500',
     gray: 'text-gray-700',
   };
@@ -215,10 +216,10 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div>
-          <h3 className="font-bold text-gray-800">💰 Cashflow-Übersicht</h3>
+          <h3 className="font-bold text-gray-800 flex items-center gap-1"><Wallet size={16} /> Cashflow-Übersicht</h3>
           {isGbR && (
-            <span className="text-[10px] text-violet-600 font-medium">
-              🏛 GbR — Ihr {Math.round(anteilFaktor * 100)}%-Anteil
+            <span className="text-[10px] text-violet-600 font-medium flex items-center gap-0.5">
+              <Landmark size={11} /> GbR — Ihr {Math.round(anteilFaktor * 100)}%-Anteil
             </span>
           )}
         </div>
@@ -226,13 +227,13 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         <div className="flex bg-gray-100 rounded-lg p-1 gap-0.5">
           <button
             onClick={() => setTab('aktuell')}
-            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'aktuell' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'aktuell' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
           >
             {aktuellesJahr}
           </button>
           <button
             onClick={() => setTab('verlauf')}
-            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'verlauf' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'verlauf' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Verlauf & Prognose
           </button>
@@ -256,7 +257,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               <CfZeile label="Kaltmiete" color="green" monat={a(monat.einnahmen)} jahr={a(monat.einnahmen * 12)} />
               {monat.stellplatz > 0 && (
                 <CfZeile
-                  label={`🅿️ Stellplatz${monat.spAnzahl > 1 ? ` (${monat.spAnzahl}×)` : ''}`}
+                  label={<span className="inline-flex items-center gap-1"><ParkingSquare size={11}/>{`Stellplatz${monat.spAnzahl > 1 ? ` (${monat.spAnzahl}×)` : ''}`}</span>}
                   color="green" einzug
                   monat={a(monat.stellplatz)} jahr={a(monat.stellplatz * 12)}
                 />
@@ -354,7 +355,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
           </div>
 
           {/* Info zu Tilgung */}
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-indigo-700">
             <span className="font-semibold">Zur Tilgung:</span> Der Tilgungsanteil ({formatCurrency(a(monat.tilgung))}/Mo) ist kein Verlust — er baut
             Eigenkapital auf. Der Cashflow <em>vor</em> Tilgung zeigt, ob die Immobilie
             aus eigener Kraft alle laufenden Kosten + Zinsen trägt.
@@ -374,7 +375,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         <div className="p-4">
           {/* Disclaimer */}
           <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-            <span className="font-bold">⚠️ Hinweis zu historischen Werten:</span> Vorjahres-Cashflows
+            <span className="font-bold inline-flex items-center gap-1"><AlertTriangle size={12}/> Hinweis zu historischen Werten:</span> Vorjahres-Cashflows
             sind nur korrekt, wenn Miethistorie und Kostenwerte gepflegt wurden.
             Mietanpassungen (geplante & vergangene) werden automatisch pro Jahr berücksichtigt.
           </div>
@@ -392,7 +393,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                   {/* Header: Jahr + CF nach Tilgung */}
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`font-bold text-sm ${d.istAktuell ? 'text-blue-700' : d.istPrognose ? 'text-gray-400' : 'text-gray-700'}`}>
+                      <span className={`font-bold text-sm ${d.istAktuell ? 'text-indigo-700' : d.istPrognose ? 'text-gray-400' : 'text-gray-700'}`}>
                         {d.jahr}
                       </span>
                       {d.istAktuell && <span className="text-[10px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded-full font-bold">Aktuell</span>}
@@ -422,7 +423,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                     </div>
                     <div>
                       <div className="text-gray-400 mb-0.5">Kumuliert</div>
-                      <div className={`font-semibold ${d.kumuliert >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      <div className={`font-semibold ${d.kumuliert >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
                         {formatCurrency(Math.round(d.kumuliert * af))}
                       </div>
                     </div>
@@ -444,7 +445,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                   <th className="text-right p-2 text-orange-500 font-semibold">Invest.</th>
                   <th className="text-right p-2 text-emerald-500 font-semibold">CF vor Tilg.</th>
                   <th className="text-right p-2 font-bold text-gray-800">CF nach Tilg.</th>
-                  <th className="text-right p-2 text-blue-600 font-semibold rounded-r">Kumuliert</th>
+                  <th className="text-right p-2 text-indigo-600 font-semibold rounded-r">Kumuliert</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -472,7 +473,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                     <td className={`p-2 text-right font-bold ${d.cashflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                       {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * anteilFaktor))}
                     </td>
-                    <td className={`p-2 text-right ${d.kumuliert >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                    <td className={`p-2 text-right ${d.kumuliert >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
                       {formatCurrency(Math.round(d.kumuliert * anteilFaktor))}
                     </td>
                   </tr>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ClipboardList, Landmark, Hammer, Building2, BarChart3, Wrench, RefreshCw, Package, AlertTriangle, ShieldCheck, Lightbulb, TrendingDown, TrendingUp, Car, Download, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
@@ -77,11 +78,11 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
   // Investitions-Kategorien mit steuerlicher Behandlung
   const steuerKategorien = {
-    'erhaltung': { label: 'Erhaltungsaufwand', steuer: 'sofort', icon: '⚠️' },
-    'herstellung': { label: 'Herstellungskosten', steuer: 'afa', icon: '🔁' },
-    'anschaffung': { label: 'Anschaffungsnebenk.', steuer: 'afa', icon: '🔁' },
-    'modernisierung': { label: 'Modernisierung', steuer: 'afa', icon: '🏗' },
-    'nicht_relevant': { label: 'Nicht steuerlich', steuer: 'keine', icon: '📦' }
+    'erhaltung': { label: 'Erhaltungsaufwand', steuer: 'sofort', icon: <AlertTriangle size={14}/> },
+    'herstellung': { label: 'Herstellungskosten', steuer: 'afa', icon: <RefreshCw size={14}/> },
+    'anschaffung': { label: 'Anschaffungsnebenk.', steuer: 'afa', icon: <RefreshCw size={14}/> },
+    'modernisierung': { label: 'Modernisierung', steuer: 'afa', icon: <Hammer size={14}/> },
+    'nicht_relevant': { label: 'Nicht steuerlich', steuer: 'keine', icon: <Package size={14}/> }
   };
 
   // Helper zum Aktualisieren der params
@@ -355,10 +356,10 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       {/* Header mit Jahresauswahl */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3 mb-4">
-          <h3 className="font-bold text-lg text-gray-800">📋 Steuerberechnung</h3>
+          <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><ClipboardList size={18} /> Steuerberechnung</h3>
           {isGbR && (
-            <div className="mt-2 mb-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium">
-              🏛 GbR: Steuerwerte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
+            <div className="mt-2 mb-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium flex items-center gap-1">
+              <Landmark size={12} /> GbR: Steuerwerte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
             </div>
           )}
           <div className="flex items-center gap-2">
@@ -374,7 +375,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                     onClick={() => setSelectedJahr(j)}
                     className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                       selectedJahr === j
-                        ? 'bg-blue-600 text-white font-semibold'
+                        ? 'bg-indigo-600 text-white font-semibold'
                         : isInvest
                           ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                           : isFinanz
@@ -384,8 +385,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                     title={isInvest ? 'Investitionsjahr' : isFinanz ? 'Finanzierungsstarkes Jahr' : 'Normales Jahr'}
                   >
                     {j}
-                    {isInvest && ' 🔨'}
-                    {isFinanz && ' 🏦'}
+                    {isInvest && <Hammer size={10} className="inline ml-0.5" />}
+                    {isFinanz && <Building2 size={10} className="inline ml-0.5" />}
                   </button>
                 );
               })}
@@ -400,9 +401,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             selectedDaten.jahrTyp === 'finanzierung' ? 'bg-purple-100 text-purple-700' :
             'bg-gray-100 text-gray-600'
           }`}>
-            {selectedDaten.jahrTyp === 'investition' && '🔨 Investitionsjahr'}
-            {selectedDaten.jahrTyp === 'finanzierung' && '🏦 Finanzierungsstarkes Jahr'}
-            {selectedDaten.jahrTyp === 'normal' && '📊 Normales Vermietungsjahr'}
+            {selectedDaten.jahrTyp === 'investition' && <span className="flex items-center gap-1"><Hammer size={12}/> Investitionsjahr</span>}
+            {selectedDaten.jahrTyp === 'finanzierung' && <span className="flex items-center gap-1"><Building2 size={12}/> Finanzierungsstarkes Jahr</span>}
+            {selectedDaten.jahrTyp === 'normal' && <span className="flex items-center gap-1"><BarChart3 size={12}/> Normales Vermietungsjahr</span>}
           </div>
         )}
 
@@ -422,7 +423,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Weitere Werbungskosten (Anlage V)</div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">🏛 Grundsteuer / Monat</label>
+              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Landmark size={12}/> Grundsteuer / Monat</label>
               <div className="flex items-center gap-1">
                 <input type="number" min="0" step="5" value={grundsteuerMonat}
                   onChange={(e) => updateSteuerParams({ grundsteuerMonat: parseFloat(e.target.value) || 0 })}
@@ -431,7 +432,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">🛡 Versicherungen / Monat</label>
+              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><ShieldCheck size={12}/> Versicherungen / Monat</label>
               <div className="flex items-center gap-1">
                 <input type="number" min="0" step="5" value={versicherungMonat}
                   onChange={(e) => updateSteuerParams({ versicherungMonat: parseFloat(e.target.value) || 0 })}
@@ -452,20 +453,20 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-slate-800 text-white">
             <div>
-              <div className="font-bold text-sm">📋 Anlage V — Einkünfte aus Vermietung und Verpachtung</div>
+              <div className="font-bold text-sm flex items-center gap-1"><ClipboardList size={14}/> Anlage V — Einkünfte aus Vermietung und Verpachtung</div>
               <div className="text-slate-400 text-xs mt-0.5">Steuerjahr {selectedJahr} · §21 EStG</div>
             </div>
             <button
               onClick={exportAnlageV}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all"
             >
-              ⬇ Excel-Export
+              <Download size={13} className="inline mr-1"/> Excel-Export
             </button>
           </div>
 
           {isGbR && (
-            <div className="px-4 py-2 bg-violet-50 border-b border-violet-200 text-xs text-violet-700 font-medium">
-              🏛 GbR: Werte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
+            <div className="px-4 py-2 bg-violet-50 border-b border-violet-200 text-xs text-violet-700 font-medium flex items-center gap-1">
+              <Landmark size={11}/> GbR: Werte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
             </div>
           )}
 
@@ -575,7 +576,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             </div>
           )}
           <p className="text-xs text-yellow-700 mt-2">
-            💡 So würde sich die Immobilie in einem normalen Jahr darstellen (ohne {formatCurrency(selectedDaten.investitionenSofort)} Erhaltungsaufwand).
+            <Lightbulb size={12} className="inline mr-1"/> So würde sich die Immobilie in einem normalen Jahr darstellen (ohne {formatCurrency(selectedDaten.investitionenSofort)} Erhaltungsaufwand).
           </p>
         </div>
       )}
@@ -583,7 +584,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       {/* Investitionen & steuerliche Behandlung */}
       {selectedDaten && selectedDaten.investitionenGesamt.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-800 mb-3">🔧 Investitionen {selectedJahr} & steuerliche Behandlung</h4>
+          <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-1"><Wrench size={14}/> Investitionen {selectedJahr} & steuerliche Behandlung</h4>
           <div className="space-y-2">
             {selectedDaten.investitionenGesamt.map(inv => {
               const kat = steuerKategorien[inv.kategorie || 'erhaltung'];
@@ -612,8 +613,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             })}
           </div>
           {selectedDaten.investitionenAfa > 0 && (
-            <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
-              🔁 <strong>{formatCurrency(selectedDaten.investitionenAfa)}</strong> erhöhen die AfA-Bemessungsgrundlage und wirken über {afaJahre} Jahre.
+            <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-indigo-700">
+              <RefreshCw size={12} className="inline mr-1"/> <strong>{formatCurrency(selectedDaten.investitionenAfa)}</strong> erhöhen die AfA-Bemessungsgrundlage und wirken über {afaJahre} Jahre.
             </div>
           )}
         </div>
@@ -621,7 +622,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
       {/* Finanzierung Info */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-800 mb-3">🏦 Finanzierungskosten {selectedJahr}</h4>
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-1"><Building2 size={14}/> Finanzierungskosten {selectedJahr}</h4>
         {selectedDaten && (
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center p-2 bg-red-50 rounded">
@@ -641,13 +642,13 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           </div>
         )}
         <div className="mt-3 p-2 bg-purple-50 rounded text-xs text-purple-700">
-          💡 <strong>Tilgung verbessert Vermögen, senkt aber nicht die Steuer.</strong> Nur Zinsen sind absetzbar.
+          <Lightbulb size={12} className="inline mr-1"/> <strong>Tilgung verbessert Vermögen, senkt aber nicht die Steuer.</strong> Nur Zinsen sind absetzbar.
         </div>
       </div>
 
       {/* AfA Einstellungen */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-800 mb-4">📉 AfA-Einstellungen</h4>
+        <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-1"><TrendingDown size={14}/> AfA-Einstellungen</h4>
 
         {/* Gebäudeanteil */}
         <div className="mb-4 pb-4 border-b border-gray-100">
@@ -682,12 +683,12 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => updateSteuerParams({ afaModus: 'linear' })}
               className={`py-2.5 px-3 rounded-xl border-2 text-xs font-semibold text-left transition-all ${!istDegressiv ? 'border-indigo-500 bg-indigo-50 text-indigo-800' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-              <div className="font-bold mb-0.5">📉 Linear</div>
+              <div className="font-bold mb-0.5 flex items-center gap-1"><TrendingDown size={12}/> Linear</div>
               <div className="opacity-70 font-normal">Gleichbleibender % vom Kaufpreis</div>
             </button>
             <button onClick={() => updateSteuerParams({ afaModus: 'degressiv' })}
               className={`py-2.5 px-3 rounded-xl border-2 text-xs font-semibold text-left transition-all ${istDegressiv ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-              <div className="font-bold mb-0.5">📈 Degressiv 5%</div>
+              <div className="font-bold mb-0.5 flex items-center gap-1"><TrendingUp size={12}/> Degressiv 5%</div>
               <div className="opacity-70 font-normal">§ 7 Abs. 5a EStG · Neubau ab 10/2023</div>
             </button>
           </div>
@@ -885,8 +886,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                         {/* Löschen */}
                         <button
                           onClick={() => updateSteuerParams({ afaAnpassungen: afaAnpassungen.filter(a => a.id !== phase.id) })}
-                          className="text-gray-300 hover:text-red-500 text-lg leading-none transition-colors mt-0.5">
-                          ×
+                          className="text-gray-300 hover:text-red-500 transition-colors mt-0.5">
+                          <X size={14}/>
                         </button>
                       </div>
                     </div>
@@ -918,7 +919,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           {/* Phasen-Übersicht für das gewählte Jahr */}
           {afaAnpassungen.length > 0 && (
             <div className="mt-3 p-3 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-800">
-              <div className="font-semibold mb-1.5">📋 Gültiger AfA-Satz je Jahr</div>
+              <div className="font-semibold mb-1.5 flex items-center gap-1"><ClipboardList size={12}/> Gültiger AfA-Satz je Jahr</div>
               <div className="flex flex-wrap gap-x-4 gap-y-1">
                 {verfuegbareJahre.map(j => {
                   const satz = getAfaSatzFuerJahr(j);
@@ -937,8 +938,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
         <div className="text-xs text-gray-500 mt-3 p-2 bg-blue-50 rounded">
           {istDegressiv
-            ? <>💡 <strong>Degressiv AfA (§ 7 Abs. 5a EStG):</strong> 5% vom Restbuchwert, jedes Jahr sinkend. Nur für Neubau-Wohngebäude (Baubeginn nach 01.10.2023 oder Erwerb nach 31.12.2023). Wechsel zu linear jederzeit möglich.</>
-            : <>💡 <strong>AfA ist ein Recheneffekt, kein Geldabfluss.</strong> Standard: 2% (50 J.) | vor 1925: 2,5% (40 J.) | nach 2022: 3% (33 J.){afaAnpassungen.length > 0 && <span className="block mt-0.5 text-violet-700">💜 Bei Restnutzungsdauergutachten: RND eingeben → AfA-Satz wird automatisch berechnet (100 ÷ RND).</span>}</>
+            ? <><Lightbulb size={12} className="inline mr-1"/><strong>Degressiv AfA (§ 7 Abs. 5a EStG):</strong> 5% vom Restbuchwert, jedes Jahr sinkend. Nur für Neubau-Wohngebäude (Baubeginn nach 01.10.2023 oder Erwerb nach 31.12.2023). Wechsel zu linear jederzeit möglich.</>
+            : <><Lightbulb size={12} className="inline mr-1"/><strong>AfA ist ein Recheneffekt, kein Geldabfluss.</strong> Standard: 2% (50 J.) | vor 1925: 2,5% (40 J.) | nach 2022: 3% (33 J.){afaAnpassungen.length > 0 && <span className="block mt-0.5 text-violet-700">Bei Restnutzungsdauergutachten: RND eingeben → AfA-Satz wird automatisch berechnet (100 ÷ RND).</span>}</>
           }
         </div>
       </div>
@@ -946,14 +947,14 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       {/* Fahrtkosten */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex justify-between items-center mb-3">
-          <h4 className="font-semibold text-gray-800">🚗 Fahrtkosten {selectedJahr}</h4>
+          <h4 className="font-semibold text-gray-800 flex items-center gap-1"><Car size={14}/> Fahrtkosten {selectedJahr}</h4>
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button onClick={() => updateSteuerParams({ fahrtkostenModus: 'pauschal' })}
-              className={`px-2 py-1 text-xs rounded-md ${fahrtkostenModus === 'pauschal' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}>
+              className={`px-2 py-1 text-xs rounded-md ${fahrtkostenModus === 'pauschal' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-600'}`}>
               Pauschal
             </button>
             <button onClick={() => updateSteuerParams({ fahrtkostenModus: 'manuell' })}
-              className={`px-2 py-1 text-xs rounded-md ${fahrtkostenModus === 'manuell' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}>
+              className={`px-2 py-1 text-xs rounded-md ${fahrtkostenModus === 'manuell' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-600'}`}>
               Einzeln
             </button>
           </div>
@@ -997,7 +998,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs text-gray-500">Fahrten in {selectedJahr}: {fahrtenSelectedJahr.length}</span>
               <button onClick={() => setShowFahrtForm(!showFahrtForm)}
-                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                className="px-2 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700">
                 + Fahrt
               </button>
             </div>
@@ -1039,7 +1040,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                     <span>{new Date(f.datum).toLocaleDateString('de-DE')} - {f.grund || 'Ohne Grund'}</span>
                     <div className="flex items-center gap-2">
                       <span>{f.km} km ({formatCurrency(f.km * 2 * kmPauschale)})</span>
-                      <button onClick={() => handleDeleteFahrt(f.id)} className="text-red-400 hover:text-red-600">×</button>
+                      <button onClick={() => handleDeleteFahrt(f.id)} className="text-red-400 hover:text-red-600"><X size={12}/></button>
                     </div>
                   </div>
                 ))}
@@ -1051,7 +1052,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
       {/* Hinweise */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-700 mb-2">💡 Steuer-Tipps</h4>
+        <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-1"><Lightbulb size={14}/> Steuer-Tipps</h4>
         <ul className="text-xs text-gray-600 space-y-1">
           <li>• <strong>Investitionen</strong> wirken steuerlich nicht immer sofort – Herstellungskosten werden über AfA verteilt.</li>
           <li>• <strong>Zinsen</strong> senken die Steuer – Tilgung nicht (nur Vermögensaufbau).</li>
@@ -1059,7 +1060,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           <li>• <strong>Einmalige Investitionen</strong> (Erhaltungsaufwand) können einzelne Jahre stark verzerren.</li>
         </ul>
         <div className="mt-3 p-2 bg-yellow-50 rounded text-xs text-yellow-800">
-          ⚠️ Vereinfachte Berechnung. Konsultieren Sie einen Steuerberater für verbindliche Auskünfte.
+          <AlertTriangle size={12} className="inline mr-1"/> Vereinfachte Berechnung. Konsultieren Sie einen Steuerberater für verbindliche Auskünfte.
         </div>
       </div>
     </div>

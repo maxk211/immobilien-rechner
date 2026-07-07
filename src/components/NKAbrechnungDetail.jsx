@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FileText, X, Pencil, Trash2, Download, TrendingDown, TrendingUp, Mail, CheckCircle2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { applyPlugin } from 'jspdf-autotable';
 applyPlugin(jsPDF);
@@ -15,8 +16,12 @@ const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
   const vorauszahlungen = Number(abrechnung.vorauszahlungen_gesamt) || 0;
   const ergebnis = gesamtMieteranteil - vorauszahlungen;
 
-  const statusBadge = { entwurf: '📝 Entwurf', versendet: '📬 Versendet', abgeschlossen: '✅ Abgeschlossen' };
-  const statusColor = { entwurf: 'bg-yellow-100 text-yellow-700', versendet: 'bg-blue-100 text-blue-700', abgeschlossen: 'bg-green-100 text-green-700' };
+  const statusBadge = {
+    entwurf: <span className="inline-flex items-center gap-1"><Pencil size={12} /> Entwurf</span>,
+    versendet: <span className="inline-flex items-center gap-1"><Mail size={12} /> Versendet</span>,
+    abgeschlossen: <span className="inline-flex items-center gap-1"><CheckCircle2 size={12} /> Abgeschlossen</span>
+  };
+  const statusColor = { entwurf: 'bg-yellow-100 text-yellow-700', versendet: 'bg-blue-100 text-indigo-700', abgeschlossen: 'bg-green-100 text-green-700' };
 
   const exportPDF = () => {
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -128,10 +133,10 @@ const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
         <div className="sticky top-0 bg-teal-700 text-white p-5 rounded-t-xl flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold">📄 NK-Abrechnung {abrechnung.abrechnungsjahr}</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2"><FileText size={18} /> NK-Abrechnung {abrechnung.abrechnungsjahr}</h2>
             <p className="text-teal-200 text-sm">{abrechnung.mieter_name} · {abrechnung.immobilie_name}</p>
           </div>
-          <button onClick={onClose} className="text-white text-2xl hover:text-teal-200">&times;</button>
+          <button onClick={onClose} className="text-white hover:text-teal-200"><X size={20} /></button>
         </div>
 
         <div className="p-6 space-y-4">
@@ -184,28 +189,28 @@ const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
               <span className="font-semibold">− {vorauszahlungen.toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
             </div>
             <div className={`flex justify-between font-bold pt-2 border-t border-gray-200 ${ergebnis > 0 ? 'text-red-700' : ergebnis < 0 ? 'text-green-700' : 'text-gray-700'}`}>
-              <span>{ergebnis > 0 ? '💸 Nachzahlung Mieter' : ergebnis < 0 ? '💚 Guthaben Mieter' : 'Ergebnis'}</span>
+              <span className="flex items-center gap-1">{ergebnis > 0 ? <><TrendingDown size={14} /> Nachzahlung Mieter</> : ergebnis < 0 ? <><TrendingUp size={14} /> Guthaben Mieter</> : 'Ergebnis'}</span>
               <span>{Math.abs(ergebnis).toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
             </div>
           </div>
 
           {abrechnung.notizen && (
-            <div className="text-xs text-gray-500 bg-gray-50 rounded p-3">📝 {abrechnung.notizen}</div>
+            <div className="text-xs text-gray-500 bg-gray-50 rounded p-3 flex items-start gap-1"><FileText size={12} className="mt-0.5 shrink-0" /> {abrechnung.notizen}</div>
           )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
             <button onClick={exportPDF}
               className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-semibold text-sm">
-              📥 PDF herunterladen
+              <Download size={14} className="inline mr-1" /> PDF herunterladen
             </button>
             <button onClick={onEdit}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-              ✏️ Bearbeiten
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center gap-1">
+              <Pencil size={14} /> Bearbeiten
             </button>
             <button onClick={onDelete}
               className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm">
-              🗑️
+              <Trash2 size={14} />
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Zap, Check, X, ChevronUp, ChevronDown, User, FileText, TrendingDown, Wallet } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import ZahlungErfassenForm from './ZahlungErfassenForm';
@@ -145,11 +146,11 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
   }, 0);
 
   const statusConfig = {
-    bezahlt:      { bg: 'bg-emerald-50 border-emerald-200', icon: '✓', iconColor: 'text-emerald-600', label: 'bg-emerald-100 text-emerald-700' },
-    dauerauftrag: { bg: 'bg-emerald-50 border-emerald-200', icon: '⚡', iconColor: 'text-emerald-500', label: 'bg-emerald-100 text-emerald-700' },
+    bezahlt:      { bg: 'bg-emerald-50 border-emerald-200', icon: <Check size={12}/>, iconColor: 'text-emerald-600', label: 'bg-emerald-100 text-emerald-700' },
+    dauerauftrag: { bg: 'bg-emerald-50 border-emerald-200', icon: <Zap size={12}/>, iconColor: 'text-emerald-500', label: 'bg-emerald-100 text-emerald-700' },
     teilweise:    { bg: 'bg-amber-50 border-amber-200', icon: '~', iconColor: 'text-amber-600', label: 'bg-amber-100 text-amber-700' },
-    offen:        { bg: 'bg-red-50 border-red-200', icon: '✗', iconColor: 'text-red-500', label: 'bg-red-100 text-red-700' },
-    nicht_bezahlt:{ bg: 'bg-red-50 border-red-300', icon: '✗', iconColor: 'text-red-600', label: 'bg-red-100 text-red-700' },
+    offen:        { bg: 'bg-red-50 border-red-200', icon: <X size={12}/>, iconColor: 'text-red-500', label: 'bg-red-100 text-red-700' },
+    nicht_bezahlt:{ bg: 'bg-red-50 border-red-300', icon: <X size={12}/>, iconColor: 'text-red-600', label: 'bg-red-100 text-red-700' },
     zukunft:      { bg: 'bg-gray-50 border-gray-200', icon: '–', iconColor: 'text-gray-300', label: 'bg-gray-100 text-gray-400' },
     vor_kauf:     { bg: 'bg-gray-50 border-gray-100', icon: '○', iconColor: 'text-gray-200', label: 'bg-gray-100 text-gray-300' },
   };
@@ -216,7 +217,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${isDauerauftrag ? 'translate-x-6' : ''}`}></span>
             </button>
             <div>
-              <div className="font-bold text-gray-800 text-sm">⚡ Dauerauftrag</div>
+              <div className="font-bold text-gray-800 text-sm flex items-center gap-1"><Zap size={14} /> Dauerauftrag</div>
               <div className="text-xs text-gray-500">Miete kommt automatisch — kein manuelles Abhaken nötig</div>
             </div>
           </div>
@@ -235,7 +236,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         </div>
         {isDauerauftrag && (
           <p className="text-xs text-emerald-600 mt-3">
-            Alle vergangenen Monate werden als ✓ bezahlt angezeigt. Nur Ausnahmen (Verspätung, falscher Betrag) müssen erfasst werden.
+            Alle vergangenen Monate werden als <Check size={12} className="inline" /> bezahlt angezeigt. Nur Ausnahmen (Verspätung, falscher Betrag) müssen erfasst werden.
           </p>
         )}
       </div>
@@ -306,7 +307,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                 {/* Eingegangen */}
                 <div className="col-span-3 text-right">
                   {f.status === 'dauerauftrag' ? (
-                    <div className="text-sm font-semibold text-emerald-600">⚡ Auto</div>
+                    <div className="text-sm font-semibold text-emerald-600 flex items-center gap-1"><Zap size={12} /> Auto</div>
                   ) : f.eingegangen > 0 ? (
                     <div className={`text-sm font-bold ${f.eingegangen >= f.forderungBetrag ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {formatCurrency(f.eingegangen)}
@@ -329,10 +330,10 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                 </div>
                 {/* Status Badge */}
                 <div className="col-span-2 flex justify-center">
-                  {f.status === 'beglichen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">✓ Beglichen</span>}
-                  {f.status === 'dauerauftrag' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600">⚡ Auto</span>}
+                  {f.status === 'beglichen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 inline-flex items-center gap-0.5"><Check size={10} /> Beglichen</span>}
+                  {f.status === 'dauerauftrag' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600 inline-flex items-center gap-0.5"><Zap size={10} /> Auto</span>}
                   {f.status === 'teilweise' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">~ Teilweise</span>}
-                  {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">✗ Offen</span>}
+                  {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 inline-flex items-center gap-0.5"><X size={10} /> Offen</span>}
                 </div>
                 {/* Actions */}
                 <div className="col-span-1 flex justify-end items-center gap-1">
@@ -349,7 +350,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                       className="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors"
                       title={`${formatCurrency(f.forderungBetrag)} als eingegangen markieren`}
                     >
-                      ✓
+                      <Check size={12} />
                     </button>
                   )}
                   {/* Dropdown für Detailansicht / Korrektur */}
@@ -358,7 +359,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                     className="text-gray-300 hover:text-gray-500 text-sm leading-none px-1"
                     title={isExpanded ? 'Schließen' : 'Details / Korrektur'}
                   >
-                    {isExpanded ? '▲' : '▼'}
+                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
                 </div>
               </div>
@@ -379,13 +380,13 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                                 <span className="font-semibold text-emerald-700">{formatCurrency(z.betrag)}</span>
                                 <span className="text-gray-400 ml-2 text-xs">eingegangen {new Date(z.datum).toLocaleDateString('de-DE')}</span>
                                 {zahlungMieter && (
-                                  <span className="ml-2 text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-medium">
-                                    👤 {zahlungMieter.name}
+                                  <span className="ml-2 text-xs bg-blue-50 text-indigo-600 px-1.5 py-0.5 rounded-full font-medium inline-flex items-center gap-0.5">
+                                    <User size={11} /> {zahlungMieter.name}
                                   </span>
                                 )}
                                 {z.notiz && <span className="text-gray-400 ml-2 text-xs">· {z.notiz}</span>}
                               </div>
-                              <button onClick={() => handleDeleteEingang(z.id)} className="text-red-400 hover:text-red-600 text-xs px-2">✕</button>
+                              <button onClick={() => handleDeleteEingang(z.id)} className="text-red-400 hover:text-red-600 text-xs px-2"><X size={12} /></button>
                             </div>
                           );
                         })}
@@ -419,9 +420,9 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
       {/* NK-Abrechnungen */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide">📄 NK-Abrechnungen</h3>
+          <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1"><FileText size={14} /> NK-Abrechnungen</h3>
           <button onClick={() => setShowNKModal(true)}
-            className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
+            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
             + NK-Abrechnung
           </button>
         </div>
@@ -455,15 +456,15 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                     <div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${abr.typ === 'nachzahlung' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                          {abr.typ === 'nachzahlung' ? '💸 Nachzahlung' : '💰 Erstattung'}
+                          {abr.typ === 'nachzahlung' ? <span className="inline-flex items-center gap-1"><TrendingDown size={12} /> Nachzahlung</span> : <span className="inline-flex items-center gap-1"><Wallet size={12} /> Erstattung</span>}
                         </span>
                         <span className="text-xs text-gray-500">NK {abr.abrechnungsjahr}</span>
-                        {istVollstaendigBezahlt && <span className="text-xs font-bold text-emerald-600">✓ Abgeschlossen</span>}
+                        {istVollstaendigBezahlt && <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-0.5"><Check size={11} /> Abgeschlossen</span>}
                       </div>
                       <div className="text-lg font-black text-gray-800 mt-1">{formatCurrency(abr.gesamtbetrag)}</div>
                       {abr.notiz && <div className="text-xs text-gray-500">{abr.notiz}</div>}
                     </div>
-                    <button onClick={deleteAbr} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                    <button onClick={deleteAbr} className="text-red-400 hover:text-red-600 text-xs"><X size={12} /></button>
                   </div>
                   {/* Raten */}
                   <div className="space-y-1.5">
@@ -472,7 +473,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                         <div className="flex items-center gap-2">
                           <button onClick={() => toggleRate(rate.id)}
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center text-xs font-bold transition-colors ${rate.bezahlt ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 hover:border-emerald-400'}`}>
-                            {rate.bezahlt ? '✓' : ''}
+                            {rate.bezahlt ? <Check size={10} /> : ''}
                           </button>
                           <span className={`font-semibold ${rate.bezahlt ? '' : 'text-gray-800'}`}>{formatCurrency(rate.betrag)}</span>
                           <span className="text-xs text-gray-400">

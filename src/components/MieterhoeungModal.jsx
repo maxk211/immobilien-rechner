@@ -1,4 +1,8 @@
 import { useState, useMemo } from 'react';
+import {
+  TrendingUp, BarChart2, Home, Search, FileText, CheckCircle2,
+  AlertTriangle, X, User,
+} from 'lucide-react';
 import jsPDF from 'jspdf';
 import { formatCurrency } from '../utils/format.js';
 
@@ -65,9 +69,9 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
   const diffProzent = effAktKaltmiete > 0 ? ((diff / effAktKaltmiete) * 100).toFixed(1) : '—';
 
   const begründungsOptionen = [
-    { value: 'mietspiegel', label: '📊 Ortsüblicher Mietspiegel (§ 558 BGB)', desc: 'Die Miete liegt unterhalb der ortsüblichen Vergleichsmiete laut Mietspiegel.' },
-    { value: 'vergleichswohnungen', label: '🏠 Vergleichswohnungen (§ 558 BGB)', desc: 'Die Miete entspricht der üblichen Miete für vergleichbare Wohnungen in der Umgebung.' },
-    { value: 'sachverstaendiger', label: '🔍 Sachverständigengutachten (§ 558 BGB)', desc: 'Gemäß Gutachten eines öffentlich bestellten Sachverständigen.' },
+    { value: 'mietspiegel',       icon: <BarChart2 size={14} />, label: 'Ortsüblicher Mietspiegel (§ 558 BGB)',    desc: 'Die Miete liegt unterhalb der ortsüblichen Vergleichsmiete laut Mietspiegel.' },
+    { value: 'vergleichswohnungen', icon: <Home size={14} />,    label: 'Vergleichswohnungen (§ 558 BGB)',         desc: 'Die Miete entspricht der üblichen Miete für vergleichbare Wohnungen in der Umgebung.' },
+    { value: 'sachverstaendiger',  icon: <Search size={14} />,   label: 'Sachverständigengutachten (§ 558 BGB)',   desc: 'Gemäß Gutachten eines öffentlich bestellten Sachverständigen.' },
   ];
 
   const wirksamDatum = new Date(form.wirksamkeitsDatum);
@@ -224,10 +228,10 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
         {/* Header */}
         <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex-shrink-0 flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-black text-gray-900">📈 Mieterhöhung</h2>
+            <h2 className="text-lg font-black text-gray-900 flex items-center gap-2"><TrendingUp size={20} /> Mieterhöhung</h2>
             <p className="text-xs text-gray-500 mt-0.5">{effMieterName ? `${effMieterName} · ` : ''}{immobilie?.name || immobilie?.adresse || 'Ohne Zuordnung'}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-2xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 leading-none"><X size={20} /></button>
         </div>
 
         {/* Content */}
@@ -236,7 +240,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
             {/* Manuelle Mieter-Daten (nur wenn kein Datensatz) */}
           {!hatMieter && (
             <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-              <p className="text-xs font-semibold text-amber-700 mb-3 uppercase tracking-wide">🧑 Mieter-Angaben (für das Schreiben)</p>
+              <p className="text-xs font-semibold text-amber-700 mb-3 uppercase tracking-wide flex items-center gap-1.5"><User size={14} /> Mieter-Angaben (für das Schreiben)</p>
               <div className="space-y-2">
                 <input type="text" value={form.mieterName}
                   onChange={e => setForm({ ...form, mieterName: e.target.value })}
@@ -252,7 +256,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
 
           {/* Aktuelle Miete + neue Miete */}
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-            <p className="text-xs font-semibold text-blue-700 mb-3 uppercase tracking-wide">Mietänderung</p>
+            <p className="text-xs font-semibold text-indigo-700 mb-3 uppercase tracking-wide">Mietänderung</p>
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <p className="text-[10px] text-gray-400 mb-1">Aktuelle Kaltmiete</p>
@@ -275,7 +279,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
                   type="number"
                   value={form.neueKaltmiete}
                   onChange={e => setForm({ ...form, neueKaltmiete: parseFloat(e.target.value) || '' })}
-                  className="w-full px-3 py-2 border-2 border-blue-400 rounded-lg text-xl font-black text-blue-700 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border-2 border-indigo-400 rounded-lg text-xl font-black text-indigo-700 text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   min={0}
                   step={5}
                 />
@@ -288,8 +292,9 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
               </div>
             )}
             {diff / effAktKaltmiete > 0.2 && effAktKaltmiete > 0 && (
-              <p className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                ⚠️ Achtung: Die Erhöhung überschreitet 20 % — dies kann die Kappungsgrenze nach § 558 BGB verletzen (innerhalb von 3 Jahren max. 20 % bzw. 15 % in Gebieten mit Wohnungsmangel).
+              <p className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 flex items-start gap-1.5">
+                <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+                Achtung: Die Erhöhung überschreitet 20 % — dies kann die Kappungsgrenze nach § 558 BGB verletzen (innerhalb von 3 Jahren max. 20 % bzw. 15 % in Gebieten mit Wohnungsmangel).
               </p>
             )}
           </div>
@@ -321,13 +326,13 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
             <label className="block text-xs font-semibold text-gray-600 mb-2">Begründung (§ 558a BGB)</label>
             <div className="space-y-2">
               {begründungsOptionen.map(opt => (
-                <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${form.begründungsTyp === opt.value ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${form.begründungsTyp === opt.value ? 'border-indigo-400 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                   <input type="radio" name="begründung" value={opt.value}
                     checked={form.begründungsTyp === opt.value}
                     onChange={e => setForm({ ...form, begründungsTyp: e.target.value })}
-                    className="mt-0.5 accent-blue-500" />
+                    className="mt-0.5 accent-indigo-500" />
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
+                    <p className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">{opt.icon}{opt.label}</p>
                     <p className="text-xs text-gray-500">{opt.desc}</p>
                   </div>
                 </label>
@@ -384,7 +389,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
             disabled={!neueKalt || neueKalt <= 0}
             className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-bold hover:bg-gray-900 disabled:opacity-40 flex items-center justify-center gap-2"
           >
-            📄 Mieterhöhungsschreiben als PDF
+            <FileText size={16} /> Mieterhöhungsschreiben als PDF
           </button>
           <div className="flex gap-2">
             <button onClick={onClose} className="flex-1 py-3 bg-gray-100 rounded-xl text-sm font-semibold text-gray-700">
@@ -393,9 +398,9 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
             <button
               onClick={handleSave}
               disabled={!neueKalt || neueKalt <= 0}
-              className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 disabled:opacity-40"
+              className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              ✅ Speichern & Anpassung hinterlegen
+              <CheckCircle2 size={16} /> Speichern & Anpassung hinterlegen
             </button>
           </div>
           <p className="text-[10px] text-gray-400 text-center">

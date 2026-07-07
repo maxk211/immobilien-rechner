@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow } from '../utils/berechnung.js';
@@ -47,8 +48,13 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                {isMietimmobilie ? '🔄 Arbitrage' : isMFH ? `🏘️ MFH · ${(immobilie.wohnungen || []).length} WE` : '🏠 Kaufimmobilie'}
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1">
+                {isMietimmobilie
+                  ? <><ArrowLeftRight size={12}/>Arbitrage</>
+                  : isMFH
+                    ? <><Building2 size={12}/>MFH · {(immobilie.wohnungen || []).length} WE</>
+                    : <><Home size={12}/>Kaufimmobilie</>
+                }
               </span>
               {!isMietimmobilie && !isMFH && immobilie.vermietungsmodell && immobilie.vermietungsmodell !== 'kaltmiete' && (
                 <span className="text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">
@@ -60,15 +66,15 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
               {immobilie.name || 'Unbenannte Immobilie'}
             </h3>
             {(immobilie.plz || immobilie.adresse) && (
-              <p className="text-white/70 text-xs mt-0.5 truncate">
-                📍 {immobilie.plz} {immobilie.adresse}
+              <p className="text-white/70 text-xs mt-0.5 truncate flex items-center gap-1">
+                <MapPin size={12}/>{immobilie.plz} {immobilie.adresse}
               </p>
             )}
             {!isMFH && (
-              <p className="text-white/80 text-xs mt-1 truncate font-medium">
+              <p className="text-white/80 text-xs mt-1 truncate font-medium flex items-center gap-1">
                 {aktiverMieter
-                  ? `👤 ${aktiverMieter.name}`
-                  : <span className="text-white/50">🔴 Leerstand</span>
+                  ? <><User size={14} className="text-white/70"/>{aktiverMieter.name}</>
+                  : <span className="text-white/50 flex items-center gap-1"><CircleDot size={12} className="text-red-300"/> Leerstand</span>
                 }
               </p>
             )}
@@ -76,17 +82,17 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
           <div className="flex items-center gap-1 ml-2 shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }}
-              className="w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 rounded-lg transition-colors text-sm"
+              className="w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
               title="Bearbeiten"
             >
-              ✏️
+              <Pencil size={14}/>
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="w-7 h-7 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 rounded-lg text-xl leading-none transition-colors"
+              className="w-7 h-7 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
               title="Löschen"
             >
-              ×
+              <X size={16}/>
             </button>
           </div>
         </div>
@@ -181,16 +187,19 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
               onClick={(e) => { e.stopPropagation(); setMfhExpanded(v => !v); }}
               className="w-full flex items-center justify-between text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
             >
-              <span>👥 Mieter ({mfhWohnungen.filter(w => w.mieterName && !w.mietende).length}/{mfhWohnungen.length} vermietet)</span>
-              <span className="text-gray-400">{mfhExpanded ? '▲' : '▼'}</span>
+              <span className="flex items-center gap-1"><Users size={14}/>Mieter ({mfhWohnungen.filter(w => w.mieterName && !w.mietende).length}/{mfhWohnungen.length} vermietet)</span>
+              <span className="text-gray-400">{mfhExpanded ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
             </button>
             {mfhExpanded && (
               <div className="mt-2 space-y-1">
                 {mfhWohnungen.map((w, i) => (
                   <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0">
                     <span className="text-gray-500 truncate mr-2">{w.name || `WE ${i + 1}`}</span>
-                    <span className={`font-medium truncate ${w.mieterName && !w.mietende ? 'text-gray-800' : 'text-red-400'}`}>
-                      {w.mieterName && !w.mietende ? `👤 ${w.mieterName}` : '🔴 Leerstand'}
+                    <span className={`font-medium truncate flex items-center gap-0.5 ${w.mieterName && !w.mietende ? 'text-gray-800' : 'text-red-400'}`}>
+                      {w.mieterName && !w.mietende
+                        ? <><User size={12} className="inline"/>{w.mieterName}</>
+                        : <><CircleDot size={10} className="text-red-400"/>Leerstand</>
+                      }
                     </span>
                   </div>
                 ))}

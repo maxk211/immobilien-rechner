@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Gauge, RefreshCw, Pencil, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { showConfirm } from '../utils/confirm.jsx';
 import { ZAEHLER_TYPEN } from '../constants/index.js';
 
@@ -96,7 +97,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
 
   const farbeKlassen = {
     amber: { border: 'border-amber-200', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700', btn: 'bg-amber-500 hover:bg-amber-600' },
-    blue:  { border: 'border-blue-200',  bg: 'bg-blue-50',  badge: 'bg-blue-100 text-blue-700',  btn: 'bg-blue-500 hover:bg-blue-600'  },
+    blue:  { border: 'border-blue-200',  bg: 'bg-blue-50',  badge: 'bg-blue-100 text-indigo-700',  btn: 'bg-indigo-500 hover:bg-indigo-600'  },
     red:   { border: 'border-red-200',   bg: 'bg-red-50',   badge: 'bg-red-100 text-red-700',    btn: 'bg-red-500 hover:bg-red-600'    },
   };
 
@@ -165,7 +166,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
       {/* Zähler-Liste */}
       {zaehler.length === 0 && !neuerZaehlerTyp && (
         <div className="text-center py-12 text-gray-400">
-          <div className="text-4xl mb-3">📟</div>
+          <div className="flex justify-center mb-3"><Gauge size={40} className="text-gray-300" /></div>
           <div className="font-medium">Noch keine Zähler angelegt</div>
           <div className="text-sm mt-1">Füge oben einen Strom-, Wasser- oder Heizungszähler hinzu</div>
         </div>
@@ -205,7 +206,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                           <div className="text-xs text-gray-400">{new Date(letzteAblesung.datum).toLocaleDateString('de-DE')}</div>
                         </div>
                       )}
-                      <span className="text-gray-400 text-sm">{isExpanded ? '▲' : '▾'}</span>
+                      <span className="text-gray-400">{isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
                     </div>
                   </div>
 
@@ -248,7 +249,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                                     </span>
                                     <span className="text-xs text-gray-400">{new Date(a.datum).toLocaleDateString('de-DE')}</span>
                                     {a.istTausch && (
-                                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">🔄 Zählertausch</span>
+                                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"><RefreshCw size={11} /> Zählertausch</span>
                                     )}
                                     {verbrauch && !verbrauch.istTausch && verbrauch.verbrauch != null && (
                                       <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
@@ -263,9 +264,9 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                                 </div>
                                 <div className="flex gap-1 shrink-0">
                                   <button onClick={() => handleEditOeffnen(z.id, a)}
-                                    className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-50">✏</button>
+                                    className="text-xs text-indigo-500 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-blue-50"><Pencil size={12} /></button>
                                   <button onClick={() => handleAbleseLoeschen(z.id, a.id)}
-                                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">✕</button>
+                                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50"><X size={12} /></button>
                                 </div>
                               </div>
                             );
@@ -290,7 +291,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
         return (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
-              <div className="font-bold text-gray-800">{editAblesung ? '✏ Ablesung bearbeiten' : '+ Ablesung eintragen'}</div>
+              <div className="font-bold text-gray-800 flex items-center gap-1">{editAblesung ? <><Pencil size={14} /> Ablesung bearbeiten</> : '+ Ablesung eintragen'}</div>
               <div className="text-xs text-gray-500">{typInfo.icon} {z.bezeichnung} {z.zaehlernummer ? `· Nr. ${z.zaehlernummer}` : ''}</div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -323,7 +324,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                   <input type="checkbox" checked={ableseForm.istTausch}
                     onChange={e => setAbleseForm(f => ({...f, istTausch: e.target.checked, altStand: ''}))}
                     className="rounded" />
-                  <span className="text-sm font-semibold text-gray-700">🔄 Zählertausch bei dieser Ablesung</span>
+                  <span className="text-sm font-semibold text-gray-700 flex items-center gap-1"><RefreshCw size={13} /> Zählertausch bei dieser Ablesung</span>
                 </label>
                 {ableseForm.istTausch && (
                   <div>

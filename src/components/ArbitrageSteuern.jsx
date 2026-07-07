@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneHistorischenArbitrageCashflow, getAktuelleWarmmiete, getAktuelleUntermiete } from '../utils/miete.js';
 
@@ -259,7 +260,7 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
 
       {/* Hinweisbox */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <p className="text-xs font-semibold text-amber-800 mb-1">⚠️ Wichtige Hinweise zur Untervermietungssteuer</p>
+        <p className="text-xs font-semibold text-amber-800 mb-1 flex items-center gap-1"><AlertTriangle size={14} /> Wichtige Hinweise zur Untervermietungssteuer</p>
         <ul className="text-xs text-amber-700 space-y-1">
           <li>• Einnahmen aus Untervermietung sind nach <strong>§ 21 EStG</strong> als Einkünfte aus V+V zu erklären.</li>
           <li>• Absetzbar sind nur die <strong>anteiligen</strong> Kosten (nach Zimmer-Verhältnis, nicht Fläche — falls keine genaue Flächenaufteilung).</li>

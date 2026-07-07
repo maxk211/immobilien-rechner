@@ -1,10 +1,25 @@
 import { useState } from 'react';
+import {
+  User, FileText, TrendingUp, Paperclip, ClipboardList, AlertTriangle,
+  CalendarDays, Key, Upload, Download, Trash2, X, CheckCircle2,
+  Lightbulb, Loader2, CreditCard, Search, Receipt, BarChart2, FileEdit,
+  Banknote, ScrollText, Infinity as InfinityIcon,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 
 const MIETER_DOK_TYPEN = ['Mietvertrag', 'Personalausweis', 'Selbstauskunft', 'Bonitätsnachweis', 'SCHUFA-Auskunft', 'Übergabeprotokoll', 'Kautionsquittung', 'Sonstiges'];
-const MIETER_DOK_ICONS = { 'Mietvertrag': '📋', 'Personalausweis': '🪪', 'Selbstauskunft': '📝', 'Bonitätsnachweis': '💳', 'SCHUFA-Auskunft': '🔍', 'Übergabeprotokoll': '🔑', 'Kautionsquittung': '🧾', 'Sonstiges': '📎' };
+const MIETER_DOK_ICONS = {
+  'Mietvertrag':      <ClipboardList size={14} />,
+  'Personalausweis':  <CreditCard size={14} />,
+  'Selbstauskunft':   <FileEdit size={14} />,
+  'Bonitätsnachweis': <CreditCard size={14} />,
+  'SCHUFA-Auskunft':  <Search size={14} />,
+  'Übergabeprotokoll':<Key size={14} />,
+  'Kautionsquittung': <Receipt size={14} />,
+  'Sonstiges':        <Paperclip size={14} />,
+};
 
 const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente = [], onDokumentUpdate }) => {
   const [activeTab, setActiveTab] = useState('stammdaten');
@@ -155,6 +170,15 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
     setForm(f => ({ ...f, mietanpassungenMieter: f.mietanpassungenMieter.filter(a => a.id !== id) }));
   };
 
+  const dokCount = pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : '';
+
+  const tabs = [
+    { id: 'stammdaten',      icon: <User size={14} />,       textMobile: 'Daten',    text: 'Stammdaten' },
+    { id: 'mietvertrag',     icon: <FileText size={14} />,   textMobile: 'Vertrag',  text: 'Mietvertrag' },
+    { id: 'mietanpassungen', icon: <TrendingUp size={14} />, textMobile: 'Miete',    text: 'Anpassungen' },
+    { id: 'dokumente',       icon: <Paperclip size={14} />,  textMobile: `Docs${dokCount}`, text: `Dokumente${dokCount}` },
+  ];
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
       <div className="bg-white w-full rounded-t-3xl sm:rounded-xl shadow-2xl sm:max-w-2xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
@@ -163,23 +187,18 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
           <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 bg-blue-700 text-white px-4 sm:px-5 py-4 sm:py-5 flex justify-between items-center">
+        <div className="flex-shrink-0 bg-indigo-700 text-white px-4 sm:px-5 py-4 sm:py-5 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-bold">{form.id ? 'Mieter bearbeiten' : 'Neuer Mieter'}</h2>
-          <button onClick={onClose} className="text-white text-2xl hover:text-blue-200">&times;</button>
+          <button onClick={onClose} className="text-white hover:text-blue-200"><X size={20} /></button>
         </div>
 
         {/* Tab-Navigation */}
         <div className="flex border-b border-gray-200 bg-gray-50 px-2 sm:px-4 flex-shrink-0 overflow-x-auto">
-          {[
-            { id: 'stammdaten',     labelMobile: '👤 Daten',    label: '👤 Stammdaten' },
-            { id: 'mietvertrag',    labelMobile: '📄 Vertrag',  label: '📄 Mietvertrag' },
-            { id: 'mietanpassungen',labelMobile: '📈 Miete',    label: '📈 Anpassungen' },
-            { id: 'dokumente',      labelMobile: `📎 Docs${pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : ''}`, label: `📎 Dokumente${pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : ''}` },
-          ].map(tab => (
+          {tabs.map(tab => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 sm:flex-1 px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center whitespace-nowrap ${activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              <span className="sm:hidden">{tab.labelMobile}</span>
-              <span className="hidden sm:inline">{tab.label}</span>
+              className={`flex-shrink-0 sm:flex-1 px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center whitespace-nowrap ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              <span className="sm:hidden flex items-center gap-1 justify-center">{tab.icon}{tab.textMobile}</span>
+              <span className="hidden sm:flex items-center gap-1 justify-center">{tab.icon}{tab.text}</span>
             </button>
           ))}
         </div>
@@ -189,7 +208,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Immobilie *</label>
             <select value={form.immobilieId} onChange={e => setForm({...form, immobilieId: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" required>
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" required>
               <option value="">— Immobilie wählen —</option>
               {portfolio.map(i => <option key={i.id} value={i.id}>{i.name || i.adresse || i.plz}</option>)}
             </select>
@@ -199,40 +218,40 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
           {activeTab === 'stammdaten' && (
             <>
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-gray-700 mb-3">👤 Stammdaten</p>
+                <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5"><User size={14} /> Stammdaten</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="block text-xs text-gray-600 mb-1">Name *</label>
                     <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" required />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" required />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Email</label>
                     <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Telefon</label>
                     <input type="tel" value={form.telefon} onChange={e => setForm({...form, telefon: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div className="col-span-2">
                     <label className="block text-xs text-gray-600 mb-1">Zimmer / Einheit</label>
                     <input type="text" value={form.zimmerBezeichnung} onChange={e => setForm({...form, zimmerBezeichnung: e.target.value})}
                       placeholder="z.B. Zimmer 2, Ganze Wohnung, EG links"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                 </div>
               </div>
 
               {/* Mahnwesen */}
               <div className="bg-orange-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-orange-800 mb-3">⚠️ Mahnwesen</p>
+                <p className="text-sm font-semibold text-orange-800 mb-3 flex items-center gap-1.5"><AlertTriangle size={14} /> Mahnwesen</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Mahnstufe</label>
                     <select value={form.mahnstufe} onChange={e => setForm({...form, mahnstufe: parseInt(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm">
                       <option value={0}>Keine Mahnung</option>
                       <option value={1}>1. Mahnung</option>
                       <option value={2}>2. Mahnung</option>
@@ -243,7 +262,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Letzte Mahnung am</label>
                       <input type="date" value={form.letzteMahnungAm} onChange={e => setForm({...form, letzteMahnungAm: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                     </div>
                   )}
                 </div>
@@ -253,7 +272,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Notizen</label>
                 <textarea value={form.notizen} onChange={e => setForm({...form, notizen: e.target.value})}
-                  rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+                  rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                   placeholder="Besonderheiten, Vereinbarungen, etc." />
               </div>
             </>
@@ -264,21 +283,21 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
             <>
               {/* Vertragstyp */}
               <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-blue-800 mb-3">📋 Vertragsart</p>
+                <p className="text-sm font-semibold text-indigo-800 mb-3 flex items-center gap-1.5"><ClipboardList size={14} /> Vertragsart</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="block text-xs text-gray-600 mb-1">Vertragstyp</label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { val: 'unbefristet', label: '♾️ Unbefristet' },
-                        { val: 'befristet', label: '📅 Befristet' },
-                        { val: 'staffel', label: '📈 Staffelmiete' },
-                        { val: 'index', label: '📊 Indexmiete' },
+                        { val: 'unbefristet', icon: <InfinityIcon size={14} />, label: 'Unbefristet' },
+                        { val: 'befristet',   icon: <CalendarDays size={14} />, label: 'Befristet' },
+                        { val: 'staffel',     icon: <TrendingUp size={14} />,   label: 'Staffelmiete' },
+                        { val: 'index',       icon: <BarChart2 size={14} />,    label: 'Indexmiete' },
                       ].map(opt => (
                         <button key={opt.val} type="button"
                           onClick={() => setForm(f => ({ ...f, vertragstyp: opt.val }))}
-                          className={`px-3 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${form.vertragstyp === opt.val ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {opt.label}
+                          className={`px-3 py-2 rounded-lg text-sm font-semibold border-2 transition-colors flex items-center gap-1.5 justify-center ${form.vertragstyp === opt.val ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-gray-200 text-gray-600 hover:border-indigo-300'}`}>
+                          {opt.icon} {opt.label}
                         </button>
                       ))}
                     </div>
@@ -286,7 +305,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kündigungsfrist</label>
                     <select value={form.kuendigungsfrist} onChange={e => setForm({...form, kuendigungsfrist: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm">
                       <option value="3 Monate">3 Monate</option>
                       <option value="6 Monate">6 Monate</option>
                       <option value="12 Monate">12 Monate</option>
@@ -296,29 +315,29 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Nächste Anpassung</label>
                     <input type="date" value={form.naechsteAnpassungDatum} onChange={e => setForm({...form, naechsteAnpassungDatum: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                 </div>
               </div>
 
               {/* Mietdetails */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-gray-700 mb-3">💶 Mietkonditionen</p>
+                <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5"><Banknote size={14} /> Mietkonditionen</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Mietbeginn</label>
                     <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Mietende (opt.)</label>
                     <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Mon.)</label>
                     <input type="number" value={form.kaltmiete} onChange={e => setForm({...form, kaltmiete: parseFloat(e.target.value) || ''})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" step="10" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
                   </div>
                   <div className="flex flex-col justify-end">
                     {preisProQm ? (
@@ -337,17 +356,17 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
 
               {/* Kaution */}
               <div className="bg-yellow-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-yellow-800 mb-3">🔑 Kaution</p>
+                <p className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-1.5"><Key size={14} /> Kaution</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kautionshöhe (€)</label>
                     <input type="number" value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div className="flex items-end pb-0.5">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={form.kautionBezahlt} onChange={e => setForm({...form, kautionBezahlt: e.target.checked})}
-                        className="w-4 h-4 rounded accent-blue-600" />
+                        className="w-4 h-4 rounded accent-indigo-600" />
                       <span className="text-sm text-gray-700">Bezahlt</span>
                     </label>
                   </div>
@@ -355,7 +374,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Bezahlt am</label>
                       <input type="date" value={form.kautionBezahltAm} onChange={e => setForm({...form, kautionBezahltAm: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base sm:text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                     </div>
                   )}
                 </div>
@@ -370,8 +389,8 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {kaltmieteNum > 0 && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-black text-blue-700">{formatCurrency(kaltmieteNum)}</div>
-                    <div className="text-xs text-blue-500 font-semibold mt-1">Aktuelle Kaltmiete/Mo.</div>
+                    <div className="text-2xl font-black text-indigo-700">{formatCurrency(kaltmieteNum)}</div>
+                    <div className="text-xs text-indigo-500 font-semibold mt-1">Aktuelle Kaltmiete/Mo.</div>
                   </div>
                   {preisProQm && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
@@ -385,7 +404,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {/* Anpassungs-Historie */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                  <p className="text-sm font-semibold text-gray-700">📅 Mietanpassungen Historie</p>
+                  <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><CalendarDays size={14} /> Mietanpassungen Historie</p>
                 </div>
                 {form.mietanpassungenMieter.length === 0 ? (
                   <div className="p-6 text-center text-gray-400 text-sm">Noch keine Mietanpassungen erfasst</div>
@@ -405,7 +424,9 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                             </div>
                           </div>
                           <button type="button" onClick={() => removeMietanpassung(a.id)}
-                            className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded hover:bg-red-50">✕</button>
+                            className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded hover:bg-red-50">
+                            <X size={14} />
+                          </button>
                         </div>
                       );
                     })}
@@ -420,19 +441,19 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Gültig ab</label>
                     <input type="date" value={newAnpassung.datum} onChange={e => setNewAnpassung(a => ({ ...a, datum: e.target.value }))}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-blue-400" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-indigo-400" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Neue Kaltmiete (€)</label>
                     <input type="number" value={newAnpassung.betrag} onChange={e => setNewAnpassung(a => ({ ...a, betrag: e.target.value }))}
                       placeholder="0" step="10"
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-400 text-right" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-indigo-400 text-right" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Grund (opt.)</label>
                     <input type="text" value={newAnpassung.grund} onChange={e => setNewAnpassung(a => ({ ...a, grund: e.target.value }))}
                       placeholder="z.B. Mietspiegel"
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-blue-400" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-indigo-400" />
                   </div>
                 </div>
                 {newAnpassung.betrag && wohnflaeche > 0 && (
@@ -442,14 +463,14 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                 )}
                 <button type="button" onClick={addMietanpassung}
                   disabled={!newAnpassung.datum || !newAnpassung.betrag}
-                  className="mt-3 w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40">
+                  className="mt-3 w-full py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-40">
                   Anpassung hinzufügen
                 </button>
               </div>
 
               {/* Letzte formale Mieterhöhung */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-amber-800 mb-1">📜 Letzte Mieterhöhung nach § 558 BGB</p>
+                <p className="text-sm font-semibold text-amber-800 mb-1 flex items-center gap-1.5"><ScrollText size={14} /> Letzte Mieterhöhung nach § 558 BGB</p>
                 <p className="text-xs text-amber-600 mb-3">Datum der letzten formalen Mieterhöhung (Grundlage für 3-Jahres-Kappungsgrenze)</p>
                 <input type="date" value={form.letzteMieterhoehung}
                   onChange={e => setForm({ ...form, letzteMieterhoehung: e.target.value })}
@@ -461,9 +482,9 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   const heute = new Date();
                   const monateVerbleibend = (naechste - heute) / (1000 * 60 * 60 * 24 * 30.44);
                   return (
-                    <div className={`mt-2 text-xs font-semibold ${monateVerbleibend <= 0 ? 'text-emerald-700' : monateVerbleibend <= 3 ? 'text-amber-700' : 'text-amber-600'}`}>
+                    <div className={`mt-2 text-xs font-semibold flex items-center gap-1 ${monateVerbleibend <= 0 ? 'text-emerald-700' : monateVerbleibend <= 3 ? 'text-amber-700' : 'text-amber-600'}`}>
                       {monateVerbleibend <= 0
-                        ? '✅ Nächste Mieterhöhung ist jetzt möglich'
+                        ? <><CheckCircle2 size={12} /> Nächste Mieterhöhung ist jetzt möglich</>
                         : `Nächste Mieterhöhung möglich ab: ${naechste.toLocaleDateString('de-DE')} (in ${Math.ceil(monateVerbleibend)} Mon.)`}
                     </div>
                   );
@@ -481,8 +502,8 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                 <div className="flex flex-wrap gap-1.5">
                   {MIETER_DOK_TYPEN.map(t => (
                     <button key={t} type="button" onClick={() => setDokTyp(t)}
-                      className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all ${
-                        dokTyp === t ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all flex items-center gap-1 ${
+                        dokTyp === t ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}>
                       {MIETER_DOK_ICONS[t]} {t}
                     </button>
@@ -498,7 +519,9 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                 onDragLeave={() => setDokDragOver(false)}
                 onDrop={e => { e.preventDefault(); setDokDragOver(false); handleDokFiles(e.dataTransfer.files); }}>
                 <label className={`flex flex-col items-center gap-2 cursor-pointer ${dokUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <span className="text-2xl">{dokUploading ? '⏳' : '📤'}</span>
+                  <span className="text-2xl flex justify-center">
+                    {dokUploading ? <Loader2 size={24} className="animate-spin text-gray-400" /> : <Upload size={24} className="text-gray-400" />}
+                  </span>
                   <p className="text-sm font-semibold text-gray-700">{dokUploading ? 'Wird hochgeladen…' : 'Datei hochladen'}</p>
                   <p className="text-xs text-gray-400">
                     {mieter?.id ? 'Klicken oder Datei hierher ziehen · max. 20 MB' : 'Wird beim Speichern des Mieters hochgeladen'}
@@ -507,22 +530,30 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                     accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.zip"
                     onChange={e => handleDokFiles(e.target.files)} />
                 </label>
-                {dokFehler && <p className="text-xs text-red-600 text-center mt-2">⚠️ {dokFehler}</p>}
+                {dokFehler && (
+                  <p className="text-xs text-red-600 text-center mt-2 flex items-center justify-center gap-1">
+                    <AlertTriangle size={12} /> {dokFehler}
+                  </p>
+                )}
               </div>
 
               {/* Pending Files (nur bei neuem Mieter) */}
               {pendingFiles.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-amber-700 mb-1">⏳ Wird beim Speichern hochgeladen:</p>
+                  <p className="text-xs font-semibold text-amber-700 mb-1 flex items-center gap-1">
+                    <Loader2 size={12} /> Wird beim Speichern hochgeladen:
+                  </p>
                   {pendingFiles.map((pf, idx) => (
                     <div key={idx} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      <span className="text-base">{MIETER_DOK_ICONS[pf.typ] || '📎'}</span>
+                      <span className="text-base flex items-center">{MIETER_DOK_ICONS[pf.typ] || <Paperclip size={14} />}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-800 truncate">{pf.file.name}</p>
                         <p className="text-xs text-amber-600">{pf.typ} · {formatBytes(pf.file.size)}</p>
                       </div>
                       <button type="button" onClick={() => removePending(idx)}
-                        className="text-red-400 hover:text-red-600 text-lg leading-none flex-shrink-0">&times;</button>
+                        className="text-red-400 hover:text-red-600 flex-shrink-0">
+                        <X size={16} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -534,18 +565,18 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   <p className="text-xs font-semibold text-gray-600 mb-1">Hochgeladene Dokumente:</p>
                   {mieterDokumente.map(doc => (
                     <div key={doc.id} className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 group">
-                      <span className="text-base">{MIETER_DOK_ICONS[doc.typ] || '📎'}</span>
+                      <span className="text-base flex items-center">{MIETER_DOK_ICONS[doc.typ] || <Paperclip size={14} />}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-800 truncate">{doc.name}</p>
                         <p className="text-xs text-gray-400">{doc.typ} · {formatBytes(doc.groesse)} · {new Date(doc.hochgeladenAm).toLocaleDateString('de-DE')}</p>
                       </div>
                       <button type="button" onClick={() => handleDokDownload(doc)} disabled={ladeId === doc.id}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50" title="Herunterladen">
-                        {ladeId === doc.id ? '⏳' : '⬇️'}
+                        className="p-1 text-indigo-600 hover:bg-blue-50 rounded disabled:opacity-50" title="Herunterladen">
+                        {ladeId === doc.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                       </button>
                       <button type="button" onClick={() => handleDokDelete(doc)}
                         className="p-1 text-red-400 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Löschen">
-                        🗑️
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   ))}
@@ -553,8 +584,8 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               )}
 
               {mieterDokumente.length === 0 && pendingFiles.length === 0 && !mieter?.id && (
-                <p className="text-xs text-gray-400 text-center py-2">
-                  💡 Du kannst schon jetzt Dokumente auswählen — sie werden zusammen mit dem Mieter gespeichert.
+                <p className="text-xs text-gray-400 text-center py-2 flex items-center justify-center gap-1">
+                  <Lightbulb size={12} /> Du kannst schon jetzt Dokumente auswählen — sie werden zusammen mit dem Mieter gespeichert.
                 </p>
               )}
             </div>
@@ -566,7 +597,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               Abbrechen
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold disabled:opacity-50">
+              className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-semibold disabled:opacity-50">
               {saving ? 'Speichern...' : saving && pendingFiles.length > 0 ? 'Speichern & Hochladen...' : 'Speichern'}
             </button>
           </div>

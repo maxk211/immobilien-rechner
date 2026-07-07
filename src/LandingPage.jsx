@@ -1,42 +1,47 @@
 import { useState } from 'react';
 import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
+import {
+  Home, BarChart3, Wallet, Receipt, Users, TrendingUp, Building2,
+  Check, X, Lock, Key, ShieldCheck, Globe, Mail, ArrowRight, Monitor,
+  Eye, BellOff, Ban, Frown
+} from 'lucide-react';
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
   const [billingOpen, setBillingOpen] = useState(null);
 
   const features = [
     {
-      icon: '📊',
+      icon: BarChart3,
       title: 'Portfolio-Übersicht',
       desc: 'Alle Immobilien auf einen Blick — Rendite, Cashflow und Vermögen in Echtzeit.',
       color: 'blue',
     },
     {
-      icon: '💰',
+      icon: Wallet,
       title: 'Cashflow-Analyse',
       desc: 'Monatliche und jährliche Liquidität berechnen — inkl. Zinsen, Tilgung und Nebenkosten.',
       color: 'emerald',
     },
     {
-      icon: '🧾',
+      icon: Receipt,
       title: 'Steuervorbereitung',
       desc: 'AfA, Werbungskosten, Fahrtkosten — alle Posten für dein Finanzamt automatisch erfasst.',
       color: 'amber',
     },
     {
-      icon: '👥',
+      icon: Users,
       title: 'Mieterverwaltung',
       desc: 'Mieter anlegen, Kautionen tracken, NK-Abrechnungen erstellen — digital und ordentlich.',
       color: 'violet',
     },
     {
-      icon: '📈',
+      icon: TrendingUp,
       title: 'Wertsteigerung tracken',
       desc: 'Immobilienwert, Restschuld und aufgebautes Eigenkapital über die Jahre verfolgen.',
       color: 'blue',
     },
     {
-      icon: '🏢',
+      icon: Building2,
       title: 'Mehrfamilienhäuser',
       desc: 'Wohnungsmanagement für MFH-Eigentümer — jede Einheit einzeln im Blick.',
       color: 'emerald',
@@ -73,6 +78,46 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
     },
   ];
 
+  const securityItems = [
+    {
+      icon: ShieldCheck,
+      title: 'Vollständige Datenisolierung',
+      desc: 'Jeder Account ist technisch komplett von anderen getrennt. Kein anderer Nutzer kann deine Immobilien, Preise oder Vermögenswerte sehen — das ist auf Datenbankebene erzwungen, nicht nur durch Passwörter.',
+    },
+    {
+      icon: Building2,
+      title: 'Bankenstandard: Row Level Security',
+      desc: 'Wir nutzen Row Level Security (RLS) — denselben Mechanismus den Banken für Kontentrennung verwenden. Selbst wenn jemand deinen Account-Link kennt, sieht er nur eine leere Seite.',
+    },
+    {
+      icon: Globe,
+      title: 'EU-Server, verschlüsselt',
+      desc: 'Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL). Die Verbindung ist immer TLS-gesichert. Deine Daten werden nicht verkauft, nicht analysiert, nicht für Werbung genutzt.',
+    },
+    {
+      icon: Eye,
+      title: 'Kein Einblick durch uns',
+      desc: 'Auch wir als Betreiber sehen nicht, welche Immobilien du hast oder was sie wert sind. Das ist kein Versprechen — es ist technisch so umgesetzt, dass es gar nicht anders geht.',
+    },
+    {
+      icon: Key,
+      title: 'Deine Daten gehören dir',
+      desc: 'Du kannst deine Daten jederzeit exportieren oder deinen Account löschen. Bei Kündigung werden auf Wunsch alle Daten vollständig entfernt.',
+    },
+    {
+      icon: BellOff,
+      title: 'Kein Tracking, keine Werbung',
+      desc: 'Wir verkaufen keine Daten. Keine Weitergabe an Dritte, keine Verhaltensanalyse, kein Remarketing. Was in deinem Portfolio passiert, bleibt bei dir.',
+    },
+  ];
+
+  const trustItems = [
+    { icon: Lock, label: 'TLS-Verschlüsselung' },
+    { icon: Globe, label: 'EU-Datenhaltung' },
+    { icon: ShieldCheck, label: 'Row Level Security' },
+    { icon: Ban, label: 'Kein Datenverkauf' },
+  ];
+
   return (
     <div className="min-h-screen bg-white font-sans">
 
@@ -80,9 +125,9 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-xl sm:text-2xl flex-shrink-0">🏠</span>
+            <Home size={22} className="flex-shrink-0 text-indigo-600" />
             <span className="font-bold text-gray-900 text-base sm:text-lg truncate">
-              Immobilien<span className="text-blue-600">Portfolio</span>
+              Immobilien<span className="text-indigo-600">Portfolio</span>
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -94,7 +139,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             </button>
             <button
               onClick={onGetStarted}
-              className="text-xs sm:text-sm font-semibold bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-xl hover:bg-blue-700 transition-all shadow-sm whitespace-nowrap"
+              className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 sm:px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-sm whitespace-nowrap"
             >
               <span className="hidden sm:inline">Kostenlos starten</span>
               <span className="sm:hidden">Starten</span>
@@ -134,9 +179,9 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={onGetStarted}
-                className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-blue-500 hover:bg-blue-400 text-white font-bold text-base sm:text-lg rounded-2xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 text-center"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-base sm:text-lg rounded-2xl transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 text-center flex items-center justify-center gap-2"
               >
-                Jetzt kostenlos starten →
+                Jetzt kostenlos starten <ArrowRight size={18} />
               </button>
               <button
                 onClick={onLogin}
@@ -148,11 +193,11 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
 
             {/* Social proof — stacked on mobile */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0 mt-4 text-sm text-slate-400">
-              <span>✓ 1 Immobilie dauerhaft kostenlos</span>
+              <span className="flex items-center gap-1"><Check size={14} /> 1 Immobilie dauerhaft kostenlos</span>
               <span className="hidden sm:inline">&nbsp;·&nbsp;</span>
-              <span>✓ Alle Features inklusive</span>
+              <span className="flex items-center gap-1"><Check size={14} /> Alle Features inklusive</span>
               <span className="hidden sm:inline">&nbsp;·&nbsp;</span>
-              <span>✓ Jederzeit kündbar</span>
+              <span className="flex items-center gap-1"><Check size={14} /> Jederzeit kündbar</span>
             </div>
           </div>
         </div>
@@ -182,7 +227,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           {/* Header */}
           <div className="text-center mb-10 sm:mb-14">
             <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 text-xs sm:text-sm text-blue-600 font-semibold mb-4">
-              🖥️ So sieht die App aus
+              <Monitor size={14} /> So sieht die App aus
             </div>
             <h2 className="text-2xl sm:text-4xl font-black text-gray-900 mb-3">
               Kein Excel-Chaos. Kein Rätselraten.
@@ -210,7 +255,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                 <img src="/mockup-cashflow.svg" alt="Cashflow-Analyse" className="w-full h-auto block" loading="lazy" />
               </div>
               <div className="text-center px-2">
-                <p className="font-semibold text-gray-800 text-sm sm:text-base">💰 Cashflow-Analyse</p>
+                <p className="font-semibold text-gray-800 text-sm sm:text-base flex items-center justify-center gap-1.5"><Wallet size={16} /> Cashflow-Analyse</p>
                 <p className="text-gray-400 text-xs sm:text-sm mt-0.5">25-Jahres-Prognose und Jahresübersicht je Immobilie</p>
               </div>
             </div>
@@ -219,7 +264,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                 <img src="/mockup-steuer.svg" alt="Steuerberechnung" className="w-full h-auto block" loading="lazy" />
               </div>
               <div className="text-center px-2">
-                <p className="font-semibold text-gray-800 text-sm sm:text-base">🧾 Steuerberechnung</p>
+                <p className="font-semibold text-gray-800 text-sm sm:text-base flex items-center justify-center gap-1.5"><Receipt size={16} /> Steuerberechnung</p>
                 <p className="text-gray-400 text-xs sm:text-sm mt-0.5">AfA, Schuldzinsen, Werbungskosten — automatisch berechnet</p>
               </div>
             </div>
@@ -237,18 +282,18 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           <p className="text-slate-500 text-base sm:text-lg mb-8 sm:mb-10">Die häufigsten Probleme von Immobilienbesitzern</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { icon: '📊', text: 'Excel-Tabellen die niemand mehr versteht — Rendite, Cashflow und Steuer alles durcheinander.' },
-              { icon: '😩', text: 'Kein Überblick über Mieter, Kautionen und offene Zahlungen. Alles verteilt auf Mails und Zettel.' },
-              { icon: '💸', text: 'Beim Steuerberater fehlen immer Belege — AfA, Fahrtkosten, Werbungskosten unklar.' },
+              { icon: BarChart3, text: 'Excel-Tabellen die niemand mehr versteht — Rendite, Cashflow und Steuer alles durcheinander.' },
+              { icon: Frown, text: 'Kein Überblick über Mieter, Kautionen und offene Zahlungen. Alles verteilt auf Mails und Zettel.' },
+              { icon: Wallet, text: 'Beim Steuerberater fehlen immer Belege — AfA, Fahrtkosten, Werbungskosten unklar.' },
             ].map((item, i) => (
               <div key={i} className="bg-white border border-red-100 rounded-2xl p-5 sm:p-6 text-left shadow-sm">
-                <div className="text-3xl mb-3">{item.icon}</div>
+                <div className="text-slate-400 mb-3"><item.icon size={28} /></div>
                 <p className="text-slate-600 text-sm leading-relaxed">{item.text}</p>
               </div>
             ))}
           </div>
           <div className="mt-8 sm:mt-10 text-lg sm:text-xl font-bold text-slate-800">
-            Es gibt einen besseren Weg. 👇
+            Es gibt einen besseren Weg.
           </div>
         </div>
       </section>
@@ -268,8 +313,8 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {features.map((f, i) => (
               <div key={i} className="bg-white border border-gray-100 rounded-2xl p-5 sm:p-6 hover:shadow-md transition-all hover:-translate-y-0.5 flex gap-4 sm:block">
-                <div className={`inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl border text-xl sm:text-2xl flex-shrink-0 sm:mb-4 ${colorMap[f.color]}`}>
-                  {f.icon}
+                <div className={`inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl border flex-shrink-0 sm:mb-4 ${colorMap[f.color]}`}>
+                  <f.icon size={20} />
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-1 sm:mb-2">{f.title}</h3>
@@ -282,7 +327,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+      <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-indigo-600 to-indigo-800 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-3">In 3 Minuten startklar</h2>
@@ -291,16 +336,16 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             {[
-              { step: '1', icon: '✉️', title: 'Kostenlos registrieren', desc: 'Account mit E-Mail anlegen. Dauert 30 Sekunden.' },
-              { step: '2', icon: '🏠', title: 'Erste Immobilie anlegen', desc: 'Kaufpreis, Miete, Finanzierung eingeben — Rendite wird sofort berechnet.' },
-              { step: '3', icon: '📊', title: 'Portfolio im Blick behalten', desc: 'Cashflow, Steuer, Mieter — alles jederzeit griffbereit.' },
+              { step: '1', icon: Mail, title: 'Kostenlos registrieren', desc: 'Account mit E-Mail anlegen. Dauert 30 Sekunden.' },
+              { step: '2', icon: Home, title: 'Erste Immobilie anlegen', desc: 'Kaufpreis, Miete, Finanzierung eingeben — Rendite wird sofort berechnet.' },
+              { step: '3', icon: BarChart3, title: 'Portfolio im Blick behalten', desc: 'Cashflow, Steuer, Mieter — alles jederzeit griffbereit.' },
             ].map((item) => (
               <div key={item.step} className="relative bg-white/10 border border-white/20 rounded-2xl p-5 sm:p-6 flex sm:block items-start gap-4 sm:gap-0 sm:text-center">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center font-black text-base sm:text-lg flex-shrink-0 sm:mx-auto sm:mb-4">
                   {item.step}
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl mb-1 sm:mb-3">{item.icon}</div>
+                  <div className="flex sm:justify-center mb-1 sm:mb-3"><item.icon size={28} /></div>
                   <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">{item.title}</h3>
                   <p className="text-blue-200 text-sm leading-relaxed">{item.desc}</p>
                 </div>
@@ -311,9 +356,9 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           <div className="text-center mt-8 sm:mt-10">
             <button
               onClick={onGetStarted}
-              className="w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-blue-700 font-bold text-base sm:text-lg rounded-2xl hover:bg-blue-50 transition-all shadow-lg"
+              className="w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-indigo-700 font-bold text-base sm:text-lg rounded-2xl hover:bg-blue-50 transition-all shadow-lg inline-flex items-center gap-2"
             >
-              Jetzt kostenlos starten →
+              Jetzt kostenlos starten <ArrowRight size={18} />
             </button>
           </div>
         </div>
@@ -347,11 +392,11 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   'Cloud-Speicherung',
                 ].map(item => (
                   <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
-                    <span className="text-emerald-500 font-bold flex-shrink-0">✓</span> {item}
+                    <Check size={14} className="text-emerald-500 flex-shrink-0" /> {item}
                   </li>
                 ))}
                 <li className="flex items-center gap-3 text-sm text-gray-400">
-                  <span className="text-gray-300 flex-shrink-0">✗</span> Mehr als 1 Immobilie
+                  <X size={14} className="text-gray-300 flex-shrink-0" /> Mehr als 1 Immobilie
                 </li>
               </ul>
               <button
@@ -363,7 +408,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             </div>
 
             {/* Pro */}
-            <div className="relative bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-blue-500/30 mt-4 sm:mt-0">
+            <div className="relative bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/30 mt-4 sm:mt-0">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow whitespace-nowrap">
                 EMPFOHLEN
               </div>
@@ -388,15 +433,15 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   'Prioritäts-Support',
                 ].map(item => (
                   <li key={item} className="flex items-center gap-3 text-sm text-blue-100">
-                    <span className="text-emerald-400 font-bold flex-shrink-0">✓</span> {item}
+                    <Check size={14} className="text-emerald-400 flex-shrink-0" /> {item}
                   </li>
                 ))}
               </ul>
               <button
                 onClick={onGetStarted}
-                className="w-full py-3 bg-white text-blue-700 rounded-xl font-bold hover:bg-blue-50 transition-all shadow"
+                className="w-full py-3 bg-white text-indigo-700 rounded-xl font-bold hover:bg-blue-50 transition-all shadow inline-flex items-center justify-center gap-2"
               >
-                Pro freischalten →
+                Pro freischalten <ArrowRight size={16} />
               </button>
             </div>
           </div>
@@ -412,7 +457,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-12">
             <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 text-sm text-emerald-400 mb-5">
-              <span>🔒</span> Deine Daten — nur für dich
+              <Lock size={14} /> Deine Daten — nur für dich
             </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-3">
               Niemand sieht dein Vermögen außer dir
@@ -424,40 +469,9 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-10 sm:mb-12">
-            {[
-              {
-                icon: '🛡️',
-                title: 'Vollständige Datenisolierung',
-                desc: 'Jeder Account ist technisch komplett von anderen getrennt. Kein anderer Nutzer kann deine Immobilien, Preise oder Vermögenswerte sehen — das ist auf Datenbankebene erzwungen, nicht nur durch Passwörter.',
-              },
-              {
-                icon: '🏦',
-                title: 'Bankenstandard: Row Level Security',
-                desc: 'Wir nutzen Row Level Security (RLS) — denselben Mechanismus den Banken für Kontentrennung verwenden. Selbst wenn jemand deinen Account-Link kennt, sieht er nur eine leere Seite.',
-              },
-              {
-                icon: '🇪🇺',
-                title: 'EU-Server, verschlüsselt',
-                desc: 'Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL). Die Verbindung ist immer TLS-gesichert. Deine Daten werden nicht verkauft, nicht analysiert, nicht für Werbung genutzt.',
-              },
-              {
-                icon: '👁️‍🗨️',
-                title: 'Kein Einblick durch uns',
-                desc: 'Auch wir als Betreiber sehen nicht, welche Immobilien du hast oder was sie wert sind. Das ist kein Versprechen — es ist technisch so umgesetzt, dass es gar nicht anders geht.',
-              },
-              {
-                icon: '🔑',
-                title: 'Deine Daten gehören dir',
-                desc: 'Du kannst deine Daten jederzeit exportieren oder deinen Account löschen. Bei Kündigung werden auf Wunsch alle Daten vollständig entfernt.',
-              },
-              {
-                icon: '📵',
-                title: 'Kein Tracking, keine Werbung',
-                desc: 'Wir verkaufen keine Daten. Keine Weitergabe an Dritte, keine Verhaltensanalyse, kein Remarketing. Was in deinem Portfolio passiert, bleibt bei dir.',
-              },
-            ].map((item, i) => (
+            {securityItems.map((item, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6 hover:bg-white/8 transition-all flex gap-4 sm:block">
-                <div className="text-2xl sm:text-3xl flex-shrink-0 sm:mb-3">{item.icon}</div>
+                <div className="text-slate-300 flex-shrink-0 sm:mb-3"><item.icon size={24} /></div>
                 <div>
                   <h3 className="font-bold text-white mb-1 sm:mb-2 text-sm sm:text-base">{item.title}</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
@@ -468,14 +482,9 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
 
           {/* Trust bar */}
           <div className="border-t border-white/10 pt-8 sm:pt-10 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-            {[
-              { icon: '🔒', label: 'TLS-Verschlüsselung' },
-              { icon: '🇪🇺', label: 'EU-Datenhaltung' },
-              { icon: '🛡️', label: 'Row Level Security' },
-              { icon: '🚫', label: 'Kein Datenverkauf' },
-            ].map(item => (
+            {trustItems.map(item => (
               <div key={item.label} className="flex flex-col items-center gap-2">
-                <span className="text-2xl">{item.icon}</span>
+                <item.icon size={24} className="text-slate-300" />
                 <span className="text-xs sm:text-sm text-slate-400 font-medium">{item.label}</span>
               </div>
             ))}
@@ -511,7 +520,9 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
       {/* ── FINAL CTA ── */}
       <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-slate-900 to-blue-950 text-white text-center">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="text-4xl sm:text-5xl mb-4">🏠</div>
+          <div className="flex justify-center mb-4">
+            <Home size={48} className="text-indigo-400" />
+          </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-4">
             Bereit, dein Portfolio zu optimieren?
           </h2>
@@ -520,9 +531,9 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           </p>
           <button
             onClick={onGetStarted}
-            className="w-full sm:w-auto px-8 sm:px-10 py-4 bg-blue-500 hover:bg-blue-400 text-white font-bold text-lg sm:text-xl rounded-2xl transition-all shadow-lg shadow-blue-500/30 hover:-translate-y-0.5"
+            className="w-full sm:w-auto px-8 sm:px-10 py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-lg sm:text-xl rounded-2xl transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 inline-flex items-center gap-2"
           >
-            Jetzt kostenlos starten →
+            Jetzt kostenlos starten <ArrowRight size={20} />
           </button>
           <p className="text-slate-500 text-xs sm:text-sm mt-4">
             Keine Kreditkarte · Keine Mindestlaufzeit · Sofort loslegen
@@ -534,7 +545,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
       <footer className="bg-slate-950 text-slate-500 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <span>🏠</span>
+            <Home size={16} />
             <span className="font-semibold text-slate-400">ImmobilienPortfolio</span>
           </div>
           <div className="flex items-center gap-4 sm:gap-6">

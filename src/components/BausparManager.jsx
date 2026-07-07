@@ -1,3 +1,4 @@
+import { Building2, Wallet, CalendarDays, TrendingUp, Clock, Check, FileText, AlertTriangle, Info, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 
 const BausparManager = ({ params, updateParams }) => {
@@ -47,7 +48,7 @@ const BausparManager = ({ params, updateParams }) => {
       {/* Verträge */}
       {vertraege.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center">
-          <div className="text-4xl mb-3">🏗</div>
+          <div className="flex justify-center mb-3"><Building2 size={40} className="text-gray-300" /></div>
           <p className="text-gray-500 text-sm">Noch kein Bausparvertrag angelegt.</p>
           <p className="text-gray-400 text-xs mt-1">Die monatliche Sparrate wird im Cashflow als Abfluss eingerechnet.</p>
         </div>
@@ -65,7 +66,7 @@ const BausparManager = ({ params, updateParams }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🏗</span>
+                    <Building2 size={22} className="text-gray-500" />
                     <div>
                       <input
                         type="text"
@@ -75,19 +76,19 @@ const BausparManager = ({ params, updateParams }) => {
                         className="text-base font-bold text-gray-800 border-0 border-b-2 border-dashed border-gray-200 focus:border-indigo-400 outline-none bg-transparent w-64"
                       />
                       {istZuteilungsreif && (
-                        <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">✓ Zuteilungsreif</span>
+                        <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5"><Check size={10} /> Zuteilungsreif</span>
                       )}
                     </div>
                   </div>
-                  <button onClick={() => deleteVertrag(v.id)} className="text-red-400 hover:text-red-600 text-sm font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
-                    ✕ Löschen
+                  <button onClick={() => deleteVertrag(v.id)} className="text-red-400 hover:text-red-600 text-sm font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1">
+                    <X size={14} /> Löschen
                   </button>
                 </div>
 
                 {/* Felder */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-500 font-semibold mb-1.5">💰 Aktueller Sparbetrag</label>
+                    <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><Wallet size={12} /> Aktueller Sparbetrag</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -102,7 +103,7 @@ const BausparManager = ({ params, updateParams }) => {
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 font-semibold mb-1.5">📅 Monatliche Sparrate</label>
+                    <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><CalendarDays size={12} /> Monatliche Sparrate</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -113,11 +114,11 @@ const BausparManager = ({ params, updateParams }) => {
                       />
                       <span className="text-sm text-gray-400 shrink-0">€/Mo.</span>
                     </div>
-                    <p className="text-[10px] text-amber-500 mt-1 font-semibold">⚠ Reduziert monatlichen Cashflow</p>
+                    <p className="text-[10px] text-amber-500 mt-1 font-semibold flex items-center gap-0.5"><AlertTriangle size={10} /> Reduziert monatlichen Cashflow</p>
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 font-semibold mb-1.5">📈 Gesicherter Zinssatz (Darlehen)</label>
+                    <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><TrendingUp size={12} /> Gesicherter Zinssatz (Darlehen)</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -133,7 +134,7 @@ const BausparManager = ({ params, updateParams }) => {
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 font-semibold mb-1.5">🗓 Zuteilungsreife ab</label>
+                    <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><CalendarDays size={12} /> Zuteilungsreife ab</label>
                     <input
                       type="date"
                       value={v.zuteilungsreifAb || ''}
@@ -142,18 +143,18 @@ const BausparManager = ({ params, updateParams }) => {
                     />
                     {monateVerbleibend !== null && (
                       <p className="text-[10px] text-indigo-500 mt-1 font-semibold">
-                        ⏳ noch ca. {monateVerbleibend} Monate bis zur Zuteilung
+                        <Clock size={10} className="inline mr-0.5" /> noch ca. {monateVerbleibend} Monate bis zur Zuteilung
                       </p>
                     )}
                     {istZuteilungsreif && (
-                      <p className="text-[10px] text-emerald-600 mt-1 font-semibold">✓ Bereits zuteilungsreif — Sparrate wird im Cashflow nicht mehr abgezogen</p>
+                      <p className="text-[10px] text-emerald-600 mt-1 font-semibold flex items-center gap-0.5"><Check size={10} /> Bereits zuteilungsreif — Sparrate wird im Cashflow nicht mehr abgezogen</p>
                     )}
                   </div>
                 </div>
 
                 {/* Notiz */}
                 <div>
-                  <label className="block text-xs text-gray-500 font-semibold mb-1.5">📝 Notiz</label>
+                  <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><FileText size={12} /> Notiz</label>
                   <input
                     type="text"
                     value={v.notiz || ''}
@@ -193,7 +194,7 @@ const BausparManager = ({ params, updateParams }) => {
       {/* Hinweis */}
       {vertraege.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
-          <strong>ℹ Cashflow-Integration:</strong> Die monatlichen Sparraten aller aktiven Bausparverträge werden im Cashflow-Tab als Abfluss berücksichtigt — bis zum jeweiligen Zuteilungsreife-Datum.
+          <strong className="inline-flex items-center gap-1"><Info size={12} /> Cashflow-Integration:</strong> Die monatlichen Sparraten aller aktiven Bausparverträge werden im Cashflow-Tab als Abfluss berücksichtigt — bis zum jeweiligen Zuteilungsreife-Datum.
         </div>
       )}
 

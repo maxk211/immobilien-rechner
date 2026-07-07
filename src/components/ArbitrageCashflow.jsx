@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { BarChart3, TrendingUp, Eye, CalendarDays } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from '../utils/miete.js';
@@ -70,7 +71,7 @@ const ArbitrageCashflow = ({ params }) => {
     <div className="space-y-5">
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
-        {[{ id: 'aktuell', label: '📊 Aktuell' }, { id: 'verlauf', label: '📈 Jahresverlauf' }, { id: 'prognose', label: '🔭 Prognose' }].map(t => (
+        {[{ id: 'aktuell', label: <span className="inline-flex items-center gap-1"><BarChart3 size={13}/> Aktuell</span> }, { id: 'verlauf', label: <span className="inline-flex items-center gap-1"><TrendingUp size={13}/> Jahresverlauf</span> }, { id: 'prognose', label: <span className="inline-flex items-center gap-1"><Eye size={13}/> Prognose</span> }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-1 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all ${tab === t.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
             {t.label}
@@ -144,7 +145,7 @@ const ArbitrageCashflow = ({ params }) => {
                 <p className="text-xs text-gray-500 mb-1">Ø pro Monat (historisch)</p>
                 {(() => {
                   const monate = Math.max(1, Math.round((bisWann - mietvertragStart) / (1000 * 60 * 60 * 24 * 30.44)));
-                  return <p className="text-xl font-black text-blue-700">{formatCurrency(bisherigeCF / monate)}/Mo.</p>;
+                  return <p className="text-xl font-black text-indigo-700">{formatCurrency(bisherigeCF / monate)}/Mo.</p>;
                 })()}
               </div>
             </div>
@@ -204,7 +205,7 @@ const ArbitrageCashflow = ({ params }) => {
             </>
           ) : (
             <div className="text-center py-10 text-gray-400">
-              <p className="text-3xl mb-2">📅</p>
+              <CalendarDays size={32} className="mx-auto mb-2 text-gray-300" />
               <p className="text-sm">Kein Mietvertrag-Startdatum hinterlegt</p>
               <p className="text-xs mt-1">Trage das Startdatum unter Übersicht → Grunddaten ein</p>
             </div>

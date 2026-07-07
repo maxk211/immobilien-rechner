@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DoorOpen, ClipboardList, Key, Zap, Droplets, Flame, Check, X } from 'lucide-react';
 
 const MieterAuszug = ({ mieter, onSave, onClose }) => {
   const [form, setForm] = useState({
@@ -30,10 +31,10 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
         <div className="sticky top-0 bg-red-700 text-white p-5 rounded-t-xl flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold">🚪 Auszug: {mieter.name}</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2"><DoorOpen size={20} /> Auszug: {mieter.name}</h2>
             <p className="text-red-200 text-sm">Mieter als ausgezogen markieren</p>
           </div>
-          <button onClick={onClose} className="text-white text-2xl hover:text-red-200">&times;</button>
+          <button onClick={onClose} className="text-white hover:text-red-200"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
@@ -44,28 +45,28 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
 
           {/* Übergabeprotokoll */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm font-semibold text-gray-700 mb-3">📋 Übergabeprotokoll</p>
+            <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5"><ClipboardList size={14} /> Übergabeprotokoll</p>
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">⚡ Strom</label>
+                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Zap size={12} /> Strom</label>
                 <input type="number" value={form.zaehlerstandStrom} onChange={e => setForm({...form, zaehlerstandStrom: e.target.value})}
                   placeholder="kWh" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">💧 Wasser</label>
+                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Droplets size={12} /> Wasser</label>
                 <input type="number" value={form.zaehlerstandWasser} onChange={e => setForm({...form, zaehlerstandWasser: e.target.value})}
                   placeholder="m³" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">🔥 Heizung</label>
+                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Flame size={12} /> Heizung</label>
                 <input type="number" value={form.zaehlerstandHeizung} onChange={e => setForm({...form, zaehlerstandHeizung: e.target.value})}
                   placeholder="kWh" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
               </div>
             </div>
             <label className="flex items-center gap-2 mb-3 cursor-pointer">
               <input type="checkbox" checked={form.schlusselZurueck} onChange={e => setForm({...form, schlusselZurueck: e.target.checked})}
-                className="w-4 h-4 accent-blue-600" />
-              <span className="text-sm text-gray-700">🔑 Schlüssel zurückgegeben</span>
+                className="w-4 h-4 accent-indigo-600" />
+              <span className="text-sm text-gray-700 flex items-center gap-1"><Key size={14} /> Schlüssel zurückgegeben</span>
             </label>
             <textarea value={form.zustandNotizen} onChange={e => setForm({...form, zustandNotizen: e.target.value})}
               rows={3} placeholder="Zustand der Wohnung, Schäden, Besonderheiten..."
@@ -75,7 +76,7 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
           {/* Kaution */}
           {mieter.kaution_betrag > 0 && (
             <div className="bg-yellow-50 rounded-lg p-4">
-              <p className="text-sm font-semibold text-yellow-800 mb-3">🔑 Kautionsrückzahlung</p>
+              <p className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-1.5"><Key size={14} /> Kautionsrückzahlung</p>
               <div className="flex justify-between text-sm mb-3">
                 <span className="text-gray-600">Kaution gesamt:</span>
                 <span className="font-semibold">{Number(mieter.kaution_betrag).toLocaleString('de-DE')} €</span>
@@ -98,7 +99,7 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
               </div>
               <label className="flex items-center gap-2 mb-2 cursor-pointer">
                 <input type="checkbox" checked={form.kautionZurueck} onChange={e => setForm({...form, kautionZurueck: e.target.checked})}
-                  className="w-4 h-4 accent-blue-600" />
+                  className="w-4 h-4 accent-indigo-600" />
                 <span className="text-sm text-gray-700">Kaution bereits zurückgezahlt</span>
               </label>
               {form.kautionZurueck && (
@@ -117,8 +118,8 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
               Abbrechen
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:opacity-50">
-              {saving ? 'Speichern...' : '✓ Auszug bestätigen'}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5">
+              <Check size={16} /> {saving ? 'Speichern...' : 'Auszug bestätigen'}
             </button>
           </div>
         </form>

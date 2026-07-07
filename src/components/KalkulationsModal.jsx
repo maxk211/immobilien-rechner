@@ -2,6 +2,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
 import { loadKalkulationen, saveKalkulation, deleteKalkulation } from '../supabaseClient';
+import {
+  Calculator, X, Home, RefreshCw, FolderOpen, Loader, AlertTriangle,
+  Pencil, Trash2, Hammer, Building2, Wallet, BarChart3, ClipboardList,
+  TrendingUp, CheckCircle2, Lightbulb, Save, Wrench, Zap, Layers,
+  Droplets, DoorOpen, Leaf, UtensilsCrossed, XCircle, Scale, FileText
+} from 'lucide-react';
 
 const KalkulationsModal = ({ onClose }) => {
   const [typ, setTyp] = useState('kauf'); // 'kauf' oder 'arbitrage'
@@ -32,15 +38,15 @@ const KalkulationsModal = ({ onClose }) => {
   const [sanierungFinanziert, setSanierungFinanziert] = useState(true); // true = Kredit, false = EK
 
   const GEWERKE = [
-    { id: 'dach_fassade',    label: 'Dach & Fassade',    icon: '🏗️' },
-    { id: 'heizung_sanitaer',label: 'Heizung & Sanitär', icon: '🔧' },
-    { id: 'elektro',         label: 'Elektro',            icon: '⚡' },
-    { id: 'boeden_waende',   label: 'Böden & Wände',      icon: '🪵' },
-    { id: 'fliesen_bad',     label: 'Fliesen / Bad',      icon: '🚿' },
-    { id: 'fenster_tueren',  label: 'Fenster & Türen',    icon: '🚪' },
-    { id: 'keller_garage',   label: 'Keller & Garage',    icon: '🏚️' },
-    { id: 'aussenanlagen',   label: 'Außenanlagen',        icon: '🌿' },
-    { id: 'kueche',          label: 'Küche',               icon: '🍳' },
+    { id: 'dach_fassade',    label: 'Dach & Fassade',    icon: <Hammer size={16}/> },
+    { id: 'heizung_sanitaer',label: 'Heizung & Sanitär', icon: <Wrench size={16}/> },
+    { id: 'elektro',         label: 'Elektro',            icon: <Zap size={16}/> },
+    { id: 'boeden_waende',   label: 'Böden & Wände',      icon: <Layers size={16}/> },
+    { id: 'fliesen_bad',     label: 'Fliesen / Bad',      icon: <Droplets size={16}/> },
+    { id: 'fenster_tueren',  label: 'Fenster & Türen',    icon: <DoorOpen size={16}/> },
+    { id: 'keller_garage',   label: 'Keller & Garage',    icon: <Building2 size={16}/> },
+    { id: 'aussenanlagen',   label: 'Außenanlagen',        icon: <Leaf size={16}/> },
+    { id: 'kueche',          label: 'Küche',               icon: <UtensilsCrossed size={16}/> },
   ];
 
   // Arbitrage-Parameter
@@ -258,10 +264,10 @@ const KalkulationsModal = ({ onClose }) => {
         <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-t-2xl">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold">🧮 Schnellkalkulation</h2>
+              <h2 className="text-2xl font-bold flex items-center gap-2"><Calculator size={24}/> Schnellkalkulation</h2>
               <p className="text-purple-200 text-sm">Prüfe ob sich eine Immobilie lohnt — speichere und lade Kalkulationen</p>
             </div>
-            <button onClick={onClose} className="text-white hover:text-purple-200 text-2xl">×</button>
+            <button onClick={onClose} className="text-white hover:text-purple-200"><X size={24}/></button>
           </div>
 
           {/* Typ-Auswahl + Gespeichert-Tab */}
@@ -270,19 +276,19 @@ const KalkulationsModal = ({ onClose }) => {
               onClick={() => { setTyp('kauf'); setShowSaved(false); }}
               className={`px-4 py-2 rounded-lg font-semibold transition-all ${!showSaved && typ === 'kauf' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
             >
-              🏠 Kaufimmobilie
+              <Home size={16} className="inline mr-1"/>Kaufimmobilie
             </button>
             <button
               onClick={() => { setTyp('arbitrage'); setShowSaved(false); }}
               className={`px-4 py-2 rounded-lg font-semibold transition-all ${!showSaved && typ === 'arbitrage' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
             >
-              🔄 Miet-Arbitrage
+              <RefreshCw size={16} className="inline mr-1"/>Miet-Arbitrage
             </button>
             <button
               onClick={() => setShowSaved(v => !v)}
               className={`px-4 py-2 rounded-lg font-semibold transition-all ml-auto ${showSaved ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}
             >
-              📁 Gespeichert {savedCalcs.length > 0 && `(${savedCalcs.length})`}
+              <FolderOpen size={16} className="inline mr-1"/>Gespeichert {savedCalcs.length > 0 && `(${savedCalcs.length})`}
             </button>
           </div>
         </div>
@@ -292,22 +298,22 @@ const KalkulationsModal = ({ onClose }) => {
           {showSaved ? (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-800">📁 Gespeicherte Kalkulationen</h3>
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-1"><FolderOpen size={18}/> Gespeicherte Kalkulationen</h3>
                 <span className="text-sm text-gray-500">{savedCalcs.length} gespeichert</span>
               </div>
               {kalkLoading ? (
                 <div className="text-center py-16 text-gray-400">
-                  <div className="text-3xl mb-3 animate-spin">⏳</div>
+                  <div className="flex justify-center mb-3"><Loader size={28} className="animate-spin text-gray-400"/></div>
                   <p className="text-sm">Kalkulationen werden geladen…</p>
                 </div>
               ) : kalkError ? (
                 <div className="text-center py-10 text-red-500">
-                  <div className="text-3xl mb-2">⚠️</div>
+                  <div className="flex justify-center mb-2"><AlertTriangle size={28} className="text-red-400"/></div>
                   <p className="text-sm font-medium">{kalkError}</p>
                 </div>
               ) : savedCalcs.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
-                  <div className="text-5xl mb-3">🗂️</div>
+                  <div className="flex justify-center mb-3"><FolderOpen size={40} className="text-gray-300"/></div>
                   <p className="font-medium">Noch keine Kalkulationen gespeichert</p>
                   <p className="text-sm mt-1">Erstelle eine Kalkulation und klicke auf „Speichern"</p>
                 </div>
@@ -317,7 +323,9 @@ const KalkulationsModal = ({ onClose }) => {
                     const d = new Date(calc.savedAt);
                     const datum = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
                     const uhr = d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
-                    const typLabel = calc.typ === 'arbitrage' ? '🔄 Miet-Arbitrage' : '🏠 Kaufimmobilie';
+                    const typLabel = calc.typ === 'arbitrage'
+                      ? <span className="inline-flex items-center gap-1"><RefreshCw size={11}/> Miet-Arbitrage</span>
+                      : <span className="inline-flex items-center gap-1"><Home size={11}/> Kaufimmobilie</span>;
                     const betragLabel = calc.typ === 'arbitrage'
                       ? `EK: ${new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(calc.eigeneWarmmiete || 0)}/Mo.`
                       : `Kaufpreis: ${new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(calc.kaufpreis || 0)}`;
@@ -343,14 +351,14 @@ const KalkulationsModal = ({ onClose }) => {
                               className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200"
                               title="Aktuellen Stand in dieser Kalkulation speichern"
                             >
-                              ✏️
+                              <Pencil size={14}/>
                             </button>
                             <button
                               onClick={() => handleDelete(calc.id)}
                               className="px-3 py-1.5 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100"
                               title="Löschen"
                             >
-                              🗑️
+                              <Trash2 size={14}/>
                             </button>
                           </div>
                         </div>
@@ -364,7 +372,7 @@ const KalkulationsModal = ({ onClose }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Eingaben */}
               <div className="space-y-4">
-                <h3 className="font-bold text-gray-700 border-b pb-2">📝 Eingaben</h3>
+                <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-1"><FileText size={16}/> Eingaben</h3>
 
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-blue-800 text-sm mb-3">Kaufdaten</h4>
@@ -497,7 +505,7 @@ const KalkulationsModal = ({ onClose }) => {
                 {/* Sanierungskosten */}
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-orange-800 text-sm">🔨 Sanierung & Renovierung</h4>
+                    <h4 className="font-semibold text-orange-800 text-sm flex items-center gap-1"><Hammer size={14}/> Sanierung & Renovierung</h4>
                     {kaufBerechnung.totalSanierung > 0 && (
                       <div className="flex gap-1">
                         <button
@@ -505,14 +513,14 @@ const KalkulationsModal = ({ onClose }) => {
                           className={`px-2 py-0.5 rounded text-xs font-semibold border transition-all ${sanierungFinanziert ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-orange-50'}`}
                           title="Sanierungskosten werden in den Kredit eingeschlossen"
                         >
-                          🏦 Mitfinanziert
+                          <Building2 size={12} className="inline mr-1"/>Mitfinanziert
                         </button>
                         <button
                           onClick={() => setSanierungFinanziert(false)}
                           className={`px-2 py-0.5 rounded text-xs font-semibold border transition-all ${!sanierungFinanziert ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-orange-50'}`}
                           title="Sanierungskosten werden aus Eigenkapital bezahlt"
                         >
-                          💰 Aus EK
+                          <Wallet size={12} className="inline mr-1"/>Aus EK
                         </button>
                       </div>
                     )}
@@ -559,7 +567,7 @@ const KalkulationsModal = ({ onClose }) => {
 
               {/* Ergebnisse */}
               <div className="space-y-4">
-                <h3 className="font-bold text-gray-700 border-b pb-2">📊 Ergebnis</h3>
+                <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-1"><BarChart3 size={16}/> Ergebnis</h3>
 
                 {/* Investitions-Übersicht */}
                 <div className="bg-gray-100 p-4 rounded-lg">
@@ -575,7 +583,7 @@ const KalkulationsModal = ({ onClose }) => {
                       <span className="text-right font-semibold text-orange-700">{formatCurrency(kaufBerechnung.totalSanierung)}</span>
                     </>)}
                     <span className="text-gray-600">= Gesamtinvestition:</span>
-                    <span className="text-right font-bold text-blue-700">{formatCurrency(kaufBerechnung.gesamtinvestition)}</span>
+                    <span className="text-right font-bold text-indigo-700">{formatCurrency(kaufBerechnung.gesamtinvestition)}</span>
                     {!sanierungFinanziert && kaufBerechnung.totalSanierung > 0 ? (<>
                       <span className="text-gray-600">- EK (Kaufpreis):</span>
                       <span className="text-right font-semibold text-green-600">{formatCurrency(eigenkapital)}</span>
@@ -594,7 +602,7 @@ const KalkulationsModal = ({ onClose }) => {
 
                 {/* Cashflow */}
                 <div className={`p-4 rounded-lg ${kaufBerechnung.cashflowMonat >= 0 ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
-                  <h4 className="font-semibold text-sm mb-2">💰 Monatlicher Cashflow</h4>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1"><Wallet size={14}/> Monatlicher Cashflow</h4>
                   <div className="grid grid-cols-2 gap-1 text-sm mb-3">
                     <span>
                       {mietmodus === 'qm' ? `Kaltmiete (${wohnflaecheKalk}m² × ${mietPreisProQm}€)` :
@@ -623,7 +631,7 @@ const KalkulationsModal = ({ onClose }) => {
 
                 {/* Steuerliche Betrachtung */}
                 <div className="bg-purple-100 p-4 rounded-lg border border-purple-300">
-                  <h4 className="font-semibold text-sm mb-2">📋 Steuerliche Betrachtung (jährlich)</h4>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1"><ClipboardList size={14}/> Steuerliche Betrachtung (jährlich)</h4>
                   <div className="grid grid-cols-2 gap-1 text-sm">
                     <span>Mieteinnahmen ({formatCurrency(kaufBerechnung.miete)}/M.):</span>
                     <span className="text-right">{formatCurrency(kaufBerechnung.jahresMiete)}</span>
@@ -654,11 +662,11 @@ const KalkulationsModal = ({ onClose }) => {
 
                 {/* Renditen */}
                 <div className="bg-blue-100 p-4 rounded-lg">
-                  <h4 className="font-semibold text-sm mb-2">📈 Renditen</h4>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1"><TrendingUp size={14}/> Renditen</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="text-center p-2 bg-white rounded">
                       <div className="text-xs text-gray-500">Bruttomietrendite</div>
-                      <div className="text-xl font-bold text-blue-700">{kaufBerechnung.bruttoRendite.toFixed(2)}%</div>
+                      <div className="text-xl font-bold text-indigo-700">{kaufBerechnung.bruttoRendite.toFixed(2)}%</div>
                     </div>
                     <div className="text-center p-2 bg-white rounded">
                       <div className="text-xs text-gray-500">EK-Rendite (n. Steuer)</div>
@@ -672,7 +680,9 @@ const KalkulationsModal = ({ onClose }) => {
                 {/* Fazit */}
                 <div className={`p-4 rounded-lg ${kaufBerechnung.cashflowNachSteuer >= 0 ? 'bg-green-200' : 'bg-yellow-200'}`}>
                   <div className="font-bold">
-                    {kaufBerechnung.cashflowNachSteuer >= 0 ? '✅ Cashflow-positiv!' : '⚠️ Cashflow-negativ'}
+                    {kaufBerechnung.cashflowNachSteuer >= 0
+                      ? <span className="inline-flex items-center gap-1"><CheckCircle2 size={16}/> Cashflow-positiv!</span>
+                      : <span className="inline-flex items-center gap-1"><AlertTriangle size={16}/> Cashflow-negativ</span>}
                   </div>
                   <p className="text-sm mt-1">
                     {kaufBerechnung.cashflowNachSteuer >= 0
@@ -688,7 +698,7 @@ const KalkulationsModal = ({ onClose }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Eingaben */}
               <div className="space-y-4">
-                <h3 className="font-bold text-gray-700 border-b pb-2">📝 Eingaben</h3>
+                <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-1"><FileText size={16}/> Eingaben</h3>
 
                 <div className="bg-red-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-red-800 text-sm mb-3">Deine Mietkosten</h4>
@@ -741,11 +751,11 @@ const KalkulationsModal = ({ onClose }) => {
 
               {/* Ergebnisse */}
               <div className="space-y-4">
-                <h3 className="font-bold text-gray-700 border-b pb-2">📊 Ergebnis</h3>
+                <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-1"><BarChart3 size={16}/> Ergebnis</h3>
 
                 {/* Monatlicher Cashflow */}
                 <div className={`p-4 rounded-lg ${arbitrageBerechnung.cashflowMonat >= 0 ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
-                  <h4 className="font-semibold text-sm mb-2">💰 Monatlicher Cashflow</h4>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1"><Wallet size={14}/> Monatlicher Cashflow</h4>
                   <div className="grid grid-cols-2 gap-1 text-sm mb-3">
                     <span>Einnahmen ({anzahlZimmer} × {formatCurrency(mietProZimmer)}):</span>
                     <span className="text-right text-green-700">+{formatCurrency(arbitrageBerechnung.monatlicheEinnahmen)}</span>
@@ -770,7 +780,7 @@ const KalkulationsModal = ({ onClose }) => {
 
                 {/* Steuerliche Betrachtung */}
                 <div className="bg-purple-100 p-4 rounded-lg border border-purple-300">
-                  <h4 className="font-semibold text-sm mb-2">📋 Steuerliche Betrachtung</h4>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1"><ClipboardList size={14}/> Steuerliche Betrachtung</h4>
                   <div className="grid grid-cols-2 gap-1 text-sm">
                     <span>Einkünfte/Jahr:</span>
                     <span className="text-right">{formatCurrency(arbitrageBerechnung.zuVersteuern)}</span>
@@ -790,7 +800,11 @@ const KalkulationsModal = ({ onClose }) => {
                 {/* Fazit */}
                 <div className={`p-4 rounded-lg ${arbitrageBerechnung.cashflowMonat >= 0 ? 'bg-green-200' : 'bg-red-200'}`}>
                   <div className="font-bold text-lg">
-                    {arbitrageBerechnung.cashflowMonat > 0 ? '✅ Profitabel!' : arbitrageBerechnung.cashflowMonat === 0 ? '⚖️ Break-Even' : '❌ Nicht profitabel'}
+                    {arbitrageBerechnung.cashflowMonat > 0
+                      ? <span className="inline-flex items-center gap-1"><CheckCircle2 size={18}/> Profitabel!</span>
+                      : arbitrageBerechnung.cashflowMonat === 0
+                        ? <span className="inline-flex items-center gap-1"><Scale size={18}/> Break-Even</span>
+                        : <span className="inline-flex items-center gap-1"><XCircle size={18}/> Nicht profitabel</span>}
                   </div>
                   <p className="text-sm mt-1">
                     {arbitrageBerechnung.cashflowMonat > 0
@@ -804,7 +818,7 @@ const KalkulationsModal = ({ onClose }) => {
 
                 {/* Hinweis */}
                 <div className="bg-gray-100 p-3 rounded-lg text-xs text-gray-600">
-                  <strong>💡 Hinweis:</strong> Bei Miet-Arbitrage prüfe unbedingt deinen Mietvertrag auf Untervermietungsrechte und informiere dich über lokale Regelungen.
+                  <strong className="inline-flex items-center gap-1"><Lightbulb size={12}/> Hinweis:</strong> Bei Miet-Arbitrage prüfe unbedingt deinen Mietvertrag auf Untervermietungsrechte und informiere dich über lokale Regelungen.
                 </div>
               </div>
             </div>
@@ -817,7 +831,9 @@ const KalkulationsModal = ({ onClose }) => {
           {saveDialogOpen && (
             <div className="px-5 pt-4 pb-3 border-b bg-purple-50">
               <p className="text-sm font-semibold text-purple-800 mb-2">
-                {editingId ? '✏️ Kalkulation überschreiben' : '💾 Kalkulation speichern'}
+                {editingId
+                  ? <span className="inline-flex items-center gap-1"><Pencil size={14}/> Kalkulation überschreiben</span>
+                  : <span className="inline-flex items-center gap-1"><Save size={14}/> Kalkulation speichern</span>}
               </p>
               <div className="flex gap-2">
                 <input
@@ -833,7 +849,7 @@ const KalkulationsModal = ({ onClose }) => {
                   Speichern
                 </button>
                 <button onClick={() => { setSaveDialogOpen(false); setSaveName(''); setEditingId(null); }} className="px-3 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-300">
-                  ✕
+                  <X size={14}/>
                 </button>
               </div>
             </div>
@@ -843,7 +859,7 @@ const KalkulationsModal = ({ onClose }) => {
               onClick={() => openSaveDialog()}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold flex items-center gap-1.5 shadow-sm"
             >
-              💾 Kalkulation speichern
+              <Save size={14}/> Kalkulation speichern
             </button>
             <button onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
               Schließen

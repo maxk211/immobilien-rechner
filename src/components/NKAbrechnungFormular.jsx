@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FileText, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { applyPlugin } from 'jspdf-autotable';
 applyPlugin(jsPDF);
@@ -92,10 +93,10 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
         <div className="sticky top-0 bg-teal-700 text-white p-5 rounded-t-xl flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold">📄 NK-Abrechnung: {mieter.name}</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2"><FileText size={18} /> NK-Abrechnung: {mieter.name}</h2>
             <p className="text-teal-200 text-sm">{immo ? (immo.name || immo.adresse) : ''}</p>
           </div>
-          <button onClick={onClose} className="text-white text-2xl hover:text-teal-200">&times;</button>
+          <button onClick={onClose} className="text-white hover:text-teal-200"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -190,7 +191,7 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
                       )}
                       <div className="col-span-2 md:col-span-1 flex items-end justify-end pb-0.5">
                         <button type="button" onClick={() => removePos(idx)}
-                          className="text-red-400 hover:text-red-600 text-lg leading-none">&times;</button>
+                          className="text-red-400 hover:text-red-600"><X size={16} /></button>
                       </div>
                     </div>
                     {pos.umlageschluessel === 'fest' && (
@@ -217,7 +218,7 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
                 <label className="block text-xs text-gray-600 mb-1 font-semibold">Geleistete Vorauszahlungen (€)</label>
                 <input type="number" step="0.01" value={form.vorauszahlungenGesamt}
                   onChange={e => setForm(f => ({...f, vorauszahlungenGesamt: e.target.value}))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
               </div>
             </div>
             <div className={`flex justify-between items-center p-3 rounded-lg font-bold text-sm ${

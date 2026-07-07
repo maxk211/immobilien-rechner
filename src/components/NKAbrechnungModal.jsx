@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FileText, X, TrendingDown, Wallet } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 
 const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
@@ -38,15 +39,15 @@ const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-gray-800">📄 NK-Abrechnung erfassen</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><FileText size={18} /> NK-Abrechnung erfassen</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
 
         {/* Typ */}
         <div className="mb-4">
           <label className="block text-xs font-semibold text-gray-600 mb-2">Abrechnungsergebnis</label>
           <div className="grid grid-cols-2 gap-2">
-            {[['nachzahlung', '💸 Nachzahlung', 'Mieter muss nachzahlen'], ['erstattung', '💰 Erstattung', 'Du erstattest dem Mieter']].map(([val, label, desc]) => (
+            {[['nachzahlung', <span key="nz" className="flex items-center gap-1"><TrendingDown size={14} /> Nachzahlung</span>, 'Mieter muss nachzahlen'], ['erstattung', <span key="er" className="flex items-center gap-1"><Wallet size={14} /> Erstattung</span>, 'Du erstattest dem Mieter']].map(([val, label, desc]) => (
               <button key={val} type="button" onClick={() => setTyp(val)}
                 className={`p-3 rounded-xl border-2 text-left transition-all ${typ === val ? (val === 'nachzahlung' ? 'border-green-500 bg-green-50' : 'border-orange-400 bg-orange-50') : 'border-gray-200'}`}>
                 <div className="font-semibold text-sm">{label}</div>
@@ -77,7 +78,7 @@ const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
           <div className="flex gap-2">
             {[['sofort', 'Einmalzahlung'], ['raten', 'Ratenzahlung']].map(([val, label]) => (
               <button key={val} type="button" onClick={() => setZahlungsmodus(val)}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold border-2 transition-all ${zahlungsmodus === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold border-2 transition-all ${zahlungsmodus === val ? 'border-indigo-500 bg-blue-50 text-indigo-700' : 'border-gray-200 text-gray-500'}`}>
                 {label}
               </button>
             ))}
@@ -100,7 +101,7 @@ const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
           )}
         </div>
         {zahlungsmodus === 'raten' && betrag > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
+          <div className="mb-4 p-3 bg-blue-50 rounded-xl text-xs text-indigo-700">
             {anzahlRaten}× {formatCurrency(ratenBetrag)} monatlich (Fälligkeit jeden 1.)
           </div>
         )}
@@ -115,7 +116,7 @@ const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
         <div className="flex gap-2">
           <button onClick={onClose} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
           <button onClick={handleSave} disabled={!betrag}
-            className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-40">
+            className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-40">
             Speichern
           </button>
         </div>

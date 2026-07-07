@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Wallet, TrendingDown, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { NK_KOSTENPOSITIONEN_DEFAULTS } from '../constants/index.js';
 
@@ -25,7 +26,7 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-800">NK-Abrechnung {form.abrechnungsjahr}</h3>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 text-sm">✕ Abbrechen</button>
+          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1"><X size={14} /> Abbrechen</button>
         </div>
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
@@ -92,10 +93,10 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">− Vorauszahlungen</span>
-            <span className="font-bold text-blue-600">−{formatCurrency(form.vorauszahlungen || 0)}</span>
+            <span className="font-bold text-indigo-600">−{formatCurrency(form.vorauszahlungen || 0)}</span>
           </div>
           <div className={`flex justify-between font-bold text-sm p-3 rounded-xl ${istErstattung ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'}`}>
-            <span>{istErstattung ? '💰 Erstattung an Mieter' : '💸 Nachzahlung vom Mieter'}</span>
+            <span className="flex items-center gap-1">{istErstattung ? <><Wallet size={14} /> Erstattung an Mieter</> : <><TrendingDown size={14} /> Nachzahlung vom Mieter</>}</span>
             <span>{formatCurrency(Math.abs(saldo))}</span>
           </div>
         </div>
@@ -108,7 +109,7 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
 
         <div className="flex gap-2 mt-4">
           <button onClick={onCancel} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
-          <button onClick={() => onSave(form)} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">
+          <button onClick={() => onSave(form)} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700">
             Abrechnung speichern
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { X } from 'lucide-react';
 
 // ─── Impressum & Datenschutz Modals ─────────────────────────────────────────
 // § 5 TMG + DSGVO-konforme Datenschutzerklärung
@@ -18,7 +19,7 @@ const Modal = ({ onClose, children }) => (
           onClick={onClose}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-lg font-bold transition-colors"
         >
-          ×
+          <X size={16}/>
         </button>
       </div>
       <div className="px-6 pb-8 pt-4 prose prose-sm max-w-none text-gray-700 leading-relaxed">
@@ -46,7 +47,7 @@ export const ImpressumModal = ({ onClose }) => (
     </Section>
 
     <Section title="Kontakt">
-      <p>E-Mail: <a href={`mailto:${EMAIL}`} className="text-blue-600 hover:underline">{EMAIL}</a></p>
+      <p>E-Mail: <a href={`mailto:${EMAIL}`} className="text-indigo-600 hover:underline">{EMAIL}</a></p>
     </Section>
 
     <Section title="Umsatzsteuer">
@@ -75,7 +76,7 @@ export const DatenschutzModal = ({ onClose }) => (
     <Section title="1. Verantwortlicher">
       <p className="font-semibold text-gray-800">{FIRMA}</p>
       <p>{ADRESSE}</p>
-      <p>E-Mail: <a href={`mailto:${EMAIL}`} className="text-blue-600 hover:underline">{EMAIL}</a></p>
+      <p>E-Mail: <a href={`mailto:${EMAIL}`} className="text-indigo-600 hover:underline">{EMAIL}</a></p>
     </Section>
 
     <Section title="2. Welche Daten wir verarbeiten">
@@ -90,7 +91,7 @@ export const DatenschutzModal = ({ onClose }) => (
 
     <Section title="4. Auftragsverarbeiter: Supabase">
       <p>Wir nutzen <strong>Supabase, Inc.</strong> (San Francisco, USA) als Backend-Dienstleister für Authentifizierung und Datenbankbetrieb. Supabase bietet EU-Regionen an; unsere Datenbank ist in der EU-West-Region gehostet. Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
-      <p className="mt-1">Datenschutzrichtlinie Supabase: <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">supabase.com/privacy</a></p>
+      <p className="mt-1">Datenschutzrichtlinie Supabase: <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">supabase.com/privacy</a></p>
     </Section>
 
     <Section title="5. Cookies & lokaler Speicher">
@@ -113,7 +114,7 @@ export const DatenschutzModal = ({ onClose }) => (
         <li>Recht auf Beschwerde bei einer Aufsichtsbehörde (Art. 77 DSGVO)</li>
       </ul>
       <p className="mt-1">Zuständige Aufsichtsbehörde: Bayerisches Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach.</p>
-      <p className="mt-1">Zur Ausübung Ihrer Rechte wenden Sie sich bitte an: <a href={`mailto:${EMAIL}`} className="text-blue-600 hover:underline">{EMAIL}</a></p>
+      <p className="mt-1">Zur Ausübung Ihrer Rechte wenden Sie sich bitte an: <a href={`mailto:${EMAIL}`} className="text-indigo-600 hover:underline">{EMAIL}</a></p>
     </Section>
 
     <Section title="8. Datensicherheit">

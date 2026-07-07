@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { BarChart3, ChevronUp, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete } from '../utils/miete.js';
 import { berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite } from '../utils/berechnung.js';
@@ -132,8 +133,8 @@ const PortfolioOverview = ({ portfolio }) => {
           <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Portfoliowert</div>
           <div className="text-xl sm:text-2xl font-black text-slate-800">{formatCurrency(stats.gesamtWert)}</div>
           {stats.wertsteigerung !== 0 && (
-            <div className={`text-xs mt-1 font-semibold ${stats.wertsteigerung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {stats.wertsteigerung >= 0 ? '▲' : '▼'} {formatCurrency(Math.abs(stats.wertsteigerung))}
+            <div className={`text-xs mt-1 font-semibold flex items-center gap-0.5 ${stats.wertsteigerung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              {stats.wertsteigerung >= 0 ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {formatCurrency(Math.abs(stats.wertsteigerung))}
             </div>
           )}
           <div className="text-xs text-gray-400 mt-0.5">
@@ -189,10 +190,10 @@ const PortfolioOverview = ({ portfolio }) => {
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-700 text-sm">📊 Vermögensaufbau pro Objekt</span>
+              <span className="font-bold text-gray-700 text-sm flex items-center gap-1"><BarChart3 size={16}/>Vermögensaufbau pro Objekt</span>
               <span className="text-xs text-gray-400">{stats.vermoegenProImmo.length} Kaufobjekt{stats.vermoegenProImmo.length !== 1 ? 'e' : ''}</span>
             </div>
-            <span className="text-gray-400 text-sm">{showVermoegenDetail ? '▲' : '▼'}</span>
+            <span className="text-gray-400 text-sm">{showVermoegenDetail ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
           </button>
           {showVermoegenDetail && (
             <div className="overflow-x-auto">
