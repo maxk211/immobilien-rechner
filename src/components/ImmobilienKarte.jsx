@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow } from '../utils/berechnung.js';
 
-const ImmobilienKarte = ({ immobilie, onClick, onDelete, onEdit }) => {
+const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdit }) => {
+  const [mfhExpanded, setMfhExpanded] = useState(false);
   const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
   const isMFH = immobilie.immobilienTyp === 'mehrfamilienhaus';
   const aktuellerWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
@@ -11,6 +13,14 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete, onEdit }) => {
 
   // MFH: Gesamtmiete aller Wohnungen (auch für Anzeige in der Karte genutzt)
   const mfhGesamtMiete = isMFH ? (immobilie.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0) : 0;
+
+  // Mieter-Anzeige: aktiver Mieter für Kauf-/Mietimmobilien
+  const aktiverMieter = (!isMFH)
+    ? mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false)
+    : null;
+
+  // MFH: Wohnungen mit Mieterinfos
+  const mfhWohnungen = isMFH ? (immobilie.wohnungen || []) : [];
 
   // Monatlicher Cashflow — einheitliche Berechnung via berechneMtlCashflow
   const cashflow = berechneMtlCashflow(immobilie);
@@ -52,6 +62,14 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete, onEdit }) => {
             {(immobilie.plz || immobilie.adresse) && (
               <p className="text-white/70 text-xs mt-0.5 truncate">
                 📍 {immobilie.plz} {immobilie.adresse}
+              </p>
+            )}
+            {!isMFH && (
+              <p className="text-white/80 text-xs mt-1 truncate font-medium">
+                {aktiverMieter
+                  ? `👤 ${aktiverMieter.name}`
+                  : <span className="text-white/50">🔴 Leerstand</span>
+                }
               </p>
             )}
           </div>
@@ -155,6 +173,31 @@ const ImmobilienKarte = ({ immobilie, onClick, onDelete, onEdit }) => {
             </>
           )}
         </div>
+
+        {/* MFH: Mieter-Aufklapper */}
+        {isMFH && mfhWohnungen.length > 0 && (
+          <div className="border-t border-gray-100 pt-3">
+            <button
+              onClick={(e) => { e.stopPropagation(); setMfhExpanded(v => !v); }}
+              className="w-full flex items-center justify-between text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              <span>👥 Mieter ({mfhWohnungen.filter(w => w.mieterName && !w.mietende).length}/{mfhWohnungen.length} vermietet)</span>
+              <span className="text-gray-400">{mfhExpanded ? '▲' : '▼'}</span>
+            </button>
+            {mfhExpanded && (
+              <div className="mt-2 space-y-1">
+                {mfhWohnungen.map((w, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0">
+                    <span className="text-gray-500 truncate mr-2">{w.name || `WE ${i + 1}`}</span>
+                    <span className={`font-medium truncate ${w.mieterName && !w.mietende ? 'text-gray-800' : 'text-red-400'}`}>
+                      {w.mieterName && !w.mietende ? `👤 ${w.mieterName}` : '🔴 Leerstand'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Wertsteigerung (Kaufimmobilie) */}
         {!isMietimmobilie && wertsteigerung && (

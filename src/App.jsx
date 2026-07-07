@@ -1354,6 +1354,7 @@ function App() {
                 <ImmobilienKarte
                   key={immobilie.id}
                   immobilie={immobilie}
+                  mieterListe={mieterListe}
                   onClick={() => { setSelectedImmobilie(immobilie); setInitialTab(null); }}
                   onDelete={() => handleDelete(immobilie.id)}
                   onEdit={() => { setEditImmobilie(immobilie); setShowForm(true); }}
@@ -1372,6 +1373,7 @@ function App() {
                       <ImmobilienKarte
                         key={immobilie.id}
                         immobilie={immobilie}
+                        mieterListe={mieterListe}
                         onClick={() => { setSelectedImmobilie(immobilie); setInitialTab(null); }}
                         onDelete={() => handleDelete(immobilie.id)}
                         onEdit={() => { setEditImmobilie(immobilie); setShowForm(true); }}
