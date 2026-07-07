@@ -78,14 +78,14 @@ function App() {
       const saved = localStorage.getItem('selbstauskunft_daten');
       return saved ? JSON.parse(saved) : {
         name: '', familienstand: 'ledig', wohnsituation: 'zur Miete',
-        anschrift: '', taetigkeit: '',
+        anschrift: '', taetigkeit: '', monatlGehalt: '',
         bargeld: '', bargeldBeschreibung: '',
         depot: '', depotBeschreibung: '',
         beteiligungWert: '', beteiligungBeschreibung: '',
         sonstigeVerbindlichkeiten: 'Keine sonstigen Verbindlichkeiten außerhalb der Immobilien-Darlehen.',
       };
     } catch(e) {
-      return { name: '', familienstand: 'ledig', wohnsituation: 'zur Miete', anschrift: '', taetigkeit: '', bargeld: '', bargeldBeschreibung: '', depot: '', depotBeschreibung: '', beteiligungWert: '', beteiligungBeschreibung: '', sonstigeVerbindlichkeiten: '' };
+      return { name: '', familienstand: 'ledig', wohnsituation: 'zur Miete', anschrift: '', taetigkeit: '', monatlGehalt: '', bargeld: '', bargeldBeschreibung: '', depot: '', depotBeschreibung: '', beteiligungWert: '', beteiligungBeschreibung: '', sonstigeVerbindlichkeiten: '' };
     }
   });
 
@@ -299,6 +299,10 @@ function App() {
           { content: daten.anschrift, colSpan: 2 },
           { content: 'Tätigkeit', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
           { content: daten.taetigkeit, colSpan: 2 },
+        ],
+        [
+          { content: 'Monatl. Gehalt (netto)', styles: { fontStyle: 'bold', fillColor: BLUE_LIGHT } },
+          { content: daten.monatlGehalt ? `${Number(daten.monatlGehalt).toLocaleString('de-DE')} €` : '–', colSpan: 5 },
         ],
       ],
       styles: { fontSize: 7.5, cellPadding: 2 },
@@ -1468,7 +1472,7 @@ function App() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="block text-xs text-gray-600 mb-1">Name (Vor- und Nachname)</label>
-                    <input type="text" value={selbstauskunftDaten.name} placeholder="David Schmidbauer"
+                    <input type="text" value={selbstauskunftDaten.name} placeholder="Max Mustermann"
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
@@ -1496,10 +1500,16 @@ function App() {
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, anschrift: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <label className="block text-xs text-gray-600 mb-1">Tätigkeit / Beruf</label>
                     <input type="text" value={selbstauskunftDaten.taetigkeit} placeholder="z.B. Geschäftsführer / 100 % Gesellschafter …"
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, taetigkeit: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Monatliches Gehalt (€ netto)</label>
+                    <input type="number" value={selbstauskunftDaten.monatlGehalt} placeholder="3500"
+                      onChange={e => setSelbstauskunftDaten(d => ({ ...d, monatlGehalt: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
                 </div>
