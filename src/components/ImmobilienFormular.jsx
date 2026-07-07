@@ -3,6 +3,8 @@ import { formatCurrency } from '../utils/format.js';
 import { schaetzeImmobilienwert } from '../utils/berechnung.js';
 
 const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
+  // Beim Bearbeiten direkt alle Details zeigen, beim Anlegen erst auf Basis-Modus
+  const [showDetails, setShowDetails] = useState(!!initialData);
   const [formData, setFormData] = useState(initialData || {
     name: '',
     plz: '',
@@ -258,6 +260,20 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 )}
               </div>
             )}
+
+            {/* ── Optionale Details — hinter Toggle ──────────────────────── */}
+            {!showDetails && (
+              <button
+                type="button"
+                onClick={() => setShowDetails(true)}
+                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm font-semibold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center justify-center gap-2"
+              >
+                <span>⚙️ Erweiterte Details anzeigen</span>
+                <span className="text-xs font-normal opacity-60">(Objektdetails, Eigentumsstruktur, Vermietungsmodell, Stellplatz)</span>
+              </button>
+            )}
+
+            {showDetails && (<>
 
             {/* MFH: Gebäudedaten — nur auf Gebäudeebene (kein Stockwerk/Balkon/Zimmer — kommen aus Wohnungen) */}
             {formData.immobilienTyp === 'mehrfamilienhaus' && (
@@ -1074,6 +1090,18 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                 </div>
               </div>
             )}
+
+            {/* ── Ende Erweiterte Details ─────────────────────────────────── */}
+            {showDetails && (
+              <button
+                type="button"
+                onClick={() => setShowDetails(false)}
+                className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-1"
+              >
+                <span>▲ Erweiterte Details ausblenden</span>
+              </button>
+            )}
+            </>)}
           </div>
         </div>
 
