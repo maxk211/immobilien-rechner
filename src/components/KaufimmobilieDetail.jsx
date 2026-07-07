@@ -243,6 +243,8 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     mietEingaenge: immobilie.mietEingaenge || [],
     steuersatz: immobilie.steuersatz || 42,
     gebaeudeAnteilProzent: immobilie.gebaeudeAnteilProzent || 80,
+    afaModus: immobilie.afaModus || 'linear',
+    afaDegressivWechseljahr: immobilie.afaDegressivWechseljahr || null,
     afaSatz: immobilie.afaSatz || 2.0,
     fahrtkostenModus: immobilie.fahrtkostenModus || 'pauschal',
     fahrtenProMonat: immobilie.fahrtenProMonat || 0,

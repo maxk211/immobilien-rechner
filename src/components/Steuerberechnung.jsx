@@ -22,6 +22,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
   const gebaeudeAnteilProzent = params.gebaeudeAnteilProzent || 80;
   const afaSatz = params.afaSatz || 2.0;
   const afaAnpassungen = params.afaAnpassungen || [];
+  const afaModus = params.afaModus || 'linear';
+  const afaDegressivWechseljahr = params.afaDegressivWechseljahr || null;
+  const istDegressiv = afaModus === 'degressiv';
   const fahrtkostenModus = params.fahrtkostenModus || 'pauschal';
   const fahrtenProMonat = params.fahrtenProMonat || 0;
   const entfernungKm = params.entfernungKm || 0;
@@ -40,6 +43,31 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       .filter(a => a.vonJahr <= jahr)
       .sort((a, b) => b.vonJahr - a.vonJahr);
     return gueltig.length > 0 ? gueltig[0].afaSatz : afaSatz;
+  };
+
+  // Degressive AfA (§ 7 Abs. 5a EStG): 5% vom Restbuchwert, iterativ vom Kaufjahr
+  // Wechseljahr: ab diesem Jahr linear (Restbuchwert / verbleibende Nutzungsdauer)
+  const degressiveAfaFuerJahr = (basiswert, targetJahr) => {
+    if (!basiswert || targetJahr < kaufjahr) return { afa: 0, restbuchwert: basiswert };
+    const nutzungsdauer = afaSatz > 0 ? Math.round(100 / afaSatz) : 50; // lineare Referenz-ND
+    let restbuchwert = basiswert;
+    let linearAfaProJahr = null; // wird beim Wechsel fixiert
+
+    for (let j = kaufjahr; j <= targetJahr; j++) {
+      let afa;
+      if (afaDegressivWechseljahr && j >= afaDegressivWechseljahr) {
+        if (linearAfaProJahr === null) {
+          const verbleibendeJahre = Math.max(1, nutzungsdauer - (afaDegressivWechseljahr - kaufjahr));
+          linearAfaProJahr = restbuchwert / verbleibendeJahre;
+        }
+        afa = Math.min(linearAfaProJahr, restbuchwert);
+      } else {
+        afa = restbuchwert * 0.05;
+      }
+      if (j === targetJahr) return { afa, restbuchwert: Math.max(0, restbuchwert - afa) };
+      restbuchwert = Math.max(0, restbuchwert - afa);
+    }
+    return { afa: 0, restbuchwert };
   };
 
   const a = (v) => Math.round(v * anteilFaktor);
@@ -114,19 +142,29 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
     // AfA Basis-Berechnung
     const gebaeudeAnteil = params.kaufpreis * (gebaeudeAnteilProzent / 100);
-    let afaBemessungsgrundlage = gebaeudeAnteil;
 
-    // AfA-relevante Investitionen aus Vorjahren hinzurechnen
+    // AfA-relevante Investitionen (immer linear, unabhängig vom Modus)
     const afaInvestitionenBisJahr = investitionen.filter(inv => {
       const invJahr = new Date(inv.datum).getFullYear();
       const kat = steuerKategorien[inv.kategorie || 'erhaltung'];
       return invJahr <= jahr && kat?.steuer === 'afa';
     });
     const zusaetzlicheAfABasis = afaInvestitionenBisJahr.reduce((sum, inv) => sum + inv.betrag, 0);
-    afaBemessungsgrundlage += zusaetzlicheAfABasis;
 
-    const gueltigerAfaSatz = getAfaSatzFuerJahr(jahr);
-    const jahresAfa = afaBemessungsgrundlage * (gueltigerAfaSatz / 100);
+    let jahresAfa, gueltigerAfaSatz, afaBemessungsgrundlage, restbuchwert;
+    if (istDegressiv) {
+      // Degressiv: 5% vom Restbuchwert, iterativ
+      const deg = degressiveAfaFuerJahr(gebaeudeAnteil, jahr);
+      jahresAfa = deg.afa + zusaetzlicheAfABasis * (afaSatz / 100); // Investitionen linear dazu
+      restbuchwert = deg.restbuchwert;
+      gueltigerAfaSatz = 5.0; // Anzeige-Satz
+      afaBemessungsgrundlage = gebaeudeAnteil; // Ursprungsbasis zur Anzeige
+    } else {
+      afaBemessungsgrundlage = gebaeudeAnteil + zusaetzlicheAfABasis;
+      gueltigerAfaSatz = getAfaSatzFuerJahr(jahr);
+      jahresAfa = afaBemessungsgrundlage * (gueltigerAfaSatz / 100);
+      restbuchwert = null;
+    }
 
     // Investitionen dieses Jahres
     const investitionenDiesesJahr = investitionen.filter(inv => new Date(inv.datum).getFullYear() === jahr);
@@ -180,6 +218,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       afa: Math.round(jahresAfa),                  // Z. 13/14 — AfA
       afaBemessungsgrundlage: Math.round(afaBemessungsgrundlage),
       gueltigerAfaSatz,
+      restbuchwert: restbuchwert !== null ? Math.round(restbuchwert) : null,
       instandhaltung: Math.round(jahresInstandhaltung), // Z. 33 — Erhaltungsaufwand laufend
       verwaltung: Math.round(jahresVerwaltung),    // Z. 34 — Verwaltungskosten
       hausgeld: Math.round(jahresHausgeld),        // Z. 35 — Hausgeld/WEG
@@ -637,11 +676,87 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           </div>
         </div>
 
+        {/* AfA-Modus Toggle */}
+        <div className="mb-4 pb-4 border-b border-gray-100">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">AfA-Methode</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => updateSteuerParams({ afaModus: 'linear' })}
+              className={`py-2.5 px-3 rounded-xl border-2 text-xs font-semibold text-left transition-all ${!istDegressiv ? 'border-indigo-500 bg-indigo-50 text-indigo-800' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+              <div className="font-bold mb-0.5">📉 Linear</div>
+              <div className="opacity-70 font-normal">Gleichbleibender % vom Kaufpreis</div>
+            </button>
+            <button onClick={() => updateSteuerParams({ afaModus: 'degressiv' })}
+              className={`py-2.5 px-3 rounded-xl border-2 text-xs font-semibold text-left transition-all ${istDegressiv ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+              <div className="font-bold mb-0.5">📈 Degressiv 5%</div>
+              <div className="opacity-70 font-normal">§ 7 Abs. 5a EStG · Neubau ab 10/2023</div>
+            </button>
+          </div>
+        </div>
+
         {/* Basis-AfA + Phasen */}
         <div>
+          {istDegressiv ? (
+            /* Degressiv-Modus UI */
+            <div className="space-y-3">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
+                <div className="font-bold mb-1">5% degressiv vom Restbuchwert (§ 7 Abs. 5a EStG)</div>
+                <div className="space-y-0.5 text-emerald-700">
+                  <div>Gebäudewert: <strong>{formatCurrency(params.kaufpreis * (gebaeudeAnteilProzent / 100))}</strong></div>
+                  <div>AfA {selectedJahr}: <strong>{formatCurrency(a(selectedDaten?.afa ?? 0))}</strong></div>
+                  {selectedDaten?.restbuchwert != null && (
+                    <div>Restbuchwert Ende {selectedJahr}: <strong>{formatCurrency(a(selectedDaten.restbuchwert))}</strong></div>
+                  )}
+                </div>
+              </div>
+              <div className="p-3 bg-white border border-gray-200 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-600">Wechsel zu linearer AfA</span>
+                  <span className="text-xs text-gray-400">optional</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button onClick={() => updateSteuerParams({ afaDegressivWechseljahr: null })}
+                    className={`px-2.5 py-1 text-xs rounded-lg border font-semibold transition-colors ${!afaDegressivWechseljahr ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-300 text-gray-500 hover:border-gray-500'}`}>
+                    Kein Wechsel
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500">Ab Jahr:</span>
+                    <input type="number" min={kaufjahr + 1} max={kaufjahr + 50} step={1}
+                      value={afaDegressivWechseljahr || ''}
+                      placeholder={String(kaufjahr + 15)}
+                      onChange={(e) => updateSteuerParams({ afaDegressivWechseljahr: parseInt(e.target.value) || null })}
+                      className="w-20 px-2 py-1 border-2 border-gray-300 rounded-lg text-base sm:text-sm text-right font-bold focus:border-emerald-400" />
+                  </div>
+                  {afaDegressivWechseljahr && <span className="text-xs text-gray-400">→ dann linear auf Restbuchwert</span>}
+                </div>
+                <div className="mt-3 pt-2 border-t border-gray-100">
+                  <div className="text-xs text-gray-500 font-semibold mb-1.5">AfA-Verlauf (erste 10 Jahre)</div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                    {Array.from({ length: 10 }, (_, i) => kaufjahr + i).map(j => {
+                      const deg = degressiveAfaFuerJahr(params.kaufpreis * (gebaeudeAnteilProzent / 100), j);
+                      const istWechsel = afaDegressivWechseljahr && j === afaDegressivWechseljahr;
+                      return (
+                        <span key={j} className={`${j === selectedJahr ? 'font-bold text-emerald-800' : 'text-gray-500'}`}>
+                          {j}: {formatCurrency(deg.afa)}{istWechsel ? ' ↩' : ''}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-500 p-2 bg-gray-50 rounded-lg">
+                <span>Nutzungsdauer-Referenz (für Wechsel zu linear):</span>
+                <div className="flex items-center gap-1">
+                  <input type="number" min="0" max="10" step="0.1" value={afaSatz}
+                    onChange={(e) => updateSteuerParams({ afaSatz: parseFloat(e.target.value) || 0 })}
+                    className="w-16 px-2 py-1 border border-gray-300 rounded text-right text-xs font-semibold" />
+                  <span>% = {afaSatz > 0 ? Math.round(100/afaSatz) : '∞'} Jahre</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Linear-Modus (bisheriges UI) */
+            <>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">AfA-Satz</label>
-
-          {/* Basis-Satz (gültig ab Kauf) */}
           <div className="flex items-start gap-4 mb-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
             <div className="flex-1">
               <div className="flex items-center gap-1 mb-1">
@@ -816,11 +931,15 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
 
         <div className="text-xs text-gray-500 mt-3 p-2 bg-blue-50 rounded">
-          💡 <strong>AfA ist ein Recheneffekt, kein Geldabfluss.</strong> Standard: 2% (50 J.) | vor 1925: 2,5% (40 J.) | nach 2022: 3% (33 J.)
-          {afaAnpassungen.length > 0 && <span className="block mt-0.5 text-violet-700">💜 Bei Restnutzungsdauergutachten: RND eingeben → AfA-Satz wird automatisch berechnet (100 ÷ RND).</span>}
+          {istDegressiv
+            ? <>💡 <strong>Degressiv AfA (§ 7 Abs. 5a EStG):</strong> 5% vom Restbuchwert, jedes Jahr sinkend. Nur für Neubau-Wohngebäude (Baubeginn nach 01.10.2023 oder Erwerb nach 31.12.2023). Wechsel zu linear jederzeit möglich.</>
+            : <>💡 <strong>AfA ist ein Recheneffekt, kein Geldabfluss.</strong> Standard: 2% (50 J.) | vor 1925: 2,5% (40 J.) | nach 2022: 3% (33 J.){afaAnpassungen.length > 0 && <span className="block mt-0.5 text-violet-700">💜 Bei Restnutzungsdauergutachten: RND eingeben → AfA-Satz wird automatisch berechnet (100 ÷ RND).</span>}</>
+          }
         </div>
       </div>
 

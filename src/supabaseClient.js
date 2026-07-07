@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt', 'afa_modus', 'afa_degressiv_wechseljahr'];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
@@ -133,6 +133,8 @@ function dbToApp(db) {
     gebaeudeAnteilProzent: Number(db.gebaeude_anteil_prozent) || 80,
     afaSatz: Number(db.afa_satz) || 2.0,
     afaAnpassungen: db.afa_anpassungen || [],
+    afaModus: db.afa_modus || 'linear',
+    afaDegressivWechseljahr: db.afa_degressiv_wechseljahr || null,
     grundsteuerMonat: Number(db.grundsteuer_monat) || 0,
     versicherungMonat: Number(db.versicherung_monat) || 0,
     fahrtkostenModus: db.fahrtkosten_modus,
@@ -217,6 +219,8 @@ function appToDb(app) {
     gebaeude_anteil_prozent: app.gebaeudeAnteilProzent,
     afa_satz: app.afaSatz,
     afa_anpassungen: app.afaAnpassungen || [],
+    afa_modus: app.afaModus || 'linear',
+    afa_degressiv_wechseljahr: app.afaDegressivWechseljahr || null,
     grundsteuer_monat: app.grundsteuerMonat || 0,
     versicherung_monat: app.versicherungMonat || 0,
     fahrtkosten_modus: app.fahrtkostenModus,
