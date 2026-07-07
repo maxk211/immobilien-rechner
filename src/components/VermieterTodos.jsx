@@ -333,8 +333,8 @@ const LS_AKTIV_KEY = 'vermieter-todos-aktiv';
 const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSelectImmobilie }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [aktiv, setAktiv] = useState(() => {
-    try { return localStorage.getItem(LS_AKTIV_KEY) !== 'false'; }
-    catch { return true; }
+    try { return localStorage.getItem(LS_AKTIV_KEY) === 'true'; }
+    catch { return false; }
   });
 
   const toggleAktiv = (e) => {
