@@ -140,6 +140,13 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       const d = new Date(a.datum);
       if (!letzteAnpassung || d > letzteAnpassung) letzteAnpassung = d;
     });
+    // Mietbeginn aktiver Mieter als Untergrenze — ein neuer Mieter setzt die Uhr zurück
+    aktiveMieter.forEach(m => {
+      if (m.mietbeginn) {
+        const d = new Date(m.mietbeginn);
+        if (!letzteAnpassung || d > letzteAnpassung) letzteAnpassung = d;
+      }
+    });
 
     if (!letzteAnpassung) return;
     const monate = (heute - letzteAnpassung) / (1000 * 60 * 60 * 24 * 30.44);
@@ -164,8 +171,13 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     if (aktiveMieter.length === 0) return;
 
     aktiveMieter.forEach(mieter => {
+      // Monate seit Mietbeginn — bei neuen Mietern (<12 Monate) keine Hinweise
+      const mietbeginnDatum = mieter.mietbeginn ? new Date(mieter.mietbeginn) : null;
+      const monateSeitEinzug = mietbeginnDatum ? (heute - mietbeginnDatum) / (1000 * 60 * 60 * 24 * 30.44) : 999;
+
       if (!mieter.letzte_mieterhoehung) {
-        // Feld nicht gepflegt → Erinnerungs-TODO
+        // Feld nicht gepflegt → nur zeigen wenn Mieter mind. 12 Monate drin ist
+        if (monateSeitEinzug < 12) return;
         todos.push({
           id: `mieterhoehung-datum-${mieter.id}`,
           priority: 'gelb',
