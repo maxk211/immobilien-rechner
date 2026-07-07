@@ -582,8 +582,23 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                       </div>
                     </div>
                   )}
+                  {/* Kredit läuft bereits — Toggle */}
+                  {!formData.geschenkt && !formData.vollEigenfinanziert && (
+                    <label className="col-span-2 flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={!!formData.kreditLaeuftBereits}
+                        onChange={e => handleChange('kreditLaeuftBereits', e.target.checked)}
+                        className="w-4 h-4 accent-indigo-600"
+                      />
+                      <div>
+                        <span className="text-sm font-semibold text-gray-800">Kredit läuft bereits</span>
+                        <p className="text-xs text-gray-500">Ich kenne meine aktuelle Restschuld und monatliche Rate</p>
+                      </div>
+                    </label>
+                  )}
                 {/* Finanzierungskonditionen — nur wenn nicht geschenkt und nicht vollständig eigenfinanziert */}
-                {!formData.geschenkt && !formData.vollEigenfinanziert && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                {!formData.geschenkt && !formData.vollEigenfinanziert && !formData.kreditLaeuftBereits && <div className="col-span-2 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-1"><Landmark size={14}/>Finanzierung</h4>
                   {/* Modus Toggle */}
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -665,6 +680,46 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     })()
                   )}
                 </div>}
+
+                {/* Laufender Kredit: direkte Eingabe */}
+                {!formData.geschenkt && !formData.vollEigenfinanziert && formData.kreditLaeuftBereits && (
+                  <div className="col-span-2">
+                    <div className="space-y-3 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                      <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Laufender Kredit</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Aktuelle Restschuld (€)</label>
+                          <input type="number" value={formData.aktuelleRestschuld ?? ''}
+                            onChange={e => handleChange('aktuelleRestschuld', numInp(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                            placeholder="z.B. 85000" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Monatliche Rate (€)</label>
+                          <input type="number" value={formData.kreditMonatsrate ?? ''}
+                            onChange={e => handleChange('kreditMonatsrate', numInp(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                            placeholder="z.B. 650" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Zinssatz (% p.a.)</label>
+                          <input type="number" step="0.1" value={formData.zinssatz ?? ''}
+                            onChange={e => handleChange('zinssatz', numInp(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                            placeholder="z.B. 3.5" />
+                          <p className="text-xs text-gray-400 mt-1">Für Zinsen-Berechnung (Steuer)</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Zinsbindung bis (Jahr)</label>
+                          <input type="number" value={formData.zinsbindungBis ?? ''}
+                            onChange={e => handleChange('zinsbindungBis', intInp(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                            placeholder={String(new Date().getFullYear() + 5)} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                   {formData.immobilienTyp === 'mehrfamilienhaus' ? (
                     <div>
@@ -1187,6 +1242,10 @@ const ImmobilienFormular = ({ onSave, onClose, initialData }) => {
                     monatlicheMiete:   toN(formData.stellplatz.monatlicheMiete),
                     anzahl:            toN(formData.stellplatz.anzahl, 1),
                   } : formData.stellplatz,
+                  kreditLaeuftBereits: !!formData.kreditLaeuftBereits,
+                  aktuelleRestschuld: toN(formData.aktuelleRestschuld),
+                  kreditMonatsrate:   toN(formData.kreditMonatsrate),
+                  zinsbindungBis:     formData.zinsbindungBis ? parseInt(formData.zinsbindungBis) : null,
                   ...mfhAggregat,
                   ...ekAggregat,
                   finanzierungsphasen: [erstePhase],

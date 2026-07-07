@@ -27,7 +27,7 @@ export async function loadImmobilien() {
 }
 
 // Felder, die eine SQL-Migration benötigen (werden bei Fehler weggelassen)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt', 'afa_modus', 'afa_degressiv_wechseljahr'];
+const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt', 'afa_modus', 'afa_degressiv_wechseljahr', 'kredit_laeuft_bereits', 'aktuelle_restschuld', 'kredit_monatsrate', 'zinsbindung_bis'];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
@@ -170,6 +170,10 @@ function dbToApp(db) {
     wohnungen: db.wohnungen || [],
     vollEigenfinanziert: db.voll_eigenfinanziert || false,
     geschenkt: db.geschenkt || false,
+    kreditLaeuftBereits: db.kredit_laeuft_bereits || false,
+    aktuelleRestschuld: db.aktuelle_restschuld || 0,
+    kreditMonatsrate: db.kredit_monatsrate || 0,
+    zinsbindungBis: db.zinsbindung_bis || null,
   };
 }
 
@@ -256,6 +260,10 @@ function appToDb(app) {
     wohnungen: app.wohnungen || [],
     voll_eigenfinanziert: app.vollEigenfinanziert || false,
     geschenkt: app.geschenkt || false,
+    kredit_laeuft_bereits: app.kreditLaeuftBereits || false,
+    aktuelle_restschuld: app.aktuelleRestschuld || 0,
+    kredit_monatsrate: app.kreditMonatsrate || 0,
+    zinsbindung_bis: app.zinsbindungBis || null,
   };
 }
 

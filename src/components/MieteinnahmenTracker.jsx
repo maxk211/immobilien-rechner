@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Zap, Check, X, ChevronUp, ChevronDown, User, FileText, TrendingDown, Wallet } from 'lucide-react';
+import { Zap, Check, X, ChevronUp, ChevronDown, User, FileText, TrendingDown, Wallet, Info } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import ZahlungErfassenForm from './ZahlungErfassenForm';
@@ -277,6 +277,12 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
             </div>
           )}
         </div>
+      </div>
+
+      {/* Hinweis: Verlaufshistorie optional */}
+      <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-700">
+        <Info size={14} className="shrink-0 mt-0.5" />
+        <span><strong>Hinweis:</strong> Die erwarteten Beträge basieren auf der aktuellen Kaltmiete. Eine Verlaufshistorie (Mietanpassungen) ist <strong>optional</strong> — nur für den Miete-Verlaufsgraph relevant, nicht für Berechnungen.</span>
       </div>
 
       {/* Forderungs-Liste */}

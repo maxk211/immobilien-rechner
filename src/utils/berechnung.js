@@ -98,6 +98,13 @@ export const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
 export const berechneRestschuld = (immobilie) => {
   if (!immobilie.kaufpreis) return null;
 
+  // "Kredit läuft bereits": Restschuld direkt bekannt
+  if (immobilie.kreditLaeuftBereits && immobilie.aktuelleRestschuld != null) {
+    const rs = immobilie.aktuelleRestschuld || 0;
+    const kp = immobilie.kaufpreis || rs;
+    return { restschuld: rs, anfangsFremdkapital: kp, getilgt: Math.max(0, kp - rs) };
+  }
+
   // Kreditstartdatum: aus erster Finanzierungsphase oder Fallback auf Kaufdatum
   const erstePhaseRS = (immobilie.finanzierungsphasen || [])[0];
   const startDatumStr = erstePhaseRS?.kreditStartDatum || immobilie.kaufdatum;
@@ -275,6 +282,9 @@ export const berechneRendite = (params) => {
     geschenkt = false,
   } = params;
 
+  // "Kredit läuft bereits": Fremdkapital und Rate direkt bekannt
+  const kreditLaeuftBereits = params.kreditLaeuftBereits || false;
+
   // Kaufjahr für Chart-Darstellung
   const kaufjahr = kaufdatum ? new Date(kaufdatum).getFullYear() : new Date().getFullYear();
 
@@ -287,11 +297,13 @@ export const berechneRendite = (params) => {
     : (eigenkapital || 0);
 
   // Finanzierungsbetrag: kein Kredit bei vollEigenfinanziert/geschenkt, sonst manuell oder berechnet
-  const fremdkapital = (vollEigenfinanziert || geschenkt)
-    ? 0
-    : (finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
-        ? finanzierungsbetrag
-        : Math.max(0, gesamtinvestition - gesamtEK));
+  const fremdkapital = kreditLaeuftBereits
+    ? (params.aktuelleRestschuld || 0)
+    : (vollEigenfinanziert || geschenkt)
+      ? 0
+      : (finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
+          ? finanzierungsbetrag
+          : Math.max(0, gesamtinvestition - gesamtEK));
 
   // Einnahmen basierend auf Vermietungsmodell:
   // - kaltmiete: Nur Kaltmiete (NK werden via Abrechnung umgelegt, kein direkter Cashflow)
@@ -326,7 +338,13 @@ export const berechneRendite = (params) => {
 
   // Aktive Finanzierungsphase bestimmen (basierend auf Kreditstartdatum + heute)
   // Wenn finanzierungsphasen vorhanden: nimm die aktuell laufende Phase
-  const aktivePhaseDaten = (() => {
+  const aktivePhaseDaten = kreditLaeuftBereits
+    ? {
+        zinssatz: zinssatz ?? 3.5,
+        monatlicherBetrag: params.kreditMonatsrate || 0,
+        restschuld: params.aktuelleRestschuld || 0,
+      }
+    : (() => {
     const phasen = params.finanzierungsphasen;
     if (!phasen || phasen.length === 0) return null;
     // Kreditstart: aus Phase 1 oder Kaufdatum
@@ -546,6 +564,22 @@ export const berechneMtlCashflow = (immo) => {
  */
 export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) => {
   const phasen = params.finanzierungsphasen || [];
+
+  // "Kredit läuft bereits": Zins/Tilgung aus Restschuld + Rate schätzen
+  if (params.kreditLaeuftBereits && params.aktuelleRestschuld > 0) {
+    const rs = params.aktuelleRestschuld || 0;
+    const rate = params.kreditMonatsrate || 0;
+    const mzins = (params.zinssatz || 3.5) / 100 / 12;
+    const monatlicheZinsen = rs * mzins;
+    const monatlicheTilgung = Math.max(0, rate - monatlicheZinsen);
+    return {
+      zinsen: Math.round(monatlicheZinsen * 12),
+      tilgung: Math.round(monatlicheTilgung * 12),
+      restschuldAnfang: rs,
+      restschuldEnde: Math.max(0, rs - monatlicheTilgung * 12),
+    };
+  }
+
   const kreditStartStr = phasen[0]?.kreditStartDatum || params.kaufdatum;
   if (!kreditStartStr || !params.kaufpreis) return null;
 
@@ -654,6 +688,21 @@ export const berechneImmoVermoegenswerte = (immo) => {
     : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);
   const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, (immo.kaufpreis || 0) + kaufnebenkostenAbsolut - gesamtEK);
   const marktwert = immo.geschaetzterWert || immo.kaufpreis || 0;
+
+  if (immo.kreditLaeuftBereits && immo.aktuelleRestschuld != null) {
+    const rs = immo.aktuelleRestschuld || 0;
+    const rate = immo.kreditMonatsrate || 0;
+    const mzins = (immo.zinssatz || 3.5) / 100 / 12;
+    const monatlicheZinsen = rs * mzins;
+    const tilgungMtl = Math.max(0, rate - monatlicheZinsen);
+    return {
+      fremdkapital: rs,
+      restschuld: rs,
+      tilgungJahr: Math.round(tilgungMtl * 12),
+      freiVermoegen: Math.max(0, marktwert - rs),
+      marktwert,
+    };
+  }
 
   if (fremdkapital <= 0) return { fremdkapital: 0, restschuld: 0, tilgungJahr: 0, freiVermoegen: marktwert, marktwert };
 

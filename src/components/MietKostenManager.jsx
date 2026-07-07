@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, TrendingUp, TrendingDown, CalendarDays, Receipt, Building2, Wallet, X } from 'lucide-react';
+import { Home, TrendingUp, TrendingDown, CalendarDays, Receipt, Building2, Wallet, X, Info } from 'lucide-react';
 
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
@@ -139,9 +139,15 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               </button>
             </div>
             <div className="px-4 py-3">
-              <p className="text-[10px] text-gray-400 mb-2">Mietänderungen mit Datum – für Steuerexport</p>
+              <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-700 mb-3">
+                <Info size={14} className="shrink-0 mt-0.5" />
+                <span><strong>Optional:</strong> Nur für das Verlaufsdiagramm. Für Cashflow, Rendite und alle Berechnungen wird ausschließlich die aktuelle Kaltmiete verwendet.</span>
+              </div>
               {(params.mietAnpassungen || []).length === 0 ? (
-                <p className="text-[10px] text-gray-400 italic bg-gray-50 border border-gray-100 p-2 rounded-lg">Keine Anpassungen → Kaltmiete (Basis) gilt durchgehend</p>
+                <div className="text-center py-4 text-gray-400 text-sm">
+                  <p>Noch keine Verlaufshistorie</p>
+                  <p className="text-xs mt-1 text-gray-300">Nicht nötig für Berechnungen — optional für den Miete-Verlaufsgraph</p>
+                </div>
               ) : (
                 <div className="space-y-1.5">
                   {(params.mietAnpassungen || [])
