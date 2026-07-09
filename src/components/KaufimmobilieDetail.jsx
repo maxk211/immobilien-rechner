@@ -316,7 +316,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   };
 
   const ergebnis = useMemo(() => berechneRendite({ ...params, kaltmiete: getAktuelleMiete(params) }), [params]);
-  const aktuellerWert = params.geschaetzterWert || immobilie.kaufpreis;
+  const stellplatzWert = (immobilie.stellplatz?.vorhanden && immobilie.stellplatz?.kaufpreisAnteil)
+    ? (immobilie.stellplatz.kaufpreisAnteil * (immobilie.stellplatz.anzahl || 1))
+    : 0;
+  const aktuellerWert = (params.geschaetzterWert || immobilie.kaufpreis) + stellplatzWert;
   const immobilieMitAktuellemKaufdatum = { ...immobilie, kaufdatum: params.kaufdatum };
   const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(immobilieMitAktuellemKaufdatum, aktuellerWert);
 
@@ -554,7 +557,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Berechneter Gesamtwert</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {stellplatzWert > 0 ? 'Wohnungswert' : 'Berechneter Gesamtwert'}
+                    </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -565,6 +570,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       />
                       <span className="text-xl font-bold text-indigo-600">€</span>
                     </div>
+                    {stellplatzWert > 0 && (
+                      <div className="mt-2 text-xs text-gray-500 space-y-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400">+ {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(stellplatzWert)}</span>
+                          <span className="text-gray-400">Stellplatz (Kaufpreis)</span>
+                        </div>
+                        <div className="flex items-center gap-1 font-semibold text-indigo-600">
+                          <span>= {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(aktuellerWert)}</span>
+                          <span className="font-normal text-gray-500">Gesamtwert</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <a
                     href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
