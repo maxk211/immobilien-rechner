@@ -169,7 +169,8 @@ const MehrfamilienhausDetail = ({
   );
   const [params, setParams] = useState(immobilie);
   const [hasChanges, setHasChanges] = useState(false);
-  const [cfWE, setCfWE] = useState('gesamt'); // aktive WE im Cashflow-Tab
+  const [cfWE, setCfWE] = useState('gesamt');       // aktive WE im Cashflow-Tab
+  const [einnahmenWE, setEinnahmenWE] = useState(0); // aktive WE im Einnahmen-Tab
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);
@@ -1203,15 +1204,206 @@ const MehrfamilienhausDetail = ({
             <Steuerberechnung params={{ ...params, kaltmiete: gesamtKaltmiete }} ergebnis={ergebnis} immobilie={{ ...immobilie, ...params, kaltmiete: gesamtKaltmiete }} onUpdateParams={updateParams} anteilFaktor={1}/>
           )}
 
-          {/* ── VERMIETUNG: EINNAHMEN ────────────────────────────────────────── */}
-          {activeTab === 'mieteinnahmen' && (
-            <MieteinnahmenTracker
-              params={{ ...params, kaltmiete: gesamtKaltmiete }}
-              updateParams={updateParams}
-              immobilie={immobilie}
-              mieterListe={(mieterListe || []).filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false)}
-            />
-          )}
+          {/* ── VERMIETUNG: EINNAHMEN (per Wohneinheit) ──────────────────── */}
+          {activeTab === 'mieteinnahmen' && (() => {
+            const MONATE_KURZ = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+            const aktJahr = new Date().getFullYear();
+
+            return (
+              <div className="space-y-4">
+                {/* WE-Tab-Leiste */}
+                {wohnungen.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <Building2 size={40} className="mx-auto mb-2 text-gray-300"/>
+                    <p className="text-sm">Erst Wohnungen mit Mieter anlegen.</p>
+                    <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600">→ Zu Wohnungen</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-1 overflow-x-auto bg-amber-50 rounded-xl p-1 -mx-1 px-1">
+                      {wohnungen.map((w, idx) => {
+                        const eingaenge = w.mietEingaenge || [];
+                        const diesJahr = eingaenge.filter(e => new Date(e.datum).getFullYear() === aktJahr).length;
+                        return (
+                          <button key={idx} onClick={() => setEinnahmenWE(idx)}
+                            className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${einnahmenWE === idx ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                            <span>{w.name || `WE ${idx + 1}`}</span>
+                            <span className={`text-[10px] font-normal ${einnahmenWE === idx ? 'text-white/70' : 'text-gray-400'}`}>
+                              {diesJahr}/12 Monate
+                            </span>
+                          </button>
+                        );
+                      })}
+                      <button onClick={() => setEinnahmenWE('gesamt')}
+                        className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${einnahmenWE === 'gesamt' ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                        <span>Gesamt</span>
+                        <span className={`text-[10px] font-normal ${einnahmenWE === 'gesamt' ? 'text-white/70' : 'text-gray-400'}`}>alle WE</span>
+                      </button>
+                    </div>
+
+                    {/* Einzel-WE: MieteinnahmenTracker mit WE-spezifischen Daten */}
+                    {einnahmenWE !== 'gesamt' && typeof einnahmenWE === 'number' && einnahmenWE < wohnungen.length && (() => {
+                      const w = wohnungen[einnahmenWE];
+                      // Per-WE params: Kaltmiete, Anpassungen und Eingänge aus der Wohnung
+                      const weParams = {
+                        ...params,
+                        kaltmiete: Number(w.kaltmiete) || 0,
+                        mietAnpassungen: w.mietAnpassungen || [],
+                        mietEingaenge: w.mietEingaenge || [],
+                        dauerauftrag: false,
+                        vermietungsmodell: 'kaltmiete',
+                      };
+                      // Mietbeginn als Startdatum für die Jahresauswahl im Tracker
+                      const weImmobilie = {
+                        ...immobilie,
+                        kaufdatum: w.mietbeginn || immobilie.kaufdatum,
+                      };
+                      // updateParams zurückschreiben in wohnungen[idx]
+                      const weUpdateParams = (neueParams) => {
+                        const neu = [...wohnungen];
+                        neu[einnahmenWE] = {
+                          ...neu[einnahmenWE],
+                          mietAnpassungen: neueParams.mietAnpassungen ?? neu[einnahmenWE].mietAnpassungen,
+                          mietEingaenge: neueParams.mietEingaenge ?? neu[einnahmenWE].mietEingaenge,
+                        };
+                        setWohnungen(neu);
+                        aggregiereUndSpeichere(neu);
+                      };
+
+                      return (
+                        <div>
+                          {/* WE-Info-Header */}
+                          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between mb-4">
+                            <div>
+                              <p className="font-bold text-gray-800">{w.name || `WE ${einnahmenWE + 1}`}</p>
+                              {w.mieterName && <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5"><User size={12}/>{w.mieterName}{w.mietbeginn && ` · seit ${new Date(w.mietbeginn).toLocaleDateString('de-DE')}`}</p>}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-black text-emerald-600">{formatCurrency(Number(w.kaltmiete) || 0)}</p>
+                              <p className="text-xs text-gray-400">Kaltmiete / Monat</p>
+                            </div>
+                          </div>
+                          {/* key erzwingt Re-Mount beim WE-Wechsel → frischer useState-Zustand */}
+                          <MieteinnahmenTracker
+                            key={`we-einnahmen-${einnahmenWE}`}
+                            params={weParams}
+                            updateParams={weUpdateParams}
+                            immobilie={weImmobilie}
+                            mieterListe={[]}
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Gesamt-Einnahmen-Übersicht */}
+                    {einnahmenWE === 'gesamt' && (() => {
+                      const [gJahr, setGJahr] = useState(aktJahr);
+                      const MONATE = Array.from({ length: 12 }, (_, i) => i + 1);
+                      const rows = MONATE.map(m => {
+                        const erwartet = wohnungen.reduce((s, w) => {
+                          const belegt = w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date(gJahr, m - 1, 15));
+                          const gestartet = !w.mietbeginn || new Date(w.mietbeginn) <= new Date(gJahr, m - 1, 28);
+                          return s + (belegt && gestartet ? (Number(w.kaltmiete) || 0) : 0);
+                        }, 0);
+                        const erhalten = wohnungen.reduce((s, w) => {
+                          const we = (w.mietEingaenge || []).filter(e => {
+                            const d = new Date(e.datum);
+                            return d.getFullYear() === gJahr && d.getMonth() + 1 === m;
+                          });
+                          return s + we.reduce((ss, e) => ss + (Number(e.betrag) || 0), 0);
+                        }, 0);
+                        const diff = erhalten - erwartet;
+                        const istVergangen = gJahr < aktJahr || (gJahr === aktJahr && m <= new Date().getMonth() + 1);
+                        return { m, erwartet, erhalten, diff, istVergangen };
+                      });
+                      const totalErwartet = rows.reduce((s, r) => s + (r.istVergangen ? r.erwartet : 0), 0);
+                      const totalErhalten = rows.reduce((s, r) => s + r.erhalten, 0);
+
+                      return (
+                        <div className="space-y-4">
+                          {/* Jahresauswahl */}
+                          <div className="flex gap-2 items-center">
+                            <span className="text-xs text-gray-500 font-semibold">Jahr:</span>
+                            {[aktJahr - 1, aktJahr, aktJahr + 1].filter(j => j >= (immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : aktJahr)).map(j => (
+                              <button key={j} onClick={() => setGJahr(j)}
+                                className={`px-3 py-1 text-xs font-semibold rounded-lg ${gJahr === j ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                {j}
+                              </button>
+                            ))}
+                          </div>
+                          {/* KPI-Karten */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="bg-white border border-gray-200 rounded-xl p-3 text-center">
+                              <p className="text-[10px] text-gray-400 mb-1">Soll (bisher)</p>
+                              <p className="text-base font-black text-gray-700">{formatCurrency(totalErwartet)}</p>
+                            </div>
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                              <p className="text-[10px] text-gray-400 mb-1">Eingegangen</p>
+                              <p className="text-base font-black text-emerald-600">{formatCurrency(totalErhalten)}</p>
+                            </div>
+                            <div className={`border rounded-xl p-3 text-center ${totalErhalten >= totalErwartet ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                              <p className="text-[10px] text-gray-400 mb-1">Differenz</p>
+                              <p className={`text-base font-black ${totalErhalten >= totalErwartet ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {totalErhalten >= totalErwartet ? '+' : ''}{formatCurrency(totalErhalten - totalErwartet)}
+                              </p>
+                            </div>
+                          </div>
+                          {/* Monatsübersicht */}
+                          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                            <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Monatsübersicht {gJahr} — alle WE</p>
+                            </div>
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-gray-400 border-b border-gray-100">
+                                  <th className="text-left py-2 px-4 font-semibold">Monat</th>
+                                  <th className="text-right py-2 px-2 font-semibold">Soll</th>
+                                  <th className="text-right py-2 px-2 font-semibold">Erhalten</th>
+                                  <th className="text-right py-2 px-4 font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-50">
+                                {rows.map(r => (
+                                  <tr key={r.m} className={!r.istVergangen ? 'opacity-40' : ''}>
+                                    <td className="py-2 px-4 font-semibold text-gray-700">{MONATE_KURZ[r.m - 1]}</td>
+                                    <td className="py-2 px-2 text-right text-gray-500">{r.erwartet > 0 ? formatCurrency(r.erwartet) : '—'}</td>
+                                    <td className={`py-2 px-2 text-right font-semibold ${r.erhalten > 0 ? 'text-emerald-600' : 'text-gray-300'}`}>
+                                      {r.erhalten > 0 ? formatCurrency(r.erhalten) : '—'}
+                                    </td>
+                                    <td className="py-2 px-4 text-right">
+                                      {!r.istVergangen ? <span className="text-gray-300">—</span>
+                                        : r.erwartet === 0 ? <span className="text-gray-300">—</span>
+                                        : r.erhalten >= r.erwartet
+                                          ? <span className="text-emerald-600 font-bold flex items-center gap-0.5 justify-end"><Check size={11}/>OK</span>
+                                          : r.erhalten > 0
+                                            ? <span className="text-orange-500 font-semibold">Teilzahlung</span>
+                                            : <span className="text-red-500 font-semibold flex items-center gap-0.5 justify-end"><AlertTriangle size={11}/>Offen</span>
+                                      }
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr className="bg-gray-50 border-t-2 border-gray-200 font-bold">
+                                  <td className="py-2 px-4 text-gray-700">Gesamt</td>
+                                  <td className="py-2 px-2 text-right text-gray-600">{formatCurrency(totalErwartet)}</td>
+                                  <td className="py-2 px-2 text-right text-emerald-700">{formatCurrency(totalErhalten)}</td>
+                                  <td className={`py-2 px-4 text-right ${totalErhalten >= totalErwartet ? 'text-emerald-600' : 'text-red-600'}`}>
+                                    {totalErhalten >= totalErwartet ? '+' : ''}{formatCurrency(totalErhalten - totalErwartet)}
+                                  </td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                          <p className="text-xs text-gray-400 text-center">Zahlungen pro WE erfassen → WE-Tab anklicken</p>
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── VERMIETUNG: MIETER ───────────────────────────────────────────── */}
           {activeTab === 'mieter' && (
