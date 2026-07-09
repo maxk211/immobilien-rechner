@@ -17,6 +17,7 @@ import {
   Building2, BarChart3, Wallet, Users, Wrench, MapPin, Pencil, X, Check,
   CheckCircle2, AlertTriangle, User, FileText, Key, Plus, Lightbulb,
   Landmark, CalendarDays, Circle, Trash2, Upload, Download, Loader2,
+  Shield, Zap, Wifi, CreditCard, MoreHorizontal, TrendingUp, TrendingDown,
 } from 'lucide-react';
 
 // ─── Dokumente-Tab (inline, identisch zu KaufimmobilieDetail) ─────────────────
@@ -136,6 +137,18 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
+// ─── Kostenkategorien je Wohneinheit ─────────────────────────────────────────
+const KOSTEN_FELDER = [
+  { key: 'hausverwaltung', label: 'Hausverwaltung',           icon: Building2, farbe: 'blue'   },
+  { key: 'instandhaltung', label: 'Instandhaltungsrücklage',  icon: Wrench,    farbe: 'orange' },
+  { key: 'grundsteuer',    label: 'Grundsteuer (Anteil)',      icon: Landmark,  farbe: 'purple' },
+  { key: 'versicherung',   label: 'Versicherung (Anteil)',     icon: Shield,    farbe: 'teal'   },
+  { key: 'strom',          label: 'Strom / Heizung (Anteil)', icon: Zap,       farbe: 'yellow' },
+  { key: 'internet',       label: 'Internet / Kabel TV',       icon: Wifi,      farbe: 'cyan'   },
+  { key: 'kreditAnteil',   label: 'Kredit-Rate (Anteil)',      icon: CreditCard, farbe: 'red'  },
+  { key: 'sonstige',       label: 'Sonstige Kosten',           icon: MoreHorizontal, farbe: 'gray' },
+];
+
 // ─── Tab-Mapping: externe initialTab-Werte → interne Tab-IDs ────────────────
 const MFH_TAB_MAP = {
   mieter: 'mieter', mieteinnahmen: 'mieteinnahmen', nkabrechnung: 'nkabrechnung',
@@ -156,6 +169,7 @@ const MehrfamilienhausDetail = ({
   );
   const [params, setParams] = useState(immobilie);
   const [hasChanges, setHasChanges] = useState(false);
+  const [cfWE, setCfWE] = useState('gesamt'); // aktive WE im Cashflow-Tab
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);
@@ -205,6 +219,14 @@ const MehrfamilienhausDetail = ({
     const neu = wohnungen.filter((_, i) => i !== idx);
     setWohnungen(neu);
     setHasChanges(false);
+    aggregiereUndSpeichere(neu);
+  };
+
+  // Kosten einer einzelnen WE updaten + sofort persistieren
+  const updateWohnungKosten = (idx, neueKosten) => {
+    const neu = [...wohnungen];
+    neu[idx] = { ...neu[idx], kosten: neueKosten };
+    setWohnungen(neu);
     aggregiereUndSpeichere(neu);
   };
 
@@ -556,13 +578,289 @@ const MehrfamilienhausDetail = ({
             </div>
           )}
 
-          {/* ── FINANZEN: CASHFLOW ───────────────────────────────────────────── */}
-          {activeTab === 'cashflow' && (
-            <>
-              <MietKostenManager params={params} updateParams={updateParams} immobilie={immobilie} hasChanges={hasChanges} setHasChanges={setHasChanges}/>
-              <CashflowUebersicht params={{ ...params, kaltmiete: gesamtKaltmiete }} ergebnis={ergebnis} immobilie={immobilie} investitionen={params.investitionen} anteilFaktor={1}/>
-            </>
-          )}
+          {/* ── FINANZEN: CASHFLOW (per Wohneinheit) ─────────────────────── */}
+          {activeTab === 'cashflow' && (() => {
+            // Aktuelle Kreditrate aus Finanzierungsphase oder Fallback
+            const kreditrate = (() => {
+              const ph = params.finanzierungsphasen?.[0];
+              if (ph?.rate) return ph.rate;
+              if (ph?.sollzinssatz && ph?.anfangstilgung) {
+                const sk = params.finanzierungsbetrag ?? 0;
+                const mz = ph.sollzinssatz / 100 / 12;
+                return sk > 0 ? Math.round(sk * (mz + (ph.anfangstilgung / 100 / 12))) : 0;
+              }
+              return params.kredit_monatsrate || 0;
+            })();
+
+            // Aggregierte Werte für Gesamt-Tab
+            const weKosten = wohnungen.map((w, idx) => {
+              const k = w.kosten || {};
+              const sumK = KOSTEN_FELDER.reduce((s, f) => s + (Number(k[f.key]) || 0), 0);
+              return { idx, name: w.name || `WE ${idx + 1}`, kaltmiete: Number(w.kaltmiete) || 0, kosten: k, sumKosten: sumK, cashflow: (Number(w.kaltmiete) || 0) - sumK };
+            });
+            const totalKaltmiete = weKosten.reduce((s, wk) => s + wk.kaltmiete, 0);
+            const totalKosten    = weKosten.reduce((s, wk) => s + wk.sumKosten, 0);
+            const totalCashflow  = totalKaltmiete - totalKosten;
+
+            return (
+              <div className="space-y-4">
+                {/* WE-Tab-Leiste */}
+                <div className="flex gap-1 overflow-x-auto bg-amber-50 rounded-xl p-1 -mx-1 px-1">
+                  {wohnungen.map((w, idx) => {
+                    const wk = weKosten[idx];
+                    return (
+                      <button key={idx} onClick={() => setCfWE(idx)}
+                        className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${cfWE === idx ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                        <span>{w.name || `WE ${idx + 1}`}</span>
+                        <span className={`text-[10px] font-normal ${cfWE === idx ? 'text-white/70' : wk.cashflow >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {wk.cashflow >= 0 ? '+' : ''}{formatCurrency(wk.cashflow)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <button onClick={() => setCfWE('gesamt')}
+                    className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${cfWE === 'gesamt' ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                    <span>Gesamt</span>
+                    <span className={`text-[10px] font-normal ${cfWE === 'gesamt' ? 'text-white/70' : totalCashflow >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {totalCashflow >= 0 ? '+' : ''}{formatCurrency(totalCashflow)}
+                    </span>
+                  </button>
+                </div>
+
+                {wohnungen.length === 0 && (
+                  <div className="text-center py-12 text-gray-400">
+                    <Building2 size={40} className="mx-auto mb-2 text-gray-300"/>
+                    <p className="text-sm">Erst Wohnungen anlegen, dann Cashflow eintragen.</p>
+                    <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600">→ Zu Wohnungen</button>
+                  </div>
+                )}
+
+                {/* ── Einzel-WE-Ansicht ─────────────────────────────────────── */}
+                {cfWE !== 'gesamt' && typeof cfWE === 'number' && cfWE < wohnungen.length && (() => {
+                  const w   = wohnungen[cfWE];
+                  const wk  = weKosten[cfWE];
+                  const k   = w.kosten || {};
+                  const cf  = wk.cashflow;
+                  const anteilFlaeche = gesamtFlaeche > 0 ? (Number(w.wohnflaeche) || 0) / gesamtFlaeche : 1 / wohnungen.length;
+
+                  return (
+                    <div className="space-y-4">
+                      {/* WE-Kopf */}
+                      <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-gray-900 text-base">{w.name || `WE ${cfWE + 1}`}</p>
+                          {w.etage && <p className="text-xs text-gray-400">{w.etage}</p>}
+                          {w.mieterName && <p className="text-sm text-gray-600 flex items-center gap-1 mt-0.5"><User size={12}/>{w.mieterName}</p>}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-emerald-600">{formatCurrency(Number(w.kaltmiete) || 0)}</p>
+                          <p className="text-xs text-gray-400">Kaltmiete / Monat</p>
+                          {Number(w.wohnflaeche) > 0 && <p className="text-xs text-gray-400">{w.wohnflaeche} m²</p>}
+                        </div>
+                      </div>
+
+                      {/* Kosteneingabe */}
+                      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Monatliche Kosten</p>
+                        </div>
+                        {KOSTEN_FELDER.map(f => {
+                          const Icon = f.icon;
+                          return (
+                            <div key={f.key} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer" htmlFor={`kosten-${cfWE}-${f.key}`}>
+                                <Icon size={14} className="text-gray-400 flex-shrink-0"/>
+                                {f.label}
+                              </label>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <input id={`kosten-${cfWE}-${f.key}`} type="number" min={0} step={1}
+                                  value={k[f.key] || ''}
+                                  placeholder="0"
+                                  onChange={e => updateWohnungKosten(cfWE, { ...k, [f.key]: parseFloat(e.target.value) || 0 })}
+                                  className="w-24 px-2 py-1.5 border border-gray-200 rounded-lg text-right text-base sm:text-sm focus:ring-2 focus:ring-amber-300 focus:border-amber-400"/>
+                                <span className="text-xs text-gray-400 w-8">€/mo</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="flex items-center justify-between px-4 py-3 bg-red-50 border-t border-red-100">
+                          <span className="text-sm font-semibold text-gray-700 flex items-center gap-1"><TrendingDown size={14} className="text-red-500"/>Summe Kosten</span>
+                          <span className="font-black text-red-600 text-base">−{formatCurrency(wk.sumKosten)}</span>
+                        </div>
+                      </div>
+
+                      {/* Kredit-Tipp */}
+                      {kreditrate > 0 && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-xs text-amber-700">
+                          <Lightbulb size={14} className="shrink-0"/>
+                          <span>Gesamte Kreditrate: <strong>{formatCurrency(kreditrate)}/mo</strong></span>
+                          <div className="flex gap-1 ml-auto shrink-0">
+                            <button onClick={() => updateWohnungKosten(cfWE, { ...k, kreditAnteil: Math.round(kreditrate / wohnungen.length) })}
+                              className="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-semibold">
+                              ÷ gleich
+                            </button>
+                            {Number(w.wohnflaeche) > 0 && gesamtFlaeche > 0 && (
+                              <button onClick={() => updateWohnungKosten(cfWE, { ...k, kreditAnteil: Math.round(kreditrate * anteilFlaeche) })}
+                                className="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-semibold">
+                                ÷ Fläche ({Math.round(anteilFlaeche * 100)} %)
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Cashflow-Ergebnis */}
+                      <div className={`rounded-2xl p-5 border-2 ${cf >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-gray-700 flex items-center gap-1.5">
+                            {cf >= 0 ? <TrendingUp size={16} className="text-emerald-500"/> : <TrendingDown size={16} className="text-red-500"/>}
+                            Monatlicher Cashflow
+                          </span>
+                          <span className={`text-2xl font-black ${cf >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {cf >= 0 ? '+' : ''}{formatCurrency(cf)}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-400 space-y-0.5">
+                          <div className="flex justify-between">
+                            <span>Einnahmen:</span><span className="text-emerald-600 font-semibold">+{formatCurrency(Number(w.kaltmiete)||0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Kosten:</span><span className="text-red-500 font-semibold">−{formatCurrency(wk.sumKosten)}</span>
+                          </div>
+                          <div className="flex justify-between pt-1 border-t border-gray-200">
+                            <span>Jahreskashflow:</span>
+                            <span className={`font-bold ${cf >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{cf >= 0 ? '+' : ''}{formatCurrency(cf * 12)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Gesamt-Ansicht ───────────────────────────────────────── */}
+                {cfWE === 'gesamt' && wohnungen.length > 0 && (
+                  <div className="space-y-4">
+                    {/* KPI-Karten */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 sm:p-4 text-center">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Gesamtmiete</p>
+                        <p className="text-base sm:text-xl font-black text-emerald-600">{formatCurrency(totalKaltmiete)}</p>
+                        <p className="text-[10px] text-gray-400">/Monat</p>
+                      </div>
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 text-center">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Gesamtkosten</p>
+                        <p className="text-base sm:text-xl font-black text-red-600">−{formatCurrency(totalKosten)}</p>
+                        <p className="text-[10px] text-gray-400">/Monat</p>
+                      </div>
+                      <div className={`border-2 rounded-xl p-3 sm:p-4 text-center ${totalCashflow >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
+                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Cashflow gesamt</p>
+                        <p className={`text-base sm:text-xl font-black ${totalCashflow >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                          {totalCashflow >= 0 ? '+' : ''}{formatCurrency(totalCashflow)}
+                        </p>
+                        <p className="text-[10px] text-gray-400">/Monat</p>
+                      </div>
+                    </div>
+
+                    {/* WE-Vergleichstabelle */}
+                    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Cashflow je Wohneinheit — Klicken zum Bearbeiten</p>
+                      </div>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-xs text-gray-400 border-b border-gray-100 bg-gray-50">
+                            <th className="text-left py-2 px-4 font-semibold">Wohnung</th>
+                            <th className="text-right py-2 px-2 font-semibold">Miete</th>
+                            <th className="text-right py-2 px-2 font-semibold hidden sm:table-cell">Kosten</th>
+                            <th className="text-right py-2 px-4 font-semibold">Cashflow</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {weKosten.map((wk) => (
+                            <tr key={wk.idx} className="hover:bg-amber-50/50 cursor-pointer transition-colors" onClick={() => setCfWE(wk.idx)}>
+                              <td className="py-2.5 px-4">
+                                <span className="font-semibold text-gray-800">{wk.name}</span>
+                                {wohnungen[wk.idx]?.mieterName && <span className="text-xs text-gray-400 ml-1.5 hidden sm:inline">· {wohnungen[wk.idx].mieterName}</span>}
+                              </td>
+                              <td className="py-2.5 px-2 text-right text-emerald-600 font-semibold">{formatCurrency(wk.kaltmiete)}</td>
+                              <td className="py-2.5 px-2 text-right text-red-400 hidden sm:table-cell">−{formatCurrency(wk.sumKosten)}</td>
+                              <td className={`py-2.5 px-4 text-right font-black ${wk.cashflow >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                                {wk.cashflow >= 0 ? '+' : ''}{formatCurrency(wk.cashflow)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-gray-50 border-t-2 border-gray-200">
+                            <td className="py-2.5 px-4 font-black text-gray-800">Gesamt ({wohnungen.length} WE)</td>
+                            <td className="py-2.5 px-2 text-right font-black text-emerald-700">{formatCurrency(totalKaltmiete)}</td>
+                            <td className="py-2.5 px-2 text-right font-black text-red-600 hidden sm:table-cell">−{formatCurrency(totalKosten)}</td>
+                            <td className={`py-2.5 px-4 text-right font-black text-lg ${totalCashflow >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
+                              {totalCashflow >= 0 ? '+' : ''}{formatCurrency(totalCashflow)}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+
+                    {/* Kostenkategorien-Übersicht */}
+                    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Kostenaufstellung Gesamt</p>
+                      </div>
+                      <div className="divide-y divide-gray-50">
+                        {KOSTEN_FELDER.map(f => {
+                          const Icon = f.icon;
+                          const sumKat = weKosten.reduce((s, wk) => s + (Number(wk.kosten[f.key]) || 0), 0);
+                          if (sumKat === 0) return null;
+                          return (
+                            <div key={f.key} className="flex items-center justify-between px-4 py-2.5">
+                              <span className="text-sm text-gray-600 flex items-center gap-2"><Icon size={13} className="text-gray-400"/>{f.label}</span>
+                              <span className="text-sm font-semibold text-red-500">−{formatCurrency(sumKat)}</span>
+                            </div>
+                          );
+                        })}
+                        {KOSTEN_FELDER.every(f => weKosten.every(wk => !wk.kosten[f.key])) && (
+                          <div className="px-4 py-6 text-center text-sm text-gray-400">
+                            Noch keine Kosten eingetragen — WE anklicken zum Bearbeiten
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Jahresübersicht */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Jahresübersicht</p>
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Jahresmiete:</span>
+                          <span className="font-semibold text-emerald-600">+{formatCurrency(totalKaltmiete * 12)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Jahreskosten:</span>
+                          <span className="font-semibold text-red-500">−{formatCurrency(totalKosten * 12)}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                          <span className="font-bold text-slate-700">Jahres-Cashflow:</span>
+                          <span className={`font-black text-lg ${totalCashflow >= 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                            {totalCashflow >= 0 ? '+' : ''}{formatCurrency(totalCashflow * 12)}
+                          </span>
+                        </div>
+                        {params.kaufpreis > 0 && totalCashflow !== 0 && (
+                          <div className="flex justify-between items-center pt-1">
+                            <span className="text-xs text-gray-400">Cash-on-Cash (auf Kaufpreis):</span>
+                            <span className={`text-xs font-semibold ${totalCashflow >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {((totalCashflow * 12 / params.kaufpreis) * 100).toFixed(2)} %
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── FINANZEN: FINANZIERUNG ───────────────────────────────────────── */}
           {activeTab === 'finanzierung' && (() => {
