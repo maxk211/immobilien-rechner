@@ -194,6 +194,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       daten.push({
         jahr,
         einnahmen: Math.round(einnahmen),
+        stellplatzJahr: Math.round(stellplatz * 12),
         betrieb: Math.round(betrieb),
         kreditrate: Math.round(kreditrate),
         bauspar: Math.round(bauspar),
@@ -416,6 +417,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                     <div>
                       <div className="text-gray-400 mb-0.5">Einnahmen</div>
                       <div className="text-emerald-600 font-semibold">{formatCurrency(Math.round(d.einnahmen * af))}</div>
+                      {d.stellplatzJahr > 0 && (
+                        <div className="text-[10px] text-emerald-400">inkl. {formatCurrency(Math.round(d.stellplatzJahr * af))} SP</div>
+                      )}
                     </div>
                     <div>
                       <div className="text-gray-400 mb-0.5">Betrieb</div>
@@ -463,7 +467,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                         {d.istVorjahr && <span className="text-[9px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded-full">Vorjahr</span>}
                       </div>
                     </td>
-                    <td className="p-2 text-right text-emerald-600">{formatCurrency(Math.round(d.einnahmen * anteilFaktor))}</td>
+                    <td className="p-2 text-right text-emerald-600">
+                      {formatCurrency(Math.round(d.einnahmen * anteilFaktor))}
+                      {d.stellplatzJahr > 0 && (
+                        <div className="text-[10px] text-emerald-400 font-normal">
+                          inkl. {formatCurrency(Math.round(d.stellplatzJahr * anteilFaktor))} SP
+                        </div>
+                      )}
+                    </td>
                     <td className="p-2 text-right text-red-500">{formatCurrency(Math.round(d.betrieb * anteilFaktor))}</td>
                     <td className="p-2 text-right text-red-600">{formatCurrency(Math.round(d.kreditrate * anteilFaktor))}</td>
                     <td className="p-2 text-right text-orange-500">{d.investitionen > 0 ? formatCurrency(Math.round(d.investitionen * anteilFaktor)) : '—'}</td>
