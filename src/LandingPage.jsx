@@ -8,6 +8,7 @@ import {
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
   const [billingOpen, setBillingOpen] = useState(null);
+  const [billing, setBilling] = useState('monatlich'); // 'monatlich' | 'jaehrlich'
 
   const features = [
     {
@@ -58,7 +59,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
   const faqs = [
     {
       q: 'Kann ich die App kostenlos testen?',
-      a: 'Ja — der Free-Tier ist dauerhaft kostenlos. Du kannst eine Immobilie mit allen Features anlegen und verwalten, ohne Kreditkarte.',
+      a: 'Ja — du kannst renditly 3–4 Monate kostenlos mit einer Immobilie testen, ohne Kreditkarte. Danach wählst du einen Plan ab 3,99 €/Monat.',
     },
     {
       q: 'Was passiert wenn ich kündige?',
@@ -209,7 +210,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
               { value: '6+', label: 'Immobilientypen' },
               { value: '100%', label: 'Cloudbasiert' },
               { value: '0€', label: 'Einstieg' },
-              { value: '9,99€', label: 'Pro / Monat' },
+              { value: 'ab 3,99€', label: '/ Monat' },
             ].map(stat => (
               <div key={stat.label} className="text-center">
                 <div className="text-xl sm:text-3xl font-black text-white">{stat.value}</div>
@@ -366,88 +367,141 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
 
       {/* ── PRICING ── */}
       <section className="py-12 sm:py-16 lg:py-24" id="pricing">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-10">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-3">
               Einfache, transparente Preise
             </h2>
             <p className="text-slate-500 text-base sm:text-lg">Kein verstecktes Kleingedrucktes. Kein Abo-Durcheinander.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 max-w-3xl mx-auto">
-            {/* Free */}
-            <div className="bg-white border-2 border-gray-200 rounded-3xl p-6 sm:p-8">
-              <div className="mb-5 sm:mb-6">
-                <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Free</div>
-                <div className="text-4xl sm:text-5xl font-black text-slate-900">0€</div>
-                <div className="text-gray-400 text-sm mt-1">dauerhaft kostenlos</div>
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-3 mb-8 sm:mb-10">
+            <span className={`text-sm font-semibold transition-colors ${billing === 'monatlich' ? 'text-slate-900' : 'text-slate-400'}`}>Monatlich</span>
+            <button
+              onClick={() => setBilling(b => b === 'monatlich' ? 'jaehrlich' : 'monatlich')}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${billing === 'jaehrlich' ? 'bg-indigo-600' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${billing === 'jaehrlich' ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+            <span className={`text-sm font-semibold transition-colors ${billing === 'jaehrlich' ? 'text-slate-900' : 'text-slate-400'}`}>
+              Jährlich
+              <span className="ml-1.5 text-[11px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-full">≈ 20% Rabatt</span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+
+            {/* Kostenlos */}
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6 flex flex-col">
+              <div className="mb-4">
+                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Kostenlos testen</div>
+                <div className="text-3xl sm:text-4xl font-black text-slate-900">0 €</div>
+                <div className="text-gray-400 text-xs mt-1">3–4 Monate, dann Upgrade</div>
               </div>
-              <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
-                {[
-                  '1 Immobilie',
-                  'Alle Berechnungs-Features',
-                  'Cashflow & Rendite',
-                  'Steuervorbereitung',
-                  'Mieterverwaltung',
-                  'Cloud-Speicherung',
-                ].map(item => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
-                    <Check size={14} className="text-emerald-500 flex-shrink-0" /> {item}
+              <ul className="space-y-2 mb-6 flex-1">
+                {['1 Immobilie', 'Alle Features', 'Cashflow & Rendite', 'Mieterverwaltung'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
+                    <Check size={12} className="text-emerald-500 flex-shrink-0" /> {item}
                   </li>
                 ))}
-                <li className="flex items-center gap-3 text-sm text-gray-400">
-                  <X size={14} className="text-gray-300 flex-shrink-0" /> Mehr als 1 Immobilie
+                <li className="flex items-center gap-2 text-xs text-gray-400">
+                  <X size={12} className="text-gray-300 flex-shrink-0" /> Mehr als 1 Immobilie
                 </li>
               </ul>
-              <button
-                onClick={onGetStarted}
-                className="w-full py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all"
-              >
+              <button onClick={onGetStarted} className="w-full py-2.5 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all">
                 Kostenlos starten
               </button>
             </div>
 
-            {/* Pro */}
-            <div className="relative bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/30 mt-4 sm:mt-0">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow whitespace-nowrap">
-                EMPFOHLEN
-              </div>
-              <div className="mb-5 sm:mb-6">
-                <div className="text-sm font-bold text-blue-200 uppercase tracking-wide mb-1">Pro</div>
+            {/* Starter */}
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6 flex flex-col">
+              <div className="mb-4">
+                <div className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2">Starter · bis 1 Immo</div>
                 <div className="flex items-end gap-1">
-                  <div className="text-4xl sm:text-5xl font-black">9,99€</div>
-                  <div className="text-blue-300 text-sm mb-1.5">/ Monat</div>
+                  <div className="text-3xl sm:text-4xl font-black text-slate-900">
+                    {billing === 'monatlich' ? '4,99' : '3,99'} €
+                  </div>
+                  <div className="text-gray-400 text-xs mb-1.5">/ Monat</div>
                 </div>
-                <div className="text-blue-300 text-sm mt-1">jederzeit kündbar</div>
+                {billing === 'jaehrlich'
+                  ? <div className="text-xs text-emerald-600 font-semibold mt-1">47,88 € / Jahr · spare 12 €</div>
+                  : <div className="text-gray-400 text-xs mt-1">monatlich kündbar</div>
+                }
               </div>
-              <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
-                {[
-                  'Unlimitierte Immobilien',
-                  'Alle Berechnungs-Features',
-                  'Cashflow & Rendite',
-                  'Steuervorbereitung',
-                  'Mieterverwaltung',
-                  'Cloud-Speicherung',
-                  'Mehrfamilienhaus-Management',
-                  'Stellplatz-Verwaltung',
-                  'Prioritäts-Support',
-                ].map(item => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-blue-100">
-                    <Check size={14} className="text-emerald-400 flex-shrink-0" /> {item}
+              <ul className="space-y-2 mb-6 flex-1">
+                {['1 Immobilie', 'Alle Features', 'Cashflow & Rendite', 'Steuervorbereitung', 'Mieterverwaltung', 'Cloud-Speicherung'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
+                    <Check size={12} className="text-emerald-500 flex-shrink-0" /> {item}
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={onGetStarted}
-                className="w-full py-3 bg-white text-indigo-700 rounded-xl font-bold hover:bg-blue-50 transition-all shadow inline-flex items-center justify-center gap-2"
-              >
-                Pro freischalten <ArrowRight size={16} />
+              <button onClick={onGetStarted} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all">
+                Starter wählen
               </button>
             </div>
+
+            {/* Standard — EMPFOHLEN */}
+            <div className="relative bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-5 sm:p-6 text-white shadow-xl shadow-indigo-500/25 flex flex-col">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow whitespace-nowrap">
+                EMPFOHLEN
+              </div>
+              <div className="mb-4">
+                <div className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-2">Standard · bis 10 Immos</div>
+                <div className="flex items-end gap-1">
+                  <div className="text-3xl sm:text-4xl font-black">
+                    {billing === 'monatlich' ? '12,49' : '9,99'} €
+                  </div>
+                  <div className="text-indigo-300 text-xs mb-1.5">/ Monat</div>
+                </div>
+                {billing === 'jaehrlich'
+                  ? <div className="text-xs text-emerald-300 font-semibold mt-1">119,88 € / Jahr · spare 30 €</div>
+                  : <div className="text-indigo-300 text-xs mt-1">monatlich kündbar</div>
+                }
+              </div>
+              <ul className="space-y-2 mb-6 flex-1">
+                {['Bis 10 Immobilien', 'Alle Features', 'Cashflow & Rendite', 'Steuervorbereitung', 'Mieterverwaltung', 'Cloud-Speicherung', 'MFH-Management', 'Stellplatz-Verwaltung'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-xs text-indigo-100">
+                    <Check size={12} className="text-emerald-400 flex-shrink-0" /> {item}
+                  </li>
+                ))}
+              </ul>
+              <button onClick={onGetStarted} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow">
+                Standard wählen
+              </button>
+            </div>
+
+            {/* Pro */}
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6 flex flex-col">
+              <div className="mb-4">
+                <div className="text-xs font-bold text-violet-600 uppercase tracking-widest mb-2">Pro · ab 11 Immos</div>
+                <div className="flex items-end gap-1">
+                  <div className="text-3xl sm:text-4xl font-black text-slate-900">
+                    {billing === 'monatlich' ? '24,99' : '19,99'} €
+                  </div>
+                  <div className="text-gray-400 text-xs mb-1.5">/ Monat</div>
+                </div>
+                {billing === 'jaehrlich'
+                  ? <div className="text-xs text-emerald-600 font-semibold mt-1">239,88 € / Jahr · spare 60 €</div>
+                  : <div className="text-gray-400 text-xs mt-1">monatlich kündbar</div>
+                }
+              </div>
+              <ul className="space-y-2 mb-6 flex-1">
+                {['Unlimitierte Immobilien', 'Alle Features', 'Cashflow & Rendite', 'Steuervorbereitung', 'Mieterverwaltung', 'Cloud-Speicherung', 'MFH-Management', 'Prioritäts-Support'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
+                    <Check size={12} className="text-emerald-500 flex-shrink-0" /> {item}
+                  </li>
+                ))}
+              </ul>
+              <button onClick={onGetStarted} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all">
+                Pro wählen
+              </button>
+            </div>
+
           </div>
 
-          <p className="text-center text-slate-400 text-xs sm:text-sm mt-5 sm:mt-6 px-2">
-            Alle Preise inkl. MwSt. · Monatlich kündbar · Sichere Zahlung via Stripe
+          <p className="text-center text-slate-400 text-xs sm:text-sm mt-6 px-2">
+            Alle Preise inkl. MwSt. · Monatlich oder jährlich kündbar · Sichere Zahlung via Stripe
           </p>
         </div>
       </section>
