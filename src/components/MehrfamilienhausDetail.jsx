@@ -118,7 +118,7 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800 truncate">{doc.name}</p>
-                <p className="text-xs text-slate-400">{doc.typ} · {formatBytes(doc.size)} · {doc.datum ? new Date(doc.datum).toLocaleDateString('de-DE') : '—'}</p>
+                <p className="text-xs text-slate-400">{doc.typ} · {formatBytes(doc.groesse)} · {doc.hochgeladenAm ? new Date(doc.hochgeladenAm).toLocaleDateString('de-DE') : '—'}</p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => handleDownload(doc)} disabled={ladeId === doc.id}
@@ -192,17 +192,45 @@ const MehrfamilienhausDetail = ({
   const kautionOffenAnzahl = wohnungen.filter(w => w.kautionBetrag > 0 && !w.kautionBezahlt).length;
   const aktiveMieterAnzahl = (mieterListe || []).filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
 
-  // Rendite-Berechnung mit aggregierter Kaltmiete
-  const ergebnis = useMemo(() => berechneRendite({ ...params, kaltmiete: gesamtKaltmiete }), [params, gesamtKaltmiete]);
+  // Aggregierte Kosten aus allen WE-kosten-Objekten (für berechneRendite)
+  const aggregierteWEKosten = useMemo(() => wohnungen.reduce((acc, w) => {
+    const k = w.kosten || {};
+    return {
+      instandhaltung: acc.instandhaltung + (Number(k.instandhaltung) || 0),
+      verwaltung:     acc.verwaltung     + (Number(k.hausverwaltung) || 0),
+      strom:          acc.strom          + (Number(k.strom)          || 0),
+      internet:       acc.internet       + (Number(k.internet)       || 0),
+      // Grundsteuer + Versicherung → hausgeld (monatlich)
+      hausgeld:       acc.hausgeld       + (Number(k.grundsteuer)    || 0) + (Number(k.versicherung) || 0),
+      // Sonstige → nebenkosten (monatlich)
+      nebenkosten:    acc.nebenkosten    + (Number(k.sonstige)       || 0),
+    };
+  }, { instandhaltung: 0, verwaltung: 0, strom: 0, internet: 0, hausgeld: 0, nebenkosten: 0 }), [wohnungen]);
+
+  // Rendite-Berechnung: kaltmiete + alle per-WE-Kosten korrekt aggregiert
+  const ergebnis = useMemo(() => berechneRendite({
+    ...params,
+    kaltmiete:     gesamtKaltmiete,
+    instandhaltung: aggregierteWEKosten.instandhaltung,
+    verwaltung:     aggregierteWEKosten.verwaltung,
+    strom:          aggregierteWEKosten.strom,
+    internet:       aggregierteWEKosten.internet,
+    hausgeld:       aggregierteWEKosten.hausgeld,
+    nebenkosten:    aggregierteWEKosten.nebenkosten,
+  }), [params, gesamtKaltmiete, aggregierteWEKosten]);
 
   // Auto-Save: Wohnungsänderung sofort persistieren + Aggregat aktualisieren
   const aggregiereUndSpeichere = (neueWohnungen) => {
-    const kaltmiete  = neueWohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
+    const kaltmiete   = neueWohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
     const wohnflaeche = neueWohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
-    const zimmer     = neueWohnungen.length;
-    const updated    = { ...params, wohnungen: neueWohnungen, kaltmiete, wohnflaeche, zimmer };
-    setParams(prev => ({ ...prev, kaltmiete, wohnflaeche, zimmer }));
-    onSave(updated);
+    const zimmer      = neueWohnungen.length;
+    // params-Snapshot zum Zeitpunkt des Calls in updated einfrieren
+    setParams(prev => {
+      const updated = { ...prev, wohnungen: neueWohnungen, kaltmiete, wohnflaeche, zimmer };
+      onSave(updated);       // mit aktuellem prev (nicht stale closure)
+      return { ...prev, kaltmiete, wohnflaeche, zimmer };
+    });
+    setHasChanges(false);    // alles ist persistiert
   };
 
   const saveWohnung = () => {
@@ -524,8 +552,8 @@ const MehrfamilienhausDetail = ({
                             {w.etage && <span className="text-gray-400 ml-1">· {w.etage}</span>}
                           </td>
                           <td className="py-2 px-2 text-right text-gray-500 hidden sm:table-cell">{w.wohnflaeche > 0 ? `${w.wohnflaeche} m²` : '—'}</td>
-                          <td className={`py-2 px-2 text-right font-bold ${belegt ? 'text-emerald-600' : 'text-gray-300'}`}>
-                            {belegt ? formatCurrency(Number(w.kaltmiete) || 0) : '—'}
+                          <td className={`py-2 px-2 text-right font-bold ${belegt ? 'text-emerald-600' : Number(w.kaltmiete) > 0 ? 'text-gray-400' : 'text-gray-200'}`}>
+                            {Number(w.kaltmiete) > 0 ? formatCurrency(Number(w.kaltmiete)) : '—'}
                           </td>
                           <td className="py-2 px-3 text-gray-600 truncate max-w-[120px]">{w.mieterName || <span className="text-red-400">Kein Mieter</span>}</td>
                           <td className="py-2 px-2 text-center">
@@ -558,21 +586,22 @@ const MehrfamilienhausDetail = ({
                 <div className={`border rounded-xl p-4 shadow-sm ${leerstandWE > 0 ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
                   <p className="text-xs text-gray-400 mb-1">Mietausfall (Leerstand)</p>
                   <p className={`text-xl font-black ${leerstandWE > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {leerstandWE > 0 ? '−' : ''}{formatCurrency(wohnungen.filter(w => !w.mieterName || (w.mietende && new Date(w.mietende) < new Date())).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0))}
+                    {/* Mietausfall: gleiche Definition wie leerstandWE (hatteJeMieter + nicht belegt) */}
+                    {leerstandWE > 0 ? '−' : ''}{formatCurrency(wohnungen.filter(w => hatteJeMieter(w) && !(w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()))).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0))}
                   </p>
                   <p className="text-xs text-gray-400">{leerstandWE} WE leer</p>
                 </div>
-                {immobilie.kaufpreis > 0 && (
+                {params.kaufpreis > 0 && (
                   <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                     <p className="text-xs text-gray-400 mb-1">Kaufpreis</p>
-                    <p className="text-xl font-black text-gray-800">{formatCurrency(immobilie.kaufpreis)}</p>
+                    <p className="text-xl font-black text-gray-800">{formatCurrency(params.kaufpreis)}</p>
                     {immobilie.kaufdatum && <p className="text-xs text-gray-400">gekauft {new Date(immobilie.kaufdatum).toLocaleDateString('de-DE')}</p>}
                   </div>
                 )}
-                {(immobilie.geschaetzterWert || immobilie.kaufpreis) > 0 && (
+                {(params.geschaetzterWert || params.kaufpreis) > 0 && (
                   <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 shadow-sm">
                     <p className="text-xs text-gray-400 mb-1">Aktueller Wert</p>
-                    <p className="text-xl font-black text-indigo-700">{formatCurrency(immobilie.geschaetzterWert || immobilie.kaufpreis)}</p>
+                    <p className="text-xl font-black text-indigo-700">{formatCurrency(params.geschaetzterWert || params.kaufpreis)}</p>
                   </div>
                 )}
               </div>
