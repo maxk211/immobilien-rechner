@@ -518,7 +518,7 @@ function App() {
     for (let i = 1; i <= pageCount; i++) {
       pdf.setPage(i);
       pdf.setFontSize(6.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(150, 150, 150);
-      pdf.text(`Seite ${i} von ${pageCount}  ·  Immobilien Portfolio App  ·  ${datumStr}`, W / 2, H - 7, { align: 'center' });
+      pdf.text(`Seite ${i} von ${pageCount}  ·  renditly.de  ·  ${datumStr}`, W / 2, H - 7, { align: 'center' });
       pdf.text('Diese Aufstellung dient zur internen Übersicht und stellt keine offizielle Bankauskunft dar.', W / 2, H - 3, { align: 'center' });
     }
 
@@ -1206,13 +1206,17 @@ function App() {
       )}
 
       {/* Header */}
-      <header className="bg-slate-900 text-white px-4 shadow-xl">
+      <header className="bg-slate-900 text-white px-4 shadow-xl border-b border-slate-800">
         <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center"><Home size={18} className="text-white" /></div>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
+              <Home size={18} className="text-white" />
+            </div>
             <div>
-              <div className="font-bold text-white text-base leading-tight">Immobilien Portfolio</div>
-              <div className="text-slate-400 text-xs hidden sm:block">Rendite · Cashflow · Wertentwicklung</div>
+              <div className="font-black text-white text-lg leading-tight tracking-tight" style={{letterSpacing: '-0.02em'}}>
+                renditly
+              </div>
+              <div className="text-xs hidden sm:block" style={{color: '#818cf8', letterSpacing: '0.02em'}}>Rendite · Cashflow · Vermögen</div>
             </div>
           </div>
           <div className="flex items-center gap-4">

@@ -89,8 +89,13 @@ export default function Auth() {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         {/* Logo & Titel */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-3"><Home size={40} className="text-indigo-600" /></div>
-          <h1 className="text-2xl font-bold text-gray-800">Immobilien Portfolio</h1>
+          <div className="flex justify-center mb-3">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
+              <Home size={28} className="text-white" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-black text-gray-900" style={{letterSpacing: '-0.02em'}}>renditly</h1>
+          <p className="text-indigo-500 text-xs font-medium mt-0.5" style={{letterSpacing: '0.05em'}}>DEIN IMMOBILIEN-PORTFOLIO</p>
           <p className="text-gray-500 mt-1">
             {isResetMode
               ? 'Neues Passwort vergeben'
