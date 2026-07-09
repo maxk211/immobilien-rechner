@@ -252,25 +252,44 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
             {/* MFH: Wohnungen (vereinfacht) */}
             {formData.immobilienTyp === 'mehrfamilienhaus' && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Wohnungen</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Wohneinheiten</h3>
+                  {(formData.wohnungen || []).length > 0 && (
+                    <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-full">
+                      {formatCurrency((formData.wohnungen||[]).reduce((s,w)=>s+(Number(w.kaltmiete)||0),0))}/mo gesamt
+                    </span>
+                  )}
+                </div>
                 {(formData.wohnungen || []).map((w, idx) => (
-                  <div key={idx} className="grid grid-cols-3 gap-2 p-3 bg-gray-50 rounded-lg">
-                    <input type="text" placeholder={`WE ${idx+1} Name`}
-                      value={w.name || ''} onChange={e => { const wu = [...(formData.wohnungen||[])]; wu[idx]={...wu[idx], name: e.target.value}; handleChange('wohnungen', wu); }}
-                      className="col-span-1 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
-                    <input type="number" placeholder="Kaltmiete €"
-                      value={w.kaltmiete ?? ''} onChange={e => { const wu = [...(formData.wohnungen||[])]; wu[idx]={...wu[idx], kaltmiete: numInp(e.target.value)}; handleChange('wohnungen', wu); }}
-                      className="col-span-1 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
-                    <button type="button" onClick={() => handleChange('wohnungen', (formData.wohnungen||[]).filter((_,i)=>i!==idx))}
-                      className="flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
-                      <X size={16}/>
-                    </button>
+                  <div key={idx} className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-amber-700">Wohneinheit {idx + 1}</span>
+                      <button type="button" onClick={() => handleChange('wohnungen', (formData.wohnungen||[]).filter((_,i)=>i!==idx))}
+                        className="text-red-400 hover:text-red-600 transition-colors text-xs px-1">
+                        <X size={14}/>
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Bezeichnung</label>
+                        <input type="text" placeholder="z.B. EG links"
+                          value={w.name || ''} onChange={e => { const wu = [...(formData.wohnungen||[])]; wu[idx]={...wu[idx], name: e.target.value}; handleChange('wohnungen', wu); }}
+                          className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Kaltmiete (€/Mon.)</label>
+                        <input type="number" placeholder="z.B. 800"
+                          value={w.kaltmiete === 0 || w.kaltmiete === '' ? '' : w.kaltmiete}
+                          onChange={e => { const wu = [...(formData.wohnungen||[])]; wu[idx]={...wu[idx], kaltmiete: numInp(e.target.value)}; handleChange('wohnungen', wu); }}
+                          className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 bg-white text-right" />
+                      </div>
+                    </div>
                   </div>
                 ))}
                 <button type="button"
-                  onClick={() => handleChange('wohnungen', [...(formData.wohnungen||[]), { name: `WE ${(formData.wohnungen||[]).length+1}`, kaltmiete: 0, wohnflaeche: 0 }])}
-                  className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center justify-center gap-1.5">
-                  <Plus size={14}/> Wohnung hinzufügen
+                  onClick={() => handleChange('wohnungen', [...(formData.wohnungen||[]), { name: '', kaltmiete: '', wohnflaeche: '' }])}
+                  className="w-full py-2.5 border-2 border-dashed border-amber-300 rounded-xl text-sm text-amber-600 hover:border-amber-400 hover:bg-amber-50 transition-all flex items-center justify-center gap-1.5 font-medium">
+                  <Plus size={14}/> Wohneinheit hinzufügen
                 </button>
               </div>
             )}

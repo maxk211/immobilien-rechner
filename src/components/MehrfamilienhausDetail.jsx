@@ -25,19 +25,32 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
   const auslastung = wohnungen.length > 0 ? Math.round(belegtWE / wohnungen.length * 100) : 0;
   const kautionOffenAnzahl = wohnungen.filter(w => w.kautionBetrag > 0 && !w.kautionBezahlt).length;
 
+  // Aggregiert kaltmiete/wohnflaeche/zimmer aus Wohnungen für konsistente DB-Daten
+  const aggregiereUndSpeichere = (neueWohnungen) => {
+    const kaltmiete = neueWohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
+    const wohnflaeche = neueWohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
+    const zimmer = neueWohnungen.length;
+    onSave({ ...immobilie, wohnungen: neueWohnungen, kaltmiete, wohnflaeche, zimmer });
+  };
+
   const saveWohnung = () => {
     const neu = [...wohnungen];
     if (editWohnungIdx !== null) neu[editWohnungIdx] = { ...neu[editWohnungIdx], ...wohnungForm };
     else neu.push({ id: Date.now(), forderungen: [], mietAnpassungen: [], ...wohnungForm });
     setWohnungen(neu);
     setShowWohnungForm(false);
-    setHasChanges(true);
+    setHasChanges(false);
+    // Auto-Save: sofort persistieren, kein manueller Speichern-Button nötig
+    aggregiereUndSpeichere(neu);
   };
 
   const deleteWohnung = (idx) => {
     if (!confirm('Wohnung wirklich löschen?')) return;
-    setWohnungen(wohnungen.filter((_, i) => i !== idx));
-    setHasChanges(true);
+    const neu = wohnungen.filter((_, i) => i !== idx);
+    setWohnungen(neu);
+    setHasChanges(false);
+    // Auto-Save: sofort persistieren
+    aggregiereUndSpeichere(neu);
   };
 
   const openWohnungForm = (idx = null) => {
@@ -47,7 +60,7 @@ const MehrfamilienhausDetail = ({ immobilie, onClose, onEdit, onSave, initialTab
   };
 
   const handleSave = () => {
-    onSave({ ...immobilie, wohnungen });
+    aggregiereUndSpeichere(wohnungen);
     setHasChanges(false);
   };
 
