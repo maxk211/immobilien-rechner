@@ -83,8 +83,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin') ?? 'https://immobilien-rechner.vercel.app'}?checkout=success`,
-      cancel_url: `${req.headers.get('origin') ?? 'https://immobilien-rechner.vercel.app'}?checkout=cancel`,
+      success_url: `${req.headers.get('origin') ?? 'https://renditly.de'}?checkout=success`,
+      cancel_url: `${req.headers.get('origin') ?? 'https://renditly.de'}?checkout=cancel`,
       locale: 'de',
       subscription_data: {
         metadata: { supabase_user_id: user.id },
