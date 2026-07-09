@@ -605,17 +605,20 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
       <footer className="bg-slate-950 text-slate-500 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Home size={16} />
-            <span className="font-semibold text-slate-400">ImmobilienPortfolio</span>
+            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
+              <Home size={13} className="text-white" />
+            </div>
+            <span className="font-black text-slate-300" style={{letterSpacing: '-0.02em'}}>renditly</span>
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
+            <a href="#pricing" className="hover:text-slate-300 transition-colors">Preise</a>
             <button onClick={onLogin} className="hover:text-slate-300 transition-colors">Einloggen</button>
             <button onClick={onGetStarted} className="hover:text-slate-300 transition-colors">Registrieren</button>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs">
             <ImpressumDatenschutzLinks className="text-slate-500 hover:text-slate-300" />
             <span className="hidden sm:inline opacity-40">·</span>
-            <span>© {new Date().getFullYear()} Immobilien-Portfolio</span>
+            <span>© {new Date().getFullYear()} renditly</span>
           </div>
         </div>
       </footer>
