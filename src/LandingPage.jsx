@@ -127,11 +127,17 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             <Home size={22} className="flex-shrink-0 text-indigo-600" />
-            <span className="font-bold text-gray-900 text-base sm:text-lg truncate">
-              Immobilien<span className="text-indigo-600">Portfolio</span>
+            <span className="font-black text-gray-900 text-base sm:text-lg truncate" style={{letterSpacing: '-0.02em'}}>
+              renditly
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <a
+              href="#pricing"
+              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-indigo-600 px-2.5 sm:px-3 py-2 rounded-lg hover:bg-indigo-50 transition-all"
+            >
+              Preise
+            </a>
             <button
               onClick={onLogin}
               className="text-sm font-medium text-gray-600 hover:text-gray-900 px-2.5 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-all"
