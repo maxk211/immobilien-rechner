@@ -19,6 +19,8 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
   const aktiverMieter = (!isMFH)
     ? mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false)
     : null;
+  // Leerstand nur wenn je ein Mieter registriert war
+  const hatteJeMieterEinzel = (!isMFH) && mieterListe.some(m => m.immobilie_id === immobilie.id);
 
   // MFH: Wohnungen mit Mieterinfos
   const mfhWohnungen = isMFH ? (immobilie.wohnungen || []) : [];
@@ -74,7 +76,9 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
               <p className="text-white/80 text-xs mt-1 truncate font-medium flex items-center gap-1">
                 {aktiverMieter
                   ? <><User size={14} className="text-white/70"/>{aktiverMieter.name}</>
-                  : <span className="text-white/50 flex items-center gap-1"><CircleDot size={12} className="text-red-300"/> Leerstand</span>
+                  : hatteJeMieterEinzel
+                    ? <span className="text-white/50 flex items-center gap-1"><CircleDot size={12} className="text-red-300"/> Leerstand</span>
+                    : null
                 }
               </p>
             )}
@@ -195,12 +199,13 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
                 {mfhWohnungen.map((w, i) => (
                   <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0">
                     <span className="text-gray-500 truncate mr-2">{w.name || `WE ${i + 1}`}</span>
-                    <span className={`font-medium truncate flex items-center gap-0.5 ${w.mieterName && !w.mietende ? 'text-gray-800' : 'text-red-400'}`}>
-                      {w.mieterName && !w.mietende
-                        ? <><User size={12} className="inline"/>{w.mieterName}</>
-                        : <><CircleDot size={10} className="text-red-400"/>Leerstand</>
-                      }
-                    </span>
+                    {(() => {
+                      const belegt = w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date());
+                      const jeMieter = !!(w.mieterName || w.mietende || w.mietbeginn);
+                      if (belegt) return <span className="font-medium truncate flex items-center gap-0.5 text-gray-800"><User size={12} className="inline"/>{w.mieterName}</span>;
+                      if (jeMieter) return <span className="font-medium flex items-center gap-0.5 text-red-400"><CircleDot size={10} className="text-red-400"/>Leerstand</span>;
+                      return <span className="text-gray-300 text-xs">Noch kein Mieter</span>;
+                    })()}
                   </div>
                 ))}
               </div>

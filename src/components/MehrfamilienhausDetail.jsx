@@ -169,8 +169,10 @@ const MehrfamilienhausDetail = ({
   // Aggregierte Werte aus Wohnungen
   const gesamtKaltmiete = wohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
   const gesamtFlaeche   = wohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
+  // Leerstand nur anzeigen wenn schon mal ein Mieter eingetragen war
+  const hatteJeMieter   = (w) => !!(w.mieterName || w.mietende || w.mietbeginn);
   const belegtWE        = wohnungen.filter(w => w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date())).length;
-  const leerstandWE     = wohnungen.length - belegtWE;
+  const leerstandWE     = wohnungen.filter(w => hatteJeMieter(w) && !(w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()))).length;
   const auslastung      = wohnungen.length > 0 ? Math.round(belegtWE / wohnungen.length * 100) : 0;
   const kautionOffenAnzahl = wohnungen.filter(w => w.kautionBetrag > 0 && !w.kautionBezahlt).length;
   const aktiveMieterAnzahl = (mieterListe || []).filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -415,12 +417,16 @@ const MehrfamilienhausDetail = ({
                           const ausgezogen = w.mietende && new Date(w.mietende) < new Date();
                           return (
                             <div key={w.id || w.originalIdx}
-                              className={`rounded-2xl border-2 p-3 sm:p-4 transition-all hover:shadow-md cursor-pointer ${belegt ? 'border-emerald-200 bg-emerald-50/50' : ausgezogen ? 'border-gray-200 bg-gray-50' : 'border-red-200 bg-red-50/50'}`}
+                              className={`rounded-2xl border-2 p-3 sm:p-4 transition-all hover:shadow-md cursor-pointer ${belegt ? 'border-emerald-200 bg-emerald-50/50' : ausgezogen ? 'border-gray-200 bg-gray-50' : hatteJeMieter(w) ? 'border-red-200 bg-red-50/50' : 'border-blue-100 bg-blue-50/30'}`}
                               onClick={() => openWohnungForm(w.originalIdx)}>
                               <div className="flex items-start justify-between mb-2">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${belegt ? 'bg-emerald-100 text-emerald-700' : ausgezogen ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-600'}`}>
-                                  {belegt ? <span className='flex items-center gap-0.5'><Check size={10}/>Vermietet</span> : ausgezogen ? 'Ausgezogen' : <span className='flex items-center gap-0.5'><AlertTriangle size={10}/>Leerstand</span>}
-                                </span>
+                                {(() => {
+                                  const jeMieter = hatteJeMieter(w);
+                                  if (belegt) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-0.5"><Check size={10}/>Vermietet</span>;
+                                  if (ausgezogen) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Ausgezogen</span>;
+                                  if (jeMieter) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex items-center gap-0.5"><AlertTriangle size={10}/>Leerstand</span>;
+                                  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-400">Noch kein Mieter</span>;
+                                })()}
                                 <button onClick={e => { e.stopPropagation(); deleteWohnung(w.originalIdx); }}
                                   className="text-gray-300 hover:text-red-500 p-0.5 rounded" title="Löschen">
                                   <X size={12}/>
@@ -428,9 +434,9 @@ const MehrfamilienhausDetail = ({
                               </div>
                               <p className="font-bold text-gray-900 text-sm sm:text-base leading-tight">{w.name || `WE ${w.originalIdx + 1}`}</p>
                               {w.wohnflaeche > 0 && <p className="text-xs text-gray-400 mt-0.5">{w.wohnflaeche} m²</p>}
-                              <p className={`text-base sm:text-xl font-black mt-2 ${belegt ? 'text-emerald-700' : 'text-gray-400'}`}>
-                                {belegt ? formatCurrency(Number(w.kaltmiete) || 0) : '—'}
-                                {belegt && <span className="text-xs font-normal text-gray-400">/mo</span>}
+                              <p className={`text-base sm:text-xl font-black mt-2 ${belegt ? 'text-emerald-700' : (Number(w.kaltmiete) > 0 ? 'text-slate-500' : 'text-gray-300')}`}>
+                                {Number(w.kaltmiete) > 0 ? formatCurrency(Number(w.kaltmiete)) : '—'}
+                                {Number(w.kaltmiete) > 0 && <span className="text-xs font-normal text-gray-400">/mo</span>}
                               </p>
                               {w.mieterName && <p className="text-xs text-gray-600 mt-1 truncate flex items-center gap-1"><User size={10}/> {w.mieterName}</p>}
                               {w.mietbeginn && belegt && <p className="text-[10px] text-gray-400">seit {new Date(w.mietbeginn).toLocaleDateString('de-DE')}</p>}
@@ -500,9 +506,12 @@ const MehrfamilienhausDetail = ({
                           </td>
                           <td className="py-2 px-3 text-gray-600 truncate max-w-[120px]">{w.mieterName || <span className="text-red-400">Kein Mieter</span>}</td>
                           <td className="py-2 px-2 text-center">
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${belegt ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                              {belegt ? <Check size={12}/> : <Circle size={12}/>}
-                            </span>
+                            {belegt
+                              ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700"><Check size={12}/></span>
+                              : hatteJeMieter(w)
+                                ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600"><Circle size={12}/></span>
+                                : <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-400">—</span>
+                            }
                           </td>
                         </tr>
                       );
