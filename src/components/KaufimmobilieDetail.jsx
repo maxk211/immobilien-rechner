@@ -319,7 +319,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const stellplatzWert = (immobilie.stellplatz?.vorhanden && immobilie.stellplatz?.kaufpreisAnteil)
     ? (immobilie.stellplatz.kaufpreisAnteil * (immobilie.stellplatz.anzahl || 1))
     : 0;
-  const aktuellerWert = (params.geschaetzterWert || immobilie.kaufpreis) + stellplatzWert;
+  const aktuellerWert = (params.geschaetzterWert || immobilie.kaufpreis) + stellplatzWert; // params.geschaetzterWert = Wohnungswert, stellplatzWert wird addiert
   const immobilieMitAktuellemKaufdatum = { ...immobilie, kaufdatum: params.kaufdatum };
   const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(immobilieMitAktuellemKaufdatum, aktuellerWert);
 

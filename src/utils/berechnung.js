@@ -72,6 +72,14 @@ export const schaetzeImmobilienwert = (immobilie) => {
   };
 };
 
+// Aktuellen Gesamtwert inkl. Stellplatz-Kaufpreis berechnen
+export const getAktuellerGesamtwert = (immo) => {
+  const basis = immo.geschaetzterWert || immo.kaufpreis || 0;
+  const sp = immo.stellplatz;
+  const spWert = (sp?.vorhanden && sp?.kaufpreisAnteil) ? (sp.kaufpreisAnteil * (sp.anzahl || 1)) : 0;
+  return basis + spWert;
+};
+
 // Wertsteigerung seit Kauf berechnen
 export const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
   if (!immobilie.kaufdatum || !immobilie.kaufpreis) return null;
@@ -687,7 +695,7 @@ export const berechneImmoVermoegenswerte = (immo) => {
     ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
     : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);
   const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, (immo.kaufpreis || 0) + kaufnebenkostenAbsolut - gesamtEK);
-  const marktwert = immo.geschaetzterWert || immo.kaufpreis || 0;
+  const marktwert = getAktuellerGesamtwert(immo);
 
   if (immo.kreditLaeuftBereits && immo.aktuelleRestschuld != null) {
     const rs = immo.aktuelleRestschuld || 0;

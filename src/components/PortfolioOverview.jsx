@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { BarChart3, ChevronUp, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete } from '../utils/miete.js';
-import { berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite } from '../utils/berechnung.js';
+import { berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
 
 const PortfolioOverview = ({ portfolio }) => {
@@ -44,7 +44,7 @@ const PortfolioOverview = ({ portfolio }) => {
         // Kaufimmobilie
         anzahlKaufimmobilien++;
         gesamtKaufpreis += immo.kaufpreis || 0;
-        gesamtWert += immo.geschaetzterWert || immo.kaufpreis || 0;
+        gesamtWert += getAktuellerGesamtwert(immo);
         // Vermögenswerte berechnen
         const vw = berechneImmoVermoegenswerte(immo);
         if (vw) {

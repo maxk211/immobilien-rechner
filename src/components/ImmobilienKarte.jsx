@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
-import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow } from '../utils/berechnung.js';
+import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow, getAktuellerGesamtwert } from '../utils/berechnung.js';
 
 const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdit }) => {
   const [mfhExpanded, setMfhExpanded] = useState(false);
   const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
   const isMFH = immobilie.immobilienTyp === 'mehrfamilienhaus';
-  const aktuellerWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
+  const aktuellerWert = (!isMietimmobilie && !isMFH) ? getAktuellerGesamtwert(immobilie) : (immobilie.geschaetzterWert || immobilie.kaufpreis);
   const wertsteigerung = (!isMietimmobilie && !isMFH) ? berechneWertsteigerungSeitKauf(immobilie, aktuellerWert) : null;
   const restschuldInfo = (!isMietimmobilie && !isMFH) ? berechneRestschuld(immobilie) : null;
 

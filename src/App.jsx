@@ -11,7 +11,7 @@ import Auth from './Auth';
 import LandingPage from './LandingPage';
 import { formatCurrency, formatPercent } from './utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from './utils/miete.js';
-import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer } from './utils/berechnung.js';
+import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
 import { showConfirm, ConfirmDialog } from './utils/confirm.jsx';
 import { ZAEHLER_TYPEN, NK_KOSTENPOSITIONEN_DEFAULTS, NK_STANDARD_POSITIONEN, CHANGELOG_VERSION, CHANGELOG_EINTRAEGE } from './constants/index.js';
 import InputSliderCombo from './components/InputSliderCombo.jsx';
@@ -353,7 +353,7 @@ function App() {
         immo.wohnflaeche ? `${immo.wohnflaeche}` : '—',
         kaufdatumStr,
         immo.kaufpreis ? `${Math.round(immo.kaufpreis).toLocaleString('de-DE')} €` : '—',
-        `${Math.round(immo.geschaetzterWert || immo.kaufpreis || 0).toLocaleString('de-DE')} €`,
+        `${Math.round(getAktuellerGesamtwert(immo)).toLocaleString('de-DE')} €`,
         miete > 0 ? `${Math.round(miete)} €` : '—',
         bank,
         nominalbetrag > 0 ? `${nominalbetrag.toLocaleString('de-DE')} €` : '—',
@@ -365,7 +365,7 @@ function App() {
     });
 
     const gesamtKaufpreis = kaufimmos.reduce((s, i) => s + (i.kaufpreis || 0), 0);
-    const gesamtVerkehrswert = kaufimmos.reduce((s, i) => s + (i.geschaetzterWert || i.kaufpreis || 0), 0);
+    const gesamtVerkehrswert = kaufimmos.reduce((s, i) => s + getAktuellerGesamtwert(i), 0);
     const gesamtMiete = kaufimmos.reduce((s, i) => s + getAktuelleMiete(i), 0);
     const gesamtRate = kaufimmos.reduce((s, i) => {
       const r = berechneRendite({ ...i, kaltmiete: getAktuelleMiete(i) });
