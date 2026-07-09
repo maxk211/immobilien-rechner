@@ -8,7 +8,7 @@ import { X } from 'lucide-react';
 const FIRMA = 'ImmoBros GbR';
 const ADRESSE = 'An der Hülling 6, 93047 Regensburg';
 const GESELLSCHAFTER = 'David Schmidbauer, Maximilian Kammel';
-const EMAIL = 'info@renditly.de';
+const EMAIL = 'hallo@renditly.de';
 
 const Modal = ({ onClose, children }) => (
   <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
