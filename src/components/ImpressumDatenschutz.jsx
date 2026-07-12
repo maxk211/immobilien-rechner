@@ -51,7 +51,7 @@ export const ImpressumModal = ({ onClose }) => (
     </Section>
 
     <Section title="Umsatzsteuer">
-      <p>Als GbR ohne gewerbliche Tätigkeit im Sinne des UStG derzeit nicht umsatzsteuerpflichtig. Eine USt-IdNr. wird nachgetragen, sobald diese beantragt und erteilt wurde.</p>
+      <p>Die ImmoBros GbR erbringt umsatzsteuerpflichtige Leistungen. Eine Umsatzsteuer-Identifikationsnummer wird nach Erteilung durch das Finanzamt an dieser Stelle ergänzt.</p>
     </Section>
 
     <Section title="Haftung für Inhalte">
@@ -64,6 +64,15 @@ export const ImpressumModal = ({ onClose }) => (
 
     <Section title="Urheberrecht">
       <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.</p>
+    </Section>
+
+    <Section title="Online-Streitbeilegung (§ 36 VSBG)">
+      <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{' '}
+        <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+          https://ec.europa.eu/consumers/odr
+        </a>.
+      </p>
+      <p className="mt-1">Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
     </Section>
   </Modal>
 );
@@ -89,9 +98,18 @@ export const DatenschutzModal = ({ onClose }) => (
       <p>Die Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung) für die Bereitstellung der App-Funktionen sowie Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse) für den technischen Betrieb des Dienstes.</p>
     </Section>
 
-    <Section title="4. Auftragsverarbeiter: Supabase">
-      <p>Wir nutzen <strong>Supabase, Inc.</strong> (San Francisco, USA) als Backend-Dienstleister für Authentifizierung und Datenbankbetrieb. Supabase bietet EU-Regionen an; unsere Datenbank ist in der EU-West-Region gehostet. Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
-      <p className="mt-1">Datenschutzrichtlinie Supabase: <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">supabase.com/privacy</a></p>
+    <Section title="4. Auftragsverarbeiter">
+      <p className="font-semibold text-gray-700 mb-1">Supabase, Inc. (Authentifizierung & Datenbank)</p>
+      <p>Wir nutzen <strong>Supabase, Inc.</strong> (San Francisco, USA) als Backend-Dienstleister für Authentifizierung und Datenbankbetrieb. Unsere Datenbank ist in der EU-West-Region (Frankfurt) gehostet. Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
+      <p className="mt-1">Datenschutzrichtlinie: <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">supabase.com/privacy</a></p>
+
+      <p className="font-semibold text-gray-700 mt-3 mb-1">Vercel Inc. (Hosting & Content Delivery)</p>
+      <p>Die Anwendung wird gehostet bei <strong>Vercel Inc.</strong> (San Francisco, USA). Beim Aufruf der Seite werden technische Verbindungsdaten (IP-Adresse, Browser, Zugriffszeit) durch Vercel verarbeitet. Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
+      <p className="mt-1">Datenschutzrichtlinie: <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">vercel.com/legal/privacy-policy</a></p>
+
+      <p className="font-semibold text-gray-700 mt-3 mb-1">all-inkl.com / neue Medien Münnich (E-Mail-Versand)</p>
+      <p>Für den transaktionalen E-Mail-Versand (Kontobestätigung, Passwort-Reset) nutzen wir den SMTP-Dienst von <strong>neue Medien Münnich</strong> (Hauptstraße 68, 02742 Friedersdorf, Deutschland). Dabei wird Ihre E-Mail-Adresse zum Zweck der Zustellung verarbeitet. Die Daten verbleiben auf deutschen Servern.</p>
+      <p className="mt-1">Datenschutzrichtlinie: <a href="https://all-inkl.com/datenschutzerklaerung/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">all-inkl.com/datenschutzerklaerung</a></p>
     </Section>
 
     <Section title="5. Cookies & lokaler Speicher">
@@ -122,7 +140,7 @@ export const DatenschutzModal = ({ onClose }) => (
     </Section>
 
     <Section title="9. Änderungen dieser Erklärung">
-      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: Juli 2026.</p>
+      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: 12. Juli 2026.</p>
     </Section>
   </Modal>
 );
