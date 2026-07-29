@@ -88,24 +88,40 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
 
   const faqs = [
     {
-      q: 'Kann ich die App kostenlos testen?',
-      a: 'Ja — du kannst renditly 3–4 Monate kostenlos mit einer Immobilie testen, ohne Kreditkarte. Danach wählst du einen Plan ab 3,99 €/Monat.',
+      q: 'Wie berechne ich die Mietrendite mit renditly?',
+      a: 'Du gibst Kaufpreis, Kaufnebenkosten, Kaltmiete und laufende Kosten ein — renditly berechnet sofort Bruttomietrendite, Nettomietrendite und Cash-on-Cash-Rendite. Alle Werte werden automatisch aktualisiert wenn sich Miete oder Kosten ändern.',
     },
     {
-      q: 'Was passiert wenn ich kündige?',
-      a: 'Du kannst jederzeit kündigen. Deine Daten bleiben erhalten und du kannst weiterhin eine Immobilie im Free-Tier verwalten.',
+      q: 'Was ist ein guter Cashflow bei Immobilien?',
+      a: 'Als Faustregel gilt: ein positiver monatlicher Cashflow nach allen Kosten (Rate, Instandhaltung, Verwaltung, Hausgeld) ist das Ziel. renditly zeigt dir den Cashflow monatsgenau — inklusive 25-Jahres-Prognose mit Anschlussfinanzierung.',
+    },
+    {
+      q: 'Kann ich die App kostenlos testen?',
+      a: 'Ja — du kannst renditly 90 Tage kostenlos mit einer Immobilie testen, ohne Kreditkarte. Du bekommst Zugang zu allen Features: Cashflow-Analyse, Steuervorbereitung, Mieterverwaltung und mehr.',
+    },
+    {
+      q: 'Für wen ist renditly geeignet?',
+      a: 'renditly richtet sich an deutsche Vermieter und Immobilien-Investoren — vom Einsteiger mit einer Eigentumswohnung bis zum Profi mit mehreren Mehrfamilienhäusern. Der Starter-Plan eignet sich für 1 Objekt, Standard für bis zu 10 Immobilien, Pro für unlimitierte Portfolios.',
+    },
+    {
+      q: 'Welche Steuer-Daten kann renditly exportieren?',
+      a: 'renditly exportiert alle steuerlich relevanten Posten als Excel und PDF: Mieteinnahmen, Schuldzinsen (annuitätisch korrekt je Phase), Instandhaltung, Hausgeld, Verwaltungskosten, Fahrtkosten nach km-Pauschale und Erhaltungsaufwand. AfA-Daten werden als Grundlage für den Steuerberater mitgeliefert.',
     },
     {
       q: 'Kann jemand mein Vermögen oder meine Immobilien sehen?',
-      a: 'Nein — absolut nicht. Jeder Account ist vollständig isoliert. Weder andere Nutzer noch wir als Betreiber können sehen, welche Immobilien du hast, was sie wert sind oder wie dein Cashflow aussieht. Die Datenbank ist so konfiguriert, dass jeder User technisch nur seine eigenen Daten lesen und schreiben kann (Row Level Security).',
+      a: 'Nein — absolut nicht. Jeder Account ist vollständig isoliert. Weder andere Nutzer noch wir als Betreiber können sehen, welche Immobilien du hast, was sie wert sind oder wie dein Cashflow aussieht. Die Datenbank erzwingt das technisch über Row Level Security.',
     },
     {
       q: 'Sind meine Finanzdaten sicher gespeichert?',
       a: 'Ja. Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL via Supabase). Die Verbindung ist immer TLS-verschlüsselt. Deine Daten werden nicht verkauft oder für Werbung genutzt.',
     },
     {
+      q: 'Was passiert wenn ich kündige?',
+      a: 'Du kannst jederzeit monatlich kündigen. Deine Daten bleiben erhalten und du kannst weiterhin eine Immobilie verwalten.',
+    },
+    {
       q: 'Gibt es eine mobile App?',
-      a: 'Die Web-App ist vollständig mobiloptimiert und funktioniert auf iPhone und Android wie eine native App.',
+      a: 'Die Web-App ist vollständig mobiloptimiert und funktioniert auf iPhone und Android wie eine native App — ohne Download aus dem App Store.',
     },
   ];
 
