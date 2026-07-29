@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/**'   # nur wenn sich Supabase-Dateien ändern
+  workflow_dispatch:     # manuell triggerbar
 
 jobs:
   deploy:
