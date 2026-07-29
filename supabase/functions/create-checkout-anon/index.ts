@@ -38,6 +38,14 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
+      billing_address_collection: 'required',
+      tax_id_collection: { enabled: true },
+      custom_fields: [{
+        key: 'company_name',
+        label: { type: 'custom', custom: 'Firmenname (optional)' },
+        type: 'text',
+        optional: true,
+      }],
       success_url: 'https://renditly.de?checkout=success',
       cancel_url:  'https://renditly.de?checkout=cancel',
       locale: 'de',
