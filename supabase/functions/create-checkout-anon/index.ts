@@ -57,10 +57,10 @@ serve(async (req) => {
       allow_promotion_codes: true,
     };
 
-    // E-Mail vorausfüllen wenn vom Frontend übergeben
-    if (email && typeof email === 'string' && email.includes('@')) {
-      sessionParams.customer_email = email;
-    }
+    // Hinweis: customer_email wird bewusst NICHT gesetzt —
+    // sonst blendet Stripe Apple Pay / Google Pay aus (Wallet liefert Email selbst).
+    // Die E-Mail wird stattdessen im Frontend (sessionStorage) gespeichert.
+    void email; // Parameter wird empfangen aber nicht weitergegeben
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
