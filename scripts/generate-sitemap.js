@@ -27,10 +27,15 @@ const ROUTES = [
     changefreq: 'weekly',
     lastmod: today,
   },
-  // Beispiel für spätere Erweiterung:
-  // { url: '/preise', priority: '0.9', changefreq: 'monthly', lastmod: today },
-  // { url: '/features', priority: '0.8', changefreq: 'monthly', lastmod: today },
-  // { url: '/blog', priority: '0.7', changefreq: 'weekly', lastmod: today },
+  {
+    url: '/mietrendite-rechner',
+    priority: '0.9',
+    changefreq: 'monthly',
+    lastmod: today,
+  },
+  // Weitere Rechner (demnächst):
+  // { url: '/cashflow-rechner-immobilien', priority: '0.9', changefreq: 'monthly', lastmod: today },
+  // { url: '/afa-rechner', priority: '0.8', changefreq: 'monthly', lastmod: today },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 
