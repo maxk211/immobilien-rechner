@@ -22,18 +22,28 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
     setCheckoutLoading(planKey);
     setCheckoutError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout-anon', {
-        body: { priceId, planKey },
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-anon`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ priceId, planKey }),
       });
-      if (error) throw error;
+      const text = await res.text();
+      if (!res.ok) {
+        setCheckoutError(`HTTP ${res.status}: ${text}`);
+        return;
+      }
+      const data = JSON.parse(text);
       if (data?.url) {
         window.location.href = data.url;
       } else {
-        setCheckoutError('Keine URL erhalten: ' + JSON.stringify(data));
+        setCheckoutError('Keine URL: ' + text);
       }
     } catch (err) {
-      console.error('Checkout Fehler:', err);
-      setCheckoutError(err?.message || JSON.stringify(err));
+      setCheckoutError(err?.message || String(err));
     } finally {
       setCheckoutLoading(null);
     }
