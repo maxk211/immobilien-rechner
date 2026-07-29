@@ -1,5 +1,0 @@
-# Mietrendite-Rechner bekommt eigene HTML-Datei (kein SPA-Fallback)
-/mietrendite-rechner    /mietrendite-rechner.html   200
-
-# SPA-Fallback für alle anderen Routen
-/*    /index.html   200
