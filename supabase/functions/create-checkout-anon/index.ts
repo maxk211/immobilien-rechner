@@ -39,12 +39,6 @@ serve(async (req) => {
       mode: 'subscription',
       billing_address_collection: 'auto',
       tax_id_collection: { enabled: true },
-      custom_fields: [{
-        key: 'company_name',
-        label: { type: 'custom', custom: 'Firmenname (optional)' },
-        type: 'text',
-        optional: true,
-      }],
       success_url: 'https://renditly.de?checkout=success',
       cancel_url:  'https://renditly.de?checkout=cancel',
       locale: 'de',

@@ -90,12 +90,6 @@ serve(async (req) => {
       mode: 'subscription',
       billing_address_collection: 'auto',
       tax_id_collection: { enabled: true },
-      custom_fields: [{
-        key: 'company_name',
-        label: { type: 'custom', custom: 'Firmenname (optional)' },
-        type: 'text',
-        optional: true,
-      }],
       success_url: `${origin}?checkout=success`,
       cancel_url:  `${origin}?checkout=cancel`,
       locale:      'de',
