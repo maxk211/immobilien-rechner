@@ -11,22 +11,29 @@ import {
 const LandingPage = ({ onGetStarted, onLogin }) => {
   const [billingOpen, setBillingOpen] = useState(null);
   const [billing, setBilling] = useState('jaehrlich'); // default jährlich
-  const [checkoutLoading, setCheckoutLoading] = useState(null); // planKey der gerade lädt
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
+  const [checkoutError, setCheckoutError] = useState(null);
 
   const handleSelectPlan = async (planKey) => {
     const billingKey = billing === 'jaehrlich' ? 'yearly' : 'monthly';
     const priceId = PLANS[planKey]?.prices?.[billingKey]?.id;
-    if (!priceId) return;
+    if (!priceId) { setCheckoutError('Kein priceId für ' + planKey); return; }
 
     setCheckoutLoading(planKey);
+    setCheckoutError(null);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout-anon', {
         body: { priceId, planKey },
       });
       if (error) throw error;
-      if (data?.url) window.location.href = data.url;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        setCheckoutError('Keine URL erhalten: ' + JSON.stringify(data));
+      }
     } catch (err) {
       console.error('Checkout Fehler:', err);
+      setCheckoutError(err?.message || JSON.stringify(err));
     } finally {
       setCheckoutLoading(null);
     }
@@ -402,6 +409,13 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             </h2>
             <p className="text-slate-500 text-base sm:text-lg">Kein verstecktes Kleingedrucktes. Kein Abo-Durcheinander.</p>
           </div>
+
+          {/* Debug Error */}
+          {checkoutError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs text-center font-mono break-all">
+              {checkoutError}
+            </div>
+          )}
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-3 mb-8 sm:mb-10">
