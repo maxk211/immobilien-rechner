@@ -12,41 +12,32 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
   const [billingOpen, setBillingOpen] = useState(null);
   const [billing, setBilling] = useState('jaehrlich'); // default jährlich
   const [checkoutLoading, setCheckoutLoading] = useState(null);
-  const [checkoutError, setCheckoutError] = useState(null);
 
   const handleSelectPlan = async (planKey) => {
     const billingKey = billing === 'jaehrlich' ? 'yearly' : 'monthly';
     const priceId = PLANS[planKey]?.prices?.[billingKey]?.id;
-    if (!priceId) { setCheckoutError('Kein priceId für ' + planKey); return; }
+    if (!priceId) return;
 
     setCheckoutLoading(planKey);
-    setCheckoutError(null);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-anon`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ priceId, planKey }),
-      });
-      const text = await res.text();
-      if (!res.ok) {
-        setCheckoutError(`HTTP ${res.status}: ${text}`);
-        return;
-      }
-      const data = JSON.parse(text);
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        setCheckoutError('Keine URL: ' + text);
-      }
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-anon`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ priceId, planKey }),
+        }
+      );
+      const data = await res.json();
+      if (data?.url) window.location.href = data.url;
     } catch (err) {
-      setCheckoutError(err?.message || String(err));
-    } finally {
+      console.error('Checkout Fehler:', err);
       setCheckoutLoading(null);
     }
+    // kein finally — loading bleibt bis Stripe-Redirect
   };
 
   const features = [
@@ -420,13 +411,6 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             <p className="text-slate-500 text-base sm:text-lg">Kein verstecktes Kleingedrucktes. Kein Abo-Durcheinander.</p>
           </div>
 
-          {/* Debug Error */}
-          {checkoutError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs text-center font-mono break-all">
-              {checkoutError}
-            </div>
-          )}
-
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-3 mb-8 sm:mb-10">
             <span className={`text-sm font-semibold transition-colors ${billing === 'monatlich' ? 'text-slate-900' : 'text-slate-400'}`}>Monatlich</span>
@@ -488,8 +472,8 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSelectPlan('starter')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all disabled:opacity-50">
-                {checkoutLoading === 'starter' ? 'Weiterleitung …' : 'Starter wählen'}
+              <button onClick={() => handleSelectPlan('starter')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                {checkoutLoading === 'starter' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Starter wählen'}
               </button>
             </div>
 
@@ -518,8 +502,8 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSelectPlan('standard')} disabled={!!checkoutLoading} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow disabled:opacity-50">
-                {checkoutLoading === 'standard' ? 'Weiterleitung …' : 'Standard wählen'}
+              <button onClick={() => handleSelectPlan('standard')} disabled={!!checkoutLoading} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow disabled:opacity-50 flex items-center justify-center gap-2">
+                {checkoutLoading === 'standard' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Standard wählen'}
               </button>
             </div>
 
@@ -545,8 +529,8 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSelectPlan('pro')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all disabled:opacity-50">
-                {checkoutLoading === 'pro' ? 'Weiterleitung …' : 'Pro wählen'}
+              <button onClick={() => handleSelectPlan('pro')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                {checkoutLoading === 'pro' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Pro wählen'}
               </button>
             </div>
 
