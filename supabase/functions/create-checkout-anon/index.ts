@@ -39,8 +39,6 @@ serve(async (req) => {
       payment_method_types: ['card', 'sepa_debit'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
-      // Stripe sammelt die E-Mail selbst während Checkout
-      customer_creation: 'always',
       success_url: 'https://renditly.de?checkout=success',
       cancel_url:  'https://renditly.de?checkout=cancel',
       locale: 'de',
