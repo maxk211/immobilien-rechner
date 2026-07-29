@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { supabase } from './supabaseClient';
+import { PLANS } from './config/payments';
 import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 import {
   Home, BarChart3, Wallet, Receipt, Users, TrendingUp, Building2,
@@ -6,9 +8,29 @@ import {
   Eye, BellOff, Ban, Frown
 } from 'lucide-react';
 
-const LandingPage = ({ onGetStarted, onLogin, onSelectPlan }) => {
+const LandingPage = ({ onGetStarted, onLogin }) => {
   const [billingOpen, setBillingOpen] = useState(null);
-  const [billing, setBilling] = useState('monatlich'); // 'monatlich' | 'jaehrlich'
+  const [billing, setBilling] = useState('jaehrlich'); // default jährlich
+  const [checkoutLoading, setCheckoutLoading] = useState(null); // planKey der gerade lädt
+
+  const handleSelectPlan = async (planKey) => {
+    const billingKey = billing === 'jaehrlich' ? 'yearly' : 'monthly';
+    const priceId = PLANS[planKey]?.prices?.[billingKey]?.id;
+    if (!priceId) return;
+
+    setCheckoutLoading(planKey);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-anon', {
+        body: { priceId, planKey },
+      });
+      if (error) throw error;
+      if (data?.url) window.location.href = data.url;
+    } catch (err) {
+      console.error('Checkout Fehler:', err);
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
 
   const features = [
     {
@@ -442,8 +464,8 @@ const LandingPage = ({ onGetStarted, onLogin, onSelectPlan }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => onSelectPlan?.('starter', billing === 'jaehrlich' ? 'yearly' : 'monthly')} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all">
-                Starter wählen
+              <button onClick={() => handleSelectPlan('starter')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all disabled:opacity-50">
+                {checkoutLoading === 'starter' ? 'Weiterleitung …' : 'Starter wählen'}
               </button>
             </div>
 
@@ -472,8 +494,8 @@ const LandingPage = ({ onGetStarted, onLogin, onSelectPlan }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => onSelectPlan?.('standard', billing === 'jaehrlich' ? 'yearly' : 'monthly')} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow">
-                Standard wählen
+              <button onClick={() => handleSelectPlan('standard')} disabled={!!checkoutLoading} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow disabled:opacity-50">
+                {checkoutLoading === 'standard' ? 'Weiterleitung …' : 'Standard wählen'}
               </button>
             </div>
 
@@ -499,8 +521,8 @@ const LandingPage = ({ onGetStarted, onLogin, onSelectPlan }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => onSelectPlan?.('pro', billing === 'jaehrlich' ? 'yearly' : 'monthly')} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all">
-                Pro wählen
+              <button onClick={() => handleSelectPlan('pro')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all disabled:opacity-50">
+                {checkoutLoading === 'pro' ? 'Weiterleitung …' : 'Pro wählen'}
               </button>
             </div>
 

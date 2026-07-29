@@ -56,7 +56,6 @@ function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [portfolio, setPortfolio] = useState([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState(null); // { planKey, billing } — nach Login direkt Checkout
 
   // Subscription-Status — solange PAYMENTS_LIVE=false ist plan immer 'pro'
   const { isPro, plan, canAddImmo, openCheckout, isTrialing, trialDaysLeft, refresh: refreshSubscription } = useSubscription(session, portfolio.length);
@@ -95,14 +94,6 @@ function App() {
     if (plan === 'expired') setShowUpgradeModal(true);
   }, [plan]);
 
-  // Nach Login: ausstehenden Plan-Checkout triggern
-  useEffect(() => {
-    if (session?.user && pendingPlan) {
-      const { planKey, billing } = pendingPlan;
-      setPendingPlan(null);
-      setTimeout(() => openCheckout(planKey, billing), 800); // kurz warten bis Session stabil
-    }
-  }, [session, pendingPlan]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Checkout-Ergebnis aus URL-Params verarbeiten
   useEffect(() => {
@@ -1170,10 +1161,6 @@ function App() {
       <LandingPage
         onGetStarted={() => setShowAuth(true)}
         onLogin={() => setShowAuth(true)}
-        onSelectPlan={(planKey, billing) => {
-          setPendingPlan({ planKey, billing });
-          setShowAuth(true);
-        }}
       />
     );
   }

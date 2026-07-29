@@ -1,16 +1,6 @@
 // ─── Supabase Edge Function: stripe-webhook ──────────────────────────────────
 // Empfängt Events von Stripe und aktualisiert die subscriptions-Tabelle.
-//
-// Deployment:
-//   supabase functions deploy stripe-webhook
-//
-// Benötigte Secrets:
-//   supabase secrets set STRIPE_SECRET_KEY=sk_live_...
-//   supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
-//
-// In Stripe Dashboard eintragen:
-//   Webhook URL: https://<project-ref>.supabase.co/functions/v1/stripe-webhook
-//   Events: checkout.session.completed, customer.subscription.*
+// Bei anonymem Checkout: erstellt Supabase-User aus Stripe-E-Mail + sendet Magic Link.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
@@ -59,20 +49,32 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode !== 'subscription') break;
 
-        const userId = session.metadata?.supabase_user_id
-          ?? session.subscription_data?.metadata?.supabase_user_id;
-
-        if (!userId) {
-          console.error('Kein supabase_user_id in Session-Metadata');
-          break;
-        }
+        // User-ID aus Metadata (Auth-Checkout) oder E-Mail (Anon-Checkout)
+        const metaUserId = session.metadata?.supabase_user_id
+          ?? (session.subscription_data as any)?.metadata?.supabase_user_id;
 
         const subscription = await stripe.subscriptions.retrieve(
           session.subscription as string,
           { expand: ['items.data.price'] }
         );
 
-        await upsertSubscription(userId, session.customer as string, subscription);
+        if (metaUserId) {
+          // Eingeloggter User — direkt upserten
+          await upsertSubscription(metaUserId, session.customer as string, subscription);
+        } else {
+          // Anon-Checkout: User aus Stripe-E-Mail erstellen oder finden
+          const email = session.customer_details?.email;
+          if (!email) {
+            console.error('Kein E-Mail in checkout.session.completed');
+            break;
+          }
+          const userId = await getOrCreateUser(email);
+          if (userId) {
+            await upsertSubscription(userId, session.customer as string, subscription);
+            // Magic Link senden damit User sich einloggen kann
+            await sendMagicLink(email);
+          }
+        }
         break;
       }
 
@@ -82,7 +84,6 @@ serve(async (req) => {
         const userId = subscription.metadata?.supabase_user_id;
 
         if (userId) {
-          // Expand price für Plan-Erkennung
           const fullSub = await stripe.subscriptions.retrieve(
             subscription.id,
             { expand: ['items.data.price'] }
@@ -96,11 +97,7 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         await supabase
           .from('subscriptions')
-          .update({
-            status:     'canceled',
-            plan:       'free',
-            updated_at: new Date().toISOString(),
-          })
+          .update({ status: 'canceled', plan: 'free', updated_at: new Date().toISOString() })
           .eq('stripe_subscription_id', subscription.id);
         break;
       }
@@ -119,22 +116,66 @@ serve(async (req) => {
   }
 });
 
+// ─── Supabase User erstellen oder finden ─────────────────────────────────────
+async function getOrCreateUser(email: string): Promise<string | null> {
+  // Versuche User anzulegen (schlägt fehl wenn bereits vorhanden)
+  const { data: createData, error: createError } = await supabase.auth.admin.createUser({
+    email,
+    email_confirm: true, // E-Mail direkt bestätigt (Stripe hat sie schon verifiziert)
+  });
+
+  if (!createError && createData?.user?.id) {
+    console.log(`Neuer User erstellt: ${email} → ${createData.user.id}`);
+    return createData.user.id;
+  }
+
+  // User existiert bereits — per listUsers suchen
+  console.log(`User existiert bereits, suche: ${email}`);
+  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  if (listError) {
+    console.error('listUsers Fehler:', listError);
+    return null;
+  }
+
+  const existing = users?.find(u => u.email === email);
+  if (existing) {
+    console.log(`User gefunden: ${email} → ${existing.id}`);
+    return existing.id;
+  }
+
+  console.error(`User nicht gefunden und nicht erstellbar: ${email}`);
+  return null;
+}
+
+// ─── Magic Link senden ────────────────────────────────────────────────────────
+async function sendMagicLink(email: string) {
+  const { error } = await supabase.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+    options: {
+      redirectTo: 'https://renditly.de?checkout=success',
+    },
+  });
+
+  if (error) {
+    console.error('Magic Link Fehler:', error);
+  } else {
+    console.log(`Magic Link gesendet an: ${email}`);
+  }
+}
+
 // ─── Plan aus Subscription extrahieren ───────────────────────────────────────
 function extractPlan(subscription: Stripe.Subscription): string {
   const priceItem = subscription.items?.data?.[0];
   if (!priceItem) return 'starter';
-
   const price = priceItem.price as Stripe.Price;
-
-  // 1. Aus Price Metadata (bevorzugt)
   if (price?.metadata?.plan) return price.metadata.plan;
-
-  // 2. Aus Subscription Metadata
   if (subscription.metadata?.plan) return subscription.metadata.plan;
-
-  // 3. Fallback via Price ID
   if (price?.id && PRICE_PLAN_MAP[price.id]) return PRICE_PLAN_MAP[price.id];
-
   return 'starter';
 }
 
@@ -147,15 +188,15 @@ async function upsertSubscription(
   const plan = extractPlan(subscription);
 
   const { error } = await supabase.from('subscriptions').upsert({
-    user_id:                 userId,
-    stripe_customer_id:      stripeCustomerId,
-    stripe_subscription_id:  subscription.id,
-    status:                  subscription.status,
+    user_id:                userId,
+    stripe_customer_id:     stripeCustomerId,
+    stripe_subscription_id: subscription.id,
+    status:                 subscription.status,
     plan,
-    current_period_start:    new Date(subscription.current_period_start * 1000).toISOString(),
-    current_period_end:      new Date(subscription.current_period_end   * 1000).toISOString(),
-    cancel_at_period_end:    subscription.cancel_at_period_end,
-    updated_at:              new Date().toISOString(),
+    current_period_start:   new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end:     new Date(subscription.current_period_end   * 1000).toISOString(),
+    cancel_at_period_end:   subscription.cancel_at_period_end,
+    updated_at:             new Date().toISOString(),
   }, { onConflict: 'user_id' });
 
   if (error) console.error('Supabase upsert Fehler:', error);
