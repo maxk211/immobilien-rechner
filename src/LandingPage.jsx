@@ -200,7 +200,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
 
             {/* Social proof — stacked on mobile */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0 mt-4 text-sm text-slate-400">
-              <span className="flex items-center gap-1"><Check size={14} /> 1 Immobilie dauerhaft kostenlos</span>
+              <span className="flex items-center gap-1"><Check size={14} /> 3 Monate kostenlos testen</span>
               <span className="hidden sm:inline">&nbsp;·&nbsp;</span>
               <span className="flex items-center gap-1"><Check size={14} /> Alle Features inklusive</span>
               <span className="hidden sm:inline">&nbsp;·&nbsp;</span>
