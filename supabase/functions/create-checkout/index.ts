@@ -88,7 +88,7 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: 'subscription',
-      billing_address_collection: 'required',
+      billing_address_collection: 'auto',
       tax_id_collection: { enabled: true },
       custom_fields: [{
         key: 'company_name',
