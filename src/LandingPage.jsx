@@ -6,7 +6,7 @@ import {
   Eye, BellOff, Ban, Frown
 } from 'lucide-react';
 
-const LandingPage = ({ onGetStarted, onLogin }) => {
+const LandingPage = ({ onGetStarted, onLogin, onSelectPlan }) => {
   const [billingOpen, setBillingOpen] = useState(null);
   const [billing, setBilling] = useState('monatlich'); // 'monatlich' | 'jaehrlich'
 
@@ -442,7 +442,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={onGetStarted} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all">
+              <button onClick={() => onSelectPlan?.('starter', billing === 'jaehrlich' ? 'yearly' : 'monthly')} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all">
                 Starter wählen
               </button>
             </div>
@@ -472,7 +472,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={onGetStarted} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow">
+              <button onClick={() => onSelectPlan?.('standard', billing === 'jaehrlich' ? 'yearly' : 'monthly')} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow">
                 Standard wählen
               </button>
             </div>
@@ -499,7 +499,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={onGetStarted} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all">
+              <button onClick={() => onSelectPlan?.('pro', billing === 'jaehrlich' ? 'yearly' : 'monthly')} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all">
                 Pro wählen
               </button>
             </div>
