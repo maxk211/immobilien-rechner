@@ -36,7 +36,6 @@ serve(async (req) => {
 
     // Stripe Checkout Session erstellen — kein Customer, Stripe sammelt E-Mail
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'sepa_debit'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       success_url: 'https://renditly.de?checkout=success',

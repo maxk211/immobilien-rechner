@@ -83,7 +83,6 @@ serve(async (req) => {
     // Stripe Checkout Session erstellen
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      payment_method_types: ['card', 'sepa_debit'],
       line_items: [{
         price: priceId,
         quantity: 1,
