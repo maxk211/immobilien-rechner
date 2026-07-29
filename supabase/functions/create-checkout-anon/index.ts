@@ -1,6 +1,7 @@
 // ─── Supabase Edge Function: create-checkout-anon ────────────────────────────
 // Erstellt eine Stripe Checkout Session OHNE eingeloggten User.
-// Stripe sammelt E-Mail und Zahlung — der Webhook erstellt danach den Account.
+// Stripe sammelt Zahlung — der Webhook erstellt danach den Account.
+// E-Mail kann optional vom Frontend übergeben werden (wird in Stripe vorausgefüllt).
 //
 // Kein Authorization-Header nötig (öffentlich aufrufbar).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { priceId, planKey } = body;
+    const { priceId, planKey, email } = body;
 
     if (!priceId) {
       return new Response(JSON.stringify({ error: 'priceId fehlt' }), {
@@ -34,8 +35,9 @@ serve(async (req) => {
       });
     }
 
-    // Stripe Checkout Session erstellen — kein Customer, Stripe sammelt E-Mail
-    const session = await stripe.checkout.sessions.create({
+    // Stripe Checkout Session erstellen
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sessionParams: any = {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       billing_address_collection: 'auto',
@@ -53,7 +55,14 @@ serve(async (req) => {
         metadata: { plan: planKey ?? 'starter' },
       },
       allow_promotion_codes: true,
-    });
+    };
+
+    // E-Mail vorausfüllen wenn vom Frontend übergeben
+    if (email && typeof email === 'string' && email.includes('@')) {
+      sessionParams.customer_email = email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

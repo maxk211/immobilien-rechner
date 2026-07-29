@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { supabase } from './supabaseClient';
+import { useState, useRef } from 'react';
 import { PLANS } from './config/payments';
 import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 import {
@@ -13,12 +12,39 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
   const [billing, setBilling] = useState('jaehrlich'); // default jährlich
   const [checkoutLoading, setCheckoutLoading] = useState(null);
 
-  const handleSelectPlan = async (planKey) => {
+  // Email-Overlay vor Stripe Redirect
+  const [emailOverlay, setEmailOverlay] = useState(null); // planKey | null
+  const [emailInput, setEmailInput] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const emailRef = useRef(null);
+
+  const openEmailOverlay = (planKey) => {
+    setEmailOverlay(planKey);
+    setEmailInput('');
+    setEmailError('');
+    // Focus nach kurzer Verzögerung (Modal-Render)
+    setTimeout(() => emailRef.current?.focus(), 80);
+  };
+
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    const email = emailInput.trim();
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      setEmailError('Bitte gib eine gültige E-Mail-Adresse ein.');
+      return;
+    }
+
+    const planKey = emailOverlay;
     const billingKey = billing === 'jaehrlich' ? 'yearly' : 'monthly';
     const priceId = PLANS[planKey]?.prices?.[billingKey]?.id;
     if (!priceId) return;
 
+    // E-Mail für Success-Page speichern
+    try { sessionStorage.setItem('checkout_email', email); } catch {}
+
     setCheckoutLoading(planKey);
+    setEmailOverlay(null);
+
     try {
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-anon`,
@@ -28,11 +54,12 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             'Content-Type': 'application/json',
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ priceId, planKey }),
+          body: JSON.stringify({ priceId, planKey, email }),
         }
       );
       const data = await res.json();
       if (data?.url) window.location.href = data.url;
+      else setCheckoutLoading(null);
     } catch (err) {
       console.error('Checkout Fehler:', err);
       setCheckoutLoading(null);
@@ -472,7 +499,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSelectPlan('starter')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={() => openEmailOverlay('starter')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                 {checkoutLoading === 'starter' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Starter wählen'}
               </button>
             </div>
@@ -502,7 +529,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSelectPlan('standard')} disabled={!!checkoutLoading} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={() => openEmailOverlay('standard')} disabled={!!checkoutLoading} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow disabled:opacity-50 flex items-center justify-center gap-2">
                 {checkoutLoading === 'standard' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Standard wählen'}
               </button>
             </div>
@@ -529,7 +556,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSelectPlan('pro')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={() => openEmailOverlay('pro')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                 {checkoutLoading === 'pro' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Pro wählen'}
               </button>
             </div>
@@ -652,6 +679,64 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           </div>
         </div>
       </footer>
+
+      {/* ── EMAIL OVERLAY vor Stripe Redirect ── */}
+      {emailOverlay && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setEmailOverlay(null); }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-7">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-1">
+              <div className="w-11 h-11 bg-indigo-100 rounded-2xl flex items-center justify-center">
+                <Mail size={22} className="text-indigo-600" />
+              </div>
+              <button
+                onClick={() => setEmailOverlay(null)}
+                className="text-gray-300 hover:text-gray-500 transition-colors p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <h2 className="text-xl font-black text-gray-900 mt-3 mb-1">Fast geschafft!</h2>
+            <p className="text-gray-500 text-sm mb-5">
+              Gib deine E-Mail ein — wir schicken dir nach der Zahlung deinen Login-Link.
+            </p>
+
+            <form onSubmit={handleEmailSubmit} className="space-y-3">
+              <div>
+                <input
+                  ref={emailRef}
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => { setEmailInput(e.target.value); setEmailError(''); }}
+                  placeholder="deine@email.de"
+                  className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all ${
+                    emailError
+                      ? 'border-red-400 bg-red-50 focus:border-red-500'
+                      : 'border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'
+                  }`}
+                />
+                {emailError && (
+                  <p className="text-red-500 text-xs mt-1.5">{emailError}</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                Weiter zu Stripe <ArrowRight size={16} />
+              </button>
+            </form>
+
+            <p className="text-center text-xs text-gray-400 mt-4">
+              Sichere Zahlung via Stripe · Jederzeit kündbar
+            </p>
+          </div>
+        </div>
+      )}
 
     </div>
   );

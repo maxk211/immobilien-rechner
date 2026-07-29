@@ -46,6 +46,7 @@ import PortfolioOverview from './components/PortfolioOverview';
 import PortfolioZiele from './components/PortfolioZiele';
 import VermieterTodos from './components/VermieterTodos';
 import UpgradeModal from './components/UpgradeModal';
+import CheckoutSuccessPage from './components/CheckoutSuccessPage';
 import { useSubscription } from './hooks/useSubscription';
 
 
@@ -1156,6 +1157,9 @@ function App() {
 
   // Landing Page oder Auth wenn nicht eingeloggt
   if (!session) {
+    // Nach erfolgreichem Checkout (kein Session-Objekt vorhanden — Magic Link ausstehend)
+    const checkoutParam = new URLSearchParams(window.location.search).get('checkout');
+    if (checkoutParam === 'success') return <CheckoutSuccessPage />;
     if (showAuth) return <Auth />;
     return (
       <LandingPage
