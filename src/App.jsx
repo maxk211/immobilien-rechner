@@ -57,8 +57,8 @@ function App() {
   const [portfolio, setPortfolio] = useState([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // Subscription-Status — solange PAYMENTS_LIVE=false ist isPro immer true
-  const { isPro, canAddImmo, openCheckout } = useSubscription(session, portfolio.length);
+  // Subscription-Status — solange PAYMENTS_LIVE=false ist plan immer 'pro'
+  const { isPro, plan, canAddImmo, openCheckout, isTrialing, trialDaysLeft, refresh: refreshSubscription } = useSubscription(session, portfolio.length);
   const [showForm, setShowForm] = useState(false);
   const [showKalkulation, setShowKalkulation] = useState(false);
   const [selectedImmobilie, setSelectedImmobilie] = useState(null);
@@ -88,6 +88,23 @@ function App() {
       return { name: '', familienstand: 'ledig', wohnsituation: 'zur Miete', anschrift: '', taetigkeit: '', monatlGehalt: '', bargeld: '', bargeldBeschreibung: '', depot: '', depotBeschreibung: '', beteiligungWert: '', beteiligungBeschreibung: '', sonstigeVerbindlichkeiten: '' };
     }
   });
+
+  // Trial abgelaufen → Upgrade Modal automatisch öffnen
+  useEffect(() => {
+    if (plan === 'expired') setShowUpgradeModal(true);
+  }, [plan]);
+
+  // Checkout-Ergebnis aus URL-Params verarbeiten
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') {
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(() => refreshSubscription(), 1500); // Webhook braucht kurz
+      toast.success('🎉 Abo aktiviert! Willkommen bei renditly.');
+    } else if (params.get('checkout') === 'cancel') {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Changelog einmalig anzeigen wenn neue Version
   useEffect(() => {
@@ -1170,7 +1187,10 @@ function App() {
       {showUpgradeModal && (
         <UpgradeModal
           onClose={() => setShowUpgradeModal(false)}
-          onCheckout={() => { setShowUpgradeModal(false); openCheckout(); }}
+          openCheckout={(planKey, billing) => { setShowUpgradeModal(false); openCheckout(planKey, billing); }}
+          reason={plan === 'expired' ? 'expired' : 'limit'}
+          currentPlan={plan}
+          trialDaysLeft={trialDaysLeft}
         />
       )}
       {/* Changelog Popup */}

@@ -1,12 +1,11 @@
 // ─── Supabase Edge Function: create-checkout ─────────────────────────────────
 // Erstellt eine Stripe Checkout Session für den eingeloggten User.
 //
-// Deployment (wenn Payments live gehen):
+// Deployment:
 //   supabase functions deploy create-checkout
 //
 // Benötigte Secrets:
 //   supabase secrets set STRIPE_SECRET_KEY=sk_live_...
-//   supabase secrets set STRIPE_PRICE_ID=price_...
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
@@ -44,6 +43,17 @@ serve(async (req) => {
       });
     }
 
+    // priceId aus Request Body
+    const body = await req.json().catch(() => ({}));
+    const priceId = body.priceId;
+
+    if (!priceId) {
+      return new Response(JSON.stringify({ error: 'priceId fehlt' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Prüfen ob bereits ein Stripe Customer existiert
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -54,7 +64,7 @@ serve(async (req) => {
       .from('subscriptions')
       .select('stripe_customer_id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     let customerId = existingSub?.stripe_customer_id;
 
@@ -65,27 +75,23 @@ serve(async (req) => {
         metadata: { supabase_user_id: user.id },
       });
       customerId = customer.id;
-
-      // Customer ID in Supabase speichern
-      await supabaseAdmin.from('subscriptions').upsert({
-        user_id: user.id,
-        stripe_customer_id: customerId,
-        status: 'inactive',
-      }, { onConflict: 'user_id' });
     }
+
+    // Origin für Redirect-URLs
+    const origin = req.headers.get('origin') ?? 'https://renditly.de';
 
     // Stripe Checkout Session erstellen
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card', 'sepa_debit'],
       line_items: [{
-        price: Deno.env.get('STRIPE_PRICE_ID'),
+        price: priceId,
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin') ?? 'https://renditly.de'}?checkout=success`,
-      cancel_url: `${req.headers.get('origin') ?? 'https://renditly.de'}?checkout=cancel`,
-      locale: 'de',
+      success_url: `${origin}?checkout=success`,
+      cancel_url:  `${origin}?checkout=cancel`,
+      locale:      'de',
       subscription_data: {
         metadata: { supabase_user_id: user.id },
       },
@@ -97,6 +103,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    console.error('create-checkout Fehler:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

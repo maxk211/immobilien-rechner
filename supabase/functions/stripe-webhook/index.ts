@@ -1,7 +1,7 @@
 // ─── Supabase Edge Function: stripe-webhook ──────────────────────────────────
 // Empfängt Events von Stripe und aktualisiert die subscriptions-Tabelle.
 //
-// Deployment (wenn Payments live gehen):
+// Deployment:
 //   supabase functions deploy stripe-webhook
 //
 // Benötigte Secrets:
@@ -9,7 +9,7 @@
 //   supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 //
 // In Stripe Dashboard eintragen:
-//   Webhook URL: https://<project>.supabase.co/functions/v1/stripe-webhook
+//   Webhook URL: https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 //   Events: checkout.session.completed, customer.subscription.*
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -26,6 +26,16 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
+
+// Price ID → Plan-Name Mapping (Fallback falls Stripe Metadata fehlt)
+const PRICE_PLAN_MAP: Record<string, string> = {
+  'price_1TrO4kAgxhdShtqv66hFPJL9': 'starter',
+  'price_1TrO4tAgxhdShtqv3GY2EPsO': 'starter',
+  'price_1TrO51AgxhdShtqvT6Ap9FLZ': 'standard',
+  'price_1TrO57AgxhdShtqvSGMPwSPQ': 'standard',
+  'price_1TrO5DAgxhdShtqvULJ8EUHi': 'pro',
+  'price_1TrO5MAgxhdShtqvWWC3AQAa': 'pro',
+};
 
 serve(async (req) => {
   const signature = req.headers.get('stripe-signature');
@@ -58,7 +68,8 @@ serve(async (req) => {
         }
 
         const subscription = await stripe.subscriptions.retrieve(
-          session.subscription as string
+          session.subscription as string,
+          { expand: ['items.data.price'] }
         );
 
         await upsertSubscription(userId, session.customer as string, subscription);
@@ -71,18 +82,23 @@ serve(async (req) => {
         const userId = subscription.metadata?.supabase_user_id;
 
         if (userId) {
-          await upsertSubscription(userId, subscription.customer as string, subscription);
+          // Expand price für Plan-Erkennung
+          const fullSub = await stripe.subscriptions.retrieve(
+            subscription.id,
+            { expand: ['items.data.price'] }
+          );
+          await upsertSubscription(userId, subscription.customer as string, fullSub);
         }
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-
         await supabase
           .from('subscriptions')
           .update({
-            status: 'canceled',
+            status:     'canceled',
+            plan:       'free',
             updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
@@ -103,21 +119,45 @@ serve(async (req) => {
   }
 });
 
+// ─── Plan aus Subscription extrahieren ───────────────────────────────────────
+function extractPlan(subscription: Stripe.Subscription): string {
+  const priceItem = subscription.items?.data?.[0];
+  if (!priceItem) return 'starter';
+
+  const price = priceItem.price as Stripe.Price;
+
+  // 1. Aus Price Metadata (bevorzugt)
+  if (price?.metadata?.plan) return price.metadata.plan;
+
+  // 2. Aus Subscription Metadata
+  if (subscription.metadata?.plan) return subscription.metadata.plan;
+
+  // 3. Fallback via Price ID
+  if (price?.id && PRICE_PLAN_MAP[price.id]) return PRICE_PLAN_MAP[price.id];
+
+  return 'starter';
+}
+
+// ─── Subscription in Supabase upserten ───────────────────────────────────────
 async function upsertSubscription(
   userId: string,
   stripeCustomerId: string,
   subscription: Stripe.Subscription
 ) {
+  const plan = extractPlan(subscription);
+
   const { error } = await supabase.from('subscriptions').upsert({
-    user_id: userId,
-    stripe_customer_id: stripeCustomerId,
-    stripe_subscription_id: subscription.id,
-    status: subscription.status,
-    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-    cancel_at_period_end: subscription.cancel_at_period_end,
-    updated_at: new Date().toISOString(),
+    user_id:                 userId,
+    stripe_customer_id:      stripeCustomerId,
+    stripe_subscription_id:  subscription.id,
+    status:                  subscription.status,
+    plan,
+    current_period_start:    new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end:      new Date(subscription.current_period_end   * 1000).toISOString(),
+    cancel_at_period_end:    subscription.cancel_at_period_end,
+    updated_at:              new Date().toISOString(),
   }, { onConflict: 'user_id' });
 
   if (error) console.error('Supabase upsert Fehler:', error);
+  else console.log(`Subscription aktualisiert: user=${userId} plan=${plan} status=${subscription.status}`);
 }
