@@ -1,4 +1,4 @@
-export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, kinder, ctaText, related = [] }) {
+export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, children, ctaText, related = [] }) {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
 
@@ -49,7 +49,7 @@ export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, 
       {/* Content */}
       <main className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
         <article className="prose-sm max-w-none space-y-8">
-          {kinder}
+          {children}
         </article>
 
         {/* Weiterlesen */}
