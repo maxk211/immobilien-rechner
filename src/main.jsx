@@ -1,9 +1,12 @@
 import React, { lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import LandingApp from './LandingApp.jsx'
 import './index.css'
 
+// App (Dashboard) und LandingApp (Marketing) lazy laden — sonst landet
+// die komplette Dashboard-Logik (PDF, Excel, Charts) im Bundle jeder Route,
+// auch wenn nur die Landingpage aufgerufen wird.
+const App = lazy(() => import('./App.jsx'))
+const LandingApp = lazy(() => import('./LandingApp.jsx'))
 const MietrenditeRechner = lazy(() => import('./rechner/MietrenditeRechner.jsx'))
 const AfaRechner = lazy(() => import('./rechner/AfaRechner.jsx'))
 const MietrenditeGuide = lazy(() => import('./ratgeber/MietrenditeGuide.jsx'))
@@ -29,28 +32,12 @@ const ROUTES = {
 }
 
 const path = window.location.pathname
-const RouteComponent = ROUTES[path]
+const RouteComponent = path === '/app' ? App : (ROUTES[path] || LandingApp)
 
-if (path === '/app') {
-  // Login + Dashboard leben komplett getrennt von der Marketing-Landingpage
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  )
-} else if (RouteComponent) {
-  root.render(
-    <React.StrictMode>
-      <Suspense fallback={<Loading />}>
-        <RouteComponent />
-      </Suspense>
-    </React.StrictMode>
-  )
-} else {
-  // "/" und alle unbekannten Pfade → Marketing-Landingpage
-  root.render(
-    <React.StrictMode>
-      <LandingApp />
-    </React.StrictMode>
-  )
-}
+root.render(
+  <React.StrictMode>
+    <Suspense fallback={<Loading />}>
+      <RouteComponent />
+    </Suspense>
+  </React.StrictMode>
+)
