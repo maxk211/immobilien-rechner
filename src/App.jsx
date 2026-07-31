@@ -108,15 +108,8 @@ function App() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Changelog einmalig anzeigen wenn neue Version
-  useEffect(() => {
-    try {
-      const seenVersion = localStorage.getItem('changelogVersion');
-      if (seenVersion !== CHANGELOG_VERSION) {
-        setShowChangelog(true);
-      }
-    } catch(e) { /* localStorage nicht verfügbar */ }
-  }, []);
+  // Changelog-Auto-Popup vorerst deaktiviert (Launch-Announcement hat Vorrang).
+  // Die Komponente bleibt erhalten, falls sie später wieder aktiviert werden soll.
 
   // Launch-Announcement einmalig beim ersten Login anzeigen
   useEffect(() => {
