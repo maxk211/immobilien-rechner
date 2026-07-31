@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import LandingApp from './LandingApp.jsx'
 import './index.css'
 
 const MietrenditeRechner = lazy(() => import('./rechner/MietrenditeRechner.jsx'))
@@ -30,7 +31,14 @@ const ROUTES = {
 const path = window.location.pathname
 const RouteComponent = ROUTES[path]
 
-if (RouteComponent) {
+if (path === '/app') {
+  // Login + Dashboard leben komplett getrennt von der Marketing-Landingpage
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  )
+} else if (RouteComponent) {
   root.render(
     <React.StrictMode>
       <Suspense fallback={<Loading />}>
@@ -39,9 +47,10 @@ if (RouteComponent) {
     </React.StrictMode>
   )
 } else {
+  // "/" und alle unbekannten Pfade → Marketing-Landingpage
   root.render(
     <React.StrictMode>
-      <App />
+      <LandingApp />
     </React.StrictMode>
   )
 }

@@ -39,7 +39,7 @@ serve(async (req) => {
       mode: 'subscription',
       billing_address_collection: 'auto',
       tax_id_collection: { enabled: true },
-      success_url: 'https://www.renditly.de?checkout=success',
+      success_url: 'https://www.renditly.de/app?checkout=success',
       cancel_url:  'https://www.renditly.de?checkout=cancel',
       locale: 'de',
       subscription_data: {

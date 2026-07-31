@@ -157,7 +157,7 @@ async function sendMagicLink(email: string) {
     type: 'magiclink',
     email,
     options: {
-      redirectTo: 'https://www.renditly.de?checkout=success',
+      redirectTo: 'https://www.renditly.de/app?checkout=success',
     },
   });
 

@@ -73,7 +73,7 @@ export default function Auth() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/app`,
       });
       if (error) throw error;
       setMessage('Passwort-Reset E-Mail wurde gesendet! Prüfe dein Postfach.');
@@ -87,6 +87,10 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+        {/* Zurück zur Startseite */}
+        <a href="/" className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors mb-4">
+          ← Zurück zur Startseite
+        </a>
         {/* Logo & Titel */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3">

@@ -90,8 +90,8 @@ serve(async (req) => {
       mode: 'subscription',
       billing_address_collection: 'auto',
       tax_id_collection: { enabled: true },
-      success_url: `${origin}?checkout=success`,
-      cancel_url:  `${origin}?checkout=cancel`,
+      success_url: `${origin}/app?checkout=success`,
+      cancel_url:  `${origin}/app?checkout=cancel`,
       locale:      'de',
       subscription_data: {
         metadata: { supabase_user_id: user.id },

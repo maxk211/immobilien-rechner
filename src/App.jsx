@@ -8,7 +8,6 @@ import { applyPlugin } from 'jspdf-autotable';
 applyPlugin(jsPDF);
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
-import LandingPage from './LandingPage';
 import { formatCurrency, formatPercent } from './utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from './utils/miete.js';
 import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
@@ -54,7 +53,6 @@ import { useSubscription } from './hooks/useSubscription';
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
   const [portfolio, setPortfolio] = useState([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -274,9 +272,10 @@ function App() {
     }
   };
 
-  // Logout Funktion
+  // Logout Funktion — zurück zur Startseite nach dem Ausloggen
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    window.location.href = '/';
   };
 
   // ─── PDF Selbstauskunft ──────────────────────────────────────────────────────
@@ -1155,18 +1154,12 @@ function App() {
     );
   }
 
-  // Landing Page oder Auth wenn nicht eingeloggt
+  // Auth wenn nicht eingeloggt (die Landingpage lebt jetzt separat auf "/")
   if (!session) {
     // Nach erfolgreichem Checkout (kein Session-Objekt vorhanden — Magic Link ausstehend)
     const checkoutParam = new URLSearchParams(window.location.search).get('checkout');
     if (checkoutParam === 'success') return <CheckoutSuccessPage />;
-    if (showAuth) return <Auth />;
-    return (
-      <LandingPage
-        onGetStarted={() => setShowAuth(true)}
-        onLogin={() => setShowAuth(true)}
-      />
-    );
+    return <Auth />;
   }
 
   // Aktive vs. inaktive Immobilien für Dashboard
