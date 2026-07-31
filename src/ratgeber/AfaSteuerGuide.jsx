@@ -17,6 +17,10 @@ export default function AfaSteuerGuide() {
       titel="AfA und Steuern bei Vermietung: Der Leitfaden für Vermieter"
       untertitel="Wie die Abschreibung für Abnutzung funktioniert, welche Werbungskosten absetzbar sind und worauf es bei der Steuererklärung für Vermieter ankommt."
       lesezeit="8"
+      related={[
+        { href: '/ratgeber/mietrendite-berechnen', titel: 'Mietrendite berechnen: Der komplette Guide' },
+        { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },
+      ]}
     >
       <section>
         <H2>Warum Steuern bei der Immobilienrendite mitentscheiden</H2>

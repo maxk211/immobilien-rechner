@@ -17,6 +17,10 @@ export default function MietrenditeGuide() {
       titel="Mietrendite berechnen: Der komplette Guide für Immobilien-Investoren"
       untertitel="Bruttomietrendite, Nettomietrendite und Cash-on-Cash-Rendite verstehen — mit Formeln, Beispielrechnung und Richtwerten für den deutschen Markt."
       lesezeit="7"
+      related={[
+        { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },
+        { href: '/ratgeber/afa-und-steuern-vermietung', titel: 'AfA und Steuern bei Vermietung: Der Leitfaden' },
+      ]}
     >
       <section>
         <H2>Warum die Mietrendite die wichtigste Kennzahl für Vermieter ist</H2>

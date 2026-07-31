@@ -90,6 +90,35 @@
       ]
     }
     </script>
+
+    <!-- Strukturierte Daten: Breadcrumb -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "renditly", "item": "https://www.renditly.de" },
+        { "@type": "ListItem", "position": 2, "name": "Mietrendite-Rechner", "item": "https://www.renditly.de/mietrendite-rechner" }
+      ]
+    }
+    </script>
+
+    <!-- Strukturierte Daten: HowTo -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "Wie man die Mietrendite berechnet",
+      "description": "Schritt-für-Schritt-Anleitung zur Berechnung von Brutto- und Nettomietrendite sowie Cashflow für eine Immobilie.",
+      "step": [
+        { "@type": "HowToStep", "position": 1, "name": "Kaufpreis eingeben", "text": "Kaufpreis der Immobilie ohne Kaufnebenkosten eingeben." },
+        { "@type": "HowToStep", "position": 2, "name": "Kaufnebenkosten eingeben", "text": "Grunderwerbsteuer, Notar und Makler als Prozentsatz eingeben — üblich sind 8–12 %." },
+        { "@type": "HowToStep", "position": 3, "name": "Eigenkapital und Kaltmiete eingeben", "text": "Eingesetztes Eigenkapital und monatliche Kaltmiete eingeben." },
+        { "@type": "HowToStep", "position": 4, "name": "Laufende Kosten und Zinssatz eingeben", "text": "Monatliche laufende Kosten (Hausgeld, Instandhaltung) sowie den Finanzierungszins eingeben." },
+        { "@type": "HowToStep", "position": 5, "name": "Ergebnis ablesen", "text": "Bruttomietrendite, Nettomietrendite, monatlicher Cashflow und Cash-on-Cash-Rendite werden sofort berechnet." }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

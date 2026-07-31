@@ -1,0 +1,20 @@
+# renditly
+
+> renditly ist eine Immobilienverwaltungs-Software für deutsche Vermieter und Investoren. Mietrendite berechnen, Cashflow tracken, Steuern vorbereiten und Mieter verwalten – alles in einer App. 90 Tage kostenlos testen.
+
+renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Portfolio zu verwalten: Mietrendite und Cashflow berechnen, Mieteinnahmen und Nebenkostenabrechnungen tracken, AfA und Steuerdaten für den Steuerberater exportieren, sowie Mieter- und Kautionsmanagement.
+
+## Kostenlose Rechner
+
+- [Mietrendite-Rechner](https://www.renditly.de/mietrendite-rechner): Bruttomietrendite, Nettomietrendite, monatlicher Cashflow und Cash-on-Cash-Rendite berechnen — kostenlos, ohne Anmeldung.
+- [AfA-Rechner](https://www.renditly.de/afa-rechner): Jährliche Abschreibung (AfA) und Steuerersparnis für vermietete Immobilien berechnen, inkl. Sonder-AfA § 7b EStG für Neubau-Mietwohnungen.
+
+## Ratgeber
+
+- [Mietrendite berechnen: Der komplette Guide](https://www.renditly.de/ratgeber/mietrendite-berechnen): Formeln und Richtwerte für Brutto-, Netto- und Cash-on-Cash-Rendite bei Immobilien in Deutschland.
+- [Cashflow bei Immobilien: Was Vermieter wissen müssen](https://www.renditly.de/ratgeber/cashflow-bei-immobilien): Cashflow-Formel, Beispielrechnung und die häufigsten Fehler bei der Kalkulation.
+- [AfA und Steuern bei Vermietung: Der Leitfaden](https://www.renditly.de/ratgeber/afa-und-steuern-vermietung): AfA-Sätze nach Baujahr, Sonder-AfA, absetzbare Werbungskosten und Erhaltungsaufwand vs. Herstellungskosten.
+
+## Produkt
+
+- [renditly Startseite](https://www.renditly.de/): Übersicht über Funktionen, Preise und 90 Tage kostenlose Testphase.

@@ -90,6 +90,35 @@
       ]
     }
     </script>
+
+    <!-- Strukturierte Daten: Breadcrumb -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "renditly", "item": "https://www.renditly.de" },
+        { "@type": "ListItem", "position": 2, "name": "AfA-Rechner", "item": "https://www.renditly.de/afa-rechner" }
+      ]
+    }
+    </script>
+
+    <!-- Strukturierte Daten: HowTo -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "Wie man die AfA für eine Immobilie berechnet",
+      "description": "Schritt-für-Schritt-Anleitung zur Berechnung der jährlichen Abschreibung (AfA) und Steuerersparnis bei einer vermieteten Immobilie.",
+      "step": [
+        { "@type": "HowToStep", "position": 1, "name": "Kaufpreis und Kaufnebenkosten eingeben", "text": "Kaufpreis der Immobilie sowie Kaufnebenkosten in Prozent eingeben." },
+        { "@type": "HowToStep", "position": 2, "name": "Grundstücksanteil eingeben", "text": "Anteil des Kaufpreises, der auf Grund und Boden entfällt — typisch 15–30 %." },
+        { "@type": "HowToStep", "position": 3, "name": "Baujahr eingeben", "text": "Baujahr der Immobilie bestimmt den gesetzlichen AfA-Satz (2, 2,5 oder 3 %)." },
+        { "@type": "HowToStep", "position": 4, "name": "Persönlichen Steuersatz eingeben", "text": "Grenzsteuersatz eingeben, um die jährliche Steuerersparnis zu berechnen." },
+        { "@type": "HowToStep", "position": 5, "name": "Ergebnis ablesen", "text": "Jährliche AfA, AfA-Satz und Steuerersparnis werden sofort berechnet." }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,4 +1,4 @@
-export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, kinder, ctaText }) {
+export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, kinder, ctaText, related = [] }) {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
 
@@ -20,8 +20,19 @@ export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, 
         </div>
       </nav>
 
+      {/* Breadcrumb */}
+      <div className="max-w-3xl mx-auto px-4 pt-4">
+        <nav aria-label="Breadcrumb" className="text-xs text-slate-400 flex items-center gap-1.5">
+          <a href="/" className="hover:text-indigo-600 transition-colors">renditly</a>
+          <span>/</span>
+          <span>Ratgeber</span>
+          <span>/</span>
+          <span className="text-slate-600">{titel}</span>
+        </nav>
+      </div>
+
       {/* Hero */}
-      <header className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white py-10 sm:py-14">
+      <header className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white py-10 sm:py-14 mt-4">
         <div className="max-w-3xl mx-auto px-4">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3 py-1 text-xs text-indigo-200 mb-4">
             {kategorie} · {lesezeit} Min. Lesezeit
@@ -40,6 +51,21 @@ export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, 
         <article className="prose-sm max-w-none space-y-8">
           {kinder}
         </article>
+
+        {/* Weiterlesen */}
+        {related.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-base font-bold text-slate-900 mb-3">Weiterlesen</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {related.map((r) => (
+                <a key={r.href} href={r.href} className="bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+                  <div className="text-xs text-indigo-600 font-semibold mb-1">{r.kategorie || 'Ratgeber'}</div>
+                  <div className="text-sm font-bold text-slate-900">{r.titel} →</div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-6 sm:p-8 text-white text-center mt-12">

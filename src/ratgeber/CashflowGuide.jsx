@@ -17,6 +17,10 @@ export default function CashflowGuide() {
       titel="Cashflow bei Immobilien: Was Vermieter wissen müssen"
       untertitel="Warum der monatliche Cashflow oft wichtiger ist als die Rendite auf dem Papier — mit Formel, Beispielrechnung und den häufigsten Fehlern bei der Kalkulation."
       lesezeit="6"
+      related={[
+        { href: '/ratgeber/mietrendite-berechnen', titel: 'Mietrendite berechnen: Der komplette Guide' },
+        { href: '/ratgeber/afa-und-steuern-vermietung', titel: 'AfA und Steuern bei Vermietung: Der Leitfaden' },
+      ]}
     >
       <section>
         <H2>Was ist Cashflow bei Immobilien?</H2>
