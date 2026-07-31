@@ -11,12 +11,20 @@ export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, 
             </span>
             <span className="font-black text-base" style={{letterSpacing:'-0.02em'}}>renditly</span>
           </a>
-          <a
-            href="/"
-            className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-indigo-700 transition-all"
-          >
-            Kostenlos testen
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href="/app"
+              className="text-xs sm:text-sm font-medium text-slate-600 px-3 py-2 rounded-xl hover:bg-gray-100 transition-all"
+            >
+              Login
+            </a>
+            <a
+              href="/app"
+              className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-indigo-700 transition-all"
+            >
+              Kostenlos testen
+            </a>
+          </div>
         </div>
       </nav>
 
