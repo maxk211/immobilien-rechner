@@ -6,26 +6,31 @@
   from = "/mietrendite-rechner"
   to   = "/mietrendite-rechner.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/afa-rechner"
   to   = "/afa-rechner.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/ratgeber/mietrendite-berechnen"
   to   = "/ratgeber/mietrendite-berechnen.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/ratgeber/cashflow-bei-immobilien"
   to   = "/ratgeber/cashflow-bei-immobilien.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/ratgeber/afa-und-steuern-vermietung"
   to   = "/ratgeber/afa-und-steuern-vermietung.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*"
