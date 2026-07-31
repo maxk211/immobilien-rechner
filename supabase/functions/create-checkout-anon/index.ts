@@ -39,8 +39,8 @@ serve(async (req) => {
       mode: 'subscription',
       billing_address_collection: 'auto',
       tax_id_collection: { enabled: true },
-      success_url: 'https://renditly.de?checkout=success',
-      cancel_url:  'https://renditly.de?checkout=cancel',
+      success_url: 'https://www.renditly.de?checkout=success',
+      cancel_url:  'https://www.renditly.de?checkout=cancel',
       locale: 'de',
       subscription_data: {
         metadata: { plan: planKey ?? 'starter' },

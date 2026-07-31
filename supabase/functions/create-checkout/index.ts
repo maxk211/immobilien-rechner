@@ -78,7 +78,7 @@ serve(async (req) => {
     }
 
     // Origin für Redirect-URLs
-    const origin = req.headers.get('origin') ?? 'https://renditly.de';
+    const origin = req.headers.get('origin') ?? 'https://www.renditly.de';
 
     // Stripe Checkout Session erstellen
     const session = await stripe.checkout.sessions.create({
