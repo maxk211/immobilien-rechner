@@ -12,6 +12,8 @@ const AfaRechner = lazy(() => import('./rechner/AfaRechner.jsx'))
 const MietrenditeGuide = lazy(() => import('./ratgeber/MietrenditeGuide.jsx'))
 const CashflowGuide = lazy(() => import('./ratgeber/CashflowGuide.jsx'))
 const AfaSteuerGuide = lazy(() => import('./ratgeber/AfaSteuerGuide.jsx'))
+const StadtSeite = lazy(() => import('./staedte/StadtSeite.jsx'))
+const StaedteVergleich = lazy(() => import('./staedte/StaedteVergleich.jsx'))
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 
@@ -21,23 +23,29 @@ const Loading = () => (
   </div>
 )
 
-// Rechner- und Ratgeber-Routen ohne Auth — SPA-Fallback bedient diese via /*→index.html
+const STAEDTE_SLUGS = ['berlin', 'hamburg', 'muenchen', 'koeln', 'frankfurt', 'stuttgart', 'duesseldorf', 'leipzig', 'dortmund', 'essen']
+
+// Rechner-, Ratgeber- und Städte-Routen ohne Auth — SPA-Fallback bedient diese via /*→index.html
 // Die dedizierten *.html-Dateien bedienen Crawler direkt (SEO)
 const ROUTES = {
-  '/mietrendite-rechner': MietrenditeRechner,
-  '/afa-rechner': AfaRechner,
-  '/ratgeber/mietrendite-berechnen': MietrenditeGuide,
-  '/ratgeber/cashflow-bei-immobilien': CashflowGuide,
-  '/ratgeber/afa-und-steuern-vermietung': AfaSteuerGuide,
+  '/mietrendite-rechner': { Component: MietrenditeRechner },
+  '/afa-rechner': { Component: AfaRechner },
+  '/ratgeber/mietrendite-berechnen': { Component: MietrenditeGuide },
+  '/ratgeber/cashflow-bei-immobilien': { Component: CashflowGuide },
+  '/ratgeber/afa-und-steuern-vermietung': { Component: AfaSteuerGuide },
+  '/mietrendite-staedte': { Component: StaedteVergleich },
+}
+for (const slug of STAEDTE_SLUGS) {
+  ROUTES[`/mietrendite-${slug}`] = { Component: StadtSeite, props: { slug } }
 }
 
 const path = window.location.pathname
-const RouteComponent = path === '/app' ? App : (ROUTES[path] || LandingApp)
+const route = path === '/app' ? { Component: App } : (ROUTES[path] || { Component: LandingApp })
 
 root.render(
   <React.StrictMode>
     <Suspense fallback={<Loading />}>
-      <RouteComponent />
+      <route.Component {...(route.props || {})} />
     </Suspense>
   </React.StrictMode>
 )

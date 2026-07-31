@@ -225,6 +225,10 @@ export default function MietrenditeRechner() {
               <div className="text-xs text-indigo-600 font-semibold mb-1">Ratgeber</div>
               <div className="text-sm font-bold text-slate-900">Cashflow bei Immobilien: Was Vermieter wissen müssen →</div>
             </a>
+            <a href="/mietrendite-staedte" className="flex-1 bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+              <div className="text-xs text-indigo-600 font-semibold mb-1">Städtevergleich</div>
+              <div className="text-sm font-bold text-slate-900">Mietrendite Deutschland: Die 10 größten Städte im Vergleich →</div>
+            </a>
           </div>
 
           {/* CTA */}

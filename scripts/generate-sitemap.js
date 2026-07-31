@@ -12,6 +12,7 @@
 import { writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { STAEDTE_LISTE } from '../src/staedte/staedteDaten.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -57,6 +58,18 @@ const ROUTES = [
     changefreq: 'monthly',
     lastmod: today,
   },
+  {
+    url: '/mietrendite-staedte',
+    priority: '0.8',
+    changefreq: 'monthly',
+    lastmod: today,
+  },
+  ...STAEDTE_LISTE.map((s) => ({
+    url: `/mietrendite-${s.slug}`,
+    priority: '0.7',
+    changefreq: 'monthly',
+    lastmod: today,
+  })),
   // Weitere Rechner (demnächst):
   // { url: '/cashflow-rechner-immobilien', priority: '0.9', changefreq: 'monthly', lastmod: today },
 ];

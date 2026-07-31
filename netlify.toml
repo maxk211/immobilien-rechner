@@ -33,6 +33,72 @@
   force = true
 
 [[redirects]]
+  from = "/mietrendite-staedte"
+  to   = "/mietrendite-staedte.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-berlin"
+  to   = "/staedte/mietrendite-berlin.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-hamburg"
+  to   = "/staedte/mietrendite-hamburg.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-muenchen"
+  to   = "/staedte/mietrendite-muenchen.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-koeln"
+  to   = "/staedte/mietrendite-koeln.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-frankfurt"
+  to   = "/staedte/mietrendite-frankfurt.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-stuttgart"
+  to   = "/staedte/mietrendite-stuttgart.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-duesseldorf"
+  to   = "/staedte/mietrendite-duesseldorf.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-leipzig"
+  to   = "/staedte/mietrendite-leipzig.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-dortmund"
+  to   = "/staedte/mietrendite-dortmund.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-essen"
+  to   = "/staedte/mietrendite-essen.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to   = "/index.html"
   status = 200
