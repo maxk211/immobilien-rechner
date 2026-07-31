@@ -46,6 +46,7 @@ import PortfolioZiele from './components/PortfolioZiele';
 import VermieterTodos from './components/VermieterTodos';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
+import LaunchAnnouncement from './components/LaunchAnnouncement';
 import { useSubscription } from './hooks/useSubscription';
 
 
@@ -71,6 +72,7 @@ function App() {
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [nkAbrechnungen, setNkAbrechnungen] = useState([]);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showLaunchAnnouncement, setShowLaunchAnnouncement] = useState(false);
   const [showSelbstauskunftModal, setShowSelbstauskunftModal] = useState(false);
   const [selbstauskunftDaten, setSelbstauskunftDaten] = useState(() => {
     try {
@@ -112,6 +114,16 @@ function App() {
       const seenVersion = localStorage.getItem('changelogVersion');
       if (seenVersion !== CHANGELOG_VERSION) {
         setShowChangelog(true);
+      }
+    } catch(e) { /* localStorage nicht verfügbar */ }
+  }, []);
+
+  // Launch-Announcement einmalig beim ersten Login anzeigen
+  useEffect(() => {
+    try {
+      const seenLaunch = localStorage.getItem('launchAnnouncementSeen');
+      if (!seenLaunch) {
+        setShowLaunchAnnouncement(true);
       }
     } catch(e) { /* localStorage nicht verfügbar */ }
   }, []);
@@ -1191,8 +1203,17 @@ function App() {
           trialDaysLeft={trialDaysLeft}
         />
       )}
+      {/* Launch-Announcement Popup — hat Vorrang vor dem Changelog */}
+      {showLaunchAnnouncement && (
+        <LaunchAnnouncement
+          onClose={() => {
+            try { localStorage.setItem('launchAnnouncementSeen', '1'); } catch(e) {}
+            setShowLaunchAnnouncement(false);
+          }}
+        />
+      )}
       {/* Changelog Popup */}
-      {showChangelog && (
+      {showChangelog && !showLaunchAnnouncement && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-start gap-3 mb-4">
