@@ -33,9 +33,14 @@ const ROUTES = [
     changefreq: 'monthly',
     lastmod: today,
   },
+  {
+    url: '/afa-rechner',
+    priority: '0.8',
+    changefreq: 'monthly',
+    lastmod: today,
+  },
   // Weitere Rechner (demnächst):
   // { url: '/cashflow-rechner-immobilien', priority: '0.9', changefreq: 'monthly', lastmod: today },
-  // { url: '/afa-rechner', priority: '0.8', changefreq: 'monthly', lastmod: today },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 

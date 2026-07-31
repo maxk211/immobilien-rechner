@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         mietrenditeRechner: resolve(__dirname, 'mietrendite-rechner.html'),
+        afaRechner: resolve(__dirname, 'afa-rechner.html'),
       },
     },
   },
