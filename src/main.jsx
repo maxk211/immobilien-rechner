@@ -5,6 +5,9 @@ import './index.css'
 
 const MietrenditeRechner = lazy(() => import('./rechner/MietrenditeRechner.jsx'))
 const AfaRechner = lazy(() => import('./rechner/AfaRechner.jsx'))
+const MietrenditeGuide = lazy(() => import('./ratgeber/MietrenditeGuide.jsx'))
+const CashflowGuide = lazy(() => import('./ratgeber/CashflowGuide.jsx'))
+const AfaSteuerGuide = lazy(() => import('./ratgeber/AfaSteuerGuide.jsx'))
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 
@@ -14,24 +17,24 @@ const Loading = () => (
   </div>
 )
 
-// Rechner-Routen ohne Auth — SPA-Fallback bedient diese via /*→index.html
-// Die dedizierten *.html-Dateien (mietrendite-rechner.html, afa-rechner.html)
-// bedienen Crawler direkt (SEO)
-const path = window.location.pathname
+// Rechner- und Ratgeber-Routen ohne Auth — SPA-Fallback bedient diese via /*→index.html
+// Die dedizierten *.html-Dateien bedienen Crawler direkt (SEO)
+const ROUTES = {
+  '/mietrendite-rechner': MietrenditeRechner,
+  '/afa-rechner': AfaRechner,
+  '/ratgeber/mietrendite-berechnen': MietrenditeGuide,
+  '/ratgeber/cashflow-bei-immobilien': CashflowGuide,
+  '/ratgeber/afa-und-steuern-vermietung': AfaSteuerGuide,
+}
 
-if (path === '/mietrendite-rechner') {
+const path = window.location.pathname
+const RouteComponent = ROUTES[path]
+
+if (RouteComponent) {
   root.render(
     <React.StrictMode>
       <Suspense fallback={<Loading />}>
-        <MietrenditeRechner />
-      </Suspense>
-    </React.StrictMode>
-  )
-} else if (path === '/afa-rechner') {
-  root.render(
-    <React.StrictMode>
-      <Suspense fallback={<Loading />}>
-        <AfaRechner />
+        <RouteComponent />
       </Suspense>
     </React.StrictMode>
   )

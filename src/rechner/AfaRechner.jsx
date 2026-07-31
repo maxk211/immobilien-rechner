@@ -219,6 +219,18 @@ export default function AfaRechner() {
             </div>
           </div>
 
+          {/* Ratgeber-Verlinkung */}
+          <div className="mb-10 flex flex-col sm:flex-row gap-3">
+            <a href="/ratgeber/afa-und-steuern-vermietung" className="flex-1 bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+              <div className="text-xs text-indigo-600 font-semibold mb-1">Ratgeber</div>
+              <div className="text-sm font-bold text-slate-900">AfA und Steuern bei Vermietung: Der Leitfaden →</div>
+            </a>
+            <a href="/ratgeber/mietrendite-berechnen" className="flex-1 bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+              <div className="text-xs text-indigo-600 font-semibold mb-1">Ratgeber</div>
+              <div className="text-sm font-bold text-slate-900">Mietrendite berechnen: Der komplette Guide →</div>
+            </a>
+          </div>
+
           {/* CTA */}
           <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-6 sm:p-8 text-white text-center">
             <h2 className="text-xl sm:text-2xl font-black mb-2">Portfolio verwalten — nicht nur berechnen</h2>

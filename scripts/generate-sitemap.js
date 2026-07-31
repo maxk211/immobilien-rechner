@@ -39,6 +39,24 @@ const ROUTES = [
     changefreq: 'monthly',
     lastmod: today,
   },
+  {
+    url: '/ratgeber/mietrendite-berechnen',
+    priority: '0.7',
+    changefreq: 'monthly',
+    lastmod: today,
+  },
+  {
+    url: '/ratgeber/cashflow-bei-immobilien',
+    priority: '0.7',
+    changefreq: 'monthly',
+    lastmod: today,
+  },
+  {
+    url: '/ratgeber/afa-und-steuern-vermietung',
+    priority: '0.7',
+    changefreq: 'monthly',
+    lastmod: today,
+  },
   // Weitere Rechner (demnächst):
   // { url: '/cashflow-rechner-immobilien', priority: '0.9', changefreq: 'monthly', lastmod: today },
 ];

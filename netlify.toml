@@ -13,6 +13,21 @@
   status = 200
 
 [[redirects]]
+  from = "/ratgeber/mietrendite-berechnen"
+  to   = "/ratgeber/mietrendite-berechnen.html"
+  status = 200
+
+[[redirects]]
+  from = "/ratgeber/cashflow-bei-immobilien"
+  to   = "/ratgeber/cashflow-bei-immobilien.html"
+  status = 200
+
+[[redirects]]
+  from = "/ratgeber/afa-und-steuern-vermietung"
+  to   = "/ratgeber/afa-und-steuern-vermietung.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to   = "/index.html"
   status = 200
