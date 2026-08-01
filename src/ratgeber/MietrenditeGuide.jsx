@@ -15,7 +15,7 @@ export default function MietrenditeGuide() {
     <ArticleLayout
       kategorie="Ratgeber"
       titel="Mietrendite berechnen: Der komplette Guide für Immobilien-Investoren"
-      untertitel="Bruttomietrendite, Nettomietrendite und Cash-on-Cash-Rendite verstehen — mit Formeln, Beispielrechnung und Richtwerten für den deutschen Markt."
+      untertitel="Die Mietrendite ist das Verhältnis von Jahresmiete zu Kaufpreis einer Immobilie und die zentrale Kennzahl zur Bewertung von Anlageimmobilien — mit Formeln für Brutto-, Netto- und Cash-on-Cash-Rendite sowie Richtwerten für den deutschen Markt."
       lesezeit="7"
       related={[
         { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },

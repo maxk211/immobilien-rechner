@@ -81,7 +81,7 @@ export default function StadtSeite({ slug }) {
             Mietrendite {stadt.name}
           </h1>
           <p className="text-slate-300 text-base sm:text-lg max-w-xl">
-            Aktuelle Kaufpreise, Mieten und die durchschnittliche Bruttomietrendite für {stadt.name} — plus eigener Rechner für deine konkrete Immobilie.
+            Die durchschnittliche Bruttomietrendite für Anlageimmobilien in {stadt.name} liegt bei {fmt(stadt.bruttorendite)} % — berechnet aus aktuellen Kaufpreisen und Kaltmieten pro Quadratmeter, plus eigener Rechner für deine konkrete Immobilie.
           </p>
         </div>
       </header>

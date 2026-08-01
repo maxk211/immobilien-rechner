@@ -15,7 +15,7 @@ export default function AfaSteuerGuide() {
     <ArticleLayout
       kategorie="Ratgeber"
       titel="AfA und Steuern bei Vermietung: Der Leitfaden für Vermieter"
-      untertitel="Wie die Abschreibung für Abnutzung funktioniert, welche Werbungskosten absetzbar sind und worauf es bei der Steuererklärung für Vermieter ankommt."
+      untertitel="Die AfA (Abschreibung für Abnutzung) erlaubt Vermietern, den Wertverlust einer Immobilie über Jahre steuerlich abzusetzen — mit AfA-Sätzen nach Baujahr, Sonder-AfA und den wichtigsten absetzbaren Werbungskosten."
       lesezeit="8"
       related={[
         { href: '/ratgeber/mietrendite-berechnen', titel: 'Mietrendite berechnen: Der komplette Guide' },

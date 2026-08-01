@@ -33,7 +33,7 @@ export default function StaedteVergleich() {
             Mietrendite Deutschland: Die 10 größten Städte im Vergleich
           </h1>
           <p className="text-slate-300 text-base sm:text-lg max-w-2xl">
-            Kaufpreise, Mieten und Bruttomietrendite für Berlin, Hamburg, München und sieben weitere deutsche Großstädte — auf Basis aktueller Marktdaten.
+            Essen und Dortmund bieten mit rund 4,5–4,6 % aktuell die höchste Bruttomietrendite unter den zehn größten deutschen Städten, München mit rund 3,1 % die niedrigste — der vollständige Vergleich von Kaufpreisen, Mieten und Rendite auf Basis aktueller Marktdaten.
           </p>
         </div>
       </header>

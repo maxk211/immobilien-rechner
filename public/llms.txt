@@ -15,6 +15,22 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 - [Cashflow bei Immobilien: Was Vermieter wissen müssen](https://www.renditly.de/ratgeber/cashflow-bei-immobilien): Cashflow-Formel, Beispielrechnung und die häufigsten Fehler bei der Kalkulation.
 - [AfA und Steuern bei Vermietung: Der Leitfaden](https://www.renditly.de/ratgeber/afa-und-steuern-vermietung): AfA-Sätze nach Baujahr, Sonder-AfA, absetzbare Werbungskosten und Erhaltungsaufwand vs. Herstellungskosten.
 
+## Mietrendite nach Stadt
+
+Aktuelle Kaufpreise, Mieten und Bruttomietrendite für die 10 größten deutschen Städte (Quelle: Engel & Völkers Marktbericht, Stand Juni 2026).
+
+- [Mietrendite Deutschland: Städtevergleich](https://www.renditly.de/mietrendite-staedte): Vergleichstabelle aller 10 Städte mit Kaufpreis/m², Kaltmiete/m² und Bruttomietrendite.
+- [Mietrendite Berlin](https://www.renditly.de/mietrendite-berlin): Ø 5.300 €/m² Kaufpreis, Ø 18,53 €/m² Kaltmiete, ca. 4,2 % Bruttomietrendite.
+- [Mietrendite Hamburg](https://www.renditly.de/mietrendite-hamburg): Ø 5.720 €/m² Kaufpreis, Ø 18,32 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.
+- [Mietrendite München](https://www.renditly.de/mietrendite-muenchen): Ø 8.398 €/m² Kaufpreis, Ø 21,71 €/m² Kaltmiete, ca. 3,1 % Bruttomietrendite — niedrigste Rendite der Tier-1-Städte.
+- [Mietrendite Köln](https://www.renditly.de/mietrendite-koeln): Ø 4.632 €/m² Kaufpreis, Ø 15,94 €/m² Kaltmiete, ca. 4,1 % Bruttomietrendite.
+- [Mietrendite Frankfurt am Main](https://www.renditly.de/mietrendite-frankfurt): Ø 5.919 €/m² Kaufpreis, Ø 17,17 €/m² Kaltmiete, ca. 3,5 % Bruttomietrendite.
+- [Mietrendite Stuttgart](https://www.renditly.de/mietrendite-stuttgart): Ø 5.346 €/m² Kaufpreis, Ø 16,72 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.
+- [Mietrendite Düsseldorf](https://www.renditly.de/mietrendite-duesseldorf): Ø 5.641 €/m² Kaufpreis, Ø 17,71 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.
+- [Mietrendite Leipzig](https://www.renditly.de/mietrendite-leipzig): Ø 3.858 €/m² Kaufpreis, Ø 12,21 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.
+- [Mietrendite Dortmund](https://www.renditly.de/mietrendite-dortmund): Ø 3.314 €/m² Kaufpreis, Ø 12,31 €/m² Kaltmiete, ca. 4,5 % Bruttomietrendite.
+- [Mietrendite Essen](https://www.renditly.de/mietrendite-essen): Ø 3.647 €/m² Kaufpreis, Ø 13,89 €/m² Kaltmiete, ca. 4,6 % Bruttomietrendite — höchste Rendite der Tier-1-Städte.
+
 ## Produkt
 
 - [renditly Startseite](https://www.renditly.de/): Übersicht über Funktionen, Preise und 90 Tage kostenlose Testphase.

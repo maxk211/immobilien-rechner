@@ -112,7 +112,7 @@ export default function AfaRechner() {
             AfA berechnen
           </h1>
           <p className="text-slate-300 text-base sm:text-lg max-w-xl">
-            Abschreibung für Abnutzung bei vermieteten Immobilien — jährliche AfA, Steuerersparnis und Abschreibungsdauer sofort berechnet.
+            Der AfA-Rechner ermittelt die jährliche Abschreibung (AfA) und Steuerersparnis für vermietete Immobilien in Deutschland — inklusive Sonder-AfA § 7b EStG für Neubau-Mietwohnungen, kostenlos und ohne Anmeldung.
           </p>
         </div>
       </header>

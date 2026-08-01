@@ -110,7 +110,7 @@ export default function MietrenditeRechner() {
             Mietrendite berechnen
           </h1>
           <p className="text-slate-300 text-base sm:text-lg max-w-xl">
-            Brutto- und Nettomietrendite, Cashflow und Cash-on-Cash-Rendite — sofort berechnet. Für Eigentumswohnungen, Mehrfamilienhäuser und alle Anlageimmobilien.
+            Der Mietrendite-Rechner ermittelt Brutto- und Nettomietrendite, monatlichen Cashflow und Cash-on-Cash-Rendite für Anlageimmobilien in Deutschland — kostenlos, ohne Anmeldung, in Sekunden.
           </p>
         </div>
       </header>
