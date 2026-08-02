@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 // ─── Impressum & Datenschutz Modals ─────────────────────────────────────────
@@ -112,8 +112,11 @@ export const DatenschutzModal = ({ onClose }) => (
       <p className="mt-1">Datenschutzrichtlinie: <a href="https://all-inkl.com/datenschutzerklaerung/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">all-inkl.com/datenschutzerklaerung</a></p>
     </Section>
 
-    <Section title="5. Cookies & lokaler Speicher">
-      <p>Wir verwenden keine Tracking-Cookies oder Analyse-Tools. Für die Aufrechterhaltung Ihrer Anmeldesitzung setzt Supabase einen technisch notwendigen Session-Token (localStorage). Einige App-Einstellungen werden ebenfalls im localStorage Ihres Browsers gespeichert und verlassen Ihr Gerät nicht.</p>
+    <Section title="5. Cookies, lokaler Speicher & Google Analytics">
+      <p>Für die Aufrechterhaltung Ihrer Anmeldesitzung setzt Supabase einen technisch notwendigen Session-Token (localStorage). Einige App-Einstellungen werden ebenfalls im localStorage Ihres Browsers gespeichert und verlassen Ihr Gerät nicht.</p>
+      <p className="mt-1">Zusätzlich nutzen wir <strong>Google Analytics 4</strong> (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland) zur statistischen Auswertung der Websitenutzung (z. B. aufgerufene Seiten, Verweildauer, Herkunft der Besucher). Google Analytics wird erst aktiviert, nachdem Sie im Cookie-Banner zugestimmt haben (Google Consent Mode v2) — die Rechtsgrundlage ist Ihre Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO. Sie können Ihre Einwilligung jederzeit widerrufen, indem Sie die Cookie-Einstellungen Ihres Browsers löschen und die Seite neu laden.</p>
+      <p className="mt-1">Google Analytics verarbeitet Daten teilweise auf Servern in den USA. Die Datenübertragung erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
+      <p className="mt-1">Datenschutzrichtlinie: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">policies.google.com/privacy</a></p>
     </Section>
 
     <Section title="6. Speicherdauer">
@@ -149,6 +152,14 @@ export const DatenschutzModal = ({ onClose }) => (
 export const ImpressumDatenschutzLinks = ({ className = '' }) => {
   const [showImpressum, setShowImpressum] = useState(false);
   const [showDatenschutz, setShowDatenschutz] = useState(false);
+
+  // Öffnet die Datenschutz-Modal automatisch, wenn die Seite mit #datenschutz
+  // aufgerufen wird (z.B. Link aus dem Cookie-Consent-Banner).
+  useEffect(() => {
+    if (window.location.hash === '#datenschutz') {
+      setShowDatenschutz(true);
+    }
+  }, []);
 
   return (
     <>
