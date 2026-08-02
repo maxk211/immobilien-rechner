@@ -169,12 +169,17 @@ async function sendMagicLink(email: string) {
 }
 
 // ─── Plan aus Subscription extrahieren ───────────────────────────────────────
+// WICHTIG: subscription.metadata.plan wird bewusst NICHT verwendet — dieses
+// Feld kann bei anonymen Checkouts (create-checkout-anon) vom Client frei
+// gesetzt werden (planKey) und wäre damit eine Rechte-Eskalation (z.B. Pro-
+// Plan mit Starter-Preis erkaufen). Die Plan-Zuordnung muss ausschließlich
+// aus serverseitig vertrauenswürdigen Quellen kommen: den Stripe-Preis-
+// Metadaten (im Dashboard gepflegt) oder der hart codierten PRICE_PLAN_MAP.
 function extractPlan(subscription: Stripe.Subscription): string {
   const priceItem = subscription.items?.data?.[0];
   if (!priceItem) return 'starter';
   const price = priceItem.price as Stripe.Price;
   if (price?.metadata?.plan) return price.metadata.plan;
-  if (subscription.metadata?.plan) return subscription.metadata.plan;
   if (price?.id && PRICE_PLAN_MAP[price.id]) return PRICE_PLAN_MAP[price.id];
   return 'starter';
 }

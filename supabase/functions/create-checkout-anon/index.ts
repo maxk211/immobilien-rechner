@@ -25,7 +25,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { priceId, planKey } = body;
+    const { priceId } = body;
 
     if (!priceId) {
       return new Response(JSON.stringify({ error: 'priceId fehlt' }), {
@@ -42,9 +42,9 @@ serve(async (req) => {
       success_url: 'https://www.renditly.de/app?checkout=success',
       cancel_url:  'https://www.renditly.de?checkout=cancel',
       locale: 'de',
-      subscription_data: {
-        metadata: { plan: planKey ?? 'starter' },
-      },
+      // Hinweis: Der tatsächliche Plan wird im Webhook ausschließlich aus
+      // priceId/PRICE_PLAN_MAP abgeleitet, nie aus client-seitigen Angaben —
+      // ein hier gesetztes Plan-Metadatum wäre sonst manipulierbar.
       allow_promotion_codes: true,
     });
 

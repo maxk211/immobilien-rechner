@@ -13,6 +13,7 @@ const PortfolioOverview = ({ portfolio }) => {
     let gesamtMiete = 0;
     let gesamtFlaeche = 0;
     let gesamtCashflow = 0;
+    let gesamtCashflowKauf = 0; // nur Kaufimmobilien — Basis für ekRendite (Mietimmobilien nutzen kein Eigenkapital)
     let gesamtKreditrate = 0;
     let gesamtKosten = 0;
     let gesamtEigenkapital = 0;
@@ -72,6 +73,7 @@ const PortfolioOverview = ({ portfolio }) => {
         const monatsCashflow = berechneMtlCashflow(immo);
 
         gesamtCashflow    += monatsCashflow * 12;
+        gesamtCashflowKauf += monatsCashflow * 12;
         gesamtKreditrate  += rendite.monatlicheRate * 12;   // phasenbewusst, vollEK-aware
         gesamtKosten      += monatlicheKosten * 12;
         gesamtEigenkapital += gesamtEK;
@@ -93,7 +95,7 @@ const PortfolioOverview = ({ portfolio }) => {
       gesamtKostenJahr: gesamtKosten,
       gesamtFlaeche,
       gesamtEigenkapital,
-      ekRendite: gesamtEigenkapital > 0 ? (gesamtCashflow / gesamtEigenkapital) * 100 : null,
+      ekRendite: gesamtEigenkapital > 0 ? (gesamtCashflowKauf / gesamtEigenkapital) * 100 : null,
       gesamtRestschuld,
       gesamtTilgungJahr,
       gesamtFreiesVermoegen,

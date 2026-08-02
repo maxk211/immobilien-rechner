@@ -106,6 +106,13 @@ export const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
 export const berechneRestschuld = (immobilie) => {
   if (!immobilie.kaufpreis) return null;
 
+  // Geschenkt oder voll eigenfinanziert: es existiert kein Kredit, also auch
+  // keine Restschuld — sonst würde unten fälschlich ein Fremdkapital in Höhe
+  // der Kaufnebenkosten (Default 10 %) konstruiert und "getilgt".
+  if (immobilie.geschenkt || immobilie.vollEigenfinanziert) {
+    return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
+  }
+
   // "Kredit läuft bereits": Restschuld direkt bekannt
   if (immobilie.kreditLaeuftBereits && immobilie.aktuelleRestschuld != null) {
     const rs = immobilie.aktuelleRestschuld || 0;
@@ -461,7 +468,7 @@ export const berechneRendite = (params) => {
   let gesamtTilgung = 0;
   let gesamtZinsen = 0;
 
-  for (let i = 0; i <= laufzeit; i++) {
+  for (let i = 0; i <= (laufzeit ?? 25); i++) {
     const { zinssatz: jahresZinssatz, jahresrate } = getPhasenDaten(i);
     const jahresZinsen = restschuld * (jahresZinssatz / 100);
     const jahresTilgung = Math.min(jahresrate - jahresZinsen, restschuld);
@@ -689,6 +696,10 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
 // Berechnet Restschuld, Jahres-Tilgung und freies Vermögen für Kauf- und MFH-Immobilien
 export const berechneImmoVermoegenswerte = (immo) => {
   if (immo.immobilienTyp === 'mietimmobilie') return null;
+  const marktwertGeschenkt = getAktuellerGesamtwert(immo);
+  if (immo.geschenkt || immo.vollEigenfinanziert) {
+    return { fremdkapital: 0, restschuld: 0, tilgungJahr: 0, freiVermoegen: marktwertGeschenkt, marktwert: marktwertGeschenkt };
+  }
   const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
   const kaufnebenkostenAbsolut = (immo.kaufpreis || 0) * (kaufnebenkosten / 100);
   const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
