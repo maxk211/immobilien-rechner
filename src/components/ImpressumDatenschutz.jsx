@@ -103,9 +103,9 @@ export const DatenschutzModal = ({ onClose }) => (
       <p>Wir nutzen <strong>Supabase, Inc.</strong> (San Francisco, USA) als Backend-Dienstleister für Authentifizierung und Datenbankbetrieb. Unsere Datenbank ist in der EU-West-Region (Frankfurt) gehostet. Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
       <p className="mt-1">Datenschutzrichtlinie: <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">supabase.com/privacy</a></p>
 
-      <p className="font-semibold text-gray-700 mt-3 mb-1">Vercel Inc. (Hosting & Content Delivery)</p>
-      <p>Die Anwendung wird gehostet bei <strong>Vercel Inc.</strong> (San Francisco, USA). Beim Aufruf der Seite werden technische Verbindungsdaten (IP-Adresse, Browser, Zugriffszeit) durch Vercel verarbeitet. Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
-      <p className="mt-1">Datenschutzrichtlinie: <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">vercel.com/legal/privacy-policy</a></p>
+      <p className="font-semibold text-gray-700 mt-3 mb-1">Netlify, Inc. (Hosting & Content Delivery)</p>
+      <p>Die Anwendung wird gehostet bei <strong>Netlify, Inc.</strong> (San Francisco, USA; für EU-Kunden Vertragspartner Netlify Ireland Limited, Dublin, Irland). Beim Aufruf der Seite werden technische Verbindungsdaten (IP-Adresse, Browser, Zugriffszeit) durch Netlify verarbeitet. Soweit eine Datenübertragung in die USA erfolgt, geschieht dies auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
+      <p className="mt-1">Datenschutzrichtlinie: <a href="https://www.netlify.com/privacy/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">netlify.com/privacy</a></p>
 
       <p className="font-semibold text-gray-700 mt-3 mb-1">all-inkl.com / neue Medien Münnich (E-Mail-Versand)</p>
       <p>Für den transaktionalen E-Mail-Versand (Kontobestätigung, Passwort-Reset) nutzen wir den SMTP-Dienst von <strong>neue Medien Münnich</strong> (Hauptstraße 68, 02742 Friedersdorf, Deutschland). Dabei wird Ihre E-Mail-Adresse zum Zweck der Zustellung verarbeitet. Die Daten verbleiben auf deutschen Servern.</p>
@@ -143,7 +143,7 @@ export const DatenschutzModal = ({ onClose }) => (
     </Section>
 
     <Section title="9. Änderungen dieser Erklärung">
-      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: 12. Juli 2026.</p>
+      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: 2. August 2026.</p>
     </Section>
   </Modal>
 );

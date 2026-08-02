@@ -3,7 +3,7 @@
 // PAYMENTS_LIVE = false  →  Alle User haben Pro, keine Einschränkungen
 // PAYMENTS_LIVE = true   →  3-Tier aktiv (Trial → Starter → Standard → Pro)
 //
-// Zum Aktivieren: PAYMENTS_LIVE auf `true` + Vercel Env Vars setzen
+// Zum Aktivieren: PAYMENTS_LIVE auf `true` + Netlify Env Vars setzen
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const PAYMENTS_LIVE = true;
