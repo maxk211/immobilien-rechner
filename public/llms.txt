@@ -31,6 +31,21 @@ Aktuelle Kaufpreise, Mieten und Bruttomietrendite für die 10 größten deutsche
 - [Mietrendite Dortmund](https://www.renditly.de/mietrendite-dortmund): Ø 3.314 €/m² Kaufpreis, Ø 12,31 €/m² Kaltmiete, ca. 4,5 % Bruttomietrendite.
 - [Mietrendite Essen](https://www.renditly.de/mietrendite-essen): Ø 3.647 €/m² Kaufpreis, Ø 13,89 €/m² Kaltmiete, ca. 4,6 % Bruttomietrendite — höchste Rendite der Tier-1-Städte.
 
+## Städtevergleiche (Stadt vs. Stadt)
+
+Direkter Vergleich von Kaufpreis, Miete und Bruttomietrendite für ausgewählte Städtepaare.
+
+- [Berlin vs. Leipzig](https://www.renditly.de/mietrendite-berlin-vs-leipzig): Hauptstadt-Liquidität vs. deutlich günstigerer Einstieg bei ähnlicher Rendite.
+- [Berlin vs. Hamburg](https://www.renditly.de/mietrendite-berlin-vs-hamburg): Die beiden größten Märkte im Norden/Osten Deutschlands im Vergleich.
+- [München vs. Frankfurt](https://www.renditly.de/mietrendite-muenchen-vs-frankfurt): Die teuerste deutsche Stadt vs. die Finanzmetropole.
+- [Köln vs. Düsseldorf](https://www.renditly.de/mietrendite-koeln-vs-duesseldorf): NRW-Rivalen im direkten Kaufpreis- und Renditevergleich.
+- [Dortmund vs. Essen](https://www.renditly.de/mietrendite-dortmund-vs-essen): Die beiden renditestärksten Städte im Ruhrgebiet.
+- [Stuttgart vs. München](https://www.renditly.de/mietrendite-stuttgart-vs-muenchen): Süddeutsche Wirtschaftsstärke bei deutlich unterschiedlichem Preisniveau.
+- [Leipzig vs. Dortmund](https://www.renditly.de/mietrendite-leipzig-vs-dortmund): Zwei günstige, renditestarke Städte — Ost vs. West.
+- [Hamburg vs. München](https://www.renditly.de/mietrendite-hamburg-vs-muenchen): Die zwei teuersten deutschen Metropolen neben Frankfurt.
+- [Berlin vs. München](https://www.renditly.de/mietrendite-berlin-vs-muenchen): Die zwei bekanntesten deutschen Städte als Kapitalanlage.
+- [Frankfurt vs. Düsseldorf](https://www.renditly.de/mietrendite-frankfurt-vs-duesseldorf): Zwei internationale Business-Hubs im Vergleich.
+
 ## Produkt
 
 - [renditly Startseite](https://www.renditly.de/): Übersicht über Funktionen, Preise und 90 Tage kostenlose Testphase.

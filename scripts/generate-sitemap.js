@@ -13,6 +13,7 @@ import { writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { STAEDTE_LISTE } from '../src/staedte/staedteDaten.js';
+import { VERGLEICHE } from '../src/staedte/vergleichDaten.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -67,6 +68,12 @@ const ROUTES = [
   ...STAEDTE_LISTE.map((s) => ({
     url: `/mietrendite-${s.slug}`,
     priority: '0.7',
+    changefreq: 'monthly',
+    lastmod: today,
+  })),
+  ...VERGLEICHE.map((v) => ({
+    url: `/mietrendite-${v.slugA}-vs-${v.slugB}`,
+    priority: '0.6',
     changefreq: 'monthly',
     lastmod: today,
   })),

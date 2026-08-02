@@ -14,6 +14,7 @@ const CashflowGuide = lazy(() => import('./ratgeber/CashflowGuide.jsx'))
 const AfaSteuerGuide = lazy(() => import('./ratgeber/AfaSteuerGuide.jsx'))
 const StadtSeite = lazy(() => import('./staedte/StadtSeite.jsx'))
 const StaedteVergleich = lazy(() => import('./staedte/StaedteVergleich.jsx'))
+const StaedtVergleichSeite = lazy(() => import('./staedte/StaedtVergleichSeite.jsx'))
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 
@@ -37,6 +38,22 @@ const ROUTES = {
 }
 for (const slug of STAEDTE_SLUGS) {
   ROUTES[`/mietrendite-${slug}`] = { Component: StadtSeite, props: { slug } }
+}
+
+const STAEDTE_VERGLEICHE = [
+  ['berlin', 'leipzig'],
+  ['berlin', 'hamburg'],
+  ['muenchen', 'frankfurt'],
+  ['koeln', 'duesseldorf'],
+  ['dortmund', 'essen'],
+  ['stuttgart', 'muenchen'],
+  ['leipzig', 'dortmund'],
+  ['hamburg', 'muenchen'],
+  ['berlin', 'muenchen'],
+  ['frankfurt', 'duesseldorf'],
+]
+for (const [slugA, slugB] of STAEDTE_VERGLEICHE) {
+  ROUTES[`/mietrendite-${slugA}-vs-${slugB}`] = { Component: StaedtVergleichSeite, props: { slugA, slugB } }
 }
 
 const path = window.location.pathname

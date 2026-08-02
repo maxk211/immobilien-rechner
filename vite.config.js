@@ -13,6 +13,16 @@ for (const file of readdirSync(resolve(__dirname, 'staedte'))) {
   }
 }
 
+// Städte-Vergleichsseiten (programmatic SEO Stufe 2) automatisch einsammeln —
+// neue Paare nur in vergleichDaten.js + generate-vergleich-pages.js ergänzen.
+const vergleichInputs = {};
+for (const file of readdirSync(resolve(__dirname, 'vergleich'))) {
+  if (file.endsWith('.html')) {
+    const key = 'vergleich-' + file.replace('.html', '');
+    vergleichInputs[key] = resolve(__dirname, 'vergleich', file);
+  }
+}
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -26,6 +36,7 @@ export default defineConfig({
         ratgeberAfaSteuer: resolve(__dirname, 'ratgeber/afa-und-steuern-vermietung.html'),
         mietrenditeStaedte: resolve(__dirname, 'mietrendite-staedte.html'),
         ...staedteInputs,
+        ...vergleichInputs,
       },
     },
   },

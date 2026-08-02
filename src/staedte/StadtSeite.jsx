@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { STAEDTE, STAEDTE_LISTE } from './staedteDaten';
+import { VERGLEICHE } from './vergleichDaten';
 
 const fmt = (n, decimals = 1) => isFinite(n) ? n.toFixed(decimals).replace('.', ',') : '–';
 const fmtEur = (n) => isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–';
@@ -40,6 +41,7 @@ export default function StadtSeite({ slug }) {
   const cashflow = kaltmiete - ko - rate;
 
   const andereStaedte = STAEDTE_LISTE.filter(s => s.slug !== slug).slice(0, 6);
+  const passendeVergleiche = VERGLEICHE.filter(v => v.slugA === slug || v.slugB === slug);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -213,6 +215,24 @@ export default function StadtSeite({ slug }) {
           </div>
           <a href="/mietrendite-staedte" className="inline-block mt-3 text-sm font-semibold text-indigo-600 hover:underline">Alle Städte im Vergleich →</a>
         </section>
+
+        {/* Direkte Vergleiche */}
+        {passendeVergleiche.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-xl font-black text-slate-900 mb-4">{stadt.name} im direkten Vergleich</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {passendeVergleiche.map((v) => {
+                const partnerSlug = v.slugA === slug ? v.slugB : v.slugA;
+                const partnerName = STAEDTE[partnerSlug]?.name;
+                return (
+                  <a key={`${v.slugA}-${v.slugB}`} href={`/mietrendite-${v.slugA}-vs-${v.slugB}`} className="bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+                    <div className="text-sm font-bold text-slate-900">{stadt.name} vs. {partnerName}</div>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* CTA */}
         <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-6 sm:p-8 text-white text-center">

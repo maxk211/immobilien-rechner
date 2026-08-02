@@ -1,4 +1,5 @@
 import { STAEDTE_LISTE } from './staedteDaten';
+import { VERGLEICHE } from './vergleichDaten';
 
 const fmt = (n, decimals = 1) => isFinite(n) ? n.toFixed(decimals).replace('.', ',') : '–';
 const fmtEur = (n) => isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–';
@@ -86,6 +87,22 @@ export default function StaedteVergleich() {
                 <div className="text-xs text-slate-400 mt-0.5">Ø {fmt(s.bruttorendite)} % Bruttorendite</div>
               </a>
             ))}
+          </div>
+        </section>
+
+        {/* Städtepaar-Vergleiche */}
+        <section className="mb-10">
+          <h2 className="text-xl font-black text-slate-900 mb-4">Direkte Städtevergleiche</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {VERGLEICHE.map((v) => {
+              const nameA = STAEDTE_LISTE.find(s => s.slug === v.slugA)?.name;
+              const nameB = STAEDTE_LISTE.find(s => s.slug === v.slugB)?.name;
+              return (
+                <a key={`${v.slugA}-${v.slugB}`} href={`/mietrendite-${v.slugA}-vs-${v.slugB}`} className="bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+                  <div className="text-sm font-bold text-slate-900">{nameA} vs. {nameB}</div>
+                </a>
+              );
+            })}
           </div>
         </section>
 

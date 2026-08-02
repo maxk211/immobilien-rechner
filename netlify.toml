@@ -99,6 +99,66 @@
   force = true
 
 [[redirects]]
+  from = "/mietrendite-berlin-vs-leipzig"
+  to   = "/vergleich/mietrendite-berlin-vs-leipzig.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-berlin-vs-hamburg"
+  to   = "/vergleich/mietrendite-berlin-vs-hamburg.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-muenchen-vs-frankfurt"
+  to   = "/vergleich/mietrendite-muenchen-vs-frankfurt.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-koeln-vs-duesseldorf"
+  to   = "/vergleich/mietrendite-koeln-vs-duesseldorf.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-dortmund-vs-essen"
+  to   = "/vergleich/mietrendite-dortmund-vs-essen.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-stuttgart-vs-muenchen"
+  to   = "/vergleich/mietrendite-stuttgart-vs-muenchen.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-leipzig-vs-dortmund"
+  to   = "/vergleich/mietrendite-leipzig-vs-dortmund.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-hamburg-vs-muenchen"
+  to   = "/vergleich/mietrendite-hamburg-vs-muenchen.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-berlin-vs-muenchen"
+  to   = "/vergleich/mietrendite-berlin-vs-muenchen.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mietrendite-frankfurt-vs-duesseldorf"
+  to   = "/vergleich/mietrendite-frankfurt-vs-duesseldorf.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to   = "/index.html"
   status = 200
