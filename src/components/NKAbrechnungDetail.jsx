@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { FileText, X, Pencil, Trash2, Download, TrendingDown, TrendingUp, Mail, CheckCircle2 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import { applyPlugin } from 'jspdf-autotable';
-applyPlugin(jsPDF);
+import { getJsPDF } from '../utils/lazyLibs.js';
 import { berechneMieteranteil } from './NKAbrechnungFormular';
 
 const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
@@ -23,7 +21,8 @@ const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
   };
   const statusColor = { entwurf: 'bg-yellow-100 text-yellow-700', versendet: 'bg-blue-100 text-indigo-700', abgeschlossen: 'bg-green-100 text-green-700' };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
+    const jsPDF = await getJsPDF();
     const pdf = new jsPDF('p', 'mm', 'a4');
 
     // Header

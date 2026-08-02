@@ -1,8 +1,5 @@
 import { useState } from 'react';
 import { FileText, X } from 'lucide-react';
-import jsPDF from 'jspdf';
-import { applyPlugin } from 'jspdf-autotable';
-applyPlugin(jsPDF);
 import { NK_STANDARD_POSITIONEN } from '../constants/index.js';
 
 export function berechneMieteranteil(pos, mieterflaeche, gesamtflaeche, anzahlParteien) {

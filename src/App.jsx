@@ -2,10 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import { applyPlugin } from 'jspdf-autotable';
-applyPlugin(jsPDF);
+import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
 import { formatCurrency, formatPercent } from './utils/format.js';
@@ -286,7 +283,8 @@ function App() {
   // ─── PDF Selbstauskunft ──────────────────────────────────────────────────────
   const handleSelbstauskunft = () => setShowSelbstauskunftModal(true);
 
-  const generateSelbstauskunftPDF = (daten) => {
+  const generateSelbstauskunftPDF = async (daten) => {
+    const jsPDF = await getJsPDF();
     const pdf = new jsPDF('p', 'mm', 'a4');
     const W = 210;
     const H = 297;
@@ -620,10 +618,11 @@ function App() {
   };
 
   // Steuer-Export Funktion
-  const handleSteuerExport = (jahr) => {
+  const handleSteuerExport = async (jahr) => {
     if (!jahr) {
       jahr = new Date().getFullYear();
     }
+    const [XLSX, jsPDF] = await Promise.all([getXLSX(), getJsPDF()]);
 
     // Immobilien die im gewählten Jahr aktiv waren (erworben vor/in dem Jahr und noch nicht aufgegeben vor dem Jahr)
     const kaufimmobilien = portfolio.filter(i => {

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ClipboardList, Landmark, Hammer, Building2, BarChart3, Wrench, RefreshCw, Package, AlertTriangle, ShieldCheck, Lightbulb, TrendingDown, TrendingUp, Car, Download, X } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { getXLSX } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
@@ -249,7 +249,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
   const fahrtenSelectedJahr = fahrtenListe.filter(f => new Date(f.datum).getFullYear() === selectedJahr);
 
   // ── Anlage V Excel-Export ─────────────────────────────────────────────────
-  const exportAnlageV = () => {
+  const exportAnlageV = async () => {
+    const XLSX = await getXLSX();
     const immoName = params.name || params.adresse || 'Immobilie';
     const wb = XLSX.utils.book_new();
 

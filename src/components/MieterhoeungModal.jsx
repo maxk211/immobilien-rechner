@@ -3,7 +3,7 @@ import {
   TrendingUp, BarChart2, Home, Search, FileText, CheckCircle2,
   AlertTriangle, X, User,
 } from 'lucide-react';
-import jsPDF from 'jspdf';
+import { getJsPDF } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
 
 /**
@@ -78,7 +78,8 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
   const wirksamStr = wirksamDatum.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
 
   // ── PDF generieren ────────────────────────────────────────────────────────────
-  const generatePDF = () => {
+  const generatePDF = async () => {
+    const jsPDF = await getJsPDF();
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageW = 210;
     const margin = 20;
