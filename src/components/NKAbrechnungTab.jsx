@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Receipt, Lightbulb, FileText, Wallet, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { NK_KOSTENPOSITIONEN_DEFAULTS } from '../constants/index.js';
+import NKAbrechnungForm from './NKAbrechnungForm';
 
 const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
   const aktuellesJahr = new Date().getFullYear();

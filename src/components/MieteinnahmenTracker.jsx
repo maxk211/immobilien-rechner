@@ -3,6 +3,7 @@ import { Zap, Check, X, ChevronUp, ChevronDown, User, FileText, TrendingDown, Wa
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import ZahlungErfassenForm from './ZahlungErfassenForm';
+import NKAbrechnungModal from './NKAbrechnungModal';
 
 const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [] }) => {
   const [mietEingaenge, setMietEingaenge] = useState(params.mietEingaenge || []);
