@@ -4,7 +4,7 @@ import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 import {
   Home, BarChart3, Wallet, Receipt, Users, TrendingUp, Building2,
   Check, X, Lock, Key, ShieldCheck, Globe, Mail, ArrowRight, Monitor,
-  Eye, BellOff, Ban, Frown
+  Eye, BellOff, Ban, Frown, Calculator, BookOpen, MapPin
 } from 'lucide-react';
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
@@ -178,6 +178,12 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <a
+              href="/mietrendite-rechner"
+              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-indigo-600 px-2.5 sm:px-3 py-2 rounded-lg hover:bg-indigo-50 transition-all"
+            >
+              Rechner
+            </a>
             <a
               href="#pricing"
               className="hidden sm:block text-sm font-medium text-gray-600 hover:text-indigo-600 px-2.5 sm:px-3 py-2 rounded-lg hover:bg-indigo-50 transition-all"
@@ -623,6 +629,45 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
         </div>
       </section>
 
+      {/* ── KOSTENLOSE TOOLS & RATGEBER ── */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-white border-t border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-3">
+              Kostenlose Tools &amp; Ratgeber
+            </h2>
+            <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto">
+              Auch ohne Account nutzbar — rechne und informiere dich, bevor du dich entscheidest.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {[
+              { icon: Calculator, title: 'Mietrendite-Rechner', desc: 'Brutto- und Nettomietrendite in Sekunden berechnen.', href: '/mietrendite-rechner' },
+              { icon: Receipt, title: 'AfA-Rechner', desc: 'Jährliche Abschreibung und Steuerersparnis ermitteln.', href: '/afa-rechner' },
+              { icon: MapPin, title: 'Mietrendite nach Stadt', desc: 'Kaufpreise, Mieten und Renditen der 10 größten Städte im Vergleich.', href: '/mietrendite-staedte' },
+              { icon: BookOpen, title: 'Mietrendite berechnen', desc: 'Der komplette Guide mit Formeln und Beispielrechnung.', href: '/ratgeber/mietrendite-berechnen' },
+              { icon: Wallet, title: 'Cashflow bei Immobilien', desc: 'Was Cashflow ist und wie du ihn richtig kalkulierst.', href: '/ratgeber/cashflow-bei-immobilien' },
+              { icon: BarChart3, title: 'AfA & Steuern', desc: 'Abschreibung, Werbungskosten und Steuervorteile erklärt.', href: '/ratgeber/afa-und-steuern-vermietung' },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="bg-white border border-gray-100 rounded-2xl p-5 sm:p-6 hover:shadow-md hover:border-gray-200 transition-all hover:-translate-y-0.5 flex gap-4 sm:block"
+              >
+                <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 flex-shrink-0 sm:mb-4">
+                  <item.icon size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-1 sm:mb-2">{item.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── FINAL CTA ── */}
       <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-slate-900 to-blue-950 text-white text-center">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
@@ -656,7 +701,10 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             </div>
             <span className="font-black text-slate-300" style={{letterSpacing: '-0.02em'}}>renditly</span>
           </div>
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
+            <a href="/mietrendite-rechner" className="hover:text-slate-300 transition-colors">Rechner</a>
+            <a href="/mietrendite-staedte" className="hover:text-slate-300 transition-colors">Städte</a>
+            <a href="/ratgeber/mietrendite-berechnen" className="hover:text-slate-300 transition-colors">Ratgeber</a>
             <a href="#pricing" className="hover:text-slate-300 transition-colors">Preise</a>
             <button onClick={onLogin} className="hover:text-slate-300 transition-colors">Einloggen</button>
             <button onClick={onGetStarted} className="hover:text-slate-300 transition-colors">Registrieren</button>

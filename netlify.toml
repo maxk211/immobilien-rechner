@@ -159,6 +159,16 @@
   force = true
 
 [[redirects]]
-  from = "/*"
+  from = "/app"
   to   = "/index.html"
   status = 200
+
+# Alles andere: echtes 404 statt Soft-404 (vorher: /* -> index.html mit
+# status 200, wodurch jede ungültige URL — Tippfehler, alte Links, geratene
+# Bot-Pfade — als "gültige" Seite mit Duplicate Content der Startseite
+# ausgeliefert wurde. Das erzeugt Soft-404-Warnungen in der Search Console
+# und verschwendet Crawl-Budget.)
+[[redirects]]
+  from = "/*"
+  to   = "/404.html"
+  status = 404
