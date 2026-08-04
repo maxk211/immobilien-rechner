@@ -3,6 +3,113 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/mietrendite-rechner",
+      "destination": "/mietrendite-rechner.html"
+    },
+    {
+      "source": "/afa-rechner",
+      "destination": "/afa-rechner.html"
+    },
+    {
+      "source": "/ratgeber/mietrendite-berechnen",
+      "destination": "/ratgeber/mietrendite-berechnen.html"
+    },
+    {
+      "source": "/ratgeber/cashflow-bei-immobilien",
+      "destination": "/ratgeber/cashflow-bei-immobilien.html"
+    },
+    {
+      "source": "/ratgeber/afa-und-steuern-vermietung",
+      "destination": "/ratgeber/afa-und-steuern-vermietung.html"
+    },
+    {
+      "source": "/mietrendite-staedte",
+      "destination": "/mietrendite-staedte.html"
+    },
+    {
+      "source": "/mietrendite-berlin",
+      "destination": "/staedte/mietrendite-berlin.html"
+    },
+    {
+      "source": "/mietrendite-hamburg",
+      "destination": "/staedte/mietrendite-hamburg.html"
+    },
+    {
+      "source": "/mietrendite-muenchen",
+      "destination": "/staedte/mietrendite-muenchen.html"
+    },
+    {
+      "source": "/mietrendite-koeln",
+      "destination": "/staedte/mietrendite-koeln.html"
+    },
+    {
+      "source": "/mietrendite-frankfurt",
+      "destination": "/staedte/mietrendite-frankfurt.html"
+    },
+    {
+      "source": "/mietrendite-stuttgart",
+      "destination": "/staedte/mietrendite-stuttgart.html"
+    },
+    {
+      "source": "/mietrendite-duesseldorf",
+      "destination": "/staedte/mietrendite-duesseldorf.html"
+    },
+    {
+      "source": "/mietrendite-leipzig",
+      "destination": "/staedte/mietrendite-leipzig.html"
+    },
+    {
+      "source": "/mietrendite-dortmund",
+      "destination": "/staedte/mietrendite-dortmund.html"
+    },
+    {
+      "source": "/mietrendite-essen",
+      "destination": "/staedte/mietrendite-essen.html"
+    },
+    {
+      "source": "/mietrendite-berlin-vs-leipzig",
+      "destination": "/vergleich/mietrendite-berlin-vs-leipzig.html"
+    },
+    {
+      "source": "/mietrendite-berlin-vs-hamburg",
+      "destination": "/vergleich/mietrendite-berlin-vs-hamburg.html"
+    },
+    {
+      "source": "/mietrendite-muenchen-vs-frankfurt",
+      "destination": "/vergleich/mietrendite-muenchen-vs-frankfurt.html"
+    },
+    {
+      "source": "/mietrendite-koeln-vs-duesseldorf",
+      "destination": "/vergleich/mietrendite-koeln-vs-duesseldorf.html"
+    },
+    {
+      "source": "/mietrendite-dortmund-vs-essen",
+      "destination": "/vergleich/mietrendite-dortmund-vs-essen.html"
+    },
+    {
+      "source": "/mietrendite-stuttgart-vs-muenchen",
+      "destination": "/vergleich/mietrendite-stuttgart-vs-muenchen.html"
+    },
+    {
+      "source": "/mietrendite-leipzig-vs-dortmund",
+      "destination": "/vergleich/mietrendite-leipzig-vs-dortmund.html"
+    },
+    {
+      "source": "/mietrendite-hamburg-vs-muenchen",
+      "destination": "/vergleich/mietrendite-hamburg-vs-muenchen.html"
+    },
+    {
+      "source": "/mietrendite-berlin-vs-muenchen",
+      "destination": "/vergleich/mietrendite-berlin-vs-muenchen.html"
+    },
+    {
+      "source": "/mietrendite-frankfurt-vs-duesseldorf",
+      "destination": "/vergleich/mietrendite-frankfurt-vs-duesseldorf.html"
+    },
+    {
+      "source": "/app",
+      "destination": "/index.html"
+    }
   ]
 }
