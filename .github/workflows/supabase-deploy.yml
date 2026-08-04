@@ -31,11 +31,19 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       # Edge Function Secrets setzen
+      # SMTP_* Secrets müssen einmalig als GitHub-Repo-Secrets angelegt werden
+      # (Settings → Secrets and variables → Actions), sonst bleiben sie leer
+      # und trial-reminder-emails verschickt keine Mails (loggt das nur, kein Crash).
       - name: Secrets setzen
         run: |
           supabase secrets set \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
-            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}"
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            SMTP_USER="${{ secrets.SMTP_USER }}" \
+            SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            SMTP_FROM="${{ secrets.SMTP_FROM }}"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
@@ -45,5 +53,6 @@ jobs:
           supabase functions deploy create-checkout
           supabase functions deploy create-checkout-anon --no-verify-jwt
           supabase functions deploy stripe-webhook
+          supabase functions deploy trial-reminder-emails
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

@@ -108,7 +108,7 @@ export const DatenschutzModal = ({ onClose }) => (
       <p className="mt-1">Datenschutzrichtlinie: <a href="https://www.netlify.com/privacy/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">netlify.com/privacy</a></p>
 
       <p className="font-semibold text-gray-700 mt-3 mb-1">all-inkl.com / neue Medien Münnich (E-Mail-Versand)</p>
-      <p>Für den transaktionalen E-Mail-Versand (Kontobestätigung, Passwort-Reset) nutzen wir den SMTP-Dienst von <strong>neue Medien Münnich</strong> (Hauptstraße 68, 02742 Friedersdorf, Deutschland). Dabei wird Ihre E-Mail-Adresse zum Zweck der Zustellung verarbeitet. Die Daten verbleiben auf deutschen Servern.</p>
+      <p>Für den transaktionalen E-Mail-Versand (Kontobestätigung, Passwort-Reset, Erinnerungen zum Ablauf Ihrer Testphase) nutzen wir den SMTP-Dienst von <strong>neue Medien Münnich</strong> (Hauptstraße 68, 02742 Friedersdorf, Deutschland). Dabei wird Ihre E-Mail-Adresse zum Zweck der Zustellung verarbeitet. Die Daten verbleiben auf deutschen Servern.</p>
       <p className="mt-1">Datenschutzrichtlinie: <a href="https://all-inkl.com/datenschutzerklaerung/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">all-inkl.com/datenschutzerklaerung</a></p>
     </Section>
 
@@ -143,7 +143,7 @@ export const DatenschutzModal = ({ onClose }) => (
     </Section>
 
     <Section title="9. Änderungen dieser Erklärung">
-      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: 2. August 2026.</p>
+      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: 4. August 2026.</p>
     </Section>
   </Modal>
 );

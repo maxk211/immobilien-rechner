@@ -44,6 +44,7 @@ import VermieterTodos from './components/VermieterTodos';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
 import LaunchAnnouncement from './components/LaunchAnnouncement';
+import TrialCountdownBanner from './components/TrialCountdownBanner';
 import { useSubscription } from './hooks/useSubscription';
 
 
@@ -53,6 +54,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [portfolio, setPortfolio] = useState([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalReason, setUpgradeModalReason] = useState(null); // null → automatische Ableitung aus plan
 
   // Subscription-Status — solange PAYMENTS_LIVE=false ist plan immer 'pro'
   const { isPro, plan, canAddImmo, openCheckout, isTrialing, trialDaysLeft, refresh: refreshSubscription } = useSubscription(session, portfolio.length);
@@ -1188,9 +1190,9 @@ function App() {
       {/* Upgrade Modal — wird nur angezeigt wenn PAYMENTS_LIVE=true und User Free Tier */}
       {showUpgradeModal && (
         <UpgradeModal
-          onClose={() => setShowUpgradeModal(false)}
-          openCheckout={(planKey, billing) => { setShowUpgradeModal(false); openCheckout(planKey, billing); }}
-          reason={plan === 'expired' ? 'expired' : 'limit'}
+          onClose={() => { setShowUpgradeModal(false); setUpgradeModalReason(null); }}
+          openCheckout={(planKey, billing) => { setShowUpgradeModal(false); setUpgradeModalReason(null); openCheckout(planKey, billing); }}
+          reason={upgradeModalReason || (plan === 'expired' ? 'expired' : 'limit')}
           currentPlan={plan}
           trialDaysLeft={trialDaysLeft}
         />
@@ -1279,6 +1281,13 @@ function App() {
           </div>
         </div>
       </header>
+
+      {isTrialing && (
+        <TrialCountdownBanner
+          trialDaysLeft={trialDaysLeft}
+          onUpgradeClick={() => { setUpgradeModalReason('trial'); setShowUpgradeModal(true); }}
+        />
+      )}
 
       <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
         <PortfolioOverview portfolio={portfolio} />

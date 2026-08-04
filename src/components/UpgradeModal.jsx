@@ -42,6 +42,7 @@ const PLAN_FEATURES = {
 const REASON_TEXTS = {
   limit:   { title: 'Immobilien-Limit erreicht', sub: 'Upgrade für mehr Objekte.' },
   expired: { title: 'Dein Trial ist abgelaufen', sub: 'Wähle einen Plan, um weiter zu machen.' },
+  trial:   { title: 'Dein Trial läuft bald ab', sub: 'Sichere dir jetzt einen Plan, damit dein Portfolio nahtlos weiterläuft.' },
   feature: { title: 'Feature nicht verfügbar', sub: 'Dieses Feature ist in deinem aktuellen Plan nicht enthalten.' },
   default: { title: 'Upgrade deinen Plan', sub: 'Mehr Immobilien, mehr Features.' },
 };
