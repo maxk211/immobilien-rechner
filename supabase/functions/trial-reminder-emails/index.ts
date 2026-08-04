@@ -7,6 +7,9 @@
 // Aufruf ausschließlich serverseitig (pg_cron → pg_net, mit Service-Role-Key
 // als Bearer-Token). Kein --no-verify-jwt nötig, Supabase prüft den Service-
 // Role-JWT automatisch am Gateway.
+//
+// (Kommentar-only Änderung zum Test-Trigger des Deploy-Workflows nach Setup
+// der SMTP-Secrets — keine funktionale Änderung.)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
