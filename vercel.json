@@ -24,6 +24,26 @@
       "destination": "/ratgeber/afa-und-steuern-vermietung.html"
     },
     {
+      "source": "/ratgeber/nebenkostenabrechnung-vermieter",
+      "destination": "/ratgeber/nebenkostenabrechnung-vermieter.html"
+    },
+    {
+      "source": "/ratgeber/mietspiegel-verstehen",
+      "destination": "/ratgeber/mietspiegel-verstehen.html"
+    },
+    {
+      "source": "/ratgeber/grunderwerbsteuer-bundeslaender",
+      "destination": "/ratgeber/grunderwerbsteuer-bundeslaender.html"
+    },
+    {
+      "source": "/ratgeber/spekulationssteuer-immobilienverkauf",
+      "destination": "/ratgeber/spekulationssteuer-immobilienverkauf.html"
+    },
+    {
+      "source": "/ratgeber",
+      "destination": "/ratgeber/index.html"
+    },
+    {
       "source": "/mietrendite-staedte",
       "destination": "/mietrendite-staedte.html"
     },

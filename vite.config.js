@@ -23,6 +23,18 @@ for (const file of readdirSync(resolve(__dirname, 'vergleich'))) {
   }
 }
 
+// Ratgeber-Artikel automatisch einsammeln — neue Artikel nur als HTML-Entry
+// in ratgeber/ ablegen, kein manueller Eintrag hier mehr nötig (Quelle für
+// den früheren Vercel-Rewrite-Drift-Bug: manuell gepflegte Listen werden
+// vergessen).
+const ratgeberInputs = {};
+for (const file of readdirSync(resolve(__dirname, 'ratgeber'))) {
+  if (file.endsWith('.html')) {
+    const key = 'ratgeber-' + file.replace('.html', '');
+    ratgeberInputs[key] = resolve(__dirname, 'ratgeber', file);
+  }
+}
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -31,12 +43,10 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         mietrenditeRechner: resolve(__dirname, 'mietrendite-rechner.html'),
         afaRechner: resolve(__dirname, 'afa-rechner.html'),
-        ratgeberMietrendite: resolve(__dirname, 'ratgeber/mietrendite-berechnen.html'),
-        ratgeberCashflow: resolve(__dirname, 'ratgeber/cashflow-bei-immobilien.html'),
-        ratgeberAfaSteuer: resolve(__dirname, 'ratgeber/afa-und-steuern-vermietung.html'),
         mietrenditeStaedte: resolve(__dirname, 'mietrendite-staedte.html'),
         ...staedteInputs,
         ...vergleichInputs,
+        ...ratgeberInputs,
       },
     },
   },

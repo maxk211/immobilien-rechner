@@ -112,9 +112,69 @@ export default function MietrenditeGuide() {
       </section>
 
       <section>
+        <H2>Mietrendite vs. Gesamtrendite: Das große Bild</H2>
+        <P>
+          Die Mietrendite betrachtet nur den laufenden Ertrag — sie ignoriert zwei weitere Renditequellen, die bei Immobilien oft einen größeren Anteil am Vermögensaufbau haben als die Miete selbst.
+        </P>
+        <H3>Tilgung als erzwungenes Sparen</H3>
+        <P>
+          Bei fremdfinanzierten Immobilien zahlt der Mieter über die Kaltmiete indirekt einen Teil der Kredittilgung mit. Jeder getilgte Euro erhöht das Eigenkapital des Vermieters, unabhängig vom Cashflow. Über 20 Jahre Laufzeit kann die Tilgung den Vermögenszuwachs stärker treiben als die laufende Rendite.
+        </P>
+        <H3>Wertsteigerung</H3>
+        <P>
+          Historisch sind Immobilienpreise in deutschen Groß- und Mittelstädten über lange Zeiträume gestiegen, wenn auch nicht linear und nicht garantiert. Wer die Mietrendite isoliert betrachtet, unterschätzt in wertstabilen Lagen häufig die tatsächliche Gesamtrendite.
+        </P>
+        <Box title="Formel Gesamtrendite (vereinfacht)">
+          Gesamtrendite ≈ Nettomietrendite + jährliche Tilgungsquote + erwartete Wertsteigerung p. a.
+        </Box>
+        <P>
+          Diese Formel ist eine grobe Näherung, kein exakter Wert — Wertsteigerung lässt sich nicht seriös vorhersagen. Sie zeigt aber, warum eine Immobilie mit niedriger Mietrendite in einer stabilen A-Lage trotzdem eine attraktive Gesamtinvestition sein kann.
+        </P>
+      </section>
+
+      <section>
+        <H2>Mietrendite im Vergleich zu anderen Anlageformen</H2>
+        <P>
+          Ein häufiger Fehler ist, die Mietrendite direkt mit der Rendite eines ETF-Sparplans zu vergleichen. Das ist nur bedingt sinnvoll, weil beide Anlageformen unterschiedliche Risiko- und Ertragsprofile haben:
+        </P>
+        <Box>
+          <div className="space-y-2">
+            <div><strong>Immobilie:</strong> Leverage-Effekt durch Fremdfinanzierung möglich, laufender Cashflow, Steuervorteile (AfA), aber illiquide, klumpenrisikobehaftet und mit Instandhaltungsaufwand verbunden.</div>
+            <div><strong>ETF/Aktien:</strong> hochliquide, breit diversifiziert, keine Instandhaltung — aber i. d. R. ohne Leverage zu vergleichbaren Konditionen wie bei einer Immobilienfinanzierung, keine laufenden Mieteinnahmen.</div>
+          </div>
+        </Box>
+        <P>
+          Die Mietrendite ist deshalb vor allem sinnvoll, um <strong>Immobilien untereinander</strong> zu vergleichen — als Vergleichsgröße zu anderen Anlageklassen taugt sie nur mit Einschränkungen.
+        </P>
+      </section>
+
+      <section>
+        <H2>Mietrendite bei möblierter Vermietung und WGs</H2>
+        <P>
+          Möblierte Wohnungen oder Zimmer in Wohngemeinschaften erzielen oft eine höhere Bruttomiete pro Quadratmeter als klassische Vermietung — teils 20–40 % mehr. Das erhöht die Mietrendite auf dem Papier deutlich. Dabei sollten zusätzliche Kosten und Aufwände nicht vergessen werden: höherer Verwaltungsaufwand durch häufigeren Mieterwechsel, Möblierungskosten inkl. Ersatzbeschaffung, sowie ein tendenziell höheres Leerstandsrisiko bei kürzeren Mietverhältnissen. Wer diese Faktoren realistisch einpreist, kommt oft auf eine Nettorendite, die näher an der klassischen Vermietung liegt als der erste Bruttoblick vermuten lässt.
+        </P>
+      </section>
+
+      <section>
+        <H2>Häufige Rechenfehler bei der Mietrendite</H2>
+        <H3>Warmmiete statt Kaltmiete verwenden</H3>
+        <P>
+          Die Warmmiete enthält Betriebskosten, die im Regelfall an den Mieter durchgereicht werden und dem Vermieter nicht als Ertrag zufließen. In die Rendite-Formel gehört ausschließlich die Kaltmiete.
+        </P>
+        <H3>Kaufnebenkosten bei der Bruttomietrendite vergessen einzuordnen</H3>
+        <P>
+          Die Bruttomietrendite ist bewusst ohne Kaufnebenkosten definiert — das ist kein Fehler, sondern ihr Zweck als Schnellcheck. Der Fehler passiert, wenn die Bruttomietrendite als alleinige Entscheidungsgrundlage für den Kauf verwendet wird, ohne im nächsten Schritt die Nettomietrendite zu berechnen.
+        </P>
+        <H3>Sanierungsstau nicht in die Kaufpreis-Betrachtung einrechnen</H3>
+        <P>
+          Bei älteren Objekten mit anstehender Sanierung (Dach, Heizung, Fassade) sollte der voraussichtliche Sanierungsaufwand wie ein zusätzlicher Kaufpreisbestandteil behandelt werden — sonst wird die Rendite systematisch zu hoch ausgewiesen.
+        </P>
+      </section>
+
+      <section>
         <H2>Fazit</H2>
         <P>
-          Die Bruttomietrendite eignet sich für die schnelle Vorauswahl, die Nettomietrendite für die realistische Einschätzung und die Cash-on-Cash-Rendite für die Bewertung der Finanzierungsstrategie. Wer alle drei Kennzahlen kennt, trifft fundiertere Kaufentscheidungen als jemand, der sich nur auf eine einzelne Zahl aus dem Exposé verlässt.
+          Die Bruttomietrendite eignet sich für die schnelle Vorauswahl, die Nettomietrendite für die realistische Einschätzung und die Cash-on-Cash-Rendite für die Bewertung der Finanzierungsstrategie. Wer zusätzlich Tilgung und Wertsteigerung im Blick behält, bekommt ein vollständigeres Bild der Gesamtrendite als jemand, der sich nur auf eine einzelne Zahl aus dem Exposé verlässt.
         </P>
         <P>
           Mit dem <a href="/mietrendite-rechner" className="text-indigo-600 font-semibold hover:underline">kostenlosen Mietrendite-Rechner</a> lassen sich alle drei Werte in Sekunden berechnen — inklusive Cashflow und Bewertung.

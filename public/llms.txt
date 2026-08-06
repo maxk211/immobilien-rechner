@@ -11,9 +11,14 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 
 ## Ratgeber
 
+- [Ratgeber-Übersicht](https://www.renditly.de/ratgeber): Alle Ratgeber-Artikel zu Rendite, Cashflow, Steuern und Mietrecht auf einen Blick.
 - [Mietrendite berechnen: Der komplette Guide](https://www.renditly.de/ratgeber/mietrendite-berechnen): Formeln und Richtwerte für Brutto-, Netto- und Cash-on-Cash-Rendite bei Immobilien in Deutschland.
-- [Cashflow bei Immobilien: Was Vermieter wissen müssen](https://www.renditly.de/ratgeber/cashflow-bei-immobilien): Cashflow-Formel, Beispielrechnung und die häufigsten Fehler bei der Kalkulation.
-- [AfA und Steuern bei Vermietung: Der Leitfaden](https://www.renditly.de/ratgeber/afa-und-steuern-vermietung): AfA-Sätze nach Baujahr, Sonder-AfA, absetzbare Werbungskosten und Erhaltungsaufwand vs. Herstellungskosten.
+- [Cashflow bei Immobilien: Was Vermieter wissen müssen](https://www.renditly.de/ratgeber/cashflow-bei-immobilien): Cashflow-Formel, Beispielrechnung, Stellhebel zur Verbesserung und die häufigsten Fehler bei der Kalkulation.
+- [AfA und Steuern bei Vermietung: Der Leitfaden](https://www.renditly.de/ratgeber/afa-und-steuern-vermietung): AfA-Sätze nach Baujahr, Sonder-AfA, Denkmal-AfA, absetzbare Werbungskosten und Erhaltungsaufwand vs. Herstellungskosten.
+- [Nebenkostenabrechnung für Vermieter](https://www.renditly.de/ratgeber/nebenkostenabrechnung-vermieter): Umlagefähige Betriebskosten, Umlageschlüssel und die 12-Monats-Abrechnungsfrist.
+- [Mietspiegel verstehen und für Mieterhöhungen nutzen](https://www.renditly.de/ratgeber/mietspiegel-verstehen): Ortsübliche Vergleichsmiete, Kappungsgrenze und Mietpreisbremse.
+- [Grunderwerbsteuer nach Bundesland](https://www.renditly.de/ratgeber/grunderwerbsteuer-bundeslaender): Steuersätze aller 16 Bundesländer (3,5–6,5 %), Fälligkeit und Berechnung.
+- [Spekulationssteuer bei Immobilienverkauf](https://www.renditly.de/ratgeber/spekulationssteuer-immobilienverkauf): Die 10-Jahres-Frist, Eigennutzungs-Ausnahme und Berechnung des Veräußerungsgewinns.
 
 ## Mietrendite nach Stadt
 

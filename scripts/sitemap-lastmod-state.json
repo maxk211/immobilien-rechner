@@ -1,7 +1,7 @@
 {
   "/": {
-    "hash": "03d8239cc122b42f",
-    "lastmod": "2026-08-04"
+    "hash": "59fb706bbae5b9e3",
+    "lastmod": "2026-08-06"
   },
   "/mietrendite-rechner": {
     "hash": "13c6b3968f332572",
@@ -12,16 +12,16 @@
     "lastmod": "2026-08-01"
   },
   "/ratgeber/mietrendite-berechnen": {
-    "hash": "f4c7b3862bedb761",
-    "lastmod": "2026-08-01"
+    "hash": "3fde432f35fa9efc",
+    "lastmod": "2026-08-06"
   },
   "/ratgeber/cashflow-bei-immobilien": {
-    "hash": "92a9bf3bd8b6de7d",
-    "lastmod": "2026-08-01"
+    "hash": "7468a5189ad31741",
+    "lastmod": "2026-08-06"
   },
   "/ratgeber/afa-und-steuern-vermietung": {
-    "hash": "6ce8ca79afe90ef3",
-    "lastmod": "2026-08-01"
+    "hash": "9b1e07d3595a65fb",
+    "lastmod": "2026-08-06"
   },
   "/mietrendite-staedte": {
     "hash": "563a9115fe241104",
@@ -106,5 +106,25 @@
   "/mietrendite-frankfurt-vs-duesseldorf": {
     "hash": "f8370beb234df77e",
     "lastmod": "2026-08-02"
+  },
+  "/ratgeber/nebenkostenabrechnung-vermieter": {
+    "hash": "eaa47426ef34772c",
+    "lastmod": "2026-08-06"
+  },
+  "/ratgeber/mietspiegel-verstehen": {
+    "hash": "571555df309aa6a5",
+    "lastmod": "2026-08-06"
+  },
+  "/ratgeber/grunderwerbsteuer-bundeslaender": {
+    "hash": "3249d0491feaa2a2",
+    "lastmod": "2026-08-06"
+  },
+  "/ratgeber/spekulationssteuer-immobilienverkauf": {
+    "hash": "fe216755f6b0738e",
+    "lastmod": "2026-08-06"
+  },
+  "/ratgeber": {
+    "hash": "1d442d1b50171c75",
+    "lastmod": "2026-08-06"
   }
 }

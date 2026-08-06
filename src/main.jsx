@@ -12,6 +12,11 @@ const AfaRechner = lazy(() => import('./rechner/AfaRechner.jsx'))
 const MietrenditeGuide = lazy(() => import('./ratgeber/MietrenditeGuide.jsx'))
 const CashflowGuide = lazy(() => import('./ratgeber/CashflowGuide.jsx'))
 const AfaSteuerGuide = lazy(() => import('./ratgeber/AfaSteuerGuide.jsx'))
+const NebenkostenGuide = lazy(() => import('./ratgeber/NebenkostenGuide.jsx'))
+const MietspiegelGuide = lazy(() => import('./ratgeber/MietspiegelGuide.jsx'))
+const GrunderwerbsteuerGuide = lazy(() => import('./ratgeber/GrunderwerbsteuerGuide.jsx'))
+const SpekulationssteuerGuide = lazy(() => import('./ratgeber/SpekulationssteuerGuide.jsx'))
+const RatgeberUebersicht = lazy(() => import('./ratgeber/RatgeberUebersicht.jsx'))
 const StadtSeite = lazy(() => import('./staedte/StadtSeite.jsx'))
 const StaedteVergleich = lazy(() => import('./staedte/StaedteVergleich.jsx'))
 const StaedtVergleichSeite = lazy(() => import('./staedte/StaedtVergleichSeite.jsx'))
@@ -31,9 +36,14 @@ const STAEDTE_SLUGS = ['berlin', 'hamburg', 'muenchen', 'koeln', 'frankfurt', 's
 const ROUTES = {
   '/mietrendite-rechner': { Component: MietrenditeRechner },
   '/afa-rechner': { Component: AfaRechner },
+  '/ratgeber': { Component: RatgeberUebersicht },
   '/ratgeber/mietrendite-berechnen': { Component: MietrenditeGuide },
   '/ratgeber/cashflow-bei-immobilien': { Component: CashflowGuide },
   '/ratgeber/afa-und-steuern-vermietung': { Component: AfaSteuerGuide },
+  '/ratgeber/nebenkostenabrechnung-vermieter': { Component: NebenkostenGuide },
+  '/ratgeber/mietspiegel-verstehen': { Component: MietspiegelGuide },
+  '/ratgeber/grunderwerbsteuer-bundeslaender': { Component: GrunderwerbsteuerGuide },
+  '/ratgeber/spekulationssteuer-immobilienverkauf': { Component: SpekulationssteuerGuide },
   '/mietrendite-staedte': { Component: StaedteVergleich },
 }
 for (const slug of STAEDTE_SLUGS) {

@@ -649,6 +649,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
               { icon: BookOpen, title: 'Mietrendite berechnen', desc: 'Der komplette Guide mit Formeln und Beispielrechnung.', href: '/ratgeber/mietrendite-berechnen' },
               { icon: Wallet, title: 'Cashflow bei Immobilien', desc: 'Was Cashflow ist und wie du ihn richtig kalkulierst.', href: '/ratgeber/cashflow-bei-immobilien' },
               { icon: BarChart3, title: 'AfA & Steuern', desc: 'Abschreibung, Werbungskosten und Steuervorteile erklärt.', href: '/ratgeber/afa-und-steuern-vermietung' },
+              { icon: BookOpen, title: 'Alle Ratgeber-Artikel', desc: 'Nebenkosten, Mietspiegel, Grunderwerbsteuer & mehr — die komplette Übersicht.', href: '/ratgeber' },
             ].map((item) => (
               <a
                 key={item.href}
@@ -704,7 +705,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
             <a href="/mietrendite-rechner" className="hover:text-slate-300 transition-colors">Rechner</a>
             <a href="/mietrendite-staedte" className="hover:text-slate-300 transition-colors">Städte</a>
-            <a href="/ratgeber/mietrendite-berechnen" className="hover:text-slate-300 transition-colors">Ratgeber</a>
+            <a href="/ratgeber" className="hover:text-slate-300 transition-colors">Ratgeber</a>
             <a href="#pricing" className="hover:text-slate-300 transition-colors">Preise</a>
             <button onClick={onLogin} className="hover:text-slate-300 transition-colors">Einloggen</button>
             <button onClick={onGetStarted} className="hover:text-slate-300 transition-colors">Registrieren</button>

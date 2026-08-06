@@ -100,9 +100,39 @@ export default function AfaSteuerGuide() {
       </section>
 
       <section>
+        <H2>Denkmal-AfA: Erhöhte Abschreibung bei Baudenkmälern</H2>
+        <P>
+          Für Sanierungskosten an Gebäuden, die unter Denkmalschutz stehen oder in einem Sanierungsgebiet liegen, gelten die §§ 7i und 7h EStG: Sanierungskosten können über 12 Jahre mit bis zu 9 % pro Jahr in den ersten acht Jahren und 7 % in den folgenden vier Jahren abgeschrieben werden — deutlich schneller als bei der regulären linearen AfA. Voraussetzung ist eine Bescheinigung der zuständigen Denkmalschutzbehörde, dass die Maßnahmen tatsächlich der Erhaltung bzw. sinnvollen Nutzung des Baudenkmals dienen. Der Kaufpreisanteil für das unsanierte Bestandsgebäude wird davon nicht erfasst und läuft weiter nach der regulären AfA.
+        </P>
+      </section>
+
+      <section>
+        <H2>Häufige Fehler bei der AfA</H2>
+        <H3>Grundstücksanteil zu niedrig angesetzt</H3>
+        <P>
+          Ein zu niedrig geschätzter Grundstücksanteil erhöht zwar kurzfristig die AfA, wird vom Finanzamt aber zunehmend anhand der Bodenrichtwertkarten der Gutachterausschüsse überprüft. Weicht die eigene Aufteilung deutlich vom ortsüblichen Bodenrichtwert ab, kann das Finanzamt die Aufteilung nachträglich korrigieren — inklusive Steuernachzahlung.
+        </P>
+        <H3>Einbauküche und Mobiliar in die Gebäude-AfA einrechnen</H3>
+        <P>
+          Einbauküchen, Möbel und andere bewegliche Wirtschaftsgüter werden steuerlich getrennt vom Gebäude behandelt und über ihre eigene, meist deutlich kürzere Nutzungsdauer abgeschrieben (bei Einbauküchen z. B. regelmäßig 10 Jahre). Wer sie fälschlich in die Gebäude-AfA einrechnet, schöpft das Abschreibungspotenzial nicht optimal aus.
+        </P>
+        <H3>AfA bei Eigennutzung geltend machen</H3>
+        <P>
+          Die AfA für Vermietung und Verpachtung steht nur für tatsächlich vermietete (oder zur Vermietung bereitstehende) Immobilien zu. Bei selbst genutzten Wohnungen entfällt sie — ein Wechsel zwischen Eigennutzung und Vermietung während der Haltedauer sollte daher sauber dokumentiert werden.
+        </P>
+      </section>
+
+      <section>
+        <H2>Was passiert mit der AfA beim Verkauf?</H2>
+        <P>
+          Beim Verkauf einer vermieteten Immobilie innerhalb von zehn Jahren nach dem Kauf greift unter Umständen die sogenannte Spekulationssteuer (§ 23 EStG) — der Veräußerungsgewinn wird dann als privates Veräußerungsgeschäft versteuert, und die in der Vergangenheit geltend gemachte AfA erhöht sogar den zu versteuernden Gewinn, da sie den Buchwert der Immobilie gesenkt hat. Details dazu, inklusive der Ausnahmen bei Eigennutzung, im <a href="/ratgeber/spekulationssteuer-immobilienverkauf" className="text-indigo-600 font-semibold hover:underline">separaten Ratgeber zur Spekulationssteuer</a>.
+        </P>
+      </section>
+
+      <section>
         <H2>Fazit</H2>
         <P>
-          Die AfA ist einer der am meisten unterschätzten Hebel bei der Immobilienrendite. Wer Gebäudewert, AfA-Satz und persönlichen Steuersatz kennt, kann die tatsächliche Rendite nach Steuern realistisch einschätzen — und trifft bessere Kaufentscheidungen als jemand, der nur auf Mietrendite und Cashflow schaut.
+          Die AfA ist einer der am meisten unterschätzten Hebel bei der Immobilienrendite. Wer Gebäudewert, AfA-Satz, Sonderabschreibungsmöglichkeiten und persönlichen Steuersatz kennt, kann die tatsächliche Rendite nach Steuern realistisch einschätzen — und trifft bessere Kaufentscheidungen als jemand, der nur auf Mietrendite und Cashflow schaut.
         </P>
         <P>
           Mit dem <a href="/afa-rechner" className="text-indigo-600 font-semibold hover:underline">kostenlosen AfA-Rechner</a> lassen sich jährliche Abschreibung und Steuerersparnis in Sekunden berechnen.

@@ -152,6 +152,36 @@ routes.push({
 });
 
 routes.push({
+  url: '/ratgeber/nebenkostenabrechnung-vermieter',
+  parts: [readSrc('src/ratgeber/NebenkostenGuide.jsx')],
+  gitPaths: ['src/ratgeber/NebenkostenGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/mietspiegel-verstehen',
+  parts: [readSrc('src/ratgeber/MietspiegelGuide.jsx')],
+  gitPaths: ['src/ratgeber/MietspiegelGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/grunderwerbsteuer-bundeslaender',
+  parts: [readSrc('src/ratgeber/GrunderwerbsteuerGuide.jsx')],
+  gitPaths: ['src/ratgeber/GrunderwerbsteuerGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/spekulationssteuer-immobilienverkauf',
+  parts: [readSrc('src/ratgeber/SpekulationssteuerGuide.jsx')],
+  gitPaths: ['src/ratgeber/SpekulationssteuerGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber',
+  parts: [readSrc('src/ratgeber/RatgeberUebersicht.jsx')],
+  gitPaths: ['src/ratgeber/RatgeberUebersicht.jsx'],
+});
+
+routes.push({
   url: '/mietrendite-staedte',
   parts: [
     stripChrome(readSrc('src/staedte/StaedteVergleich.jsx')),

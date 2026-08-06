@@ -33,7 +33,7 @@ export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, 
         <nav aria-label="Breadcrumb" className="text-xs text-slate-400 flex items-center gap-1.5">
           <a href="/" className="hover:text-indigo-600 transition-colors">renditly</a>
           <span>/</span>
-          <span>Ratgeber</span>
+          <a href="/ratgeber" className="hover:text-indigo-600 transition-colors">Ratgeber</a>
           <span>/</span>
           <span className="text-slate-600">{titel}</span>
         </nav>

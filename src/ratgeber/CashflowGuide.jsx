@@ -86,9 +86,43 @@ export default function CashflowGuide() {
       </section>
 
       <section>
+        <H2>Cashflow verbessern: Die wichtigsten Stellhebel</H2>
+        <H3>Tilgung strecken statt hohe Rate</H3>
+        <P>
+          Ein niedrigerer anfänglicher Tilgungssatz (z. B. 1 % statt 3 %) senkt die monatliche Rate und verbessert den Cashflow sofort — auf Kosten einer längeren Kreditlaufzeit und höherer Gesamtzinskosten. Für Investoren, die Cashflow priorisieren, ist das ein bewusster Trade-off, kein Fehler.
+        </P>
+        <H3>Sondertilgungen gezielt statt automatisch einsetzen</H3>
+        <P>
+          Wer Liquidität übrig hat, sollte abwägen: Eine Sondertilgung senkt künftige Raten und verbessert den Cashflow langfristig, bindet das Kapital aber sofort. Alternative: das Geld als Puffer für Leerstand oder Reparaturen zurückhalten und erst bei stabilem Cashflow sondertilgen.
+        </P>
+        <H3>Nebenkosten korrekt und vollständig umlegen</H3>
+        <P>
+          Nicht alle umlagefähigen Betriebskosten werden in der Praxis auch tatsächlich vollständig auf die Mieter umgelegt — häufig, weil die Nebenkostenabrechnung veraltete oder unvollständige Kostenpositionen enthält. Eine saubere, aktuelle Abrechnung verbessert den Cashflow, ohne die Miete selbst zu erhöhen.
+        </P>
+        <H3>Miete an die ortsübliche Vergleichsmiete anpassen</H3>
+        <P>
+          Bei Bestandsmietverhältnissen, die seit Jahren nicht angepasst wurden, liegt die Miete oft unter dem ortsüblichen Niveau. Eine rechtssichere Mieterhöhung nach Mietspiegel ist einer der direktesten Hebel für mehr Cashflow — vorausgesetzt, die gesetzlichen Fristen und die Kappungsgrenze werden eingehalten.
+        </P>
+      </section>
+
+      <section>
+        <H2>Steuerlicher Verlust ist nicht gleich Liquiditätsverlust</H2>
+        <P>
+          Ein häufiges Missverständnis: Eine Immobilie kann steuerlich einen Verlust ausweisen (z. B. durch AfA und Schuldzinsen), obwohl der tatsächliche Cashflow positiv ist. Das liegt daran, dass die AfA eine reine Buchgröße ist — sie mindert das zu versteuernde Einkommen, ohne dass tatsächlich Geld das Konto verlässt. Umgekehrt kann eine Immobilie steuerlich profitabel aussehen, während der reale Cashflow negativ ist, etwa wenn die Tilgung hoch ist (Tilgung ist steuerlich nicht absetzbar, belastet aber die Liquidität voll). Für die Frage "Kann ich mir das leisten?" zählt ausschließlich der tatsächliche Cashflow — für die Steuererklärung das zu versteuernde Ergebnis. Beide Zahlen sollten getrennt betrachtet werden.
+        </P>
+      </section>
+
+      <section>
+        <H2>Cashflow im Portfolio: Mehrere Immobilien gemeinsam betrachten</H2>
+        <P>
+          Wer mehrere Immobilien hält, sollte nicht nur den Cashflow jedes einzelnen Objekts, sondern auch den <strong>Portfolio-Cashflow</strong> im Blick behalten. Ein leicht negativer Cashflow bei einer neu erworbenen, noch nicht voll eingeschwungenen Immobilie kann unproblematisch sein, wenn andere, länger gehaltene Objekte mit gesunkener Restschuld deutlich positiven Cashflow liefern und den Ausgleich schaffen. Entscheidend ist der Gesamtblick über alle Objekte statt der isolierten Betrachtung eines einzelnen Investments — genau dafür lohnt sich ein zentrales Portfolio-Tracking statt einzelner Excel-Tabellen pro Immobilie.
+        </P>
+      </section>
+
+      <section>
         <H2>Fazit</H2>
         <P>
-          Der Cashflow ist die Kennzahl, die im Alltag zählt: Sie entscheidet, ob eine Immobilie finanziell tragbar ist oder zur Belastung wird. Eine realistische Kalkulation berücksichtigt Instandhaltung, Leerstand und die volle Kreditrate — nicht nur die Zinsen.
+          Der Cashflow ist die Kennzahl, die im Alltag zählt: Sie entscheidet, ob eine Immobilie finanziell tragbar ist oder zur Belastung wird. Eine realistische Kalkulation berücksichtigt Instandhaltung, Leerstand und die volle Kreditrate — nicht nur die Zinsen. Wer zusätzlich weiß, an welchen Stellschrauben er drehen kann und den steuerlichen vom liquiden Ergebnis trennt, behält auch bei mehreren Immobilien den Überblick.
         </P>
         <P>
           Mit dem <a href="/mietrendite-rechner" className="text-indigo-600 font-semibold hover:underline">kostenlosen Mietrendite-Rechner</a> lässt sich der monatliche Cashflow inklusive Finanzierungsrate direkt berechnen.
