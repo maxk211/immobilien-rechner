@@ -62,3 +62,8 @@ mit aktualisieren — es ist ein rechtlich relevantes Dokument (DSGVO).
   `scripts/generate-sitemap.js` + Route in `src/main.jsx` `ROUTES` (SPA-
   Fallback) + interner Link von einer bestehenden Seite aus (Startseite hat
   eine "Kostenlose Tools & Ratgeber"-Sektion dafür).
+
+## Deploy-Log
+- 2026-08-09: Manueller Redeploy getriggert, um Vercel Edge-Cache für
+  `/mietrendite-rechner` und `/ratgeber/afa-und-steuern-vermietung` zu
+  invalidieren (lieferten trotz korrektem Build noch alten Cache-Inhalt aus).
