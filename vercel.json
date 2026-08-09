@@ -40,6 +40,22 @@
       "destination": "/ratgeber/spekulationssteuer-immobilienverkauf.html"
     },
     {
+      "source": "/ratgeber/mieterhoehung-modernisierung",
+      "destination": "/ratgeber/mieterhoehung-modernisierung.html"
+    },
+    {
+      "source": "/ratgeber/eigenbedarfskuendigung",
+      "destination": "/ratgeber/eigenbedarfskuendigung.html"
+    },
+    {
+      "source": "/ratgeber/immobilienfinanzierung",
+      "destination": "/ratgeber/immobilienfinanzierung.html"
+    },
+    {
+      "source": "/ratgeber/erbschaftsteuer-immobilie",
+      "destination": "/ratgeber/erbschaftsteuer-immobilie.html"
+    },
+    {
       "source": "/ratgeber",
       "destination": "/ratgeber/index.html"
     },

@@ -16,6 +16,10 @@ const NebenkostenGuide = lazy(() => import('./ratgeber/NebenkostenGuide.jsx'))
 const MietspiegelGuide = lazy(() => import('./ratgeber/MietspiegelGuide.jsx'))
 const GrunderwerbsteuerGuide = lazy(() => import('./ratgeber/GrunderwerbsteuerGuide.jsx'))
 const SpekulationssteuerGuide = lazy(() => import('./ratgeber/SpekulationssteuerGuide.jsx'))
+const MieterhoehungModernisierungGuide = lazy(() => import('./ratgeber/MieterhoehungModernisierungGuide.jsx'))
+const EigenbedarfskuendigungGuide = lazy(() => import('./ratgeber/EigenbedarfskuendigungGuide.jsx'))
+const ImmobilienfinanzierungGuide = lazy(() => import('./ratgeber/ImmobilienfinanzierungGuide.jsx'))
+const ErbschaftsteuerImmobilieGuide = lazy(() => import('./ratgeber/ErbschaftsteuerImmobilieGuide.jsx'))
 const RatgeberUebersicht = lazy(() => import('./ratgeber/RatgeberUebersicht.jsx'))
 const StadtSeite = lazy(() => import('./staedte/StadtSeite.jsx'))
 const StaedteVergleich = lazy(() => import('./staedte/StaedteVergleich.jsx'))
@@ -44,6 +48,10 @@ const ROUTES = {
   '/ratgeber/mietspiegel-verstehen': { Component: MietspiegelGuide },
   '/ratgeber/grunderwerbsteuer-bundeslaender': { Component: GrunderwerbsteuerGuide },
   '/ratgeber/spekulationssteuer-immobilienverkauf': { Component: SpekulationssteuerGuide },
+  '/ratgeber/mieterhoehung-modernisierung': { Component: MieterhoehungModernisierungGuide },
+  '/ratgeber/eigenbedarfskuendigung': { Component: EigenbedarfskuendigungGuide },
+  '/ratgeber/immobilienfinanzierung': { Component: ImmobilienfinanzierungGuide },
+  '/ratgeber/erbschaftsteuer-immobilie': { Component: ErbschaftsteuerImmobilieGuide },
   '/mietrendite-staedte': { Component: StaedteVergleich },
 }
 for (const slug of STAEDTE_SLUGS) {

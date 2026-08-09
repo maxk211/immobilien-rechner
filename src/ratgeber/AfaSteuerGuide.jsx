@@ -20,6 +20,7 @@ export default function AfaSteuerGuide() {
       related={[
         { href: '/ratgeber/mietrendite-berechnen', titel: 'Mietrendite berechnen: Der komplette Guide' },
         { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },
+        { href: '/ratgeber/erbschaftsteuer-immobilie', titel: 'Erbschaftsteuer und Schenkungsteuer bei Immobilien' },
       ]}
     >
       <section>

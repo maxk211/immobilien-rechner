@@ -18,9 +18,9 @@ export default function MietspiegelGuide() {
       untertitel="Was ein Mietspiegel ist, wie er sich auf Mieterhöhungen auswirkt und welche Grenzen Kappungsgrenze und Mietpreisbremse setzen — der Überblick für Vermieter."
       lesezeit="6"
       related={[
+        { href: '/ratgeber/mieterhoehung-modernisierung', titel: 'Mieterhöhung nach Modernisierung: § 559 BGB' },
         { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },
         { href: '/ratgeber/nebenkostenabrechnung-vermieter', titel: 'Nebenkostenabrechnung für Vermieter' },
-        { href: '/mietrendite-staedte', titel: 'Mietrendite Deutschland: Städtevergleich', kategorie: 'Städtevergleich' },
       ]}
     >
       <section>

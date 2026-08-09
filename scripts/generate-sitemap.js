@@ -176,6 +176,30 @@ routes.push({
 });
 
 routes.push({
+  url: '/ratgeber/mieterhoehung-modernisierung',
+  parts: [readSrc('src/ratgeber/MieterhoehungModernisierungGuide.jsx')],
+  gitPaths: ['src/ratgeber/MieterhoehungModernisierungGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/eigenbedarfskuendigung',
+  parts: [readSrc('src/ratgeber/EigenbedarfskuendigungGuide.jsx')],
+  gitPaths: ['src/ratgeber/EigenbedarfskuendigungGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/immobilienfinanzierung',
+  parts: [readSrc('src/ratgeber/ImmobilienfinanzierungGuide.jsx')],
+  gitPaths: ['src/ratgeber/ImmobilienfinanzierungGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/erbschaftsteuer-immobilie',
+  parts: [readSrc('src/ratgeber/ErbschaftsteuerImmobilieGuide.jsx')],
+  gitPaths: ['src/ratgeber/ErbschaftsteuerImmobilieGuide.jsx'],
+});
+
+routes.push({
   url: '/ratgeber',
   parts: [readSrc('src/ratgeber/RatgeberUebersicht.jsx')],
   gitPaths: ['src/ratgeber/RatgeberUebersicht.jsx'],

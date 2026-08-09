@@ -41,6 +41,30 @@ const ARTIKEL = [
     excerpt: 'Die 10-Jahres-Frist, die Eigennutzungs-Ausnahme und die korrekte Berechnung des Veräußerungsgewinns.',
     lesezeit: '6',
   },
+  {
+    href: '/ratgeber/mieterhoehung-modernisierung',
+    titel: 'Mieterhöhung nach Modernisierung: § 559 BGB',
+    excerpt: '8 % der Modernisierungskosten umlegbar, begrenzt durch die Kappungsgrenze von 3 €/m² in sechs Jahren.',
+    lesezeit: '7',
+  },
+  {
+    href: '/ratgeber/eigenbedarfskuendigung',
+    titel: 'Kündigung wegen Eigenbedarf',
+    excerpt: 'Voraussetzungen, Kündigungsfristen, Sperrfrist bei umgewandelten Eigentumswohnungen und Risiken.',
+    lesezeit: '7',
+  },
+  {
+    href: '/ratgeber/immobilienfinanzierung',
+    titel: 'Immobilienfinanzierung für Kapitalanleger',
+    excerpt: 'Eigenkapitalquote, Zinsbindung, Tilgungssatz und Beleihungsauslauf — die wichtigsten Stellschrauben.',
+    lesezeit: '8',
+  },
+  {
+    href: '/ratgeber/erbschaftsteuer-immobilie',
+    titel: 'Erbschaftsteuer und Schenkungsteuer bei Immobilien',
+    excerpt: 'Freibeträge, Bewertungsverfahren mit 10 % Abschlag und die Steuerbefreiung fürs Familienheim.',
+    lesezeit: '7',
+  },
 ];
 
 export default function RatgeberUebersicht() {

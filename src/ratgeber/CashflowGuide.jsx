@@ -19,7 +19,7 @@ export default function CashflowGuide() {
       lesezeit="6"
       related={[
         { href: '/ratgeber/mietrendite-berechnen', titel: 'Mietrendite berechnen: Der komplette Guide' },
-        { href: '/ratgeber/afa-und-steuern-vermietung', titel: 'AfA und Steuern bei Vermietung: Der Leitfaden' },
+        { href: '/ratgeber/immobilienfinanzierung', titel: 'Immobilienfinanzierung für Kapitalanleger' },
       ]}
     >
       <section>

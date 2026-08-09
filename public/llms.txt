@@ -19,6 +19,10 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 - [Mietspiegel verstehen und für Mieterhöhungen nutzen](https://www.renditly.de/ratgeber/mietspiegel-verstehen): Ortsübliche Vergleichsmiete, Kappungsgrenze und Mietpreisbremse.
 - [Grunderwerbsteuer nach Bundesland](https://www.renditly.de/ratgeber/grunderwerbsteuer-bundeslaender): Steuersätze aller 16 Bundesländer (3,5–6,5 %), Fälligkeit und Berechnung.
 - [Spekulationssteuer bei Immobilienverkauf](https://www.renditly.de/ratgeber/spekulationssteuer-immobilienverkauf): Die 10-Jahres-Frist, Eigennutzungs-Ausnahme und Berechnung des Veräußerungsgewinns.
+- [Mieterhöhung nach Modernisierung: § 559 BGB](https://www.renditly.de/ratgeber/mieterhoehung-modernisierung): 8 % der Modernisierungskosten jährlich umlegbar, Kappungsgrenze von 3 €/m² in sechs Jahren, Ankündigungsfrist und Härteeinwand.
+- [Kündigung wegen Eigenbedarf](https://www.renditly.de/ratgeber/eigenbedarfskuendigung): Voraussetzungen, Kündigungsfristen (3/6/9 Monate), Sperrfrist bei umgewandelten Eigentumswohnungen und Risiken bei vorgetäuschtem Eigenbedarf.
+- [Immobilienfinanzierung für Kapitalanleger](https://www.renditly.de/ratgeber/immobilienfinanzierung): Eigenkapitalquote, Zinsbindung, Tilgungssatz, Beleihungsauslauf und Bereitstellungszinsen.
+- [Erbschaftsteuer und Schenkungsteuer bei Immobilien](https://www.renditly.de/ratgeber/erbschaftsteuer-immobilie): Freibeträge (20.000–500.000 €), Bedarfswertverfahren mit 10 % Abschlag für vermietete Immobilien, Familienheim-Befreiung.
 
 ## Mietrendite nach Stadt
 

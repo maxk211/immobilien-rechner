@@ -19,7 +19,7 @@ export default function SpekulationssteuerGuide() {
       lesezeit="6"
       related={[
         { href: '/ratgeber/afa-und-steuern-vermietung', titel: 'AfA und Steuern bei Vermietung: Der Leitfaden' },
-        { href: '/ratgeber/grunderwerbsteuer-bundeslaender', titel: 'Grunderwerbsteuer nach Bundesland' },
+        { href: '/ratgeber/erbschaftsteuer-immobilie', titel: 'Erbschaftsteuer und Schenkungsteuer bei Immobilien' },
         { href: '/afa-rechner', titel: 'AfA-Rechner', kategorie: 'Rechner' },
       ]}
     >
