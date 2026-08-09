@@ -9,6 +9,7 @@ const App = lazy(() => import('./App.jsx'))
 const LandingApp = lazy(() => import('./LandingApp.jsx'))
 const MietrenditeRechner = lazy(() => import('./rechner/MietrenditeRechner.jsx'))
 const AfaRechner = lazy(() => import('./rechner/AfaRechner.jsx'))
+const VermieterSoftwareLanding = lazy(() => import('./landing/VermieterSoftwareLanding.jsx'))
 const MietrenditeGuide = lazy(() => import('./ratgeber/MietrenditeGuide.jsx'))
 const CashflowGuide = lazy(() => import('./ratgeber/CashflowGuide.jsx'))
 const AfaSteuerGuide = lazy(() => import('./ratgeber/AfaSteuerGuide.jsx'))
@@ -40,6 +41,7 @@ const STAEDTE_SLUGS = ['berlin', 'hamburg', 'muenchen', 'koeln', 'frankfurt', 's
 const ROUTES = {
   '/mietrendite-rechner': { Component: MietrenditeRechner },
   '/afa-rechner': { Component: AfaRechner },
+  '/vermieter-software': { Component: VermieterSoftwareLanding },
   '/ratgeber': { Component: RatgeberUebersicht },
   '/ratgeber/mietrendite-berechnen': { Component: MietrenditeGuide },
   '/ratgeber/cashflow-bei-immobilien': { Component: CashflowGuide },

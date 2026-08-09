@@ -134,6 +134,12 @@ routes.push({
 });
 
 routes.push({
+  url: '/vermieter-software',
+  parts: [readSrc('src/landing/VermieterSoftwareLanding.jsx')],
+  gitPaths: ['src/landing/VermieterSoftwareLanding.jsx'],
+});
+
+routes.push({
   url: '/ratgeber/mietrendite-berechnen',
   parts: [readSrc('src/ratgeber/MietrenditeGuide.jsx')],
   gitPaths: ['src/ratgeber/MietrenditeGuide.jsx'],

@@ -12,6 +12,10 @@
       "destination": "/afa-rechner.html"
     },
     {
+      "source": "/vermieter-software",
+      "destination": "/vermieter-software.html"
+    },
+    {
       "source": "/ratgeber/mietrendite-berechnen",
       "destination": "/ratgeber/mietrendite-berechnen.html"
     },

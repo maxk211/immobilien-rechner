@@ -43,6 +43,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         mietrenditeRechner: resolve(__dirname, 'mietrendite-rechner.html'),
         afaRechner: resolve(__dirname, 'afa-rechner.html'),
+        vermieterSoftware: resolve(__dirname, 'vermieter-software.html'),
         mietrenditeStaedte: resolve(__dirname, 'mietrendite-staedte.html'),
         ...staedteInputs,
         ...vergleichInputs,

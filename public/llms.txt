@@ -58,3 +58,4 @@ Direkter Vergleich von Kaufpreis, Miete und Bruttomietrendite für ausgewählte 
 ## Produkt
 
 - [renditly Startseite](https://www.renditly.de/): Übersicht über Funktionen, Preise und 90 Tage kostenlose Testphase.
+- [Vermieter Software](https://www.renditly.de/vermieter-software): Cashflow-Analyse, automatische Steuervorbereitung, Mieterverwaltung und Kautionsmanagement für deutsche Vermieter — Tarife von 4,99 € bis 24,99 €/Monat, 90 Tage kostenlos.
