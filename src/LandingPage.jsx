@@ -716,6 +716,22 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             <span>© {new Date().getFullYear()} renditly</span>
           </div>
         </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex justify-center mt-6 pt-6 border-t border-slate-800">
+          <a
+            href="https://www.producthunt.com/products/renditly-de/reviews/new?utm_source=badge-renditly-de&utm_medium=badge"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1289958&theme=light"
+              alt="renditly.de - Cashflow, Wertentwicklung & Mieter für deutsche Vermieter | Product Hunt"
+              style={{ width: 250, height: 54 }}
+              width="250"
+              height="54"
+              loading="lazy"
+            />
+          </a>
+        </div>
       </footer>
 
     </div>
