@@ -21,6 +21,11 @@ const MieterhoehungModernisierungGuide = lazy(() => import('./ratgeber/Mieterhoe
 const EigenbedarfskuendigungGuide = lazy(() => import('./ratgeber/EigenbedarfskuendigungGuide.jsx'))
 const ImmobilienfinanzierungGuide = lazy(() => import('./ratgeber/ImmobilienfinanzierungGuide.jsx'))
 const ErbschaftsteuerImmobilieGuide = lazy(() => import('./ratgeber/ErbschaftsteuerImmobilieGuide.jsx'))
+const KautionAnlageGuide = lazy(() => import('./ratgeber/KautionAnlageGuide.jsx'))
+const UntervermietungGuide = lazy(() => import('./ratgeber/UntervermietungGuide.jsx'))
+const GrundsteuerreformGuide = lazy(() => import('./ratgeber/GrundsteuerreformGuide.jsx'))
+const MaklerprovisionKaufGuide = lazy(() => import('./ratgeber/MaklerprovisionKaufGuide.jsx'))
+const GebaeudemodernisierungGuide = lazy(() => import('./ratgeber/GebaeudemodernisierungGuide.jsx'))
 const RatgeberUebersicht = lazy(() => import('./ratgeber/RatgeberUebersicht.jsx'))
 const StadtSeite = lazy(() => import('./staedte/StadtSeite.jsx'))
 const StaedteVergleich = lazy(() => import('./staedte/StaedteVergleich.jsx'))
@@ -54,6 +59,11 @@ const ROUTES = {
   '/ratgeber/eigenbedarfskuendigung': { Component: EigenbedarfskuendigungGuide },
   '/ratgeber/immobilienfinanzierung': { Component: ImmobilienfinanzierungGuide },
   '/ratgeber/erbschaftsteuer-immobilie': { Component: ErbschaftsteuerImmobilieGuide },
+  '/ratgeber/kaution-richtig-anlegen': { Component: KautionAnlageGuide },
+  '/ratgeber/untervermietung-erlauben-verbieten': { Component: UntervermietungGuide },
+  '/ratgeber/grundsteuerreform-2025-vermieter': { Component: GrundsteuerreformGuide },
+  '/ratgeber/maklerprovision-immobilienkauf': { Component: MaklerprovisionKaufGuide },
+  '/ratgeber/geg-gmodg-vermieter-2026': { Component: GebaeudemodernisierungGuide },
   '/mietrendite-staedte': { Component: StaedteVergleich },
 }
 for (const slug of STAEDTE_SLUGS) {

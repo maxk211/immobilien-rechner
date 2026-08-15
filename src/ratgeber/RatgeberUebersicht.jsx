@@ -65,6 +65,36 @@ const ARTIKEL = [
     excerpt: 'Freibeträge, Bewertungsverfahren mit 10 % Abschlag und die Steuerbefreiung fürs Familienheim.',
     lesezeit: '7',
   },
+  {
+    href: '/ratgeber/kaution-richtig-anlegen',
+    titel: 'Mietkaution richtig anlegen: Pflichten nach § 551 BGB',
+    excerpt: 'Getrennte, verzinste Anlage, Höchstgrenzen und Haftungsrisiken bei Verstößen.',
+    lesezeit: '6',
+  },
+  {
+    href: '/ratgeber/untervermietung-erlauben-verbieten',
+    titel: 'Untervermietung erlauben oder verbieten',
+    excerpt: 'Wann Mieter Anspruch auf Erlaubnis haben, wann Vermieter ablehnen dürfen, und was zum Untermietzuschlag gilt.',
+    lesezeit: '6',
+  },
+  {
+    href: '/ratgeber/grundsteuerreform-2025-vermieter',
+    titel: 'Grundsteuerreform 2025: Was sich für Vermieter ändert',
+    excerpt: 'Neues Bewertungsrecht, Bewertungsmodelle je Bundesland und Umlage auf Mieter im Überblick.',
+    lesezeit: '6',
+  },
+  {
+    href: '/ratgeber/maklerprovision-immobilienkauf',
+    titel: 'Maklerprovision beim Immobilienkauf: Wer zahlt was?',
+    excerpt: 'Halbteilungsgrundsatz statt Bestellerprinzip — was Käufer und Verkäufer wissen müssen.',
+    lesezeit: '5',
+  },
+  {
+    href: '/ratgeber/geg-gmodg-vermieter-2026',
+    titel: 'Vom GEG zum Gebäudemodernisierungsgesetz: Was sich 2026 ändert',
+    excerpt: 'Die 65-Prozent-Regel fällt weg — neue Pflichten und die Modernisierungsumlage bei Heizungstausch.',
+    lesezeit: '7',
+  },
 ];
 
 export default function RatgeberUebersicht() {

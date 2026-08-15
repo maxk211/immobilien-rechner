@@ -206,6 +206,36 @@ routes.push({
 });
 
 routes.push({
+  url: '/ratgeber/kaution-richtig-anlegen',
+  parts: [readSrc('src/ratgeber/KautionAnlageGuide.jsx')],
+  gitPaths: ['src/ratgeber/KautionAnlageGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/untervermietung-erlauben-verbieten',
+  parts: [readSrc('src/ratgeber/UntervermietungGuide.jsx')],
+  gitPaths: ['src/ratgeber/UntervermietungGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/grundsteuerreform-2025-vermieter',
+  parts: [readSrc('src/ratgeber/GrundsteuerreformGuide.jsx')],
+  gitPaths: ['src/ratgeber/GrundsteuerreformGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/maklerprovision-immobilienkauf',
+  parts: [readSrc('src/ratgeber/MaklerprovisionKaufGuide.jsx')],
+  gitPaths: ['src/ratgeber/MaklerprovisionKaufGuide.jsx'],
+});
+
+routes.push({
+  url: '/ratgeber/geg-gmodg-vermieter-2026',
+  parts: [readSrc('src/ratgeber/GebaeudemodernisierungGuide.jsx')],
+  gitPaths: ['src/ratgeber/GebaeudemodernisierungGuide.jsx'],
+});
+
+routes.push({
   url: '/ratgeber',
   parts: [readSrc('src/ratgeber/RatgeberUebersicht.jsx')],
   gitPaths: ['src/ratgeber/RatgeberUebersicht.jsx'],

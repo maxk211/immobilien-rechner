@@ -60,6 +60,26 @@
       "destination": "/ratgeber/erbschaftsteuer-immobilie.html"
     },
     {
+      "source": "/ratgeber/kaution-richtig-anlegen",
+      "destination": "/ratgeber/kaution-richtig-anlegen.html"
+    },
+    {
+      "source": "/ratgeber/untervermietung-erlauben-verbieten",
+      "destination": "/ratgeber/untervermietung-erlauben-verbieten.html"
+    },
+    {
+      "source": "/ratgeber/grundsteuerreform-2025-vermieter",
+      "destination": "/ratgeber/grundsteuerreform-2025-vermieter.html"
+    },
+    {
+      "source": "/ratgeber/maklerprovision-immobilienkauf",
+      "destination": "/ratgeber/maklerprovision-immobilienkauf.html"
+    },
+    {
+      "source": "/ratgeber/geg-gmodg-vermieter-2026",
+      "destination": "/ratgeber/geg-gmodg-vermieter-2026.html"
+    },
+    {
       "source": "/ratgeber",
       "destination": "/ratgeber/index.html"
     },

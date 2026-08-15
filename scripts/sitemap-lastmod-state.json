@@ -124,8 +124,8 @@
     "lastmod": "2026-08-09"
   },
   "/ratgeber": {
-    "hash": "52275f67aa5ac163",
-    "lastmod": "2026-08-09"
+    "hash": "bfce840266192630",
+    "lastmod": "2026-08-15"
   },
   "/ratgeber/mieterhoehung-modernisierung": {
     "hash": "ac06c133a380312e",
@@ -178,5 +178,25 @@
   "/mietrendite-muenster": {
     "hash": "a1646e65a9846a5c",
     "lastmod": "2026-08-02"
+  },
+  "/ratgeber/kaution-richtig-anlegen": {
+    "hash": "b6b8ab1d75fbfa03",
+    "lastmod": "2026-08-15"
+  },
+  "/ratgeber/untervermietung-erlauben-verbieten": {
+    "hash": "aef8015372482f7c",
+    "lastmod": "2026-08-15"
+  },
+  "/ratgeber/grundsteuerreform-2025-vermieter": {
+    "hash": "e3fc21b0b9a758f2",
+    "lastmod": "2026-08-15"
+  },
+  "/ratgeber/maklerprovision-immobilienkauf": {
+    "hash": "08b5da874061d9c9",
+    "lastmod": "2026-08-15"
+  },
+  "/ratgeber/geg-gmodg-vermieter-2026": {
+    "hash": "66aef5cfd1f0c481",
+    "lastmod": "2026-08-15"
   }
 }

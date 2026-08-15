@@ -23,6 +23,11 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 - [Kündigung wegen Eigenbedarf](https://www.renditly.de/ratgeber/eigenbedarfskuendigung): Voraussetzungen, Kündigungsfristen (3/6/9 Monate), Sperrfrist bei umgewandelten Eigentumswohnungen und Risiken bei vorgetäuschtem Eigenbedarf.
 - [Immobilienfinanzierung für Kapitalanleger](https://www.renditly.de/ratgeber/immobilienfinanzierung): Eigenkapitalquote, Zinsbindung, Tilgungssatz, Beleihungsauslauf und Bereitstellungszinsen.
 - [Erbschaftsteuer und Schenkungsteuer bei Immobilien](https://www.renditly.de/ratgeber/erbschaftsteuer-immobilie): Freibeträge (20.000–500.000 €), Bedarfswertverfahren mit 10 % Abschlag für vermietete Immobilien, Familienheim-Befreiung.
+- [Mietkaution richtig anlegen](https://www.renditly.de/ratgeber/kaution-richtig-anlegen): Pflicht zur getrennten, verzinsten Anlage nach § 551 BGB, Höchstgrenze von 3 Nettokaltmieten, Haftungsrisiken bei Verstößen.
+- [Untervermietung erlauben oder verbieten](https://www.renditly.de/ratgeber/untervermietung-erlauben-verbieten): Anspruch auf Erlaubnis bei berechtigtem Interesse nach § 553 BGB, Ablehnungsgründe, Untermietzuschlag.
+- [Grundsteuerreform 2025 für Vermieter](https://www.renditly.de/ratgeber/grundsteuerreform-2025-vermieter): Neues Bewertungsrecht seit 1.1.2025, Bewertungsmodelle je Bundesland, weiterhin 100 % umlagefähig nach § 556 BGB.
+- [Maklerprovision beim Immobilienkauf](https://www.renditly.de/ratgeber/maklerprovision-immobilienkauf): Halbteilungsgrundsatz nach § 656c BGB statt Bestellerprinzip, Käuferanteil gedeckelt auf Verkäuferanteil.
+- [Vom GEG zum Gebäudemodernisierungsgesetz (GModG) 2026](https://www.renditly.de/ratgeber/geg-gmodg-vermieter-2026): Wegfall der 65-Prozent-Regel seit 29.7.2026, neue Kostenbeteiligung für Vermieter ab 2028/2029, Modernisierungsumlage § 559e BGB.
 
 ## Mietrendite nach Stadt
 
