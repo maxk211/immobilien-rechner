@@ -4,7 +4,8 @@ import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 import {
   Home, BarChart3, Wallet, Receipt, Users, TrendingUp, Building2,
   Check, X, Lock, Key, ShieldCheck, Globe, Mail, ArrowRight, Monitor,
-  Eye, BellOff, Ban, Frown, Calculator, BookOpen, MapPin
+  Eye, BellOff, Ban, Frown, Calculator, BookOpen, MapPin,
+  Landmark, Percent, CalendarClock
 } from 'lucide-react';
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
@@ -645,7 +646,10 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             {[
               { icon: Calculator, title: 'Mietrendite-Rechner', desc: 'Brutto- und Nettomietrendite in Sekunden berechnen.', href: '/mietrendite-rechner' },
               { icon: Receipt, title: 'AfA-Rechner', desc: 'Jährliche Abschreibung und Steuerersparnis ermitteln.', href: '/afa-rechner' },
-              { icon: MapPin, title: 'Mietrendite nach Stadt', desc: 'Kaufpreise, Mieten und Renditen der 10 größten Städte im Vergleich.', href: '/mietrendite-staedte' },
+              { icon: Landmark, title: 'Grunderwerbsteuer-Rechner', desc: 'Grunderwerbsteuer für alle 16 Bundesländer berechnen.', href: '/grunderwerbsteuer-rechner' },
+              { icon: Percent, title: 'Kaufnebenkosten-Rechner', desc: 'Grunderwerbsteuer, Notar & Makler in einem Rechner.', href: '/kaufnebenkosten-rechner' },
+              { icon: CalendarClock, title: 'Tilgungsplan-Rechner', desc: 'Annuitätendarlehen Jahr für Jahr durchrechnen.', href: '/tilgungsplan-rechner' },
+              { icon: MapPin, title: 'Mietrendite nach Stadt', desc: 'Kaufpreise, Mieten und Renditen der 18 größten Städte im Vergleich.', href: '/mietrendite-staedte' },
               { icon: BookOpen, title: 'Mietrendite berechnen', desc: 'Der komplette Guide mit Formeln und Beispielrechnung.', href: '/ratgeber/mietrendite-berechnen' },
               { icon: Wallet, title: 'Cashflow bei Immobilien', desc: 'Was Cashflow ist und wie du ihn richtig kalkulierst.', href: '/ratgeber/cashflow-bei-immobilien' },
               { icon: BarChart3, title: 'AfA & Steuern', desc: 'Abschreibung, Werbungskosten und Steuervorteile erklärt.', href: '/ratgeber/afa-und-steuern-vermietung' },

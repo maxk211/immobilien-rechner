@@ -134,6 +134,24 @@ routes.push({
 });
 
 routes.push({
+  url: '/grunderwerbsteuer-rechner',
+  parts: [stripChrome(readSrc('src/rechner/GrunderwerbsteuerRechner.jsx')), readSrc('src/rechner/grunderwerbsteuerSaetze.js')],
+  gitPaths: ['src/rechner/GrunderwerbsteuerRechner.jsx', 'src/rechner/grunderwerbsteuerSaetze.js'],
+});
+
+routes.push({
+  url: '/kaufnebenkosten-rechner',
+  parts: [stripChrome(readSrc('src/rechner/KaufnebenkostenRechner.jsx')), readSrc('src/rechner/grunderwerbsteuerSaetze.js')],
+  gitPaths: ['src/rechner/KaufnebenkostenRechner.jsx', 'src/rechner/grunderwerbsteuerSaetze.js'],
+});
+
+routes.push({
+  url: '/tilgungsplan-rechner',
+  parts: [stripChrome(readSrc('src/rechner/TilgungsplanRechner.jsx'))],
+  gitPaths: ['src/rechner/TilgungsplanRechner.jsx'],
+});
+
+routes.push({
   url: '/vermieter-software',
   parts: [readSrc('src/landing/VermieterSoftwareLanding.jsx')],
   gitPaths: ['src/landing/VermieterSoftwareLanding.jsx'],

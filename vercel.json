@@ -12,6 +12,18 @@
       "destination": "/afa-rechner.html"
     },
     {
+      "source": "/grunderwerbsteuer-rechner",
+      "destination": "/grunderwerbsteuer-rechner.html"
+    },
+    {
+      "source": "/kaufnebenkosten-rechner",
+      "destination": "/kaufnebenkosten-rechner.html"
+    },
+    {
+      "source": "/tilgungsplan-rechner",
+      "destination": "/tilgungsplan-rechner.html"
+    },
+    {
       "source": "/vermieter-software",
       "destination": "/vermieter-software.html"
     },

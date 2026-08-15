@@ -1,7 +1,7 @@
 {
   "/": {
-    "hash": "59fb706bbae5b9e3",
-    "lastmod": "2026-08-06"
+    "hash": "15e0e4af915380d6",
+    "lastmod": "2026-08-15"
   },
   "/mietrendite-rechner": {
     "hash": "13c6b3968f332572",
@@ -197,6 +197,18 @@
   },
   "/ratgeber/geg-gmodg-vermieter-2026": {
     "hash": "66aef5cfd1f0c481",
+    "lastmod": "2026-08-15"
+  },
+  "/grunderwerbsteuer-rechner": {
+    "hash": "de956f62eaae984d",
+    "lastmod": "2026-08-15"
+  },
+  "/kaufnebenkosten-rechner": {
+    "hash": "e2718bf05e51d552",
+    "lastmod": "2026-08-15"
+  },
+  "/tilgungsplan-rechner": {
+    "hash": "ca66e213dac0d114",
     "lastmod": "2026-08-15"
   }
 }

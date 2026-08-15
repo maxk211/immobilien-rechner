@@ -8,6 +8,9 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 
 - [Mietrendite-Rechner](https://www.renditly.de/mietrendite-rechner): Bruttomietrendite, Nettomietrendite, monatlicher Cashflow und Cash-on-Cash-Rendite berechnen — kostenlos, ohne Anmeldung.
 - [AfA-Rechner](https://www.renditly.de/afa-rechner): Jährliche Abschreibung (AfA) und Steuerersparnis für vermietete Immobilien berechnen, inkl. Sonder-AfA § 7b EStG für Neubau-Mietwohnungen.
+- [Grunderwerbsteuer-Rechner](https://www.renditly.de/grunderwerbsteuer-rechner): Grunderwerbsteuer beim Immobilienkauf berechnen, mit aktuellen Sätzen aller 16 Bundesländer (3,5–6,5 %).
+- [Kaufnebenkosten-Rechner](https://www.renditly.de/kaufnebenkosten-rechner): Grunderwerbsteuer, Notar-/Grundbuchkosten und Maklerprovision in einem Rechner, inkl. Finanzierungsbedarf und Eigenkapitalquote.
+- [Tilgungsplan-Rechner](https://www.renditly.de/tilgungsplan-rechner): Annuitätendarlehen Jahr für Jahr durchrechnen — Restschuld, Zinsen und Tilgung, inkl. Restschuld nach Ende der Zinsbindung.
 
 ## Ratgeber
 
