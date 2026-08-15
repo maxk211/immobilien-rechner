@@ -41,6 +41,7 @@ const html = `<!DOCTYPE html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}

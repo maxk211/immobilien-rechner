@@ -104,6 +104,7 @@ for (const a of ARTIKEL) {
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
     <!-- Google tag (gtag.js) + Consent Mode v2 -->
     <script>
       window.dataLayer = window.dataLayer || [];
