@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
 const BASE_URL = 'https://www.renditly.de';
-const heute = '2026-07-31';
+const heute = '2026-08-10';
 
 mkdirSync(resolve(ROOT, 'staedte'), { recursive: true });
 

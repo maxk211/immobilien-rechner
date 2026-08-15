@@ -34,7 +34,7 @@ const Loading = () => (
   </div>
 )
 
-const STAEDTE_SLUGS = ['berlin', 'hamburg', 'muenchen', 'koeln', 'frankfurt', 'stuttgart', 'duesseldorf', 'leipzig', 'dortmund', 'essen']
+const STAEDTE_SLUGS = ['berlin', 'hamburg', 'muenchen', 'koeln', 'frankfurt', 'stuttgart', 'duesseldorf', 'leipzig', 'dortmund', 'essen', 'bremen', 'hannover', 'dresden', 'nuernberg', 'mannheim', 'bonn', 'muenster', 'karlsruhe']
 
 // Rechner-, Ratgeber- und Städte-Routen ohne Auth — SPA-Fallback bedient diese via /*→index.html
 // Die dedizierten *.html-Dateien bedienen Crawler direkt (SEO)

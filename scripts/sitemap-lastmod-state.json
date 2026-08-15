@@ -24,8 +24,8 @@
     "lastmod": "2026-08-09"
   },
   "/mietrendite-staedte": {
-    "hash": "563a9115fe241104",
-    "lastmod": "2026-08-02"
+    "hash": "a1bb2dbb32f778db",
+    "lastmod": "2026-08-15"
   },
   "/mietrendite-essen": {
     "hash": "04cc3659de9b0bf0",
@@ -146,5 +146,37 @@
   "/vermieter-software": {
     "hash": "d80c38c9df6d5151",
     "lastmod": "2026-08-09"
+  },
+  "/mietrendite-bremen": {
+    "hash": "81f4d0bb31989dcc",
+    "lastmod": "2026-08-02"
+  },
+  "/mietrendite-karlsruhe": {
+    "hash": "8832a637f539878a",
+    "lastmod": "2026-08-02"
+  },
+  "/mietrendite-dresden": {
+    "hash": "1ababb54af234131",
+    "lastmod": "2026-08-02"
+  },
+  "/mietrendite-hannover": {
+    "hash": "c03e2dba1c4ebfc7",
+    "lastmod": "2026-08-02"
+  },
+  "/mietrendite-nuernberg": {
+    "hash": "44777ebcc70b12b4",
+    "lastmod": "2026-08-02"
+  },
+  "/mietrendite-mannheim": {
+    "hash": "92e3e5467e362662",
+    "lastmod": "2026-08-02"
+  },
+  "/mietrendite-bonn": {
+    "hash": "540f2bbdbad7ce41",
+    "lastmod": "2026-08-02"
+  },
+  "/mietrendite-muenster": {
+    "hash": "a1646e65a9846a5c",
+    "lastmod": "2026-08-02"
   }
 }

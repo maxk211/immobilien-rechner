@@ -26,9 +26,9 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 
 ## Mietrendite nach Stadt
 
-Aktuelle Kaufpreise, Mieten und Bruttomietrendite für die 10 größten deutschen Städte (Quelle: Engel & Völkers Marktbericht, Stand Juni 2026).
+Aktuelle Kaufpreise, Mieten und Bruttomietrendite für 18 deutsche Großstädte (Tier-1: Engel & Völkers Marktbericht, Stand Juni 2026; Tier-2: aggregiert aus mehreren Immobilienportalen, Stand August 2026).
 
-- [Mietrendite Deutschland: Städtevergleich](https://www.renditly.de/mietrendite-staedte): Vergleichstabelle aller 10 Städte mit Kaufpreis/m², Kaltmiete/m² und Bruttomietrendite.
+- [Mietrendite Deutschland: Städtevergleich](https://www.renditly.de/mietrendite-staedte): Vergleichstabelle aller 18 Städte mit Kaufpreis/m², Kaltmiete/m² und Bruttomietrendite.
 - [Mietrendite Berlin](https://www.renditly.de/mietrendite-berlin): Ø 5.300 €/m² Kaufpreis, Ø 18,53 €/m² Kaltmiete, ca. 4,2 % Bruttomietrendite.
 - [Mietrendite Hamburg](https://www.renditly.de/mietrendite-hamburg): Ø 5.720 €/m² Kaufpreis, Ø 18,32 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.
 - [Mietrendite München](https://www.renditly.de/mietrendite-muenchen): Ø 8.398 €/m² Kaufpreis, Ø 21,71 €/m² Kaltmiete, ca. 3,1 % Bruttomietrendite — niedrigste Rendite der Tier-1-Städte.
@@ -39,6 +39,14 @@ Aktuelle Kaufpreise, Mieten und Bruttomietrendite für die 10 größten deutsche
 - [Mietrendite Leipzig](https://www.renditly.de/mietrendite-leipzig): Ø 3.858 €/m² Kaufpreis, Ø 12,21 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.
 - [Mietrendite Dortmund](https://www.renditly.de/mietrendite-dortmund): Ø 3.314 €/m² Kaufpreis, Ø 12,31 €/m² Kaltmiete, ca. 4,5 % Bruttomietrendite.
 - [Mietrendite Essen](https://www.renditly.de/mietrendite-essen): Ø 3.647 €/m² Kaufpreis, Ø 13,89 €/m² Kaltmiete, ca. 4,6 % Bruttomietrendite — höchste Rendite der Tier-1-Städte.
+- [Mietrendite Bremen](https://www.renditly.de/mietrendite-bremen): Ø 2.930 €/m² Kaufpreis, Ø 11,00 €/m² Kaltmiete, ca. 4,5 % Bruttomietrendite.
+- [Mietrendite Hannover](https://www.renditly.de/mietrendite-hannover): Ø 3.560 €/m² Kaufpreis, Ø 11,50 €/m² Kaltmiete, ca. 3,9 % Bruttomietrendite.
+- [Mietrendite Dresden](https://www.renditly.de/mietrendite-dresden): Ø 3.170 €/m² Kaufpreis, Ø 10,80 €/m² Kaltmiete, ca. 4,1 % Bruttomietrendite.
+- [Mietrendite Nürnberg](https://www.renditly.de/mietrendite-nuernberg): Ø 3.880 €/m² Kaufpreis, Ø 12,50 €/m² Kaltmiete, ca. 3,9 % Bruttomietrendite.
+- [Mietrendite Mannheim](https://www.renditly.de/mietrendite-mannheim): Ø 3.900 €/m² Kaufpreis, Ø 12,30 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.
+- [Mietrendite Bonn](https://www.renditly.de/mietrendite-bonn): Ø 4.200 €/m² Kaufpreis, Ø 13,00 €/m² Kaltmiete, ca. 3,7 % Bruttomietrendite.
+- [Mietrendite Münster](https://www.renditly.de/mietrendite-muenster): Ø 4.400 €/m² Kaufpreis, Ø 11,50 €/m² Kaltmiete, ca. 3,1 % Bruttomietrendite — niedrigste Rendite aller 18 Städte.
+- [Mietrendite Karlsruhe](https://www.renditly.de/mietrendite-karlsruhe): Ø 4.200 €/m² Kaufpreis, Ø 15,30 €/m² Kaltmiete, ca. 4,4 % Bruttomietrendite.
 
 ## Städtevergleiche (Stadt vs. Stadt)
 

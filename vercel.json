@@ -88,6 +88,38 @@
       "destination": "/staedte/mietrendite-frankfurt.html"
     },
     {
+      "source": "/mietrendite-bremen",
+      "destination": "/staedte/mietrendite-bremen.html"
+    },
+    {
+      "source": "/mietrendite-hannover",
+      "destination": "/staedte/mietrendite-hannover.html"
+    },
+    {
+      "source": "/mietrendite-dresden",
+      "destination": "/staedte/mietrendite-dresden.html"
+    },
+    {
+      "source": "/mietrendite-nuernberg",
+      "destination": "/staedte/mietrendite-nuernberg.html"
+    },
+    {
+      "source": "/mietrendite-mannheim",
+      "destination": "/staedte/mietrendite-mannheim.html"
+    },
+    {
+      "source": "/mietrendite-bonn",
+      "destination": "/staedte/mietrendite-bonn.html"
+    },
+    {
+      "source": "/mietrendite-muenster",
+      "destination": "/staedte/mietrendite-muenster.html"
+    },
+    {
+      "source": "/mietrendite-karlsruhe",
+      "destination": "/staedte/mietrendite-karlsruhe.html"
+    },
+    {
       "source": "/mietrendite-stuttgart",
       "destination": "/staedte/mietrendite-stuttgart.html"
     },
