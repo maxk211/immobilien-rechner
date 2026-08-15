@@ -158,6 +158,12 @@ routes.push({
 });
 
 routes.push({
+  url: '/immobilien-lexikon',
+  parts: [stripChrome(readSrc('src/glossar/ImmobilienLexikon.jsx')), readSrc('src/glossar/glossarDaten.js')],
+  gitPaths: ['src/glossar/ImmobilienLexikon.jsx', 'src/glossar/glossarDaten.js'],
+});
+
+routes.push({
   url: '/ratgeber/mietrendite-berechnen',
   parts: [readSrc('src/ratgeber/MietrenditeGuide.jsx')],
   gitPaths: ['src/ratgeber/MietrenditeGuide.jsx'],

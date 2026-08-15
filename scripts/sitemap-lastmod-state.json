@@ -1,6 +1,6 @@
 {
   "/": {
-    "hash": "15e0e4af915380d6",
+    "hash": "518063b974b2caa7",
     "lastmod": "2026-08-15"
   },
   "/mietrendite-rechner": {
@@ -209,6 +209,10 @@
   },
   "/tilgungsplan-rechner": {
     "hash": "ca66e213dac0d114",
+    "lastmod": "2026-08-15"
+  },
+  "/immobilien-lexikon": {
+    "hash": "1b6924703dd3d55b",
     "lastmod": "2026-08-15"
   }
 }

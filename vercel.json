@@ -28,6 +28,10 @@
       "destination": "/vermieter-software.html"
     },
     {
+      "source": "/immobilien-lexikon",
+      "destination": "/immobilien-lexikon.html"
+    },
+    {
       "source": "/ratgeber/mietrendite-berechnen",
       "destination": "/ratgeber/mietrendite-berechnen.html"
     },

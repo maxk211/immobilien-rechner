@@ -653,6 +653,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
               { icon: BookOpen, title: 'Mietrendite berechnen', desc: 'Der komplette Guide mit Formeln und Beispielrechnung.', href: '/ratgeber/mietrendite-berechnen' },
               { icon: Wallet, title: 'Cashflow bei Immobilien', desc: 'Was Cashflow ist und wie du ihn richtig kalkulierst.', href: '/ratgeber/cashflow-bei-immobilien' },
               { icon: BarChart3, title: 'AfA & Steuern', desc: 'Abschreibung, Werbungskosten und Steuervorteile erklärt.', href: '/ratgeber/afa-und-steuern-vermietung' },
+              { icon: BookOpen, title: 'Immobilien-Lexikon', desc: '29 Begriffe zu Rendite, Steuern, Recht & Finanzierung kurz erklärt.', href: '/immobilien-lexikon' },
               { icon: BookOpen, title: 'Alle Ratgeber-Artikel', desc: 'Nebenkosten, Mietspiegel, Grunderwerbsteuer & mehr — die komplette Übersicht.', href: '/ratgeber' },
             ].map((item) => (
               <a

@@ -14,6 +14,7 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 
 ## Ratgeber
 
+- [Immobilien-Lexikon für Vermieter](https://www.renditly.de/immobilien-lexikon): 29 zentrale Begriffe zu Mietrendite, Steuern, Mietrecht und Finanzierung kurz erklärt, mit Verweisen auf vertiefende Artikel und Rechner.
 - [Ratgeber-Übersicht](https://www.renditly.de/ratgeber): Alle Ratgeber-Artikel zu Rendite, Cashflow, Steuern und Mietrecht auf einen Blick.
 - [Mietrendite berechnen: Der komplette Guide](https://www.renditly.de/ratgeber/mietrendite-berechnen): Formeln und Richtwerte für Brutto-, Netto- und Cash-on-Cash-Rendite bei Immobilien in Deutschland.
 - [Cashflow bei Immobilien: Was Vermieter wissen müssen](https://www.renditly.de/ratgeber/cashflow-bei-immobilien): Cashflow-Formel, Beispielrechnung, Stellhebel zur Verbesserung und die häufigsten Fehler bei der Kalkulation.

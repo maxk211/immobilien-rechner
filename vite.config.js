@@ -46,6 +46,7 @@ export default defineConfig({
         grunderwerbsteuerRechner: resolve(__dirname, 'grunderwerbsteuer-rechner.html'),
         kaufnebenkostenRechner: resolve(__dirname, 'kaufnebenkosten-rechner.html'),
         tilgungsplanRechner: resolve(__dirname, 'tilgungsplan-rechner.html'),
+        immobilienLexikon: resolve(__dirname, 'immobilien-lexikon.html'),
         vermieterSoftware: resolve(__dirname, 'vermieter-software.html'),
         mietrenditeStaedte: resolve(__dirname, 'mietrendite-staedte.html'),
         ...staedteInputs,

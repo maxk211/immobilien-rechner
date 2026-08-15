@@ -13,6 +13,7 @@ const GrunderwerbsteuerRechner = lazy(() => import('./rechner/GrunderwerbsteuerR
 const KaufnebenkostenRechner = lazy(() => import('./rechner/KaufnebenkostenRechner.jsx'))
 const TilgungsplanRechner = lazy(() => import('./rechner/TilgungsplanRechner.jsx'))
 const VermieterSoftwareLanding = lazy(() => import('./landing/VermieterSoftwareLanding.jsx'))
+const ImmobilienLexikon = lazy(() => import('./glossar/ImmobilienLexikon.jsx'))
 const MietrenditeGuide = lazy(() => import('./ratgeber/MietrenditeGuide.jsx'))
 const CashflowGuide = lazy(() => import('./ratgeber/CashflowGuide.jsx'))
 const AfaSteuerGuide = lazy(() => import('./ratgeber/AfaSteuerGuide.jsx'))
@@ -53,6 +54,7 @@ const ROUTES = {
   '/kaufnebenkosten-rechner': { Component: KaufnebenkostenRechner },
   '/tilgungsplan-rechner': { Component: TilgungsplanRechner },
   '/vermieter-software': { Component: VermieterSoftwareLanding },
+  '/immobilien-lexikon': { Component: ImmobilienLexikon },
   '/ratgeber': { Component: RatgeberUebersicht },
   '/ratgeber/mietrendite-berechnen': { Component: MietrenditeGuide },
   '/ratgeber/cashflow-bei-immobilien': { Component: CashflowGuide },
