@@ -37,6 +37,7 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 
 Aktuelle Kaufpreise, Mieten und Bruttomietrendite für 18 deutsche Großstädte (Tier-1: Engel & Völkers Marktbericht, Stand Juni 2026; Tier-2: aggregiert aus mehreren Immobilienportalen, Stand August 2026).
 
+- [Mietrendite-Report Deutschland 2026](https://www.renditly.de/mietrendite-report-2026): Datenstudie mit Rangliste, Top-5/Flop-5 und frei zitierbaren Kennzahlen zu Kaufpreisen, Mieten und Bruttomietrendite aller 18 Städte.
 - [Mietrendite Deutschland: Städtevergleich](https://www.renditly.de/mietrendite-staedte): Vergleichstabelle aller 18 Städte mit Kaufpreis/m², Kaltmiete/m² und Bruttomietrendite.
 - [Mietrendite Berlin](https://www.renditly.de/mietrendite-berlin): Ø 5.300 €/m² Kaufpreis, Ø 18,53 €/m² Kaltmiete, ca. 4,2 % Bruttomietrendite.
 - [Mietrendite Hamburg](https://www.renditly.de/mietrendite-hamburg): Ø 5.720 €/m² Kaufpreis, Ø 18,32 €/m² Kaltmiete, ca. 3,8 % Bruttomietrendite.

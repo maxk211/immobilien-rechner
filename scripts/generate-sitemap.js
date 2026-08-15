@@ -164,6 +164,12 @@ routes.push({
 });
 
 routes.push({
+  url: '/mietrendite-report-2026',
+  parts: [stripChrome(readSrc('src/report/MietrenditeReport.jsx')), readSrc('src/staedte/staedteDaten.js')],
+  gitPaths: ['src/report/MietrenditeReport.jsx', 'src/staedte/staedteDaten.js'],
+});
+
+routes.push({
   url: '/ratgeber/mietrendite-berechnen',
   parts: [readSrc('src/ratgeber/MietrenditeGuide.jsx')],
   gitPaths: ['src/ratgeber/MietrenditeGuide.jsx'],

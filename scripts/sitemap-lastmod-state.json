@@ -1,6 +1,6 @@
 {
   "/": {
-    "hash": "518063b974b2caa7",
+    "hash": "65d68b2d9e6611ae",
     "lastmod": "2026-08-15"
   },
   "/mietrendite-rechner": {
@@ -213,6 +213,10 @@
   },
   "/immobilien-lexikon": {
     "hash": "1b6924703dd3d55b",
+    "lastmod": "2026-08-15"
+  },
+  "/mietrendite-report-2026": {
+    "hash": "d81a79ee99ab187b",
     "lastmod": "2026-08-15"
   }
 }

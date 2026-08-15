@@ -650,6 +650,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
               { icon: Percent, title: 'Kaufnebenkosten-Rechner', desc: 'Grunderwerbsteuer, Notar & Makler in einem Rechner.', href: '/kaufnebenkosten-rechner' },
               { icon: CalendarClock, title: 'Tilgungsplan-Rechner', desc: 'Annuitätendarlehen Jahr für Jahr durchrechnen.', href: '/tilgungsplan-rechner' },
               { icon: MapPin, title: 'Mietrendite nach Stadt', desc: 'Kaufpreise, Mieten und Renditen der 18 größten Städte im Vergleich.', href: '/mietrendite-staedte' },
+              { icon: BarChart3, title: 'Mietrendite-Report 2026', desc: 'Datenstudie mit Rangliste und zitierbaren Kennzahlen zu 18 Städten.', href: '/mietrendite-report-2026' },
               { icon: BookOpen, title: 'Mietrendite berechnen', desc: 'Der komplette Guide mit Formeln und Beispielrechnung.', href: '/ratgeber/mietrendite-berechnen' },
               { icon: Wallet, title: 'Cashflow bei Immobilien', desc: 'Was Cashflow ist und wie du ihn richtig kalkulierst.', href: '/ratgeber/cashflow-bei-immobilien' },
               { icon: BarChart3, title: 'AfA & Steuern', desc: 'Abschreibung, Werbungskosten und Steuervorteile erklärt.', href: '/ratgeber/afa-und-steuern-vermietung' },
