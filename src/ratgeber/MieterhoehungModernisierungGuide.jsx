@@ -21,6 +21,7 @@ export default function MieterhoehungModernisierungGuide() {
         { href: '/ratgeber/mietspiegel-verstehen', titel: 'Mietspiegel verstehen und für Mieterhöhungen nutzen' },
         { href: '/ratgeber/nebenkostenabrechnung-vermieter', titel: 'Nebenkostenabrechnung für Vermieter' },
         { href: '/mietrendite-rechner', titel: 'Mietrendite-Rechner', kategorie: 'Rechner' },
+        { href: '/ratgeber/geg-gmodg-vermieter-2026', titel: 'Vom GEG zum Gebäudemodernisierungsgesetz: Was sich 2026 ändert' },
       ]}
     >
       <section>

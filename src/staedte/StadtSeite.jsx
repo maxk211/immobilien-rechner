@@ -202,6 +202,29 @@ export default function StadtSeite({ slug }) {
           </div>
         </section>
 
+        {/* Vertiefende Ratgeber & Rechner */}
+        <section className="mb-10">
+          <h2 className="text-xl font-black text-slate-900 mb-4">Weiterlesen: Kauf, Steuern & Recht</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a href="/grunderwerbsteuer-rechner" className="bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+              <div className="text-xs text-indigo-600 font-semibold mb-1">Rechner</div>
+              <div className="text-sm font-bold text-slate-900">Grunderwerbsteuer für {stadt.name} berechnen →</div>
+            </a>
+            <a href="/kaufnebenkosten-rechner" className="bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+              <div className="text-xs text-indigo-600 font-semibold mb-1">Rechner</div>
+              <div className="text-sm font-bold text-slate-900">Alle Kaufnebenkosten kalkulieren →</div>
+            </a>
+            <a href="/ratgeber/mietrendite-berechnen" className="bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+              <div className="text-xs text-indigo-600 font-semibold mb-1">Ratgeber</div>
+              <div className="text-sm font-bold text-slate-900">Mietrendite berechnen: Der komplette Guide →</div>
+            </a>
+            <a href="/immobilien-lexikon" className="bg-white rounded-2xl border border-gray-100 p-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+              <div className="text-xs text-indigo-600 font-semibold mb-1">Lexikon</div>
+              <div className="text-sm font-bold text-slate-900">Alle Begriffe zu Rendite & Steuern nachschlagen →</div>
+            </a>
+          </div>
+        </section>
+
         {/* Andere Städte */}
         <section className="mb-10">
           <h2 className="text-xl font-black text-slate-900 mb-4">Mietrendite in anderen Städten</h2>

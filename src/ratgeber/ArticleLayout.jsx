@@ -103,8 +103,10 @@ export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, 
       <footer className="border-t border-gray-100 py-6 mt-8">
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-400">
           <span className="font-black text-slate-700" style={{letterSpacing:'-0.02em'}}>renditly</span>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap justify-center">
             <a href="/" className="hover:text-slate-700 transition-colors">Startseite</a>
+            <a href="/ratgeber" className="hover:text-slate-700 transition-colors">Ratgeber</a>
+            <a href="/immobilien-lexikon" className="hover:text-slate-700 transition-colors">Lexikon</a>
             <a href="/#pricing" className="hover:text-slate-700 transition-colors">Preise</a>
           </div>
           <span>© {new Date().getFullYear()} renditly</span>

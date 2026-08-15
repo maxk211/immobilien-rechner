@@ -20,7 +20,9 @@ export default function MietrenditeGuide() {
       related={[
         { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },
         { href: '/ratgeber/immobilienfinanzierung', titel: 'Immobilienfinanzierung für Kapitalanleger' },
-        { href: '/mietrendite-staedte', titel: 'Mietrendite Deutschland: Die 10 größten Städte im Vergleich', kategorie: 'Städtevergleich' },
+        { href: '/mietrendite-staedte', titel: 'Mietrendite Deutschland: Die 18 größten Städte im Vergleich', kategorie: 'Städtevergleich' },
+        { href: '/kaufnebenkosten-rechner', titel: 'Kaufnebenkosten-Rechner', kategorie: 'Rechner' },
+        { href: '/mietrendite-report-2026', titel: 'Mietrendite-Report Deutschland 2026', kategorie: 'Datenstudie' },
       ]}
     >
       <section>

@@ -21,6 +21,8 @@ export default function ImmobilienfinanzierungGuide() {
         { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },
         { href: '/ratgeber/mietrendite-berechnen', titel: 'Mietrendite berechnen: Der komplette Guide' },
         { href: '/mietrendite-rechner', titel: 'Mietrendite-Rechner', kategorie: 'Rechner' },
+        { href: '/tilgungsplan-rechner', titel: 'Tilgungsplan-Rechner', kategorie: 'Rechner' },
+        { href: '/kaufnebenkosten-rechner', titel: 'Kaufnebenkosten-Rechner', kategorie: 'Rechner' },
       ]}
     >
       <section>

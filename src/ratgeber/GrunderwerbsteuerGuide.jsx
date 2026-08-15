@@ -40,6 +40,8 @@ export default function GrunderwerbsteuerGuide() {
         { href: '/ratgeber/mietrendite-berechnen', titel: 'Mietrendite berechnen: Der komplette Guide' },
         { href: '/ratgeber/spekulationssteuer-immobilienverkauf', titel: 'Spekulationssteuer bei Immobilienverkauf' },
         { href: '/mietrendite-rechner', titel: 'Mietrendite-Rechner', kategorie: 'Rechner' },
+        { href: '/grunderwerbsteuer-rechner', titel: 'Grunderwerbsteuer-Rechner', kategorie: 'Rechner' },
+        { href: '/kaufnebenkosten-rechner', titel: 'Kaufnebenkosten-Rechner', kategorie: 'Rechner' },
       ]}
     >
       <section>

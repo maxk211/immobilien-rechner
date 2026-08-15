@@ -21,6 +21,7 @@ export default function NebenkostenGuide() {
         { href: '/ratgeber/cashflow-bei-immobilien', titel: 'Cashflow bei Immobilien: Was Vermieter wissen müssen' },
         { href: '/ratgeber/mietspiegel-verstehen', titel: 'Mietspiegel verstehen und nutzen' },
         { href: '/mietrendite-rechner', titel: 'Mietrendite-Rechner', kategorie: 'Rechner' },
+        { href: '/ratgeber/grundsteuerreform-2025-vermieter', titel: 'Grundsteuerreform 2025: Was sich für Vermieter ändert' },
       ]}
     >
       <section>
