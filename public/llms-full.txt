@@ -1,0 +1,834 @@
+# renditly — Vollständiger Inhalts-Export für KI-Agents
+
+> Diese Datei enthält die kompletten Inhalte der wichtigsten renditly-Seiten in einer Datei,
+> damit KI-Assistenten und Agents sie ohne mehrfaches Crawlen einzelner Seiten direkt nutzen
+> und zitieren können. Für eine reine Link-Übersicht siehe /llms.txt.
+>
+> renditly ist eine Immobilienverwaltungs-Software für deutsche Vermieter und Investoren:
+> Mietrendite berechnen, Cashflow tracken, Steuern vorbereiten, Mieter verwalten.
+> Stand der Marktdaten: Tier-1-Städte Juni 2026 (Engel & Völkers), Tier-2-Städte August 2026
+> (aggregiert aus mehreren Immobilienportalen).
+
+---
+
+# Rechner
+
+**Mietrendite-Rechner** — https://www.renditly.de/mietrendite-rechner
+Berechnet Bruttomietrendite, Nettomietrendite, monatlichen Cashflow und Cash-on-Cash-Rendite aus Kaufpreis, Kaltmiete, Kaufnebenkosten und laufenden Kosten. Formel Bruttomietrendite: (Kaltmiete/Monat × 12) / Kaufpreis × 100.
+
+**AfA-Rechner** — https://www.renditly.de/afa-rechner
+Berechnet die jährliche Abschreibung (AfA) und Steuerersparnis für vermietete Immobilien, inkl. Sonder-AfA § 7b EStG für Neubau-Mietwohnungen. Formel: Gebäudewert × AfA-Satz (2 % Standard, 3 % Neubau ab 2023).
+
+**Grunderwerbsteuer-Rechner** — https://www.renditly.de/grunderwerbsteuer-rechner
+Berechnet die Grunderwerbsteuer beim Immobilienkauf mit den aktuellen Sätzen aller 16 Bundesländer (3,5–6,5 % des Kaufpreises).
+
+**Kaufnebenkosten-Rechner** — https://www.renditly.de/kaufnebenkosten-rechner
+Berechnet Grunderwerbsteuer, Notar-/Grundbuchkosten und Maklerprovision in Summe, inkl. Finanzierungsbedarf und Eigenkapitalquote.
+
+**Tilgungsplan-Rechner** — https://www.renditly.de/tilgungsplan-rechner
+Rechnet ein Annuitätendarlehen Jahr für Jahr durch (Restschuld, Zins, Tilgung) und zeigt die Restschuld nach Ende der Zinsbindung. Formel: Annuität = Darlehen × (Zinssatz % + anfänglicher Tilgungssatz %), konstant über die Laufzeit.
+
+---
+
+# Ratgeber-Artikel (Volltext)
+
+## AfA und Steuern bei Vermietung: Der Leitfaden für Vermieter
+https://www.renditly.de/ratgeber/afa-und-steuern-vermietung
+
+Warum Steuern bei der Immobilienrendite mitentscheiden
+Viele Investoren berechnen Mietrendite und Cashflow, vergessen dabei aber den steuerlichen Effekt der AfA (Absetzung für Abnutzung), die das zu versteuernde Einkommen senkt, ohne dass tatsächlich Geld das Konto verlässt.
+
+Was ist die AfA?
+Die AfA bildet steuerlich ab, dass ein Gebäude über die Jahre an Wert verliert. Formel: Jährliche AfA = Gebäudewert (Kaufpreis + Nebenkosten − Grundstücksanteil) × AfA-Satz. Nur der Gebäudeanteil ist abschreibbar, nicht der Grundstücksanteil — üblich sind 15 bis 30 % des Kaufpreises, in Ballungsräumen auch höher.
+
+Der AfA-Satz nach Baujahr
+Gesetzlich (§ 7 Abs. 4 EStG): 3 % pro Jahr für Neubauten mit Fertigstellung ab 2023 (ca. 33 Jahre), 2 % pro Jahr für Gebäude mit Baujahr ab 1925 (50 Jahre), 2,5 % pro Jahr für Altbauten vor 1925 (40 Jahre). Beispiel: Wohnung Baujahr 2010, 300.000 € zzgl. 10 % Kaufnebenkosten (330.000 € Gesamtkosten), Grundstücksanteil 20 %, Gebäudeanteil 264.000 €, bei 2 % AfA jährlich 5.280 €.
+
+Sonder-AfA § 7b EStG für Neubau-Mietwohnungen
+Für neu gebaute Mietwohnungen mit Bauantrag ab 2023 gibt es zusätzlich zur linearen AfA eine Sonder-AfA von 5 % pro Jahr über die ersten vier Jahre, bei max. 5.200 €/m² Baukosten und mindestens Effizienzhaus 55. In den ersten vier Jahren summiert sich die Abschreibung auf 3 % + 5 % = 8 % pro Jahr.
+
+Welche Werbungskosten kann ich als Vermieter absetzen?
+Schuldzinsen (nur der Zinsanteil), Erhaltungsaufwand (sofort in voller Höhe absetzbar), Verwaltungskosten, Fahrtkosten, Hausgeld-Anteile. Erhaltungsaufwand vs. Herstellungskosten: Erhaltungsaufwand ist sofort absetzbar, Herstellungskosten müssen über die AfA verteilt abgeschrieben werden.
+
+Steuerersparnis durch AfA berechnen
+Formel: Steuerersparnis pro Jahr = jährliche AfA × persönlicher Grenzsteuersatz. Beispiel: 5.280 € AfA bei 42 % Grenzsteuersatz ergibt 2.218 € Steuerersparnis pro Jahr.
+
+Denkmal-AfA
+Für Sanierungskosten an Baudenkmälern gelten §§ 7i und 7h EStG: Abschreibung über 12 Jahre mit bis zu 9 % pro Jahr in den ersten acht Jahren und 7 % in den folgenden vier Jahren, mit Bescheinigung der Denkmalschutzbehörde.
+
+Häufige Fehler bei der AfA
+Grundstücksanteil zu niedrig angesetzt, Einbauküche und Mobiliar fälschlich in die Gebäude-AfA eingerechnet (eigene, kürzere Nutzungsdauer, z. B. 10 Jahre), AfA bei Eigennutzung geltend gemacht (steht nur für vermietete Immobilien zu).
+
+Was passiert mit der AfA beim Verkauf?
+Beim Verkauf innerhalb von zehn Jahren greift unter Umständen die Spekulationssteuer (§ 23 EStG) — die in der Vergangenheit geltend gemachte AfA erhöht den zu versteuernden Veräußerungsgewinn.
+
+Fazit
+Die AfA ist einer der am meisten unterschätzten Hebel bei der Immobilienrendite.
+
+---
+
+## Cashflow bei Immobilien: Was Vermieter wissen müssen
+https://www.renditly.de/ratgeber/cashflow-bei-immobilien
+
+Was ist Cashflow bei Immobilien?
+Der Cashflow ist der Betrag, der monatlich tatsächlich auf dem Konto ankommt, nachdem alle laufenden Kosten und die Finanzierungsrate von den Mieteinnahmen abgezogen wurden. Anders als die Mietrendite ist der Cashflow die konkrete, liquide Größe.
+
+Cashflow berechnen: Die Formel
+Cashflow = Kaltmiete − laufende Kosten − Finanzierungsrate (Zins + Tilgung). Beispiel: 900 € Kaltmiete, 150 € laufende Kosten, 620 € Kreditrate. Cashflow = 900 − 150 − 620 = 130 € im Monat. Zu unterscheiden sind Zins-Cashflow (nur Zinsen abgezogen, Tilgung zählt als Vermögensaufbau) und Voll-Cashflow (gesamte Kreditrate abgezogen) — für die reine Liquiditätsbetrachtung ist der Voll-Cashflow relevant.
+
+Positiver vs. negativer Cashflow
+Ein positiver Cashflow bedeutet, dass die Immobilie sich selbst trägt und Überschuss abwirft. Ein negativer Cashflow bedeutet, dass monatlich Eigenkapital nachgeschossen werden muss — das ist nicht automatisch ein Fehler, wenn der Betrag dauerhaft tragbar ist. Faustregel: mindestens kostendeckend, idealerweise ein Sicherheitspuffer von 100–200 € pro Objekt.
+
+Die häufigsten Fehler bei der Cashflow-Kalkulation
+Instandhaltungsrücklage vergessen oder unterschätzen (bei älteren Gebäuden mindestens 1–1,50 €/m² monatlich einplanen), Leerstand nicht einkalkulieren (realistischer sind 11 bis 11,5 Monate Mieteinnahmen statt 12), nur die Zinsen statt der vollen Rate abziehen, Anschlussfinanzierung nach Ablauf der Zinsbindung ignorieren.
+
+Cashflow vs. Rendite: Was ist wichtiger?
+Die Mietrendite zeigt, wie profitabel eine Immobilie im Verhältnis zum Kaufpreis ist, unabhängig von der Finanzierung. Der Cashflow zeigt, ob die konkrete Finanzierungsstruktur zu positiver oder negativer monatlicher Liquidität führt. Beide Kennzahlen sollten gemeinsam betrachtet werden.
+
+Cashflow verbessern: Die wichtigsten Stellhebel
+Tilgung strecken statt hohe Rate (senkt Cashflow-Belastung, verlängert Laufzeit), Sondertilgungen gezielt einsetzen, Nebenkosten korrekt und vollständig umlegen, Miete an die ortsübliche Vergleichsmiete anpassen.
+
+Steuerlicher Verlust ist nicht gleich Liquiditätsverlust
+Eine Immobilie kann steuerlich einen Verlust ausweisen, obwohl der tatsächliche Cashflow positiv ist, weil die AfA eine reine Buchgröße ist. Umgekehrt kann eine Immobilie steuerlich profitabel aussehen, während der reale Cashflow negativ ist, etwa bei hoher Tilgung.
+
+Cashflow im Portfolio
+Wer mehrere Immobilien hält, sollte den Portfolio-Cashflow im Blick behalten, nicht nur den Cashflow jedes einzelnen Objekts.
+
+Fazit
+Der Cashflow ist die Kennzahl, die im Alltag zählt: Sie entscheidet, ob eine Immobilie finanziell tragbar ist oder zur Belastung wird.
+
+---
+
+## Kündigung wegen Eigenbedarf: Voraussetzungen, Fristen, Risiken
+https://www.renditly.de/ratgeber/eigenbedarfskuendigung
+
+Was bedeutet Eigenbedarf rechtlich?
+Nach § 573 Abs. 2 Nr. 2 BGB darf ein Vermieter kündigen, wenn er die Wohnung für sich selbst, einen Familienangehörigen oder einen Angehörigen seines Haushalts als Wohnraum benötigt. Der Bedarf muss ernsthaft, konkret und nachvollziehbar sein. Zulässige Bedarfspersonen sind neben dem Vermieter selbst u. a. Kinder, Enkel, Eltern, Geschwister sowie in bestimmten Fällen Nichten, Neffen oder Haushaltsangehörige.
+
+Formale Anforderungen an das Kündigungsschreiben
+Die Kündigung muss schriftlich erfolgen und konkret begründet werden: Name und Verwandtschaftsverhältnis der Bedarfsperson, konkreter Grund, Hinweis auf das Widerspruchsrecht des Mieters, korrekte Kündigungsfrist. Fehlt die Begründung, ist die Kündigung formal unwirksam.
+
+Kündigungsfristen nach Mietdauer
+Nach § 573c BGB gelten: bis 5 Jahre Mietdauer 3 Monate, 5 bis 8 Jahre 6 Monate, über 8 Jahre 9 Monate. Maßgeblich ist die Mietdauer zum Zeitpunkt des Zugangs der Kündigung.
+
+Sperrfrist bei umgewandelten Eigentumswohnungen
+Wird eine vermietete Wohnung in Eigentumswohnungen umgewandelt und verkauft, gilt nach § 577a BGB eine Sperrfrist von drei Jahren ab Grundbucheintragung des neuen Eigentümers, bevor Eigenbedarf geltend gemacht werden darf. In Gebieten mit angespanntem Wohnungsmarkt können Bundesländer diese Frist per Verordnung auf bis zu zehn Jahre verlängern.
+
+Das Widerspruchsrecht des Mieters (Sozialklausel)
+Mieter können nach § 574 BGB widersprechen, wenn die Beendigung eine nicht zu rechtfertigende Härte bedeuten würde — etwa bei hohem Alter, schwerer Krankheit oder fehlendem angemessenem Ersatzwohnraum. Der Widerspruch muss spätestens zwei Monate vor Beendigung schriftlich erklärt werden.
+
+Vorgetäuschter Eigenbedarf: Erhebliches Risiko für Vermieter
+Zieht die Bedarfsperson nicht dauerhaft ein, spricht viel für vorgetäuschten Eigenbedarf. Der ehemalige Mieter kann Schadensersatz verlangen, der Umzugskosten, Mietdifferenz und Maklerkosten umfassen kann — in der Praxis werden hier schnell fünfstellige Summen erreicht.
+
+Alternative: Kündigung bei Hinderung wirtschaftlicher Verwertung
+§ 573 Abs. 2 Nr. 3 BGB erlaubt eine Kündigung, wenn der Vermieter durch Fortsetzung des Mietverhältnisses an angemessener wirtschaftlicher Verwertung gehindert wird, etwa bei geplantem Abriss und Neubau — in der Praxis seltener erfolgreich als die klassische Eigenbedarfskündigung.
+
+Fazit
+Eine Eigenbedarfskündigung ist rechtlich zulässig, aber formal streng geregelt: konkrete Begründung, korrekte Frist, Beachtung der Sperrfrist bei umgewandelten Eigentumswohnungen und Bewusstsein für das Härterisiko.
+
+---
+
+## Erbschaftsteuer und Schenkungsteuer bei Immobilien
+https://www.renditly.de/ratgeber/erbschaftsteuer-immobilie
+
+Erbschaftsteuer und Schenkungsteuer: Dieselben Regeln, unterschiedlicher Anlass
+Erbschaftsteuer und Schenkungsteuer folgen denselben Regeln bei Freibeträgen, Steuerklassen und Steuersätzen — nur der Anlass unterscheidet sich. Bei einer Immobilie ist die Bewertung entscheidend für die Höhe der Steuer.
+
+Persönliche Freibeträge nach Verwandtschaftsgrad
+Nach § 16 ErbStG: Ehepartner und eingetragene Lebenspartner 500.000 €, Kinder je Elternteil 400.000 €, Enkel 200.000 €, Eltern und Großeltern bei Erbschaft 100.000 €, alle übrigen Personen 20.000 €. Die Freibeträge gelten pro Person und pro Schenker bzw. Erblasser und leben alle zehn Jahre neu auf. Zusätzlich steht Ehepartnern nach § 17 ErbStG ein Versorgungsfreibetrag von bis zu 256.000 € zu, gekürzt um Versorgungsbezüge.
+
+Steuerklassen und Steuersätze
+Der Steuersatz hängt vom Verwandtschaftsgrad (Steuerklasse I, II, III) und der Höhe des steuerpflichtigen Erwerbs ab und reicht progressiv von 7 % bis 50 %. Beispiel: Ein Kind erbt eine vermietete Immobilie im Steuerwert von 550.000 € ohne weiteres Vermögen. Nach Abzug des Freibetrags von 400.000 € verbleiben 150.000 € steuerpflichtig, in Steuerklasse I entspricht das 11 % — 16.500 € Erbschaftsteuer.
+
+Wie wird eine Immobilie für die Erbschaftsteuer bewertet?
+Das Finanzamt ermittelt den Wert nach dem Bedarfswertverfahren: Vergleichswertverfahren für Eigentumswohnungen und Einfamilienhäuser, Ertragswertverfahren für vermietete Mehrfamilienhäuser, Sachwertverfahren für Sonderfälle. Für zu Wohnzwecken vermietete bebaute Grundstücke gewährt § 13d ErbStG einen pauschalen Abschlag von 10 % auf den Steuerwert.
+
+Steuerbefreiung für das selbst genutzte Familienheim
+Erbt der Ehepartner eine selbst genutzte Immobilie und nutzt sie unverzüglich mindestens zehn weitere Jahre selbst, bleibt der Erwerb vollständig steuerfrei, unabhängig vom Wert. Für Kinder gilt dieselbe Befreiung, begrenzt auf 200 m² Wohnfläche. Wird die Selbstnutzung ohne zwingenden Grund vor Ablauf der Zehnjahresfrist aufgegeben, entfällt die Befreiung rückwirkend.
+
+Schenkung zu Lebzeiten: Vorteile gegenüber dem Erbfall
+Eine frühzeitige Schenkung erlaubt es, Freibeträge mehrfach im 10-Jahres-Rhythmus zu nutzen. Bei Schenkungen kann zusätzlich ein Nießbrauch- oder Wohnrecht für den Schenker vereinbart werden, das den steuerlichen Wert der Schenkung mindert.
+
+Häufige Fehler bei der Nachlassplanung mit Immobilien
+Freibeträge nicht rechtzeitig genutzt, Bewertungsverfahren nicht geprüft (ein niedrigerer tatsächlicher Verkehrswert kann per Gutachten nach § 198 BewG nachgewiesen werden), Zehnjahresfrist beim Familienheim übersehen.
+
+Fazit
+Bei Immobilienvermögen entscheidet häufig die Planung über die tatsächliche Steuerlast: rechtzeitige Schenkungen im 10-Jahres-Rhythmus, korrekte Bewertung inklusive 10-%-Abschlag für vermietete Objekte und gezielte Nutzung der Familienheim-Befreiung.
+
+---
+
+## Vom GEG zum Gebäudemodernisierungsgesetz: Was sich 2026 für Vermieter ändert
+https://www.renditly.de/ratgeber/geg-gmodg-vermieter-2026
+
+Das GEG hat einen Nachfolger
+Bundestag und Bundesrat haben Mitte Juli 2026 das Gebäudemodernisierungsgesetz (GModG) beschlossen, verkündet am 28. Juli 2026, wesentliche Regelungen gelten seit 29. Juli 2026. Es ersetzt das bisherige Gebäudeenergiegesetz.
+
+Der Kernwandel
+Die Pflicht, dass neue Heizungen zu mindestens 65 Prozent mit erneuerbaren Energien betrieben werden müssen, entfällt zugunsten eines technologieoffeneren Rahmens.
+
+Neue Pflichten für fossile Heizungen
+Ab 2028 sollen Vermieter mit fossiler Heizung sich hälftig an Netzentgelten und CO2-Preis beteiligen. Ab 2029 gilt ein Bio-Stufenmodell mit schrittweiser Beimischungspflicht für Gas- und Ölheizungen.
+
+Sanierungspflichten unabhängig von Eigennutzung
+Energetische Nachrüstpflichten gelten unabhängig davon, ob vermietet oder selbst genutzt wird.
+
+Modernisierungsumlage bei Heizungstausch
+Seit 2024 gilt § 559e BGB: 10 Prozent der Kosten sind umlegbar bei erhaltener Förderung, gedeckelt auf 50 Cent pro Quadratmeter über sechs Jahre, statt der sonst üblichen 8 Prozent nach § 559 BGB.
+
+Was Vermieter tun sollten
+Bestehende Heizung und Restlaufzeit einschätzen, Fördermöglichkeiten prüfen, keine überstürzten Entscheidungen treffen, aktuellen Rechtsstand im Blick behalten.
+
+Fazit
+Das GModG bringt mehr technologische Flexibilität, verschiebt aber Kostenverantwortung Richtung Vermieter fossil betriebener Gebäude.
+
+---
+
+## Grunderwerbsteuer nach Bundesland: Sätze, Fälligkeit und Berechnung
+https://www.renditly.de/ratgeber/grunderwerbsteuer-bundeslaender
+
+Was ist die Grunderwerbsteuer?
+Die Grunderwerbsteuer fällt beim Kauf eines Grundstücks oder einer Immobilie in Deutschland an und wird auf den vollständigen Kaufpreis berechnet. Sie ist Teil der Kaufnebenkosten und damit ein direkter Faktor für die Nettomietrendite.
+
+Grunderwerbsteuer nach Bundesland: Die Übersicht
+Seit der Föderalismusreform 2006 legen die Bundesländer den Steuersatz selbst fest. Die Sätze reichen aktuell von 3,5 % bis 6,5 % — bei einem Kaufpreis von 500.000 € entspricht das einer Differenz von 15.000 € allein durch den Standort.
+Grunderwerbsteuersätze aller 16 Bundesländer (Stand August 2026): Baden-Württemberg 5,0 %, Bayern 3,5 %, Berlin 6,0 %, Brandenburg 6,5 %, Bremen 5,5 %, Hamburg 5,5 %, Hessen 6,0 %, Mecklenburg-Vorpommern 6,0 %, Niedersachsen 5,0 %, Nordrhein-Westfalen 6,5 %, Rheinland-Pfalz 5,0 %, Saarland 6,5 %, Sachsen 5,5 %, Sachsen-Anhalt 5,0 %, Schleswig-Holstein 6,5 %, Thüringen 5,0 %.
+Steuersätze können sich per Landesgesetz ändern (zuletzt z. B. Bremen zum 1. Juli 2025 von 5,0 % auf 5,5 % erhöht, Thüringen zum 1. Januar 2024 von 6,5 % auf 5,0 % gesenkt).
+
+Wer zahlt die Grunderwerbsteuer?
+Gesetzlich schulden Käufer und Verkäufer die Grunderwerbsteuer gemeinsam (§ 13 GrEStG) — in der Praxis wird im Kaufvertrag aber so gut wie immer vereinbart, dass der Käufer die Steuer allein trägt.
+
+Wann ist die Grunderwerbsteuer fällig?
+Nach notarieller Beurkundung meldet der Notar den Kauf automatisch dem zuständigen Finanzamt, das den Steuerbescheid meist vier bis acht Wochen nach Beurkundung versendet. Die Zahlungsfrist beträgt in der Regel einen Monat nach Zugang des Bescheids. Erst nach vollständiger Zahlung stellt das Finanzamt die Unbedenklichkeitsbescheinigung aus, ohne die keine Grundbuchumschreibung erfolgt.
+
+Grunderwerbsteuer sparen: Legale Gestaltungsmöglichkeiten
+Bewegliche Gegenstände wie Einbauküche oder Markise unterliegen nicht der Grunderwerbsteuer, wenn sie im Kaufvertrag separat und mit realistischem Wert ausgewiesen werden. Bei größeren gewerblichen Transaktionen wird die Steuer teils durch Share Deals umgangen — für private Kapitalanleger in der Regel nicht relevant.
+
+Grunderwerbsteuer in der Renditerechnung
+Für die Nettomietrendite zählt die Grunderwerbsteuer zu den Kaufnebenkosten neben Notar- und Maklerkosten — zusammen liegen diese Nebenkosten je nach Bundesland häufig bei 8 bis 15 % des Kaufpreises.
+
+Fazit
+Die Grunderwerbsteuer unterscheidet sich je nach Bundesland um bis zu drei Prozentpunkte und sollte bei jedem Immobilienkauf von Anfang an in die Kalkulation einfließen.
+
+---
+
+## Grundsteuerreform 2025: Was sich für Vermieter ändert
+https://www.renditly.de/ratgeber/grundsteuerreform-2025-vermieter
+
+Warum es die Reform gibt
+Das Bundesverfassungsgericht erklärte 2018 die bisherige Bewertung für verfassungswidrig, da sie auf veralteten Einheitswerten aus 1964 bzw. 1935 basierte. Das neue System gilt bundesweit seit 1. Januar 2025.
+
+Das neue Bewertungssystem
+Statt des Einheitswerts wird der Grundsteuerwert anhand von Grundstücksgröße, Bodenrichtwert, Gebäudenutzfläche und Baujahr ermittelt. Es gibt mehrere Modelle: das wertabhängige Bundesmodell in der Mehrheit der Länder, das reine Flächenmodell in Bayern, das modifizierte Bodenwertmodell in Baden-Württemberg und das Flächen-Lage-Modell in weiteren Ländern wie Hessen und Niedersachsen.
+
+Berechnung
+Grundsteuerwert mal Steuermesszahl mal Hebesatz der Gemeinde ergibt die Grundsteuer. Der Hebesatz der Kommune ist der entscheidende Hebel für die tatsächliche Belastung.
+
+Wann Vermieter die Änderung spüren
+Sichtbar wird die Änderung erstmals in der Nebenkostenabrechnung für 2025, die üblicherweise erst 2026 verschickt wird.
+
+Umlage auf Mieter
+Die Grundsteuer bleibt nach § 556 BGB und BetrKV zu 100 Prozent umlagefähig, sofern im Mietvertrag vereinbart.
+
+Was Vermieter prüfen sollten
+Neuen Bescheid mit altem vergleichen, bei Fehlern fristgerecht Einspruch einlegen, aktuellen Hebesatz der Kommune recherchieren, Mietverträge auf Umlagefähigkeit prüfen.
+
+Fazit
+Die Reform ändert nicht ob, sondern wie hoch die Grundsteuer ausfällt — abhängig von Bewertungsmodell und kommunalem Hebesatz.
+
+---
+
+## Immobilienfinanzierung für Kapitalanleger: Die Grundlagen
+https://www.renditly.de/ratgeber/immobilienfinanzierung
+
+Warum die Finanzierung die Rendite stärker beeinflusst als der Kaufpreis
+Zwei identische Immobilien mit demselben Kaufpreis und derselben Miete können völlig unterschiedliche Cashflows und Eigenkapitalrenditen liefern — abhängig von der Finanzierung.
+
+Eigenkapitalquote: Wie viel Eigenkapital ist sinnvoll?
+Banken verlangen bei Kapitalanlage-Immobilien meist 20 bis 30 % des Kaufpreises als Eigenkapital, zuzüglich der vollständigen Kaufnebenkosten, die meist nicht mitfinanziert werden. Eine Vollfinanzierung ist möglich, aber mit Zinsaufschlägen und strengeren Bonitätsanforderungen verbunden.
+
+Zinsbindung: Wie lange sollte der Zins fest sein?
+Übliche Laufzeiten sind 5, 10, 15 oder 20 Jahre. Kurze Zinsbindung bedeutet niedrigeren Zinssatz, aber Zinsänderungsrisiko bei der Anschlussfinanzierung. Lange Zinsbindung bedeutet höheren Zinssatz, aber volle Planungssicherheit. 10 Jahre gilt als üblicher Mittelweg. Zur Einordnung: Im August 2026 liegen die Bauzinsen für eine 10-jährige Zinsbindung grob zwischen 3,6 % und 4,1 % effektiv, abhängig von Bonität und Beleihungsauslauf.
+
+Tilgungssatz: Direkter Hebel für den Cashflow
+Ein niedrigerer anfänglicher Tilgungssatz (z. B. 1 % statt 3 %) senkt die monatliche Rate und verbessert den Cashflow sofort, auf Kosten einer längeren Gesamtlaufzeit und höherer Zinskosten. Je niedriger die anfängliche Tilgung, desto höher das Zinsänderungsrisiko bei der Anschlussfinanzierung.
+
+Beleihungsauslauf und Beleihungswert
+Der Beleihungswert ist der von der Bank konservativ ermittelte Wert der Immobilie, oft unter dem Kaufpreis. Der Beleihungsauslauf beschreibt den Kreditbetrag im Verhältnis zum Beleihungswert. Über 60 % verlangen viele Banken einen Zinsaufschlag, über 80 % meist deutlich mehr.
+
+Bereitstellungszinsen und Forward-Darlehen
+Wird ein Kredit nicht sofort vollständig abgerufen, berechnen Banken nach einer meist kostenfreien Frist von 6 bis 12 Monaten Bereitstellungszinsen von etwa 0,25 % pro Monat auf den nicht abgerufenen Betrag. Mit einem Forward-Darlehen lässt sich der aktuelle Zinssatz für die Anschlussfinanzierung bis zu 5 Jahre im Voraus sichern, gegen einen mit der Vorlaufzeit steigenden Zinsaufschlag.
+
+Sondertilgung und Flexibilität einplanen
+Ein Sondertilgungsrecht (üblich 5 bis 10 % der Darlehenssumme pro Jahr kostenfrei) erlaubt es, bei Liquiditätsüberschuss die Restschuld zu senken. Für Investoren, die mehrere Immobilien nacheinander finanzieren wollen, ist es oft sinnvoller, freie Liquidität für das nächste Eigenkapital zurückzuhalten.
+
+Förderungen: KfW und regionale Programme
+Für energieeffiziente Neubauten oder Sanierungen bietet die KfW zinsvergünstigte Darlehen und teilweise Tilgungszuschüsse, an energetische Standards geknüpft, kombinierbar mit klassischer Bankfinanzierung.
+
+Fazit
+Bei der Immobilienfinanzierung entscheidet das Zusammenspiel aus Eigenkapitalquote, Zinsbindung, Tilgungssatz und Beleihungsauslauf über die Rendite — nicht nur der nominale Zinssatz.
+
+---
+
+## index
+https://www.renditly.de/ratgeber/index
+(Kein Article-JSON-LD gefunden)
+
+---
+
+## Mietkaution richtig anlegen: Pflichten für Vermieter nach § 551 BGB
+https://www.renditly.de/ratgeber/kaution-richtig-anlegen
+
+Warum die Kaution getrennt angelegt werden muss
+Nach § 551 Abs. 3 BGB muss die Mietsicherheit getrennt vom übrigen Vermögen des Vermieters angelegt werden. Diese Pflicht kann nicht durch Vereinbarung umgangen werden. Die Kaution soll als Sondervermögen geschützt sein, damit sie bei einer Insolvenz des Vermieters nicht in die Insolvenzmasse fällt.
+
+Welche Anlageformen zulässig sind
+Üblich ist ein offen als Mietkaution gekennzeichnetes Konto, meist ein Kautionssparbuch. Auch ein klar gekennzeichnetes Sammelkonto ist zulässig. Nicht zulässig ist die Kaution auf dem eigenen Girokonto zu parken oder mit eigenem Vermögen zu vermischen. Alternativen sind Kautionsbürgschaft oder Kautionsversicherung.
+
+Höhe und Zahlungsweise
+Die Kaution darf maximal 3 Nettokaltmieten betragen. Der Mieter hat das gesetzliche Recht auf Ratenzahlung in bis zu 3 gleichen monatlichen Raten, unabhängig von abweichenden Vertragsklauseln.
+
+Verzinsung
+Die Kaution ist zum üblichen Zinssatz für Spareinlagen mit dreimonatiger Kündigungsfrist zu verzinsen. Die Zinsen stehen wirtschaftlich dem Mieter zu und werden bei Rückzahlung hinzugerechnet.
+
+Was bei Verstößen droht
+Legt ein Vermieter die Kaution nicht getrennt an, kann der Mieter die gesetzeskonforme Anlage verlangen. Geht die Kaution durch Insolvenz verloren, haftet der Vermieter persönlich auf Schadensersatz.
+
+Rückzahlung nach Mietende
+Es gibt keine gesetzliche Frist, in der Rechtsprechung hat sich aber eine Prüf- und Überlegungsfrist von bis zu sechs Monaten etabliert, insbesondere wenn eine Nebenkostenabrechnung noch aussteht. Der Vermieter darf mit unstrittigen eigenen Forderungen aufrechnen.
+
+Fazit
+Die getrennte, verzinste Anlage der Kaution ist eine zwingende gesetzliche Pflicht mit realem Haftungsrisiko für Vermieter.
+
+---
+
+## Maklerprovision beim Immobilienkauf: Wer zahlt was?
+https://www.renditly.de/ratgeber/maklerprovision-immobilienkauf
+
+Bestellerprinzip bei Miete, Halbteilung beim Kauf
+Bei der Miete gilt seit 2015 das Bestellerprinzip: Wer den Makler beauftragt, zahlt ihn. Beim Immobilienkauf gilt seit Ende 2020 stattdessen der Halbteilungsgrundsatz nach § 656c BGB.
+
+Der Halbteilungsgrundsatz
+Für den Kauf von Einfamilienhäusern und Eigentumswohnungen durch Verbraucher gilt: Ist der Makler für beide Parteien tätig, muss die Provision hälftig geteilt werden. Abweichende Vereinbarungen sind unwirksam.
+
+Wenn der Makler nur für eine Seite tätig war
+War der Makler nur vom Verkäufer beauftragt, greift § 656d BGB: Der Käuferanteil darf nicht höher sein als der Verkäuferanteil. Der Verkäufer muss die Zahlung seines Anteils nachweisen, bevor der Käufer zahlen muss.
+
+Übliche Provisionshöhe
+Die Gesamtprovision liegt je nach Region zwischen etwa 3 und 7 Prozent des Kaufpreises zuzüglich Umsatzsteuer, durch die Halbteilung entfallen oft rund 3,57 Prozent brutto auf jede Seite.
+
+Relevanz für Kapitalanleger
+Beim Zukauf von Anlageimmobilien sollte die Provision als Teil der Kaufnebenkosten von Anfang an in die Renditekalkulation einfließen.
+
+Fazit
+Beim Immobilienkauf gilt der Halbteilungsgrundsatz: Der Käuferanteil darf den Verkäuferanteil nicht übersteigen. Das ist zwingendes Recht.
+
+---
+
+## Mieterhöhung nach Modernisierung: § 559 BGB einfach erklärt
+https://www.renditly.de/ratgeber/mieterhoehung-modernisierung
+
+Modernisierung vs. Instandhaltung: Der entscheidende Unterschied
+Nur Modernisierungsmaßnahmen berechtigen zur Mieterhöhung nach § 559 BGB. Eine Modernisierung verbessert den Gebrauchswert der Wohnung nachhaltig, spart Energie oder Wasser ein, oder passt die Wohnung dauerhaft an veränderte Wohnverhältnisse an. Reine Instandhaltung stellt lediglich den ursprünglichen Zustand wieder her und berechtigt nicht zur Umlage. Bei Mischmaßnahmen darf nur der modernisierende Mehraufwand umgelegt werden.
+
+Die 8-%-Umlage: So wird die neue Miete berechnet
+Formel: Jährliche Mieterhöhung = 8 % der aufgewendeten Modernisierungskosten (abzüglich Instandhaltungsanteil und Fördermittel). Beispiel: Eine energetische Fassadensanierung kostet 40.000 € für ein Haus mit vier gleich großen Wohnungen. Pro Wohnung entfallen 10.000 € Modernisierungskosten, 8 % davon sind 800 € pro Jahr — das entspricht 66,67 € mehr Miete im Monat. Erhaltene Fördermittel müssen von den umlagefähigen Kosten abgezogen werden.
+
+Die Kappungsgrenze: Deckel für die Mieterhöhung
+Die Miete darf durch Modernisierung innerhalb von sechs Jahren um maximal 3 €/m² Wohnfläche steigen. Lag die Miete vor der Modernisierung unter 7 €/m², gilt eine abgesenkte Kappungsgrenze von 2 €/m² innerhalb von sechs Jahren. Läge die rechnerische Umlage höher als die Kappungsgrenze zulässt, ist der übersteigende Teil dauerhaft ausgeschlossen.
+
+Ankündigungsfrist und Formvorschriften
+Eine Modernisierung muss dem Mieter spätestens drei Monate vor Beginn in Textform angekündigt werden (§ 555c BGB), mit Angaben zu Art, Umfang, voraussichtlichem Beginn und Dauer sowie der zu erwartenden Mieterhöhung.
+
+Das Härteeinwand-Recht des Mieters
+Mieter können der Modernisierung unter bestimmten Voraussetzungen widersprechen (§ 555d BGB) — etwa bei hohem Alter, Krankheit, Schwangerschaft oder finanzieller Härte. Bei energetischen Modernisierungen zur Einsparung von Endenergie ist der Härteeinwand gegen die Durchführung selbst ausgeschlossen, wirkt aber gegenüber der Mieterhöhung.
+
+Modernisierungsumlage vs. Mieterhöhung nach Mietspiegel
+Die Mieterhöhung nach Mietspiegel (§ 558 BGB) passt die Bestandsmiete an die ortsübliche Vergleichsmiete an. Die Modernisierungsumlage nach § 559 BGB erlaubt eine Erhöhung über die ortsübliche Vergleichsmiete hinaus, weil tatsächlich ein höherer Wohnwert geschaffen wurde.
+
+Häufige Fehler bei der Modernisierungsumlage
+Instandhaltungsanteil nicht herausgerechnet, Kappungsgrenze bei mehreren Maßnahmen innerhalb von sechs Jahren übersehen (die Grenze gilt für die Summe aller Maßnahmen), Fördermittel nicht von den umlagefähigen Kosten abgezogen.
+
+Fazit
+Die Modernisierungsumlage ist ein mächtiges Instrument, um Investitionen in Wohnqualität und Energieeffizienz über die Miete zu refinanzieren — aber nur bei sauberer Trennung von Instandhaltung und Modernisierung, korrekter Ankündigung und Einhaltung der Kappungsgrenze rechtssicher durchsetzbar.
+
+---
+
+## Mietrendite berechnen: Der komplette Guide für Immobilien-Investoren
+https://www.renditly.de/ratgeber/mietrendite-berechnen
+
+Warum die Mietrendite die wichtigste Kennzahl für Vermieter ist
+Die Mietrendite zeigt, wie profitabel eine Immobilie im Verhältnis zu ihrem Kaufpreis ist. Sie ist die zentrale Kennzahl, um verschiedene Objekte objektiv zu vergleichen. Es gibt nicht die eine Mietrendite, sondern mehrere Kennzahlen: Bruttomietrendite, Nettomietrendite und Cash-on-Cash-Rendite.
+
+Bruttomietrendite: Die schnelle erste Einschätzung
+Die Bruttomietrendite setzt die jährliche Kaltmiete ins Verhältnis zum Kaufpreis — ohne Kaufnebenkosten, Finanzierung oder laufende Kosten zu berücksichtigen. Formel: Bruttomietrendite (%) = (Kaltmiete pro Monat × 12) / Kaufpreis × 100. Beispiel: Eine Wohnung kostet 300.000 €, die Kaltmiete beträgt 900 € im Monat. Die Bruttomietrendite liegt dann bei (900 × 12) / 300.000 × 100 = 3,6 %.
+
+Nettomietrendite: Die realistischere Kennzahl
+Die Nettomietrendite berücksichtigt zusätzlich die Kaufnebenkosten (Grunderwerbsteuer, Notar, Makler) sowie laufende, nicht umlagefähige Kosten. Formel: Nettomietrendite (%) = ((Kaltmiete − laufende Kosten) × 12) / (Kaufpreis + Kaufnebenkosten) × 100. Beispiel: Gleiche Wohnung für 300.000 €, Kaufnebenkosten 10 % (30.000 €), laufende Kosten 150 € im Monat: ((900 − 150) × 12) / 330.000 × 100 = 2,7 %.
+
+Was ist eine gute Mietrendite?
+Ab 4 % netto gilt als rentabel, häufig in B- und C-Lagen erreichbar. 2–4 % netto ist Durchschnitt in vielen deutschen Großstädten. Unter 2 % netto ist in Toplagen wie München oder Hamburg keine Seltenheit — hier steht meist die Wertsteigerung im Vordergrund.
+
+Cash-on-Cash-Rendite: Die Rendite auf das eingesetzte Kapital
+Formel: Cash-on-Cash-Rendite (%) = (Jahres-Cashflow / eingesetztes Eigenkapital) × 100. Sie zeigt, wie effizient der Leverage-Effekt der Fremdfinanzierung wirkt.
+
+Mietrendite vs. Gesamtrendite
+Die Mietrendite betrachtet nur den laufenden Ertrag. Tilgung erhöht als erzwungenes Sparen das Eigenkapital des Vermieters unabhängig vom Cashflow. Wertsteigerung ist historisch in deutschen Groß- und Mittelstädten über lange Zeiträume aufgetreten, wenn auch nicht garantiert. Näherungsformel: Gesamtrendite ≈ Nettomietrendite + jährliche Tilgungsquote + erwartete Wertsteigerung p. a.
+
+Häufige Rechenfehler bei der Mietrendite
+Warmmiete statt Kaltmiete verwenden ist falsch — nur die Kaltmiete gehört in die Formel. Kaufnebenkosten dürfen bei der finalen Kaufentscheidung nicht ignoriert werden, auch wenn die Bruttomietrendite sie bewusst ausklammert. Sanierungsstau sollte wie ein zusätzlicher Kaufpreisbestandteil behandelt werden.
+
+Fazit
+Die Bruttomietrendite eignet sich für die schnelle Vorauswahl, die Nettomietrendite für die realistische Einschätzung und die Cash-on-Cash-Rendite für die Bewertung der Finanzierungsstrategie.
+
+---
+
+## Mietspiegel verstehen und für Mieterhöhungen nutzen
+https://www.renditly.de/ratgeber/mietspiegel-verstehen
+
+Was ist ein Mietspiegel?
+Der Mietspiegel ist eine von Gemeinde oder Stadt erstellte Übersicht über die ortsübliche Vergleichsmiete — also die Nettokaltmiete, die in der jeweiligen Stadt für vergleichbare Wohnungen üblich ist, gestaffelt nach Wohnlage, Baujahr, Größe und Ausstattung. Er ist die zentrale Referenzgröße für Mieterhöhungen im laufenden Mietverhältnis und für die Mietpreisbremse bei Neuvermietungen.
+
+Einfacher vs. qualifizierter Mietspiegel
+Der einfache Mietspiegel wird von der Gemeinde erstellt oder anerkannt und dient als Orientierungshilfe. Vor Gericht ist er ein Indiz, aber kein zwingender Beweis. Der qualifizierte Mietspiegel (§ 558d BGB) wird nach anerkannten wissenschaftlichen Grundsätzen erstellt und von der Gemeinde als solcher anerkannt. Er wird vor Gericht als Beweis für die ortsübliche Vergleichsmiete vermutet — Mieterhöhungen, die sich darauf stützen, sind deutlich rechtssicherer.
+Nicht jede Stadt hat einen qualifizierten Mietspiegel. Größere Städte wie Berlin, München, Hamburg oder Köln verfügen in der Regel über einen, kleinere Gemeinden oft nur über einen einfachen oder gar keinen.
+
+Mieterhöhung nach Mietspiegel: Die Spielregeln
+Eine Mieterhöhung auf die ortsübliche Vergleichsmiete ist frühestens 15 Monate nach der letzten Mieterhöhung oder dem Einzug zulässig, und die neue Miete darf erst nach einer weiteren Wartezeit von drei Monaten seit Zugang des Erhöhungsverlangens gezahlt werden.
+Die Kappungsgrenze: Die Miete darf innerhalb von drei Jahren um maximal 20 % steigen — in Gebieten mit angespanntem Wohnungsmarkt gilt eine verschärfte Kappungsgrenze von 15 %. Das gilt unabhängig davon, wie stark die ortsübliche Vergleichsmiete tatsächlich gestiegen ist. Beide Grenzen gelten parallel, es zählt jeweils der niedrigere Wert.
+
+Mietpreisbremse bei Neuvermietung
+In Gebieten mit angespanntem Wohnungsmarkt greift bei Neuvermietung die Mietpreisbremse (§ 556d BGB): Die vereinbarte Miete darf die ortsübliche Vergleichsmiete laut Mietspiegel um maximal 10 % übersteigen. Ausnahmen gelten unter anderem für umfassend modernisierte Wohnungen, Neubauten (Erstbezug nach dem 1. Oktober 2014) sowie wenn die Vormiete bereits über diesem Wert lag.
+
+Wo finde ich den Mietspiegel meiner Stadt?
+Qualifizierte und einfache Mietspiegel werden in der Regel von der jeweiligen Stadtverwaltung oder dem Bau-/Wohnungsamt veröffentlicht, oft kostenlos online abrufbar. Größere Städte aktualisieren ihren Mietspiegel meist alle zwei Jahre, dazwischen wird er mit dem Verbraucherpreisindex fortgeschrieben.
+
+Praxistipp: Mieterhöhung korrekt begründen
+Ein Erhöhungsverlangen muss in Textform erfolgen und die Erhöhung nachvollziehbar begründen — üblicherweise durch Bezug auf die konkrete Einordnung der Wohnung im Mietspiegel. Pauschale Erhöhungen ohne Begründung sind unwirksam.
+
+Fazit
+Der Mietspiegel ist die zentrale Referenz für rechtssichere Mieterhöhungen — aber nur in Kombination mit der Kappungsgrenze, den Wartefristen und einer sauberen Begründung.
+
+---
+
+## Nebenkostenabrechnung für Vermieter: Der komplette Leitfaden
+https://www.renditly.de/ratgeber/nebenkostenabrechnung-vermieter
+
+Warum die Nebenkostenabrechnung für Vermieter wichtig ist
+Die Nebenkostenabrechnung (rechtlich korrekt: Betriebskostenabrechnung) ist die jährliche Abrechnung der umlagefähigen Betriebskosten einer Immobilie gegenüber den Mietern. Sie entscheidet direkt über den Cashflow: Wer Kosten übersieht, die eigentlich umlagefähig wären, trägt sie faktisch selbst. Wer die Frist verpasst, verliert den Nachzahlungsanspruch komplett — unabhängig davon, wie berechtigt die Forderung ist.
+
+Umlagefähige Betriebskosten: Was darf auf Mieter umgelegt werden?
+Welche Kosten umlagefähig sind, regelt die Betriebskostenverordnung (BetrKV), konkret der Katalog in § 2 BetrKV. Nur Kosten, die dort aufgeführt sind — und die im Mietvertrag als umlagefähig vereinbart wurden — dürfen abgerechnet werden.
+Umlagefähig sind unter anderem: Grundsteuer (wird vollständig auf Mieter umgelegt), Wasser & Abwasser (meist nach Verbrauch), Heizung & Warmwasser (mindestens 50–70 % nach Verbrauch gemäß Heizkostenverordnung), Müllabfuhr, Straßenreinigung und Gebäudereinigung, Gartenpflege, Hausmeister und Aufzug, Sach- und Haftpflichtversicherung des Gebäudes sowie die Kabel-/Breitband-Grundgebühr, falls vertraglich vereinbart.
+Nicht umlagefähig sind Verwaltungskosten (Hausverwaltung, Buchhaltung), Instandhaltungsrücklage und Reparaturen, Bankgebühren und Finanzierungskosten sowie Kosten für Leerstand — den Anteil leerstehender Einheiten trägt der Vermieter selbst.
+Ein häufiger Fehler ist, Verwaltungs- oder Instandhaltungskosten versehentlich in die Abrechnung zu mischen — das führt bei einem Widerspruch des Mieters schnell zur (teilweisen) Unwirksamkeit der Abrechnung.
+
+Der Umlageschlüssel: Wie werden Kosten verteilt?
+Ist im Mietvertrag kein Umlageschlüssel vereinbart, gilt gesetzlich der Wohnflächenschlüssel (§ 556a BGB): Jede Einheit trägt Kosten im Verhältnis ihrer Wohnfläche zur Gesamtwohnfläche des Gebäudes. Der Verbrauchsschlüssel ist zwingend vorgeschrieben für Heizung und Warmwasser (mindestens 50 %), ansonsten frei vereinbar für Wasser oder Strom mit Zwischenzählern. Die Personenzahl wird häufig bei Müll- oder Wasserkosten genutzt, muss aber vertraglich vereinbart sein. Bei Eigentumswohnungen ist der Miteigentumsanteil (MEA) oft identisch mit dem Verteilerschlüssel der WEG-Abrechnung.
+Bei Mehrfamilienhäusern mit Gewerbeeinheiten im Erdgeschoss (z. B. Ladenlokal) muss der erhöhte Verbrauch dieser Einheiten angemessen berücksichtigt werden — sonst drohen berechtigte Einwände der Wohnungsmieter.
+
+Die Abrechnungsfrist: Zwölf Monate — keine Ausnahme
+Nach § 556 Abs. 3 BGB muss die Nebenkostenabrechnung dem Mieter spätestens zwölf Monate nach Ende des Abrechnungszeitraums zugehen. Bei einem Abrechnungszeitraum vom 1. Januar bis 31. Dezember 2025 muss die Abrechnung also spätestens am 31. Dezember 2026 beim Mieter angekommen sein. Verpasst der Vermieter diese Frist, verfällt der Anspruch auf eine Nachzahlung vollständig — es sei denn, der Vermieter hat die Verspätung nachweislich nicht zu vertreten. Guthaben des Mieters bleiben davon unberührt und müssen auch nach Fristablauf ausgezahlt werden.
+
+Nachzahlung, Guthaben und Vorauszahlungsanpassung
+Ergibt die Abrechnung eine Nachzahlung, ist diese in der Regel binnen 30 Tagen nach Zugang der Abrechnung fällig. Ergibt sich ein Guthaben für den Mieter, muss es zeitnah erstattet werden. In beiden Fällen kann der Vermieter die monatlichen Nebenkostenvorauszahlungen für die Zukunft anpassen.
+
+Häufige Fehler in der Praxis
+Vorjahreswerte unreflektiert übernehmen: Energiepreise und kommunale Gebühren schwanken. Wer die Vorauszahlungen nicht regelmäßig anpasst, produziert entweder große Nachzahlungen oder zu hohe Vorauszahlungen.
+Leerstandskosten falsch umgelegt: Verbrauchsunabhängige Kosten werden anteilig auch auf leerstehende Einheiten berechnet — dieser Anteil verbleibt beim Vermieter.
+Belege nicht vollständig vorhalten: Mieter haben ein Recht auf Einsicht in die Abrechnungsbelege.
+
+Fazit
+Eine korrekte Nebenkostenabrechnung ist Pflicht und direkter Cashflow-Hebel zugleich: Nur was sauber, fristgerecht und mit dem richtigen Umlageschlüssel abgerechnet wird, kommt auch tatsächlich beim Vermieter an.
+
+---
+
+## Spekulationssteuer bei Immobilienverkauf: Die 10-Jahres-Frist erklärt
+https://www.renditly.de/ratgeber/spekulationssteuer-immobilienverkauf
+
+Was ist die Spekulationssteuer?
+Die umgangssprachlich als Spekulationssteuer bezeichnete Steuer ist rechtlich gesehen keine eigene Steuerart, sondern die Besteuerung eines privaten Veräußerungsgeschäfts nach § 23 EStG. Verkauft ein Vermieter eine Immobilie mit Gewinn innerhalb bestimmter Fristen nach dem Kauf, muss dieser Gewinn als Einkommen versteuert werden.
+
+Die 10-Jahres-Frist
+Bei vermieteten Immobilien beträgt die Spekulationsfrist zehn Jahre. Maßgeblich ist das Datum des notariellen Kaufvertrags, sowohl beim Ankauf als auch beim Verkauf. Wird die Immobilie erst nach Ablauf dieser zehn Jahre verkauft, ist der Gewinn vollständig steuerfrei, unabhängig von der Höhe. Beispiel: Kaufvertrag am 15. März 2016 unterschrieben, Verkauf frühestens ab dem 16. März 2026 steuerfrei möglich.
+
+Die Ausnahme: Eigennutzung
+Unabhängig von der 10-Jahres-Frist bleibt der Verkauf steuerfrei, wenn die Immobilie im Verkaufsjahr und den beiden vorangegangenen Kalenderjahren durchgehend zu eigenen Wohnzwecken genutzt wurde, oder im gesamten Zeitraum zwischen Anschaffung und Veräußerung ausschließlich zu eigenen Wohnzwecken genutzt wurde. Die zwei vorangegangenen Kalenderjahre müssen nicht volle Kalenderjahre sein — es reicht ein zusammenhängender Nutzungszeitraum über drei Kalenderjahre.
+
+Wie wird der Veräußerungsgewinn berechnet?
+Veräußerungsgewinn = Verkaufspreis − Anschaffungskosten − Veräußerungskosten + in Anspruch genommene AfA. Die in den Vorjahren geltend gemachte AfA erhöht den steuerpflichtigen Gewinn, weil sie den Buchwert der Immobilie mindert. Beispiel: Kaufpreis 2016: 250.000 €, AfA über 9 Jahre à 2 % auf 200.000 € Gebäudeanteil = 36.000 € kumulierte AfA, Verkaufspreis 2026: 320.000 €, Veräußerungskosten 12.000 €. Veräußerungsgewinn = 320.000 − 250.000 − 12.000 + 36.000 = 94.000 €.
+
+Wie hoch ist die Steuer auf den Veräußerungsgewinn?
+Anders als bei Aktien gibt es keinen pauschalen Abgeltungssteuersatz von 25 % — der Veräußerungsgewinn wird dem übrigen zu versteuernden Einkommen hinzugerechnet und mit dem persönlichen Einkommensteuersatz (bis zu 45 % zzgl. Solidaritätszuschlag) versteuert.
+
+Freigrenze und Verlustverrechnung
+Seit 2024 gilt eine Freigrenze von 1.000 € pro Person und Jahr für den Gesamtgewinn aus allen privaten Veräußerungsgeschäften eines Jahres (§ 23 Abs. 3 EStG) — eine Freigrenze, kein Freibetrag: Liegt der Gesamtgewinn auch nur einen Euro darüber, ist der gesamte Betrag steuerpflichtig. Verluste können ausschließlich mit Gewinnen aus anderen privaten Veräußerungsgeschäften verrechnet werden.
+
+Fazit
+Wer den Verkauf einer vermieteten Immobilie plant, sollte das exakte Datum des ursprünglichen Kaufvertrags kennen und die 10-Jahres-Frist im Kalender markieren.
+
+---
+
+## Untervermietung erlauben oder verbieten: Rechte und Pflichten für Vermieter
+https://www.renditly.de/ratgeber/untervermietung-erlauben-verbieten
+
+Grundsatz: Erlaubnispflicht des Vermieters
+Will ein Mieter einen Teil seiner Wohnung untervermieten, braucht er grundsätzlich die Erlaubnis des Vermieters. Ohne Erlaubnis drohen Abmahnung und im Wiederholungsfall fristlose Kündigung.
+
+Wann besteht ein Anspruch auf Erlaubnis?
+Nach § 553 BGB muss der Vermieter die Erlaubnis erteilen, wenn der Mieter ein berechtigtes Interesse hat, das nach Vertragsschluss entstanden ist — etwa finanzielle Gründe, ein einziehender Lebenspartner oder längere Abwesenheit.
+
+Wann darf der Vermieter ablehnen?
+Der Vermieter darf ablehnen, wenn ein wichtiger Grund in der Person des Untermieters liegt, die Wohnung übermäßig belegt würde, oder ihm die Untervermietung sonst nicht zuzumuten ist. Bei möblierten Zimmern in der vom Vermieter selbst bewohnten Wohnung besteht kein Anspruch.
+
+Der Untermietzuschlag
+Ein Zuschlag ist nur zulässig, wenn dem Vermieter die Untervermietung nur bei einer Mieterhöhung zuzumuten wäre (§ 553 Abs. 2 BGB). Eine gesetzliche Obergrenze gibt es nicht, der Vermieter trägt aber die Beweislast für die Voraussetzungen.
+
+Sonderfall Kurzzeitvermietung über Airbnb
+Die tageweise Untervermietung wird strenger beurteilt. Ein berechtigtes Interesse ist bei regelmäßiger, gewerblich anmutender Kurzzeitvermietung oft fraglich.
+
+Risiken bei unerlaubter Untervermietung
+Ohne Erlaubnis kann der Vermieter abmahnen und bei Fortsetzung fristlos kündigen. Verweigert der Vermieter die Erlaubnis unberechtigt, kann der Mieter unter Umständen außerordentlich kündigen.
+
+Fazit
+Untervermietung ist ein austariertes System aus Mieteranspruch und begrenzten Ablehnungsgründen.
+
+---
+
+# Mietrendite nach Stadt (18 deutsche Großstädte)
+
+## Essen
+https://www.renditly.de/mietrendite-essen
+
+Ø Kaufpreis: 3.647 €/m² · Ø Kaltmiete: 13,9 €/m² · Bruttomietrendite: 4,6 %
+
+Essen, ehemalige Kohle- und Stahlmetropole, hat sich zu einem Dienstleistungs- und Handelsstandort im Herzen des Ruhrgebiets entwickelt und ist Sitz mehrerer DAX-Unternehmen. Die Kaufpreise liegen niedrig, die Mietrendite dafür überdurchschnittlich hoch — die höchste unter den zehn größten deutschen Städten. Essen profitiert zudem vom Grüngürtel und der Nähe zum Baldeneysee, was die Wohnqualität in bestimmten Stadtteilen deutlich hebt. Für Kapitalanleger mit Fokus auf laufenden Cashflow ist Essen damit einer der interessantesten Tier-1-Standorte, erfordert aber wie im gesamten Ruhrgebiet eine sorgfältige Objekt- und Lageauswahl.
+
+F: Ist Essen eine gute Stadt für renditeorientierte Immobilieninvestoren?
+A: Ja — mit einer Bruttomietrendite von rund 4,6 % ist Essen die renditestärkste der zehn größten deutschen Städte, bei gleichzeitig niedrigen Einstiegspreisen.
+
+F: Welche Essener Stadtteile sind für Kapitalanleger empfehlenswert?
+A: Stadtteile im Süden wie Bredeney oder Rüttenscheid bieten hohe Wohnqualität, während zentralere und nördliche Lagen oft günstigere Einstiegspreise bei solider Mietnachfrage ermöglichen.
+
+---
+
+## Dortmund
+https://www.renditly.de/mietrendite-dortmund
+
+Ø Kaufpreis: 3.314 €/m² · Ø Kaltmiete: 12,3 €/m² · Bruttomietrendite: 4,5 %
+
+Dortmund gehört zu den Ruhrgebietsstädten, die sich vom Strukturwandel der Montanindustrie hin zu Logistik, IT und Wissenschaft (TU Dortmund) gewandelt haben. Die Kaufpreise liegen deutlich unter dem Bundesdurchschnitt, während die Mieten im Verhältnis dazu vergleichsweise hoch sind — das Ergebnis ist eine der höchsten Bruttomietrenditen unter den zehn größten deutschen Städten. Damit ist Dortmund für Cashflow-orientierte Kapitalanleger besonders interessant. Wichtig ist die genaue Lageauswahl: Stadtteile mit hohem Sanierungsbedarf oder sozialen Herausforderungen sollten kritisch geprüft werden, während Viertel wie die Nordstadt-Randlagen oder Hörde solide Vermietbarkeit bei attraktiven Renditen bieten.
+
+F: Warum ist die Mietrendite in Dortmund so hoch?
+A: Die Kaufpreise (Ø 3.314 €/m²) liegen deutlich unter dem Bundesdurchschnitt, während das Mietniveau im Verhältnis dazu relativ hoch ist. Daraus ergibt sich eine Bruttomietrendite von rund 4,5 % — eine der höchsten unter den deutschen Großstädten.
+
+F: Worauf sollte man bei einer Immobilie in Dortmund achten?
+A: Die Lagequalität variiert innerhalb Dortmunds stark. Es lohnt sich, Bausubstanz, Mieterstruktur und Sozialstruktur des jeweiligen Stadtteils genau zu prüfen, bevor man in hoch verzinste Objekte investiert.
+
+---
+
+## Bremen
+https://www.renditly.de/mietrendite-bremen
+
+Ø Kaufpreis: 2.930 €/m² · Ø Kaltmiete: 11,0 €/m² · Bruttomietrendite: 4,5 %
+
+Bremen ist als Hafen- und Logistikstandort mit Airbus, Luft- und Raumfahrtindustrie sowie einer eigenständigen Universität wirtschaftlich breiter aufgestellt, als der bundesweite Ruf der Stadt oft vermuten lässt. Die Kaufpreise liegen deutlich unter dem Niveau vergleichbarer Großstädte, während die Mietnachfrage durch Beschäftigte in Industrie und Hafenwirtschaft konstant bleibt. Das ergibt eine überdurchschnittliche Bruttomietrendite unter den größeren deutschen Städten. Wie in vielen zweigeteilten Stadtstrukturen lohnt sich ein genauer Blick auf die Lage: Stadtteile wie die Neustadt oder Schwachhausen bieten solide Wohnqualität, während Bremen-Nord und östliche Stadtteile für Cashflow-orientierte Investoren mit niedrigeren Einstiegspreisen interessant sind.
+
+F: Lohnt sich eine Immobilie in Bremen als Kapitalanlage?
+A: Mit einer Bruttomietrendite von rund 4,5 % und vergleichsweise niedrigen Kaufpreisen gehört Bremen zu den renditestärkeren deutschen Großstädten, getragen von einer stabilen, industriegeprägten Wirtschaft.
+
+F: Welche Bremer Stadtteile sind für Investoren interessant?
+A: Die Neustadt und Schwachhausen bieten gute Wohnqualität und stabile Nachfrage, während Bremen-Nord und östliche Stadtteile niedrigere Einstiegspreise bei solider Vermietbarkeit ermöglichen.
+
+---
+
+## Karlsruhe
+https://www.renditly.de/mietrendite-karlsruhe
+
+Ø Kaufpreis: 4.200 €/m² · Ø Kaltmiete: 15,3 €/m² · Bruttomietrendite: 4,4 %
+
+Karlsruhe ist als Sitz des Karlsruher Instituts für Technologie (KIT), des Bundesgerichtshofs und des Bundesverfassungsgerichts sowohl Tech- als auch Justizstandort mit überdurchschnittlich hoher Akademikerdichte. Die Nähe zu zahlreichen IT- und Forschungseinrichtungen sorgt für eine besonders zahlungskräftige Mieterschaft, was sich in einem für süddeutsche Verhältnisse ungewöhnlich hohen Mietniveau im Verhältnis zu den Kaufpreisen niederschlägt. Das ergibt eine der höheren Bruttomietrenditen unter den größeren deutschen Städten. Die fächerförmig angelegte Innenstadt rund um das Schloss ist bei Mietern besonders gefragt, während Stadtteile wie Mühlburg oder Daxlanden günstigere Einstiegspreise bei guter Anbindung bieten.
+
+F: Warum ist die Mietrendite in Karlsruhe überdurchschnittlich hoch?
+A: Die hohe Dichte an IT- und Forschungsarbeitsplätzen rund um das KIT sorgt für eine zahlungskräftige Mieterschaft und ein vergleichsweise hohes Mietniveau im Verhältnis zu den Kaufpreisen — die Bruttomietrendite liegt bei rund 4,4 %.
+
+F: Welche Karlsruher Stadtteile sind für Kapitalanleger interessant?
+A: Mühlburg und Daxlanden bieten niedrigere Einstiegspreise als die zentrale, fächerförmige Innenstadt rund um das Schloss, bei weiterhin guter Anbindung.
+
+---
+
+## Berlin
+https://www.renditly.de/mietrendite-berlin
+
+Ø Kaufpreis: 5.300 €/m² · Ø Kaltmiete: 18,5 €/m² · Bruttomietrendite: 4,2 %
+
+Berlin bleibt der mit Abstand meistgehandelte Immobilienmarkt Deutschlands — hohe Liquidität, stabile Nachfrage durch stetigen Zuzug, aber auch ein politisch sensibles Pflaster: Mietendeckel-Debatten und Milieuschutz sorgen immer wieder für Unsicherheit bei Investoren. Die Bruttomietrendite liegt im Mittelfeld der deutschen Großstädte, was Berlin zu einem soliden, aber nicht spektakulären Renditeobjekt macht. Attraktiver wird die Stadt durch die Aussicht auf weitere Wertsteigerung: Berlin holt im europäischen Vergleich der Metropolen-Kaufpreise noch auf. Wer auf Cashflow aus ist, findet in Außenbezirken wie Marzahn-Hellersdorf oder Spandau deutlich bessere Renditen als in Prenzlauer Berg oder Mitte — dort dominiert die Wertsteigerungsstrategie.
+
+F: Ist Berlin 2026 noch für Kapitalanleger interessant?
+A: Ja, aber eher für wertsteigerungsorientierte Investoren als für reine Cashflow-Strategien. Die Bruttomietrendite liegt bei rund 4,2 % — solide, aber nicht spektakulär. Wer höhere laufende Erträge sucht, sollte gezielt in Außenbezirke schauen.
+
+F: In welchen Berliner Bezirken ist die Mietrendite am höchsten?
+A: Tendenziell in östlichen und südöstlichen Außenbezirken wie Marzahn-Hellersdorf, Lichtenberg oder Spandau, wo die Kaufpreise deutlich niedriger sind als in Prenzlauer Berg, Mitte oder Charlottenburg, während die Mieten proportional weniger stark abfallen.
+
+---
+
+## Köln
+https://www.renditly.de/mietrendite-koeln
+
+Ø Kaufpreis: 4.632 €/m² · Ø Kaltmiete: 15,9 €/m² · Bruttomietrendite: 4,1 %
+
+Köln zählt zu den attraktivsten Investmentstandorten unter den deutschen Millionenstädten: Die Kaufpreise liegen spürbar unter Düsseldorf oder Frankfurt, während die Mietnachfrage durch Universität, Medienbranche und eine junge, wachsende Bevölkerung konstant hoch bleibt. Das Ergebnis ist eine Bruttomietrendite im oberen Mittelfeld der Tier-1-Städte — ein gutes Verhältnis aus Sicherheit und Ertrag. Besonders gefragte Lagen wie das Belgische Viertel oder Ehrenfeld haben in den letzten Jahren stark an Wert gewonnen, bieten aber inzwischen geringere Einstiegsrenditen. Rechtsrheinische Stadtteile wie Kalk oder Mülheim sind für renditeorientierte Käufer oft der bessere Einstieg.
+
+F: Ist Köln ein guter Standort für Immobilieninvestments?
+A: Ja — mit einer Bruttomietrendite von rund 4,1 % gehört Köln zu den rentableren deutschen Großstädten, bei gleichzeitig stabiler Nachfrage durch Studierende, Medienbranche und Zuzug.
+
+F: Welche Kölner Stadtteile bieten die beste Mietrendite?
+A: Rechtsrheinische Lagen wie Kalk, Mülheim oder Deutz sind meist günstiger im Einkauf als das Belgische Viertel oder die Südstadt und bieten dadurch oft höhere Renditen bei solider Mietnachfrage.
+
+---
+
+## Dresden
+https://www.renditly.de/mietrendite-dresden
+
+Ø Kaufpreis: 3.170 €/m² · Ø Kaltmiete: 10,8 €/m² · Bruttomietrendite: 4,1 %
+
+Dresden hat sich als sächsische Landeshauptstadt zu einem der wichtigsten Hightech-Standorte Deutschlands entwickelt — die Halbleiterindustrie rund um "Silicon Saxony" sowie die TU Dresden ziehen kontinuierlich Fachkräfte und Studierende an. Die historische Altstadt und die Lage an der Elbe machen die Stadt zusätzlich touristisch attraktiv. Die Kaufpreise liegen trotz des wirtschaftlichen Aufschwungs noch unter westdeutschem Niveau, während die Mietnachfrage durch Zuzug stetig wächst — daraus ergibt sich eine überdurchschnittliche Bruttomietrendite. Gefragte Lagen wie Blasewitz oder Striesen haben in den letzten Jahren spürbar an Wert gewonnen, während Stadtteile wie Prohlis oder Gorbitz für renditeorientierte Investoren noch günstigere Einstiegspreise bieten.
+
+F: Ist Dresden 2026 ein attraktiver Standort für Immobilieninvestoren?
+A: Ja — mit einer Bruttomietrendite von rund 4,1 % und weiterhin wachsender Nachfrage durch die Halbleiterindustrie und die TU Dresden gehört die Stadt zu den dynamischeren deutschen Großstadtmärkten.
+
+F: Welche Dresdner Stadtteile bieten die beste Mietrendite?
+A: Prohlis und Gorbitz bieten deutlich niedrigere Einstiegspreise als die etablierten Lagen Blasewitz oder Striesen, bei weiterhin solider Mietnachfrage.
+
+---
+
+## Hannover
+https://www.renditly.de/mietrendite-hannover
+
+Ø Kaufpreis: 3.560 €/m² · Ø Kaltmiete: 11,5 €/m² · Bruttomietrendite: 3,9 %
+
+Hannover profitiert als niedersächsische Landeshauptstadt von einer breiten wirtschaftlichen Basis: Continental, VW-Nutzfahrzeuge und die Hannover Messe sorgen für stabile Beschäftigung und internationale Sichtbarkeit weit über die Messewochen hinaus. Die zentrale Lage in Norddeutschland mit sehr guter Bahn- und Autobahnanbindung macht die Stadt zusätzlich attraktiv für Pendler aus dem Umland. Die Kaufpreise liegen im soliden Mittelfeld der deutschen Großstädte, die Bruttomietrendite bewegt sich ähnlich moderat. Für Kapitalanleger sind neben der Innenstadt vor allem die List und Linden-Süd gefragt, während südliche und östliche Stadtteile wie Misburg oder Bothfeld günstigere Einstiegspreise bei stabiler Mietnachfrage bieten.
+
+F: Wie hoch ist die Mietrendite in Hannover?
+A: Die Bruttomietrendite liegt bei rund 3,9 % — ein solides Mittelfeld, getragen von einer breiten Wirtschaftsbasis aus Automobilzulieferern, Messewirtschaft und öffentlicher Verwaltung als Landeshauptstadt.
+
+F: Welche Stadtteile Hannovers eignen sich für Kapitalanleger?
+A: Die List und Linden-Süd sind bei Mietern beliebt und entsprechend nachgefragt, während Misburg oder Bothfeld niedrigere Einstiegspreise bei solider Anbindung bieten.
+
+---
+
+## Nürnberg
+https://www.renditly.de/mietrendite-nuernberg
+
+Ø Kaufpreis: 3.880 €/m² · Ø Kaltmiete: 12,5 €/m² · Bruttomietrendite: 3,9 %
+
+Nürnberg ist die zweitgrößte Stadt Bayerns und ein bedeutender Industrie- und Logistikstandort mit enger wirtschaftlicher Verflechtung zum benachbarten Erlangen (Siemens) und Fürth. Die Messe Nürnberg und eine breite Mischung aus Maschinenbau, Elektrotechnik und IT sorgen für eine stabile, diversifizierte Wirtschaft. Die Kaufpreise liegen spürbar unter München, während das Mietniveau vergleichsweise hoch ist — das ergibt eine solide Bruttomietrendite im Mittelfeld der deutschen Großstädte. Für Kapitalanleger sind die Südstadt und Gostenhof als lebendige, gut angebundene Viertel gefragt, während St. Leonhard oder Langwasser günstigere Einstiegspreise bei stabiler Vermietbarkeit bieten.
+
+F: Wie steht Nürnberg im Vergleich zu München als Investmentstandort da?
+A: Deutlich günstiger im Einkauf bei ähnlich hoher Mietnachfrage aus der Industrie- und Technologiebranche — die Bruttomietrendite liegt bei rund 3,9 %, spürbar über dem Münchner Niveau.
+
+F: Welche Nürnberger Stadtteile eignen sich für Kapitalanleger?
+A: Die Südstadt und Gostenhof sind bei jüngeren Mietern beliebt, während St. Leonhard und Langwasser niedrigere Einstiegspreise bei solider Nachfrage bieten.
+
+---
+
+## Hamburg
+https://www.renditly.de/mietrendite-hamburg
+
+Ø Kaufpreis: 5.720 €/m² · Ø Kaltmiete: 18,3 €/m² · Bruttomietrendite: 3,8 %
+
+Hamburg kombiniert eine wirtschaftlich robuste Hafenstadt-Ökonomie mit begrenztem Bauland — das treibt die Kaufpreise seit Jahren nach oben, während das Mietniveau ähnlich hoch wie in Berlin liegt. Die Bruttomietrendite bewegt sich im unteren Mittelfeld, typisch für eine gefragte Metropole mit stabiler, wohlhabender Mieterschaft. Besonders gefragt bei Kapitalanlegern sind die HafenCity und angrenzende Szeneviertel wie Altona oder Eimsbüttel, wo Wertsteigerung und Vermietbarkeit Hand in Hand gehen. Wer höhere Renditen sucht, wird eher im Hamburger Umland oder in Stadtteilen wie Wilhelmsburg fündig — dort sind Einstiegspreise deutlich niedriger bei vergleichsweise soliden Mieten.
+
+F: Lohnt sich der Kauf einer Eigentumswohnung in Hamburg als Kapitalanlage?
+A: Für Wertsteigerung ja, für hohe laufende Rendite eher bedingt. Bei einer Bruttomietrendite von rund 3,8 % steht in Hamburg meist die langfristige Substanzsicherung im Vordergrund, nicht der schnelle Cashflow.
+
+F: Wie unterscheiden sich die Mietrenditen zwischen Hamburger Stadtteilen?
+A: In zentralen, etablierten Lagen wie Eimsbüttel oder Altona sind die Kaufpreise hoch und die Rendite entsprechend niedriger. Stadtteile wie Wilhelmsburg oder Harburg bieten günstigere Einstiegspreise und damit tendenziell höhere Renditen.
+
+---
+
+## Stuttgart
+https://www.renditly.de/mietrendite-stuttgart
+
+Ø Kaufpreis: 5.346 €/m² · Ø Kaltmiete: 16,7 €/m² · Bruttomietrendite: 3,8 %
+
+Stuttgart profitiert von einer der stärksten Industrieregionen Europas — Automobilbau und Maschinenbau sichern hohe Kaufkraft und stabile Beschäftigung, was sich in konstant hoher Mietnachfrage niederschlägt. Die Bruttomietrendite bewegt sich im Mittelfeld der deutschen Großstädte. Die Kessellage Stuttgarts begrenzt die Bauflächen strukturell, was Neubau erschwert und Bestandsimmobilien tendenziell stützt. Für Kapitalanleger sind vor allem die äußeren Stadtbezirke sowie das direkte Umland (Esslingen, Ludwigsburg, Waiblingen) interessant, wo die Kaufpreise deutlich niedriger liegen als in der Innenstadt, die Mietnachfrage durch Pendler aber ähnlich stabil bleibt.
+
+F: Ist Stuttgart eine gute Stadt für Immobilieninvestments?
+A: Mit einer Bruttomietrendite von rund 3,8 % und einer sehr stabilen, industriegetriebenen Wirtschaft ist Stuttgart ein solider, wenig volatiler Investmentstandort.
+
+F: Wo lohnt sich der Immobilienkauf rund um Stuttgart am meisten?
+A: Das direkte Umland — etwa Esslingen, Ludwigsburg oder Waiblingen — bietet oft ein besseres Preis-Miet-Verhältnis als die Innenstadt, bei weiterhin stabiler Nachfrage durch Berufspendler.
+
+---
+
+## Düsseldorf
+https://www.renditly.de/mietrendite-duesseldorf
+
+Ø Kaufpreis: 5.641 €/m² · Ø Kaltmiete: 17,7 €/m² · Bruttomietrendite: 3,8 %
+
+Düsseldorf ist als Landeshauptstadt von Nordrhein-Westfalen und internationaler Wirtschaftsstandort (Mode, Werbung, japanische Unternehmen) ein gefragter, aber auch teurer Markt. Die Bruttomietrendite liegt im Mittelfeld der Großstädte. Besonders die Altstadt, der Medienhafen und Stadtteile wie Pempelfort sind bei Käufern begehrt, was die Einstiegsrenditen dort drückt. Interessanter für renditeorientierte Investoren sind Stadtteile wie Gerresheim, Eller oder Garath, die von der guten Infrastruktur der Stadt profitieren, aber deutlich günstiger im Einkauf sind. Die Nähe zu Köln und dem Ruhrgebiet macht die gesamte Region für Investoren mit Diversifikationsstrategie interessant.
+
+F: Wie ist die Mietrendite in Düsseldorf im Städtevergleich einzuordnen?
+A: Mit rund 3,8 % Bruttomietrendite liegt Düsseldorf im Mittelfeld der deutschen Großstädte — solide, aber durch die hohe Nachfrage aus der Wirtschaft nicht besonders günstig im Einkauf.
+
+F: Welche Stadtteile eignen sich in Düsseldorf für Kapitalanleger?
+A: Gerresheim, Eller und Garath bieten günstigere Einstiegspreise als die Altstadt oder Pempelfort, bei weiterhin guter Anbindung an die Innenstadt.
+
+---
+
+## Leipzig
+https://www.renditly.de/mietrendite-leipzig
+
+Ø Kaufpreis: 3.858 €/m² · Ø Kaltmiete: 12,2 €/m² · Bruttomietrendite: 3,8 %
+
+Leipzig war über Jahre einer der beliebtesten Investmentstandorte Deutschlands — niedrige Einstiegspreise, wachsende Bevölkerung und ein florierendes Kreativ- und Startup-Ökosystem lockten viele Kapitalanleger an. Inzwischen sind die Preise deutlich gestiegen, liegen aber immer noch klar unter westdeutschen Metropolen, während das Mietniveau proportional mitgezogen hat. Die Bruttomietrendite bewegt sich im soliden Mittelfeld. Stadtteile wie Plagwitz oder Connewitz haben sich vom Geheimtipp zum etablierten Szeneviertel entwickelt, während Grünau oder Paunsdorf für Cashflow-orientierte Investoren weiterhin attraktive Einstiegspreise bieten.
+
+F: Ist Leipzig 2026 noch ein guter Investmentstandort?
+A: Ja, mit einer Bruttomietrendite von rund 3,8 % bei vergleichsweise niedrigen Einstiegspreisen bleibt Leipzig attraktiv, auch wenn die Preise seit dem Immobilienboom der 2010er-Jahre deutlich gestiegen sind.
+
+F: Welche Leipziger Stadtteile bieten noch günstige Einstiegspreise?
+A: Grünau, Paunsdorf und Teile von Lindenau liegen preislich noch unter den etablierten Szenevierteln Plagwitz und Connewitz, bei solider Mietnachfrage.
+
+---
+
+## Mannheim
+https://www.renditly.de/mietrendite-mannheim
+
+Ø Kaufpreis: 3.900 €/m² · Ø Kaltmiete: 12,3 €/m² · Bruttomietrendite: 3,8 %
+
+Mannheim bildet zusammen mit Ludwigshafen und Heidelberg die wirtschaftsstarke Metropolregion Rhein-Neckar, geprägt von Chemie- und Maschinenbauindustrie sowie einer renommierten Universität. Die als "Quadratestadt" bekannte, schachbrettartige Innenstadt und die zentrale Lage zwischen Rhein und Neckar machen Mannheim zu einem gefragten Wohnstandort für Berufspendler in der gesamten Region. Die Kaufpreise liegen im oberen Mittelfeld der deutschen Großstädte, die Bruttomietrendite bewegt sich entsprechend moderat. Kapitalanleger finden in der Neckarstadt-West oder Jungbusch aufstrebende, noch bezahlbare Lagen, während die Oststadt und Feudenheim als etablierte, aber teurere Wohnlagen gelten.
+
+F: Ist Mannheim ein guter Standort für Immobilieninvestments?
+A: Mannheim bietet mit rund 3,8 % Bruttomietrendite eine solide, aber keine außergewöhnliche Rendite — getragen von der wirtschaftsstarken Metropolregion Rhein-Neckar mit Chemie- und Maschinenbauindustrie.
+
+F: Welche Mannheimer Stadtteile sind für Kapitalanleger interessant?
+A: Neckarstadt-West und Jungbusch gelten als aufstrebende, noch vergleichsweise günstige Lagen, während Oststadt und Feudenheim etablierter und entsprechend teurer sind.
+
+---
+
+## Bonn
+https://www.renditly.de/mietrendite-bonn
+
+Ø Kaufpreis: 4.200 €/m² · Ø Kaltmiete: 13,0 €/m² · Bruttomietrendite: 3,7 %
+
+Bonn ist als ehemalige Bundeshauptstadt und heutiger UN-Standort sowie Konzernsitz von Telekom und Deutscher Post ein außergewöhnlich stabiler, international geprägter Immobilienmarkt. Die vergleichsweise überschaubare Stadtgröße trifft auf konstant hohe Nachfrage durch internationale Organisationen, Bundesbehörden und die Universität Bonn — das treibt sowohl Kauf- als auch Mietpreise deutlich nach oben. Die Bruttomietrendite liegt entsprechend im unteren Bereich der deutschen Großstädte. Gefragte Lagen wie das Bonner Villenviertel Bad Godesberg oder die Innenstadt erzielen Spitzenpreise, während Stadtteile wie Tannenbusch oder Duisdorf für renditeorientierte Kapitalanleger ein besseres Preis-Miet-Verhältnis bieten.
+
+F: Warum sind die Immobilienpreise in Bonn trotz überschaubarer Stadtgröße so hoch?
+A: Die Nachfrage durch UN-Organisationen, Bundesbehörden, DAX-Konzerne wie Telekom und Post sowie die Universität Bonn übersteigt das begrenzte Angebot deutlich, was Kauf- und Mietpreise strukturell hochhält.
+
+F: Welche Bonner Stadtteile bieten bessere Renditechancen?
+A: Tannenbusch und Duisdorf liegen preislich klar unter dem Bonner Villenviertel Bad Godesberg oder der Innenstadt und bieten dadurch tendenziell höhere Renditen.
+
+---
+
+## Frankfurt am Main
+https://www.renditly.de/mietrendite-frankfurt
+
+Ø Kaufpreis: 5.919 €/m² · Ø Kaltmiete: 17,2 €/m² · Bruttomietrendite: 3,5 %
+
+Frankfurt lebt vom Finanzsektor: Banken, Versicherungen und internationale Konzerne sorgen für eine überdurchschnittlich zahlungskräftige, aber auch international mobile Mieterschaft. Das treibt sowohl Kauf- als auch Mietpreise nach oben, wobei die Bruttomietrendite im unteren Mittelfeld der Großstädte liegt. Die Nähe zum Flughafen und die kompakte Größe der Stadt sorgen für kurze Wege und hohe Vermietbarkeit, insbesondere bei Wohnungen mit guter ÖPNV-Anbindung. Stadtteile wie Bockenheim oder das Gallusviertel bieten Investoren ein gutes Verhältnis aus Nachfrage und Einstiegspreis, während das Westend und Sachsenhausen für Kapitalanleger meist zu teuer für attraktive Renditen sind.
+
+F: Wie hoch ist die durchschnittliche Mietrendite in Frankfurt?
+A: Die Bruttomietrendite liegt bei rund 3,5 % — geprägt von hohen Kaufpreisen durch die starke Nachfrage aus dem Banken- und Finanzsektor.
+
+F: Welche Frankfurter Stadtteile sind für Kapitalanleger interessant?
+A: Bockenheim, das Gallusviertel und Teile von Bornheim bieten häufig ein besseres Preis-Miet-Verhältnis als die Premiumlagen Westend oder Sachsenhausen.
+
+---
+
+## München
+https://www.renditly.de/mietrendite-muenchen
+
+Ø Kaufpreis: 8.398 €/m² · Ø Kaltmiete: 21,7 €/m² · Bruttomietrendite: 3,1 %
+
+München ist und bleibt die teuerste Großstadt Deutschlands — mit Abstand. Die Kaufpreise pro Quadratmeter liegen fast 60 % über dem Bundesdurchschnitt, während die Mieten zwar ebenfalls hoch, aber im Verhältnis zum Kaufpreis nicht proportional mitgezogen sind. Das drückt die Bruttomietrendite auf das niedrigste Niveau aller Tier-1-Städte. Wer in München kauft, tut das in der Regel nicht wegen des laufenden Cashflows, sondern wegen der außergewöhnlichen Wertstabilität: München fiel selbst in Abschwungphasen historisch moderater als andere Metropolen. Für Renditeinvestoren mit begrenztem Kapital ist München daher meist der falsche Markt — hier zählt eher der langfristige Vermögensaufbau als der monatliche Überschuss.
+
+F: Warum ist die Mietrendite in München so niedrig?
+A: Weil die Kaufpreise (Ø 8.398 €/m²) im Verhältnis zu den Mieten (Ø 21,71 €/m²) besonders hoch sind. Mit rund 3,1 % Bruttomietrendite ist München die renditeschwächste der zehn größten deutschen Städte — dafür historisch besonders wertstabil.
+
+F: Für wen eignet sich eine Immobilie in München als Investment?
+A: Eher für Investoren mit Fokus auf Wertsteigerung und Kapitalerhalt als für Cashflow-orientierte Anleger. München eignet sich gut für langfristige Strategien mit hohem Eigenkapitalanteil.
+
+---
+
+## Münster
+https://www.renditly.de/mietrendite-muenster
+
+Ø Kaufpreis: 4.400 €/m² · Ø Kaltmiete: 11,5 €/m² · Bruttomietrendite: 3,1 %
+
+Münster gilt als eine der lebenswertesten Städte Deutschlands — geprägt von der großen Westfälischen Wilhelms-Universität mit über 40.000 Studierenden, einer historischen Altstadt und dem Ruf als Fahrradstadt Nummer eins. Diese hohe Lebensqualität sorgt für konstant hohe Nachfrage bei begrenztem Neubauangebot innerhalb der Stadtgrenzen, was die Kaufpreise spürbar nach oben treibt. Im Verhältnis dazu fällt die Bruttomietrendite eher niedrig aus — typisch für eine gefragte, wachstumsstarke Universitätsstadt mit begrenztem Angebot. Für Kapitalanleger sind studentisch geprägte Lagen rund um die Innenstadt besonders nachfragesicher, während Stadtteile wie Coerde oder Kinderhaus günstigere Einstiegspreise bieten.
+
+F: Warum ist die Mietrendite in Münster vergleichsweise niedrig?
+A: Die hohe Lebensqualität und die große Universität mit über 40.000 Studierenden treiben die Kaufpreise stark nach oben, während die Mieten proportional weniger stark mitziehen — die Bruttomietrendite liegt bei rund 3,1 %.
+
+F: Für wen eignet sich eine Immobilie in Münster als Investment?
+A: Eher für wertstabilitätsorientierte Investoren mit Blick auf die konstant hohe Nachfrage durch Studierende und die insgesamt sehr geringe Leerstandsquote als für reine Cashflow-Strategien.
+
+---
+
+# Immobilien-Lexikon (29 Begriffe)
+
+**Bruttomietrendite**: Die jährliche Kaltmiete geteilt durch den Kaufpreis der Immobilie, ohne Berücksichtigung von Kaufnebenkosten oder laufenden Kosten. Dient als schneller, aber grober erster Vergleichswert zwischen Objekten. (mehr: https://www.renditly.de/ratgeber/mietrendite-berechnen)
+
+**Nettomietrendite**: Die Jahreskaltmiete abzüglich nicht umlagefähiger Bewirtschaftungskosten, geteilt durch den Kaufpreis inklusive Kaufnebenkosten. Deutlich aussagekräftiger als die Bruttomietrendite, da sie die tatsächliche Kostenstruktur berücksichtigt. (mehr: https://www.renditly.de/ratgeber/mietrendite-berechnen)
+
+**Cash-on-Cash-Rendite**: Der jährliche Cashflow nach Finanzierungskosten geteilt durch das eingesetzte Eigenkapital. Zeigt, wie effizient das eigene Kapital arbeitet, insbesondere bei fremdfinanzierten Objekten. (mehr: https://www.renditly.de/ratgeber/cashflow-bei-immobilien)
+
+**Cashflow**: Die monatliche Differenz zwischen Mieteinnahmen und allen laufenden Ausgaben (Finanzierungsrate, Bewirtschaftungskosten, Rücklagen). Ein positiver Cashflow bedeutet, die Immobilie trägt sich selbst. (mehr: https://www.renditly.de/ratgeber/cashflow-bei-immobilien)
+
+**AfA (Absetzung für Abnutzung)**: Die steuerliche Abschreibung des Gebäudewerts einer vermieteten Immobilie über die Nutzungsdauer. Mindert jährlich das zu versteuernde Einkommen aus Vermietung und Verpachtung, typisch 2 bis 3 % pro Jahr je nach Baujahr. (mehr: https://www.renditly.de/afa-rechner)
+
+**Sonder-AfA § 7b EStG**: Zusätzliche Abschreibung von 5 % pro Jahr über die ersten vier Jahre für neu gebaute Mietwohnungen mit Bauantrag ab 2023, sofern bestimmte Kosten- und Effizienzgrenzen eingehalten werden. (mehr: https://www.renditly.de/ratgeber/afa-und-steuern-vermietung)
+
+**Grunderwerbsteuer**: Einmalige Steuer beim Eigentumswechsel einer Immobilie, die vom jeweiligen Bundesland festgelegt wird. Die Sätze reichen aktuell von 3,5 % in Bayern bis 6,5 % in mehreren Bundesländern. (mehr: https://www.renditly.de/grunderwerbsteuer-rechner)
+
+**Grundsteuer**: Jährlich wiederkehrende kommunale Steuer auf Grundbesitz, berechnet aus Grundsteuerwert, Steuermesszahl und dem Hebesatz der Gemeinde. Seit der Reform 2025 gilt bundesweit ein neues Bewertungsrecht. (mehr: https://www.renditly.de/ratgeber/grundsteuerreform-2025-vermieter)
+
+**Spekulationssteuer**: Umgangssprachlicher Begriff für die Besteuerung des Veräußerungsgewinns bei einem Immobilienverkauf innerhalb von 10 Jahren nach Anschaffung (§ 23 EStG). Bei durchgehender Eigennutzung entfällt sie. (mehr: https://www.renditly.de/ratgeber/spekulationssteuer-immobilienverkauf)
+
+**Maklerprovision (Halbteilungsgrundsatz)**: Beim Immobilienkauf gilt seit 2020 der Halbteilungsgrundsatz nach § 656c BGB: Ist der Makler für beide Seiten tätig, wird die Provision hälftig zwischen Käufer und Verkäufer geteilt. (mehr: https://www.renditly.de/ratgeber/maklerprovision-immobilienkauf)
+
+**Bestellerprinzip**: Regel bei der Vermietung (nicht beim Kauf): Wer den Makler beauftragt, muss ihn auch bezahlen — meist also der Vermieter. Gilt seit 2015 für Mietverträge in Deutschland. (mehr: https://www.renditly.de/ratgeber/maklerprovision-immobilienkauf)
+
+**Nebenkostenabrechnung**: Die jährliche Abrechnung der umlagefähigen Betriebskosten zwischen Vermieter und Mieter, die dem Mieter spätestens 12 Monate nach Ende des Abrechnungszeitraums zugehen muss. (mehr: https://www.renditly.de/ratgeber/nebenkostenabrechnung-vermieter)
+
+**Betriebskostenverordnung (BetrKV)**: Verordnung, die abschließend festlegt, welche Kostenarten als Betriebskosten auf Mieter umgelegt werden dürfen — etwa Grundsteuer, Versicherungen, Hausmeister und Müllabfuhr. (mehr: https://www.renditly.de/ratgeber/nebenkostenabrechnung-vermieter)
+
+**Mietspiegel**: Übersicht über die ortsübliche Vergleichsmiete einer Gemeinde, gegliedert nach Wohnungsgröße, Lage, Ausstattung und Baujahr. Zentrale Grundlage für rechtssichere Mieterhöhungen. (mehr: https://www.renditly.de/ratgeber/mietspiegel-verstehen)
+
+**Kappungsgrenze**: Begrenzt die Mieterhöhung auf die ortsübliche Vergleichsmiete: maximal 20 % innerhalb von drei Jahren, in Gebieten mit angespanntem Wohnungsmarkt maximal 15 %. (mehr: https://www.renditly.de/ratgeber/mietspiegel-verstehen)
+
+**Mietpreisbremse**: Begrenzt in ausgewiesenen Gebieten mit angespanntem Wohnungsmarkt die Miete bei Neuvermietung auf maximal 10 % über der ortsüblichen Vergleichsmiete, mit gesetzlichen Ausnahmen etwa für Neubauten. (mehr: https://www.renditly.de/ratgeber/mietspiegel-verstehen)
+
+**Modernisierungsumlage (§ 559 BGB)**: Erlaubt Vermietern, 8 % der Modernisierungskosten jährlich auf die Miete umzulegen, begrenzt durch eine Kappungsgrenze von 3 €/m² in sechs Jahren. Für Heizungstausch gilt seit 2024 eine Sonderregel mit 10 %. (mehr: https://www.renditly.de/ratgeber/mieterhoehung-modernisierung)
+
+**Eigenbedarfskündigung**: Kündigungsgrund nach § 573 BGB, wenn der Vermieter die Wohnung für sich selbst oder nahe Angehörige benötigt. Erfordert eine konkrete, nachvollziehbare Begründung und die Einhaltung gestaffelter Kündigungsfristen. (mehr: https://www.renditly.de/ratgeber/eigenbedarfskuendigung)
+
+**Mietkaution**: Sicherheitsleistung des Mieters von maximal drei Nettokaltmieten, die der Vermieter getrennt vom eigenen Vermögen und verzinst anlegen muss (§ 551 BGB). (mehr: https://www.renditly.de/ratgeber/kaution-richtig-anlegen)
+
+**Untervermietung**: Überlassung eines Teils der Mietwohnung an Dritte, für die der Mieter grundsätzlich die Erlaubnis des Vermieters benötigt. Bei berechtigtem Interesse besteht ein gesetzlicher Anspruch darauf (§ 553 BGB). (mehr: https://www.renditly.de/ratgeber/untervermietung-erlauben-verbieten)
+
+**Beleihungsauslauf**: Verhältnis der Darlehenssumme zum Beleihungswert der Immobilie, angegeben in Prozent. Ein niedrigerer Beleihungsauslauf führt in der Regel zu besseren Kreditkonditionen. (mehr: https://www.renditly.de/ratgeber/immobilienfinanzierung)
+
+**Zinsbindung**: Zeitraum, für den der vereinbarte Sollzins eines Immobiliendarlehens festgeschrieben ist, häufig 10, 15 oder 20 Jahre. Nach Ablauf wird für die Restschuld eine Anschlussfinanzierung benötigt. (mehr: https://www.renditly.de/tilgungsplan-rechner)
+
+**Anschlussfinanzierung**: Neue Finanzierung der nach Ablauf der Zinsbindung verbleibenden Restschuld, zu den dann aktuellen Marktkonditionen — diese können höher oder niedriger als der ursprüngliche Zins ausfallen. (mehr: https://www.renditly.de/tilgungsplan-rechner)
+
+**Annuitätendarlehen**: Darlehensform mit über die Zinsbindung konstanter monatlicher Rate. Der Zinsanteil sinkt mit fallender Restschuld, der Tilgungsanteil steigt entsprechend. (mehr: https://www.renditly.de/tilgungsplan-rechner)
+
+**Tilgungssatz**: Prozentualer Anteil der Darlehenssumme, der anfänglich jährlich zurückgezahlt wird — üblich sind 1 bis 3 % pro Jahr. Ein höherer Tilgungssatz verkürzt die Kreditlaufzeit erheblich. (mehr: https://www.renditly.de/tilgungsplan-rechner)
+
+**Grundstücksanteil**: Der Teil des Kaufpreises, der auf Grund und Boden entfällt und nicht abschreibbar ist, da sich Grundstücke nicht abnutzen — typischerweise 15 bis 30 % je nach Lage und Bodenrichtwert. (mehr: https://www.renditly.de/afa-rechner)
+
+**Kaufnebenkosten**: Zusatzkosten beim Immobilienerwerb neben dem Kaufpreis — vor allem Grunderwerbsteuer, Notar- und Grundbuchkosten sowie ggf. Maklerprovision. Liegen in Deutschland meist bei 8 bis 15 % des Kaufpreises. (mehr: https://www.renditly.de/kaufnebenkosten-rechner)
+
+**Erbschaftsteuer bei Immobilien**: Steuer auf den Erwerb einer Immobilie durch Erbschaft oder Schenkung, mit Freibeträgen von 20.000 bis 500.000 € je nach Verwandtschaftsgrad und einem 10-%-Abschlag für vermietete Objekte. (mehr: https://www.renditly.de/ratgeber/erbschaftsteuer-immobilie)
+
+**Gebäudemodernisierungsgesetz (GModG)**: Löst seit Juli 2026 das bisherige Gebäudeenergiegesetz (GEG) ab und ersetzt die starre 65-Prozent-Erneuerbare-Pflicht bei neuen Heizungen durch einen technologieoffeneren Rahmen. (mehr: https://www.renditly.de/ratgeber/geg-gmodg-vermieter-2026)
+
+---
+
+# Quellenangabe bei Zitierung
+
+Bitte bei Zitierung von Zahlen oder Textpassagen auf renditly.de verlinken, z. B.:
+"Quelle: renditly.de/mietrendite-report-2026" oder die jeweilige Artikel-URL oben.

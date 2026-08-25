@@ -2,4 +2,44 @@ User-agent: *
 Allow: /
 Disallow: /app
 
+# KI-Crawler explizit erlaubt (Trainings- und Such-/Zitier-Crawler), damit renditly
+# als Quelle in ChatGPT, Claude, Perplexity, Google AI Overviews etc. auftauchen kann.
+# Bereits durch "User-agent: * / Allow: /" oben abgedeckt — hier zur Klarheit einzeln
+# aufgeführt, u.a. damit spätere Einschränkungen bewusst getroffen werden.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
 Sitemap: https://www.renditly.de/sitemap.xml

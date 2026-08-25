@@ -77,3 +77,8 @@ Direkter Vergleich von Kaufpreis, Miete und Bruttomietrendite für ausgewählte 
 
 - [renditly Startseite](https://www.renditly.de/): Übersicht über Funktionen, Preise und 90 Tage kostenlose Testphase.
 - [Vermieter Software](https://www.renditly.de/vermieter-software): Cashflow-Analyse, automatische Steuervorbereitung, Mieterverwaltung und Kautionsmanagement für deutsche Vermieter — Tarife von 4,99 € bis 24,99 €/Monat, 90 Tage kostenlos.
+
+## Vollständiger Inhalts-Export
+
+- [llms-full.txt](https://www.renditly.de/llms-full.txt): Alle Ratgeber-Artikel im Volltext, alle 18 Städte-Datensätze inkl. FAQ, alle 29 Lexikon-Begriffe und Rechner-Formeln in einer Datei — für Agents, die nicht einzeln crawlen.
+- [Städte-Datenfeed (JSON)](https://www.renditly.de/daten/staedte.json): Strukturierte Kennzahlen (Kaufpreis/m², Kaltmiete/m², Bruttomietrendite) aller 18 Städte als maschinenlesbares JSON.

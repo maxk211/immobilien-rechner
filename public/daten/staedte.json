@@ -1,0 +1,152 @@
+{
+  "quelle": "renditly.de",
+  "stand": "2026-08",
+  "hinweis": "Tier-1-Städte (Berlin bis Essen): Engel & Völkers Marktbericht, Stand Juni 2026. Tier-2-Städte: aggregiert aus mehreren Immobilienportalen, Stand August 2026. Werte sind Durchschnittswerte (Angebotspreise) und können je nach Lage stark abweichen.",
+  "lizenz": "Freie Nutzung mit Quellenangabe (Link auf renditly.de)",
+  "staedte": [
+    {
+      "name": "Essen",
+      "slug": "essen",
+      "url": "https://www.renditly.de/mietrendite-essen",
+      "kaufpreisProM2Eur": 3647,
+      "kaltmieteProM2Eur": 13.89,
+      "bruttomietrenditeProzent": 4.6
+    },
+    {
+      "name": "Dortmund",
+      "slug": "dortmund",
+      "url": "https://www.renditly.de/mietrendite-dortmund",
+      "kaufpreisProM2Eur": 3314,
+      "kaltmieteProM2Eur": 12.31,
+      "bruttomietrenditeProzent": 4.5
+    },
+    {
+      "name": "Bremen",
+      "slug": "bremen",
+      "url": "https://www.renditly.de/mietrendite-bremen",
+      "kaufpreisProM2Eur": 2930,
+      "kaltmieteProM2Eur": 11,
+      "bruttomietrenditeProzent": 4.5
+    },
+    {
+      "name": "Karlsruhe",
+      "slug": "karlsruhe",
+      "url": "https://www.renditly.de/mietrendite-karlsruhe",
+      "kaufpreisProM2Eur": 4200,
+      "kaltmieteProM2Eur": 15.3,
+      "bruttomietrenditeProzent": 4.4
+    },
+    {
+      "name": "Berlin",
+      "slug": "berlin",
+      "url": "https://www.renditly.de/mietrendite-berlin",
+      "kaufpreisProM2Eur": 5300,
+      "kaltmieteProM2Eur": 18.53,
+      "bruttomietrenditeProzent": 4.2
+    },
+    {
+      "name": "Köln",
+      "slug": "koeln",
+      "url": "https://www.renditly.de/mietrendite-koeln",
+      "kaufpreisProM2Eur": 4632,
+      "kaltmieteProM2Eur": 15.94,
+      "bruttomietrenditeProzent": 4.1
+    },
+    {
+      "name": "Dresden",
+      "slug": "dresden",
+      "url": "https://www.renditly.de/mietrendite-dresden",
+      "kaufpreisProM2Eur": 3170,
+      "kaltmieteProM2Eur": 10.8,
+      "bruttomietrenditeProzent": 4.1
+    },
+    {
+      "name": "Hannover",
+      "slug": "hannover",
+      "url": "https://www.renditly.de/mietrendite-hannover",
+      "kaufpreisProM2Eur": 3560,
+      "kaltmieteProM2Eur": 11.5,
+      "bruttomietrenditeProzent": 3.9
+    },
+    {
+      "name": "Nürnberg",
+      "slug": "nuernberg",
+      "url": "https://www.renditly.de/mietrendite-nuernberg",
+      "kaufpreisProM2Eur": 3880,
+      "kaltmieteProM2Eur": 12.5,
+      "bruttomietrenditeProzent": 3.9
+    },
+    {
+      "name": "Hamburg",
+      "slug": "hamburg",
+      "url": "https://www.renditly.de/mietrendite-hamburg",
+      "kaufpreisProM2Eur": 5720,
+      "kaltmieteProM2Eur": 18.32,
+      "bruttomietrenditeProzent": 3.8
+    },
+    {
+      "name": "Stuttgart",
+      "slug": "stuttgart",
+      "url": "https://www.renditly.de/mietrendite-stuttgart",
+      "kaufpreisProM2Eur": 5346,
+      "kaltmieteProM2Eur": 16.72,
+      "bruttomietrenditeProzent": 3.8
+    },
+    {
+      "name": "Düsseldorf",
+      "slug": "duesseldorf",
+      "url": "https://www.renditly.de/mietrendite-duesseldorf",
+      "kaufpreisProM2Eur": 5641,
+      "kaltmieteProM2Eur": 17.71,
+      "bruttomietrenditeProzent": 3.8
+    },
+    {
+      "name": "Leipzig",
+      "slug": "leipzig",
+      "url": "https://www.renditly.de/mietrendite-leipzig",
+      "kaufpreisProM2Eur": 3858,
+      "kaltmieteProM2Eur": 12.21,
+      "bruttomietrenditeProzent": 3.8
+    },
+    {
+      "name": "Mannheim",
+      "slug": "mannheim",
+      "url": "https://www.renditly.de/mietrendite-mannheim",
+      "kaufpreisProM2Eur": 3900,
+      "kaltmieteProM2Eur": 12.3,
+      "bruttomietrenditeProzent": 3.8
+    },
+    {
+      "name": "Bonn",
+      "slug": "bonn",
+      "url": "https://www.renditly.de/mietrendite-bonn",
+      "kaufpreisProM2Eur": 4200,
+      "kaltmieteProM2Eur": 13,
+      "bruttomietrenditeProzent": 3.7
+    },
+    {
+      "name": "Frankfurt am Main",
+      "slug": "frankfurt",
+      "url": "https://www.renditly.de/mietrendite-frankfurt",
+      "kaufpreisProM2Eur": 5919,
+      "kaltmieteProM2Eur": 17.17,
+      "bruttomietrenditeProzent": 3.5
+    },
+    {
+      "name": "München",
+      "slug": "muenchen",
+      "url": "https://www.renditly.de/mietrendite-muenchen",
+      "kaufpreisProM2Eur": 8398,
+      "kaltmieteProM2Eur": 21.71,
+      "bruttomietrenditeProzent": 3.1
+    },
+    {
+      "name": "Münster",
+      "slug": "muenster",
+      "url": "https://www.renditly.de/mietrendite-muenster",
+      "kaufpreisProM2Eur": 4400,
+      "kaltmieteProM2Eur": 11.5,
+      "bruttomietrenditeProzent": 3.1
+    }
+  ]
+}
