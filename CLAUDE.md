@@ -63,6 +63,13 @@ mit aktualisieren — es ist ein rechtlich relevantes Dokument (DSGVO).
   Fallback) + interner Link von einer bestehenden Seite aus (Startseite hat
   eine "Kostenlose Tools & Ratgeber"-Sektion dafür).
 
+## Lokale Umgebung (Max' Mac)
+
+- Projektordner liegt immer unter `/Users/maximiliankammel/immobilien-rechner`.
+  Bei Git-Bundle-Handoffs (wenn die Sandbox keinen Netzwerkzugriff auf GitHub
+  hat) diesen Pfad direkt in die `cd`-Anweisung einsetzen, nicht raten oder
+  Platzhalter wie `~/pfad/zu/...` verwenden.
+
 ## Deploy-Log
 - 2026-08-09: Manueller Redeploy getriggert, um Vercel Edge-Cache für
   `/mietrendite-rechner` und `/ratgeber/afa-und-steuern-vermietung` zu
