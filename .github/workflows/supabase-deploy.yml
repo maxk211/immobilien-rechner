@@ -54,5 +54,6 @@ jobs:
           supabase functions deploy create-checkout-anon --no-verify-jwt
           supabase functions deploy stripe-webhook
           supabase functions deploy trial-reminder-emails
+          supabase functions deploy new-user-notification
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

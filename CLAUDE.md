@@ -70,6 +70,19 @@ mit aktualisieren — es ist ein rechtlich relevantes Dokument (DSGVO).
   hat) diesen Pfad direkt in die `cd`-Anweisung einsetzen, nicht raten oder
   Platzhalter wie `~/pfad/zu/...` verwenden.
 
+## Founder-Zugang & Signup-Benachrichtigung
+
+- `src/config/payments.js` → `FOUNDER_EMAILS`: diese E-Mails bekommen in
+  `useSubscription.js` automatisch `plan='pro'` ohne Trial/Stripe. Bei neuen
+  Team-Mitgliedern dort ergänzen.
+- `supabase/functions/new-user-notification` + Migration 010: Trigger auf
+  `auth.users` (AFTER INSERT) schickt bei jeder neuen Registrierung eine Mail
+  an dieselben Adressen (dort separat als `NOTIFY_EMAILS` gepflegt, da Edge
+  Functions in Deno laufen und nicht aus `src/` importieren können — beide
+  Listen bei Änderung synchron halten). Nutzt denselben SMTP/Vault-Mechanismus
+  wie `trial-reminder-emails` (Migration 008) — keine zusätzliche Einrichtung
+  nötig, wenn Migration 008 bereits läuft.
+
 ## Deploy-Log
 - 2026-08-09: Manueller Redeploy getriggert, um Vercel Edge-Cache für
   `/mietrendite-rechner` und `/ratgeber/afa-und-steuern-vermietung` zu
