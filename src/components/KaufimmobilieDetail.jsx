@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuellerWert } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRendite } from '../utils/berechnung.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
@@ -315,7 +315,19 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     setHasChanges(false);
   };
 
-  const ergebnis = useMemo(() => berechneRendite({ ...params, kaltmiete: getAktuelleMiete(params) }), [params]);
+  const ergebnis = useMemo(() => berechneRendite({
+    ...params,
+    kaltmiete: getAktuelleMiete(params),
+    // Kosten-Anpassungen (Vermieterkosten + WEG/Betriebskosten) genauso wie
+    // die Kaltmiete auf den aktuell gültigen, datumsbasierten Wert ziehen —
+    // sonst würde die Rendite-KPI weiter den Basiswert zeigen.
+    instandhaltung: getAktuellerWert(params, 'instandhaltung'),
+    verwaltung: getAktuellerWert(params, 'verwaltung'),
+    hausgeld: getAktuellerWert(params, 'hausgeld'),
+    strom: getAktuellerWert(params, 'strom'),
+    internet: getAktuellerWert(params, 'internet'),
+    nebenkosten: getAktuellerWert(params, 'nebenkosten'),
+  }), [params]);
   const stellplatzWert = (immobilie.stellplatz?.vorhanden && immobilie.stellplatz?.kaufpreisAnteil)
     ? (immobilie.stellplatz.kaufpreisAnteil * (immobilie.stellplatz.anzahl || 1))
     : 0;

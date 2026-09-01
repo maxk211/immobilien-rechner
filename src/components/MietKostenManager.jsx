@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Home, TrendingUp, TrendingDown, CalendarDays, Receipt, Building2, Wallet, X, Info } from 'lucide-react';
+import { getAktuellerWert } from '../utils/miete.js';
 
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
@@ -141,7 +142,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             <div className="px-4 py-3">
               <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-700 mb-3">
                 <Info size={14} className="shrink-0 mt-0.5" />
-                <span><strong>Optional:</strong> Nur für das Verlaufsdiagramm. Für Cashflow, Rendite und alle Berechnungen wird ausschließlich die aktuelle Kaltmiete verwendet.</span>
+                <span>Fließt in Cashflow, Rendite und alle Berechnungen ein — die jeweils zum betreffenden Zeitpunkt gültige Miete wird automatisch verwendet.</span>
               </div>
               {(params.mietAnpassungen || []).length === 0 ? (
                 <div className="text-center py-4 text-gray-400 text-sm">
@@ -241,7 +242,8 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             </div>
           </div>
 
-          {/* Kostenanpassungen — year-based overrides for all cost fields */}
+          {/* Kostenanpassungen — datumsbasierte Overrides für alle Kostenfelder,
+              analog zu den Mietanpassungen oben (statt starr pro Kalenderjahr). */}
           {(() => {
             const COST_FELDER = [
               { key: 'instandhaltung', label: 'Instandhaltung' },
@@ -251,48 +253,48 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               { key: 'internet', label: 'Internet' },
               { key: 'nebenkosten', label: 'Sonstige NK' },
             ];
-            const hasCostData = (val) => COST_FELDER.some(f => val[f.key] !== undefined);
-            const kostenjahre = Object.entries(mietHistorie)
-              .filter(([key, val]) => /^\d{4}$/.test(key) && hasCostData(val))
-              .sort(([a], [b]) => Number(a) - Number(b));
+            const hatKostenFeld = (entry) => COST_FELDER.some(f => entry[f.key] != null);
+            const kostenAnpassungen = (params.mietAnpassungen || [])
+              .map((anp, originalIdx) => ({ ...anp, originalIdx }))
+              .filter(hatKostenFeld)
+              .sort((a, b) => new Date(a.datum) - new Date(b.datum));
 
-            const addJahr = () => {
-              const existingYears = new Set(kostenjahre.map(([y]) => Number(y)));
-              let neuesJahr = new Date().getFullYear();
-              while (existingYears.has(neuesJahr)) neuesJahr++;
-              const neueHistorie = {
-                ...mietHistorie,
-                [`${neuesJahr}`]: {
-                  ...(mietHistorie[`${neuesJahr}`] || {}),
-                  instandhaltung: params.instandhaltung ?? 0,
-                  verwaltung: params.verwaltung ?? 0,
-                  hausgeld: params.hausgeld ?? 0,
-                  strom: params.strom ?? 0,
-                  internet: params.internet ?? 0,
-                  nebenkosten: params.nebenkosten ?? 0,
-                }
+            const addAnpassung = () => {
+              const neueAnpassung = {
+                datum: new Date().toISOString().split('T')[0],
+                instandhaltung: getAktuellerWert(params, 'instandhaltung'),
+                verwaltung: getAktuellerWert(params, 'verwaltung'),
+                hausgeld: getAktuellerWert(params, 'hausgeld'),
+                strom: getAktuellerWert(params, 'strom'),
+                internet: getAktuellerWert(params, 'internet'),
+                nebenkosten: getAktuellerWert(params, 'nebenkosten'),
               };
-              setMietHistorie(neueHistorie);
-              updateParams({ ...params, mietHistorie: neueHistorie, mietModus: modus });
+              updateParams({ ...params, mietAnpassungen: [...(params.mietAnpassungen || []), neueAnpassung] });
             };
 
-            const removeJahr = (jahrKey) => {
-              const neueHistorie = { ...mietHistorie };
-              const entry = { ...(neueHistorie[jahrKey] || {}) };
+            const removeAnpassung = (originalIdx) => {
+              // Nur die Kosten-Felder aus dem Eintrag entfernen — falls derselbe
+              // Eintrag auch eine Mietanpassung (kaltmiete) trägt, bleibt der
+              // erhalten; ist der Eintrag danach leer, ganz entfernen.
+              const neu = [...(params.mietAnpassungen || [])];
+              const entry = { ...(neu[originalIdx] || {}) };
               COST_FELDER.forEach(f => delete entry[f.key]);
-              if (Object.keys(entry).length === 0) delete neueHistorie[jahrKey];
-              else neueHistorie[jahrKey] = entry;
-              setMietHistorie(neueHistorie);
-              updateParams({ ...params, mietHistorie: neueHistorie, mietModus: modus });
+              const bleibtEtwas = Object.keys(entry).some(k => k !== 'datum');
+              if (bleibtEtwas) neu[originalIdx] = entry;
+              else neu.splice(originalIdx, 1);
+              updateParams({ ...params, mietAnpassungen: neu });
             };
 
-            const updateKostenJahr = (jahrKey, feldKey, wert) => {
-              const neueHistorie = {
-                ...mietHistorie,
-                [jahrKey]: { ...(mietHistorie[jahrKey] || {}), [feldKey]: parseFloat(wert) || 0 }
-              };
-              setMietHistorie(neueHistorie);
-              updateParams({ ...params, mietHistorie: neueHistorie, mietModus: modus });
+            const updateAnpassungDatum = (originalIdx, datum) => {
+              const neu = [...(params.mietAnpassungen || [])];
+              neu[originalIdx] = { ...neu[originalIdx], datum };
+              updateParams({ ...params, mietAnpassungen: neu });
+            };
+
+            const updateAnpassungFeld = (originalIdx, feldKey, wert) => {
+              const neu = [...(params.mietAnpassungen || [])];
+              neu[originalIdx] = { ...neu[originalIdx], [feldKey]: parseFloat(wert) || 0 };
+              updateParams({ ...params, mietAnpassungen: neu });
             };
 
             return (
@@ -300,38 +302,41 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                 <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><CalendarDays size={12} /> Kostenanpassungen</p>
-                    <p className="text-[10px] text-gray-400">Basiswerte gelten für alle Jahre — hier einzelne Jahre überschreiben</p>
+                    <p className="text-[10px] text-gray-400">Basiswerte gelten ab Kauf — hier ab einem bestimmten Datum überschreiben (z.B. Hausgeld-Erhöhung zum 1. Juli)</p>
                   </div>
-                  <button type="button" onClick={addJahr}
+                  <button type="button" onClick={addAnpassung}
                     className="text-xs bg-blue-100 hover:bg-blue-200 text-indigo-700 px-2 py-1 rounded-lg font-medium shrink-0 ml-3">
-                    + Jahr
+                    + Anpassung
                   </button>
                 </div>
                 <div className="px-4 py-3">
-                  {kostenjahre.length === 0 ? (
-                    <p className="text-[10px] text-gray-400 italic bg-gray-50 border border-gray-100 p-2 rounded-lg">Keine Anpassungen → Basiswerte gelten für alle Jahre</p>
+                  {kostenAnpassungen.length === 0 ? (
+                    <p className="text-[10px] text-gray-400 italic bg-gray-50 border border-gray-100 p-2 rounded-lg">Keine Anpassungen → Basiswerte gelten durchgehend</p>
                   ) : (
                     <div className="space-y-3">
-                      {kostenjahre.map(([jahrKey, val]) => {
-                        const isAktuell = jahrKey === String(new Date().getFullYear());
+                      {kostenAnpassungen.map(anp => {
+                        const istKuenftig = new Date(anp.datum) > new Date();
                         return (
-                          <div key={jahrKey} className={`border rounded-xl p-3 ${isAktuell ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
-                            <div className="flex items-center justify-between mb-2.5">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-800 text-sm">{jahrKey}</span>
-                                {isAktuell && <span className="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded">Aktuell</span>}
+                          <div key={anp.originalIdx} className={`border rounded-xl p-3 ${istKuenftig ? 'border-amber-200 bg-amber-50' : 'border-blue-200 bg-blue-50'}`}>
+                            <div className="flex items-center justify-between mb-2.5 gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <label className="text-[10px] text-gray-500 shrink-0">Gültig ab</label>
+                                <input type="date" value={anp.datum}
+                                  onChange={e => updateAnpassungDatum(anp.originalIdx, e.target.value)}
+                                  className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-white min-w-0" />
+                                {istKuenftig && <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded shrink-0">Künftig</span>}
                               </div>
-                              <button type="button" onClick={() => removeJahr(jahrKey)}
-                                className="text-red-400 hover:text-red-600 text-xs px-1"><X size={12} /></button>
+                              <button type="button" onClick={() => removeAnpassung(anp.originalIdx)}
+                                className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"><X size={12} /></button>
                             </div>
                             <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                               {COST_FELDER.map(item => (
                                 <div key={item.key} className="flex items-center gap-1">
                                   <label className="text-[10px] text-gray-500 w-[70px] shrink-0">{item.label}</label>
                                   <input type="number"
-                                    value={val[item.key] ?? ''}
-                                    placeholder={`${params[item.key] ?? 0}`}
-                                    onChange={e => updateKostenJahr(jahrKey, item.key, e.target.value)}
+                                    value={anp[item.key] ?? ''}
+                                    placeholder={`${getAktuellerWert(params, item.key)}`}
+                                    onChange={e => updateAnpassungFeld(anp.originalIdx, item.key, e.target.value)}
                                     className="flex-1 text-xs text-right border border-gray-200 rounded px-1.5 py-1 min-w-0 bg-white focus:ring-1 focus:ring-blue-400" />
                                   <span className="text-[10px] text-gray-400">€</span>
                                 </div>

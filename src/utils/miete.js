@@ -39,6 +39,53 @@ export const getAktuelleUntermiete = (p) => {
   return akt ? akt.untermieteProZimmer : basis;
 };
 
+// Generische Version von getAktuelleMiete für beliebige Felder (Vermieterkosten,
+// WEG/Betriebskosten etc.) — funktioniert ähnlich, nur mit variablem Feldnamen
+// statt fest "kaltmiete". Nutzt dieselben datumsbasierten mietAnpassungen-
+// Einträge; ein Eintrag kann mehrere Felder gleichzeitig tragen (z.B. eine
+// Mieterhöhung UND eine Hausgeld-Anpassung zum selben Datum). Eine alte,
+// manuell gesetzte Jahres-Override in mietHistorie[aktuellesJahr][feld] hat
+// weiterhin Vorrang (Bestandsdaten aus der Zeit vor der Anpassungsliste).
+export const getAktuellerWert = (params, feld) => {
+  const basis = params[feld] || 0;
+  const jahr = new Date().getFullYear();
+  const histWert = (params.mietHistorie || {})[`${jahr}`]?.[feld];
+  if (histWert != null) return histWert;
+  const anpassungen = (params.mietAnpassungen || []).filter(a => a[feld] != null);
+  if (anpassungen.length === 0) return basis;
+  const heute = new Date();
+  heute.setHours(23, 59, 59, 999);
+  const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  let aktuelle = null;
+  for (const anp of sorted) {
+    if (new Date(anp.datum) <= heute) aktuelle = anp;
+    else break;
+  }
+  return aktuelle ? aktuelle[feld] : basis;
+};
+
+// Monatlich gewichteter Jahresdurchschnitt für ein beliebiges Feld — berück-
+// sichtigt unterjährige Anpassungen (analog zur bestehenden getMieteForJahr-
+// Logik in CashflowUebersicht, hier generalisiert). Eine alte, manuell gesetzte
+// Jahres-Override in mietHistorie[jahr][feld] hat weiterhin Vorrang (Bestands-
+// daten aus der Zeit vor der datumsgenauen Anpassungsliste bleiben gültig).
+export const getJahresDurchschnittFuerFeld = (params, jahr, feld) => {
+  const histWert = (params.mietHistorie || {})[`${jahr}`]?.[feld];
+  if (histWert != null) return histWert;
+  const anpassungen = (params.mietAnpassungen || [])
+    .filter(a => a[feld] != null)
+    .sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  if (anpassungen.length === 0) return params[feld] || 0;
+  let summe = 0;
+  for (let m = 0; m < 12; m++) {
+    const monatsMitte = new Date(jahr, m, 15);
+    let gueltige = null;
+    for (const a of anpassungen) { if (new Date(a.datum) <= monatsMitte) gueltige = a; }
+    summe += gueltige ? gueltige[feld] : (params[feld] || 0);
+  }
+  return summe / 12;
+};
+
 // Berechnet den historisch korrekten Cashflow eines Arbitrage-Objekts Monat für Monat
 export const berechneHistorischenArbitrageCashflow = (p, vonDatum, bisDatum) => {
   if (!vonDatum || !bisDatum || vonDatum > bisDatum) return 0;

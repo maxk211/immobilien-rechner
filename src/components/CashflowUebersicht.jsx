@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Wallet, Landmark, AlertTriangle, ParkingSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung } from '../utils/berechnung.js';
 
 // ── Hilfsfunktion: Zeile in Tabelle ─────────────────────────────────────────
@@ -83,19 +83,20 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
 
   // ── Monatswerte für aktuelles Jahr ─────────────────────────────────────────
   const monat = useMemo(() => {
-    const histKosten = (params.mietHistorie || {})[`${aktuellesJahr}`] || {};
     const sp = params.stellplatz;
     const stellplatz = (sp?.vorhanden && sp?.istVermietet)
       ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1) : 0;
     const nkVomMieter = params.vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
 
     const einnahmen = getAktuelleMiete(params);
-    const nk       = histKosten.nebenkosten    ?? (params.nebenkosten    || 0);
-    const inst     = histKosten.instandhaltung ?? (params.instandhaltung || 0);
-    const verw     = histKosten.verwaltung     ?? (params.verwaltung     || 0);
-    const hg       = histKosten.hausgeld       ?? (params.hausgeld       || 0);
-    const strom    = histKosten.strom          ?? (params.strom          || 0);
-    const internet = histKosten.internet       ?? (params.internet       || 0);
+    // Datumsbasierte Kosten-Anpassungen (mietAnpassungen) statt starrem Basiswert —
+    // alte jahresweise mietHistorie-Overrides bleiben als Fallback in getAktuellerWert erhalten.
+    const nk       = getAktuellerWert(params, 'nebenkosten');
+    const inst     = getAktuellerWert(params, 'instandhaltung');
+    const verw     = getAktuellerWert(params, 'verwaltung');
+    const hg       = getAktuellerWert(params, 'hausgeld');
+    const strom    = getAktuellerWert(params, 'strom');
+    const internet = getAktuellerWert(params, 'internet');
     const bauspar  = (params.bausparvertraege || [])
       .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
       .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
@@ -157,7 +158,6 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
     };
 
     for (let jahr = kaufjahr; jahr <= aktuellesJahr + 5; jahr++) {
-      const histKosten = (params.mietHistorie || {})[`${jahr}`] || {};
       const kaltmiete  = getMieteForJahr(jahr);
       const nkVM = params.vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
       const sp = params.stellplatz;
@@ -165,12 +165,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1) : 0;
 
       const einnahmen = (kaltmiete + nkVM + stellplatz) * 12;
-      const nk     = (histKosten.nebenkosten    ?? (params.nebenkosten    || 0)) * 12;
-      const inst   = (histKosten.instandhaltung ?? (params.instandhaltung || 0)) * 12;
-      const verw   = (histKosten.verwaltung     ?? (params.verwaltung     || 0)) * 12;
-      const hg     = (histKosten.hausgeld       ?? (params.hausgeld       || 0)) * 12;
-      const strom  = (histKosten.strom          ?? (params.strom          || 0)) * 12;
-      const inet   = (histKosten.internet       ?? (params.internet       || 0)) * 12;
+      // Monatlich gewichteter Jahresdurchschnitt je Kostenfeld — berücksichtigt
+      // unterjährige, datumsbasierte Anpassungen (analog getMieteForJahr oben).
+      const nk     = getJahresDurchschnittFuerFeld(params, jahr, 'nebenkosten')    * 12;
+      const inst   = getJahresDurchschnittFuerFeld(params, jahr, 'instandhaltung') * 12;
+      const verw   = getJahresDurchschnittFuerFeld(params, jahr, 'verwaltung')     * 12;
+      const hg     = getJahresDurchschnittFuerFeld(params, jahr, 'hausgeld')       * 12;
+      const strom  = getJahresDurchschnittFuerFeld(params, jahr, 'strom')          * 12;
+      const inet   = getJahresDurchschnittFuerFeld(params, jahr, 'internet')       * 12;
       const betrieb = nk + inst + verw + hg + strom + inet;
 
       const monatsRate = berechneJahresRateFuerPhasen(phasen, cfFK, kreditStartJahr, jahr, ergebnis.monatlicheRate);
