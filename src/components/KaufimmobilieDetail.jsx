@@ -1529,6 +1529,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   await onSave(updated);
                 }}
                 onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
+                onMietanpassungFuerImmobilie={async ({ datum, kaltmiete }) => {
+                  // Zieht eine im Mieter-Tab erfasste Mietanpassung in die
+                  // Immobilie-level mietAnpassungen nach, damit die Forderung im
+                  // Einnahmen-Tab automatisch die neue Miete verwendet.
+                  const neueAnpassungen = [...(params.mietAnpassungen || []), { datum, kaltmiete }];
+                  const updated = { ...params, mietAnpassungen: neueAnpassungen };
+                  updateParams(updated);
+                  await onSave({ ...immobilie, ...updated });
+                }}
               />
             </>
           )}

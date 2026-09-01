@@ -21,7 +21,7 @@ const MIETER_DOK_ICONS = {
   'Sonstiges':        <Paperclip size={14} />,
 };
 
-const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente = [], onDokumentUpdate }) => {
+const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente = [], onDokumentUpdate, onMietanpassungFuerImmobilie }) => {
   const [activeTab, setActiveTab] = useState('stammdaten');
   const [form, setForm] = useState({
     id: mieter?.id || null,
@@ -162,8 +162,25 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
     if (!newAnpassung.datum || !newAnpassung.betrag) return;
     const entry = { id: Date.now(), datum: newAnpassung.datum, betrag: parseFloat(newAnpassung.betrag), grund: newAnpassung.grund };
     const sorted = [...form.mietanpassungenMieter, entry].sort((a, b) => new Date(a.datum) - new Date(b.datum));
-    setForm(f => ({ ...f, mietanpassungenMieter: sorted }));
+    // Ist die neue Anpassung die chronologisch jüngste? Dann automatisch als
+    // "letzte Mieterhöhung" (Kappungsgrenze § 558 BGB) übernehmen und die
+    // aktuelle Kaltmiete des Mieters nachziehen — statt beides händisch pflegen
+    // zu müssen.
+    const istNeueste = sorted[sorted.length - 1].id === entry.id;
+    setForm(f => ({
+      ...f,
+      mietanpassungenMieter: sorted,
+      letzteMieterhoehung: istNeueste ? entry.datum : f.letzteMieterhoehung,
+      kaltmiete: istNeueste ? entry.betrag : f.kaltmiete,
+    }));
     setNewAnpassung({ datum: '', betrag: '', grund: '' });
+
+    // Property-level Mietanpassungen (treibt die Forderung im Einnahmen-Tab) nur
+    // dann mitziehen, wenn diese Immobilie den Kaltmiete-Forderungslauf nutzt —
+    // die aufrufende Detail-Komponente übergibt den Callback nur in diesem Fall.
+    if (istNeueste && onMietanpassungFuerImmobilie) {
+      onMietanpassungFuerImmobilie({ datum: entry.datum, kaltmiete: entry.betrag });
+    }
   };
 
   const removeMietanpassung = (id) => {
