@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuelleUntermiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow, getAktuellerGesamtwert } from '../utils/berechnung.js';
 
 const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdit }) => {
@@ -170,7 +170,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Untermiet-Einnahmen</div>
-                <div className="text-sm font-semibold text-emerald-600">+{formatCurrency((immobilie.anzahlZimmerVermietet||0)*(immobilie.untermieteProZimmer||0))}/Mon</div>
+                <div className="text-sm font-semibold text-emerald-600">+{formatCurrency((immobilie.anzahlZimmerVermietet||0)*getAktuelleUntermiete(immobilie))}/Mon</div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Wohnfläche</div>
