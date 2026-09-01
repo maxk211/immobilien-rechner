@@ -11,6 +11,20 @@ export const PAYMENTS_LIVE = true;
 // Trial: 90 Tage kostenlos, 1 Immobilie (kein Kreditkarte nötig)
 export const TRIAL_DAYS = 90;
 
+// ─── Founder-Zugang ───────────────────────────────────────────────────────────
+// Diese E-Mails bekommen dauerhaft den Pro-Plan, ohne Trial-Limit und ohne
+// Stripe-Checkout — geprüft in useSubscription.js, noch bevor die
+// Trial/Subscription-Logik überhaupt greift. Vergleich case-insensitive.
+export const FOUNDER_EMAILS = [
+  'maxkammel21@gmail.com',
+  'kammelmax@icloud.com',
+  'david@davidschmidbauer.com',
+];
+
+export function isFounderEmail(email) {
+  return !!email && FOUNDER_EMAILS.includes(email.toLowerCase());
+}
+
 // ─── Plan-Definitionen ────────────────────────────────────────────────────────
 // plan-Key muss mit price.metadata.plan in Stripe übereinstimmen
 // maxImmobilien: Infinity = unlimitiert

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
-import { PAYMENTS_LIVE, TRIAL_DAYS, PLANS, getMaxImmobilien } from '../config/payments';
+import { PAYMENTS_LIVE, TRIAL_DAYS, PLANS, getMaxImmobilien, isFounderEmail } from '../config/payments';
 
 // ─── useSubscription ──────────────────────────────────────────────────────────
 //
@@ -32,6 +32,15 @@ export function useSubscription(session, portfolioCount = 0) {
 
     if (!session?.user) {
       setPlan('free');
+      setLoading(false);
+      return;
+    }
+
+    // ── Founder-Zugang: dauerhaft Pro, kein Trial/Stripe-Check nötig ─────────
+    if (isFounderEmail(session.user.email)) {
+      setPlan('pro');
+      setIsTrialing(false);
+      setTrialDaysLeft(0);
       setLoading(false);
       return;
     }
