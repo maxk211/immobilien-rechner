@@ -6,7 +6,7 @@ import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
 import { formatCurrency, formatPercent } from './utils/format.js';
-import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from './utils/miete.js';
+import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, getJahresDurchschnittFuerFeld, berechneHistorischenArbitrageCashflow } from './utils/miete.js';
 import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
 import { showConfirm, ConfirmDialog } from './utils/confirm.jsx';
 import { ZAEHLER_TYPEN, NK_KOSTENPOSITIONEN_DEFAULTS, NK_STANDARD_POSITIONEN, CHANGELOG_VERSION, CHANGELOG_EINTRAEGE } from './constants/index.js';
@@ -791,11 +791,13 @@ function App() {
 
       // Annuitätisch korrekte Schuldzinsen (sinken mit steigender Tilgung, phasenbewusst)
       sumSchuldzinsen   += berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
-      sumInstandhaltung += (immo.instandhaltung || 0) * 12 * faktor;
-      sumVerwaltung     += (immo.verwaltung || 0) * 12 * faktor;
-      sumHausgeld       += (immo.hausgeld || 0) * 12 * faktor;
-      sumStrom          += (immo.strom || 0) * 12 * faktor;
-      sumInternet       += (immo.internet || 0) * 12 * faktor;
+      // Jahresgenau via getJahresDurchschnittFuerFeld: berücksichtigt Kostenanpassungen
+      // (Bug-Fix: vorher wurde immer der aktuelle Basiswert genutzt, unabhängig vom Exportjahr)
+      sumInstandhaltung += getJahresDurchschnittFuerFeld(immo, jahr, 'instandhaltung') * 12 * faktor;
+      sumVerwaltung     += getJahresDurchschnittFuerFeld(immo, jahr, 'verwaltung') * 12 * faktor;
+      sumHausgeld       += getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') * 12 * faktor;
+      sumStrom          += getJahresDurchschnittFuerFeld(immo, jahr, 'strom') * 12 * faktor;
+      sumInternet       += getJahresDurchschnittFuerFeld(immo, jahr, 'internet') * 12 * faktor;
 
       const fahrtenProMonat = immo.fahrtenProMonat || 0;
       const entfernungKm = immo.entfernungKm || 0;
@@ -895,12 +897,12 @@ function App() {
         // Schuldzinsen (annuitätisch korrekt, phasenbewusst)
         const schuldzinsenJahr = berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
 
-        // Kosten (pro-rata)
-        const instandhaltung = (immo.instandhaltung || 0) * 12 * faktor;
-        const verwaltung = (immo.verwaltung || 0) * 12 * faktor;
-        const hausgeld = (immo.hausgeld || 0) * 12 * faktor;
-        const strom = (immo.strom || 0) * 12 * faktor;
-        const internet = (immo.internet || 0) * 12 * faktor;
+        // Kosten (pro-rata, jahresgenau — berücksichtigt Kostenanpassungen)
+        const instandhaltung = getJahresDurchschnittFuerFeld(immo, jahr, 'instandhaltung') * 12 * faktor;
+        const verwaltung = getJahresDurchschnittFuerFeld(immo, jahr, 'verwaltung') * 12 * faktor;
+        const hausgeld = getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') * 12 * faktor;
+        const strom = getJahresDurchschnittFuerFeld(immo, jahr, 'strom') * 12 * faktor;
+        const internet = getJahresDurchschnittFuerFeld(immo, jahr, 'internet') * 12 * faktor;
 
         // Fahrtkosten (pro-rata)
         const fahrtenProMonat = immo.fahrtenProMonat || 0;
@@ -1072,12 +1074,12 @@ function App() {
       pdf.text('Kaufimmobilien - Details', 14, 20);
 
       const kaufRows = kaufimmobilien.map(immo => {
-        const kaltmieteJahr = getAktuelleMiete(immo) * 12;
+        const kaltmieteJahr = berechneJahresmiete(immo, jahr);
         const kaufpreis = immo.kaufpreis || 0;
         const afaJahr = kaufpreis * ((immo.gebaeudeAnteilProzent || 80) / 100) * ((immo.afaSatz || 2) / 100);
         // Schuldzinsen annuitätisch korrekt für das ausgewählte Jahr
         const schuldzinsen = berechneJahresZinsenFuerSteuer(immo, jahr);
-        const sonstigeKosten = ((immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0)) * 12;
+        const sonstigeKosten = (getJahresDurchschnittFuerFeld(immo, jahr, 'instandhaltung') + getJahresDurchschnittFuerFeld(immo, jahr, 'verwaltung') + getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') + getJahresDurchschnittFuerFeld(immo, jahr, 'strom') + getJahresDurchschnittFuerFeld(immo, jahr, 'internet')) * 12;
 
         return [
           immo.name || 'Unbenannt',

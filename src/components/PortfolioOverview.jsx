@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { BarChart3, ChevronUp, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert } from '../utils/miete.js';
 import { berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
 
@@ -63,8 +63,11 @@ const PortfolioOverview = ({ portfolio }) => {
           : getAktuelleMiete(immo);
         const rendite = berechneRendite({ ...immo, kaltmiete: immoGesamtMiete });
 
-        const monatlicheKosten = (immo.instandhaltung || 0) + (immo.verwaltung || 0)
-          + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0);
+        // Datumsbasierte Kostenanpassungen berücksichtigen (Bug-Fix: vorher immer Basiswerte)
+        const monatlicheKosten = immo.immobilienTyp === 'mehrfamilienhaus'
+          ? (immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0)
+          : getAktuellerWert(immo, 'instandhaltung') + getAktuellerWert(immo, 'verwaltung')
+            + getAktuellerWert(immo, 'hausgeld') + getAktuellerWert(immo, 'strom') + getAktuellerWert(immo, 'internet');
         const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
           ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
           : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);

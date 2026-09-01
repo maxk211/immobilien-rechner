@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ClipboardList, Landmark, Hammer, Building2, BarChart3, Wrench, RefreshCw, Package, AlertTriangle, ShieldCheck, Lightbulb, TrendingDown, TrendingUp, Car, Download, X } from 'lucide-react';
 import { getXLSX } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete } from '../utils/miete.js';
+import { getAktuelleMiete, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
 
 const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilFaktor = 1 }) => {
@@ -126,12 +126,15 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     const jahresMiete = jahresKaltmiete; // Kaltmiete für Rechnung — NK separat
 
     // Laufende Kosten (Werbungskosten) — aufgeteilt für Anlage V
-    const jahresInstandhaltung = (params.instandhaltung || 0) * 12;
-    const jahresVerwaltung = (params.verwaltung || 0) * 12;
-    const jahresHausgeld = (params.hausgeld || 0) * 12;
+    // Jahresgenau via getJahresDurchschnittFuerFeld: berücksichtigt Kostenanpassungen
+    // (Bug-Fix: vorher wurde für JEDES Jahr immer der aktuelle Basiswert genutzt,
+    // Kostenanpassungen aus dem "Kostenanpassungen"-Tab flossen hier nie ein)
+    const jahresInstandhaltung = getJahresDurchschnittFuerFeld(params, jahr, 'instandhaltung') * 12;
+    const jahresVerwaltung = getJahresDurchschnittFuerFeld(params, jahr, 'verwaltung') * 12;
+    const jahresHausgeld = getJahresDurchschnittFuerFeld(params, jahr, 'hausgeld') * 12;
     const jahresGrundsteuer = grundsteuerMonat * 12;
     const jahresVersicherung = versicherungMonat * 12;
-    const jahresNebenkosten = (params.nebenkosten || 0) * 12; // sonstige Betriebskosten (§ 9 EStG Z. 50)
+    const jahresNebenkosten = getJahresDurchschnittFuerFeld(params, jahr, 'nebenkosten') * 12; // sonstige Betriebskosten (§ 9 EStG Z. 50)
     const laufendeKosten = jahresInstandhaltung + jahresVerwaltung + jahresHausgeld + jahresGrundsteuer + jahresVersicherung + jahresNebenkosten;
 
     // Finanzierungskosten (nur Zinsen - Tilgung ist nicht absetzbar!)

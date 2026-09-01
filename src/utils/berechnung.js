@@ -1,5 +1,5 @@
 import { getPreisNachPLZ } from '../constants/plz.js';
-import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete } from './miete.js';
+import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert } from './miete.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
@@ -546,13 +546,14 @@ export const berechneMtlCashflow = (immo) => {
     ? (immo.nebenkostenVomMieter || 0)
     : 0;
 
-  // Laufende Betriebskosten des Vermieters
-  const betriebskosten = (immo.instandhaltung || 0)
-    + (immo.verwaltung || 0)
-    + (immo.hausgeld || 0)
-    + (immo.strom || 0)
-    + (immo.internet || 0)
-    + (immo.nebenkosten || 0);
+  // Laufende Betriebskosten des Vermieters — datumsbasierte Kostenanpassungen
+  // berücksichtigen (Bug-Fix: vorher wurden immer die Basiswerte genutzt,
+  // Anpassungen aus dem "Kostenanpassungen"-Tab flossen hier nie ein)
+  const betriebskosten = (typ === 'mehrfamilienhaus')
+    ? (immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0) + (immo.nebenkosten || 0)
+    : getAktuellerWert(immo, 'instandhaltung') + getAktuellerWert(immo, 'verwaltung')
+      + getAktuellerWert(immo, 'hausgeld') + getAktuellerWert(immo, 'strom')
+      + getAktuellerWert(immo, 'internet') + getAktuellerWert(immo, 'nebenkosten');
 
   // Bauspar-Sparraten aller noch aktiven Verträge (vor Zuteilungsreife)
   const bauspar = (immo.bausparvertraege || [])
