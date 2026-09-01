@@ -220,6 +220,7 @@ function App() {
       setShowMieterForm(false);
       setEditMieter(null);
       setSyncStatus('idle');
+      return saved; // wichtig: MieterFormular braucht die neu vergebene ID für Dokument-Uploads bei neuen Mietern
     } catch (error) {
       toast.error('Fehler beim Speichern: ' + error.message);
       setSyncStatus('error');

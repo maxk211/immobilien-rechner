@@ -1527,6 +1527,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   const updated = { ...params, dokumente: neueDokumente };
                   updateParams(updated);
                   await onSave(updated);
+                  setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
                 }}
                 onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
                 onMietanpassungFuerImmobilie={async ({ datum, kaltmiete }) => {
@@ -1537,6 +1538,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   const updated = { ...params, mietAnpassungen: neueAnpassungen };
                   updateParams(updated);
                   await onSave({ ...immobilie, ...updated });
+                  setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
                 }}
               />
             </>
@@ -1571,6 +1573,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 const updated = { ...params, mietAnpassungen: neueAnpassungen };
                 updateParams(updated);
                 await onSave(updated);
+                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
                 setMieterhoeungMieter(null);
               }}
             />
@@ -1591,6 +1594,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 const updated = { ...params, dokumente: neueDokumente };
                 updateParams(updated);
                 await onSave(updated);
+                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
               }}
             />
           )}

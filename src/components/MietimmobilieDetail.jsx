@@ -397,6 +397,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 const updated = { ...params, dokumente: neueDokumente };
                 updateParams({ dokumente: neueDokumente });
                 await onSave({ ...immobilie, ...updated });
+                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
               }}
             />
           )}

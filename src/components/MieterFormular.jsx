@@ -49,6 +49,11 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
   });
   const [saving, setSaving] = useState(false);
   const [newAnpassung, setNewAnpassung] = useState({ datum: '', betrag: '', grund: '' });
+  // Hält die neueste, noch nicht persistierte Mietanpassung fest. Wird erst beim
+  // tatsächlichen Speichern des Mieter-Formulars an die Immobilie weitergereicht
+  // (nicht sofort bei "Anpassung hinzufügen") — sonst würde ein Abbrechen des
+  // Formulars die Immobilien-Daten trotzdem schon verändert haben.
+  const [pendingImmoSync, setPendingImmoSync] = useState(null);
 
   // Dokumente-Tab State
   const [dokTyp, setDokTyp] = useState('Mietvertrag');
@@ -137,6 +142,12 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
     setSaving(true);
     try {
       const savedMieter = await onSave(form);
+      // Mietanpassung erst JETZT (nach erfolgreichem Mieter-Speichern) an die
+      // Immobilie weiterreichen — siehe pendingImmoSync-Kommentar oben.
+      if (pendingImmoSync && onMietanpassungFuerImmobilie) {
+        await onMietanpassungFuerImmobilie(pendingImmoSync);
+        setPendingImmoSync(null);
+      }
       // Gepufferte Dokumente für neuen Mieter jetzt hochladen
       if (pendingFiles.length > 0 && onDokumentUpdate) {
         const mieterMeta = {
@@ -175,16 +186,19 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
     }));
     setNewAnpassung({ datum: '', betrag: '', grund: '' });
 
-    // Property-level Mietanpassungen (treibt die Forderung im Einnahmen-Tab) nur
-    // dann mitziehen, wenn diese Immobilie den Kaltmiete-Forderungslauf nutzt —
-    // die aufrufende Detail-Komponente übergibt den Callback nur in diesem Fall.
-    if (istNeueste && onMietanpassungFuerImmobilie) {
-      onMietanpassungFuerImmobilie({ datum: entry.datum, kaltmiete: entry.betrag });
+    // Nur vormerken — tatsächlich an die Immobilie (Forderungsberechnung)
+    // weitergereicht wird das erst beim Speichern des Formulars, siehe handleSubmit.
+    if (istNeueste) {
+      setPendingImmoSync({ id: entry.id, datum: entry.datum, kaltmiete: entry.betrag });
     }
   };
 
   const removeMietanpassung = (id) => {
     setForm(f => ({ ...f, mietanpassungenMieter: f.mietanpassungenMieter.filter(a => a.id !== id) }));
+    // Falls die soeben gelöschte Anpassung diejenige war, die für den
+    // Immobilien-Sync vorgemerkt war, Vormerkung verwerfen statt eine bereits
+    // entfernte Anpassung doch noch zu übernehmen.
+    setPendingImmoSync(p => (p && p.id === id ? null : p));
   };
 
   const dokCount = pendingFiles.length > 0 ? ` (${pendingFiles.length})` : mieterDokumente.length > 0 ? ` (${mieterDokumente.length})` : '';

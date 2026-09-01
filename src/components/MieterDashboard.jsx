@@ -181,7 +181,7 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
         <MieterFormular
           mieter={editData}
           portfolio={portfolio}
-          onSave={async (data) => { await onSave(data); setShowForm(false); }}
+          onSave={async (data) => { const saved = await onSave(data); setShowForm(false); return saved; }}
           onClose={() => setShowForm(false)}
           immobilieDokumente={immobilieDokumente}
           onDokumentUpdate={onDokumentUpdate}

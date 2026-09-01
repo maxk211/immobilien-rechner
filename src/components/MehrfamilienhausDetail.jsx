@@ -1564,6 +1564,7 @@ const MehrfamilienhausDetail = ({
                 const updated = { ...params, dokumente: neueDokumente };
                 updateParams(updated);
                 await onSave({ ...updated, wohnungen });
+                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
               }}
             />
           )}
@@ -1655,6 +1656,7 @@ const MehrfamilienhausDetail = ({
                 const updated = { ...params, dokumente: neueDokumente };
                 updateParams(updated);
                 await onSave({ ...updated, wohnungen });
+                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
               }}
             />
           )}
