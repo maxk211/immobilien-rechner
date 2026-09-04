@@ -1028,7 +1028,10 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                   )}
                 </div>
 
-                {/* Vermietungsmodell */}
+                {/* Vermietungsmodell — nur für Einzel-Kaufimmobilie: bei MFH wird die Miete pro
+                    Wohnung erfasst, ein Modell auf Gebäudeebene wird von den Berechnungen
+                    (berechneMtlCashflow etc.) bewusst nicht berücksichtigt (siehe berechnung.js) */}
+                {formData.immobilienTyp !== 'mehrfamilienhaus' && (
                 <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
                   <label className="block text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1"><Home size={14}/>Vermietungsmodell</label>
                   <div className="grid grid-cols-3 gap-2 mb-3">
@@ -1072,6 +1075,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <p className="text-xs text-blue-600 flex items-center gap-1"><ClipboardList size={12}/>Vermieter trägt alle Betriebskosten (Hausgeld, Strom etc.) aus der Warmmiete</p>
                   )}
                 </div>
+                )}
               </div>
             )}
 

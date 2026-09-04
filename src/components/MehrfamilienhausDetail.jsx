@@ -208,6 +208,12 @@ const MehrfamilienhausDetail = ({
   }, { instandhaltung: 0, verwaltung: 0, strom: 0, internet: 0, hausgeld: 0, nebenkosten: 0 }), [wohnungen]);
 
   // Rendite-Berechnung: kaltmiete + alle per-WE-Kosten korrekt aggregiert
+  // Bug-Fix: vermietungsmodell/nebenkostenVomMieter auf Gebäudeebene werden bei MFH
+  // bewusst NICHT berücksichtigt (Miete wird pro Wohnung erfasst) — konsistent mit
+  // berechneMtlCashflow() in utils/berechnung.js, das MFH explizit davon ausschließt.
+  // Ohne diesen Reset hätte ein (z.B. aus einer alten Erfassung) gesetztes
+  // vermietungsmodell='kaltmiete_nk' die NK-Vorauszahlung hier zusätzlich als Einnahme
+  // gezählt — in der Portfolio-Übersicht/-Kachel aber nicht, da dort inkonsistent.
   const ergebnis = useMemo(() => berechneRendite({
     ...params,
     kaltmiete:     gesamtKaltmiete,
@@ -217,6 +223,8 @@ const MehrfamilienhausDetail = ({
     internet:       aggregierteWEKosten.internet,
     hausgeld:       aggregierteWEKosten.hausgeld,
     nebenkosten:    aggregierteWEKosten.nebenkosten,
+    vermietungsmodell: 'kaltmiete',
+    nebenkostenVomMieter: 0,
   }), [params, gesamtKaltmiete, aggregierteWEKosten]);
 
   // Aktive Finanzierungsphase berechnen — identische Logik wie Finanzierung-Tab
