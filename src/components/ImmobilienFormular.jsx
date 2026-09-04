@@ -6,8 +6,8 @@ import {
   User, Users, Check, X, Gift, Landmark, Globe, Tv, Search,
   Plus, CheckCircle2,
 } from 'lucide-react';
-import { formatCurrency } from '../utils/format.js';
-import { schaetzeImmobilienwert } from '../utils/berechnung.js';
+import { formatCurrency, formatPercent } from '../utils/format.js';
+import { schaetzeImmobilienwert, berechneRendite, berechneMtlCashflow } from '../utils/berechnung.js';
 
 const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
   // Beim Bearbeiten direkt alle Details zeigen, beim Anlegen erst auf Basis-Modus
@@ -1575,8 +1575,42 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
             <h3 className="text-lg font-bold text-center text-gray-900 mb-1">
               Immobilie gespeichert!
             </h3>
+            {(() => {
+              // Sofortiges Ergebnis zeigen statt nur die Speicherung zu bestätigen —
+              // das eigentliche "Aha" ist ja die berechnete Rendite/der Cashflow.
+              const immo = gespeicherteImmo;
+              if (immo.immobilienTyp === 'mietimmobilie') {
+                const cf = berechneMtlCashflow(immo);
+                return (
+                  <div className="flex justify-center mb-4 mt-3">
+                    <div className="bg-slate-50 rounded-xl px-6 py-3 text-center">
+                      <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Cashflow/Monat</div>
+                      <div className={`text-xl font-black ${cf >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{cf >= 0 ? '+' : ''}{formatCurrency(cf)}</div>
+                    </div>
+                  </div>
+                );
+              }
+              const gesamtMiete = immo.immobilienTyp === 'mehrfamilienhaus'
+                ? (immo.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0)
+                : (immo.kaltmiete || 0);
+              if (!immo.kaufpreis || !gesamtMiete) return null;
+              const ergebnis = berechneRendite({ ...immo, kaltmiete: gesamtMiete });
+              const cashflow = berechneMtlCashflow({ ...immo, kaltmiete: gesamtMiete });
+              return (
+                <div className="flex justify-center gap-3 mb-4 mt-3">
+                  <div className="bg-slate-50 rounded-xl px-4 py-3 text-center flex-1">
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Bruttorendite</div>
+                    <div className="text-xl font-black text-emerald-600">{formatPercent(ergebnis.bruttorendite)}</div>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl px-4 py-3 text-center flex-1">
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Cashflow/Monat</div>
+                    <div className={`text-xl font-black ${cashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}</div>
+                  </div>
+                </div>
+              );
+            })()}
             <p className="text-sm text-gray-500 text-center mb-6">
-              Möchtest du jetzt weitere Details ergänzen — Objektdaten, Eigentumsstruktur, Stellplatz und mehr?
+              Details ergänzen für noch genauere Werte — Objektdaten, Eigentumsstruktur, Stellplatz und mehr?
             </p>
             <div className="flex flex-col gap-2">
               <button
