@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ClipboardList, Landmark, Hammer, Building2, BarChart3, Wrench, RefreshCw, Package, AlertTriangle, ShieldCheck, Lightbulb, TrendingDown, TrendingUp, Car, Download, X } from 'lucide-react';
 import { getXLSX } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
+import { getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
 
 const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilFaktor = 1 }) => {
@@ -115,9 +115,12 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     const jahreIndex = jahr - kaufjahr;
     if (jahreIndex < 0) return null;
 
-    // Mieteinnahmen: mietHistorie[Jahr].kaltmiete falls händisch, sonst Basismiete
-    const histMieteSteuer = (params.mietHistorie || {})[`${jahr}`];
-    const jahresKaltmiete = (histMieteSteuer?.kaltmiete != null ? histMieteSteuer.kaltmiete : getAktuelleMiete(params)) * 12;
+    // Mieteinnahmen: jahresgenau via getJahresDurchschnittFuerFeld (mietHistorie[Jahr].kaltmiete
+    // falls händisch gesetzt, sonst monatsgenauer Durchschnitt aus mietAnpassungen für DIESES Jahr).
+    // Bug-Fix: vorher fiel jedes Jahr ohne manuellen Override auf getAktuelleMiete() zurück —
+    // also immer die AKTUELLE (neueste) Miete, auch für Jahre vor einer späteren Mieterhöhung.
+    // Dadurch wurden z.B. Jahre vor einer Erhöhung mit zu hoher Miete versteuert.
+    const jahresKaltmiete = getJahresDurchschnittFuerFeld(params, jahr, 'kaltmiete') * 12;
 
     // NK vom Mieter (Umlagen) — Anlage V Zeile 6
     const nkModus = params.vermietungsmodell || 'kaltmiete';
