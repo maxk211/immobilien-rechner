@@ -4,7 +4,7 @@ import { formatCurrency } from '../utils/format.js';
 import { NK_KOSTENPOSITIONEN_DEFAULTS } from '../constants/index.js';
 import NKAbrechnungForm from './NKAbrechnungForm';
 
-const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
+const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) => {
   const aktuellesJahr = new Date().getFullYear();
   const [filterJahr, setFilterJahr] = useState(aktuellesJahr - 1);
   const [showForm, setShowForm] = useState(false);
@@ -33,10 +33,11 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
     updateParams({ ...params, nkAbrechnungen: nkAbrechnungen.filter(a => a.id !== id) });
   };
 
-  // Neue leere Abrechnung
+  // Neue leere Abrechnung — Mietername vorbefüllen, wenn eindeutig ein aktiver Mieter vorhanden ist
+  const aktiveMieter = mieterListe.filter(m => m.aktiv !== false);
   const neueAbrechnung = {
     abrechnungsjahr: filterJahr,
-    mieterName: '',
+    mieterName: aktiveMieter.length === 1 ? (aktiveMieter[0].name || '') : '',
     wohnflaeche: params.wohnflaeche || 0,
     gesamtflaeche: params.wohnflaeche || 0,
     vorauszahlungen: vorauszahlungenGesamt,
@@ -50,7 +51,7 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie }) => {
 
   if (showForm) {
     const abr = editAbrechnung || neueAbrechnung;
-    return <NKAbrechnungForm abrechnung={abr} onSave={saveAbrechnung} onCancel={() => { setShowForm(false); setEditAbrechnung(null); }} />;
+    return <NKAbrechnungForm abrechnung={abr} onSave={saveAbrechnung} onCancel={() => { setShowForm(false); setEditAbrechnung(null); }} mieterListe={mieterListe} />;
   }
 
   return (

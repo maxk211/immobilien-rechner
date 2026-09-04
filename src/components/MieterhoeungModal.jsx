@@ -1,10 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   TrendingUp, BarChart2, Home, Search, FileText, CheckCircle2,
   AlertTriangle, X, User,
 } from 'lucide-react';
 import { getJsPDF } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
+
+// Vermieter-Absenderdaten sind über alle Mieterhöhungsschreiben hinweg konstant
+// (ändern sich nicht pro Mieter/Immobilie) — daher einmal lokal gespeichert,
+// statt bei jedem Schreiben erneut abgefragt zu werden.
+const LS_VERMIETER_ADRESSE_KEY = 'renditly-vermieter-adresse';
+const ladeGespeicherteVermieterAdresse = () => {
+  try {
+    const raw = localStorage.getItem(LS_VERMIETER_ADRESSE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
 
 /**
  * MieterhoeungModal
@@ -43,6 +54,8 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     return d.toISOString().slice(0, 10);
   }, []);
 
+  const gespeicherteVermieterAdresse = useMemo(() => ladeGespeicherteVermieterAdresse(), []);
+
   const [form, setForm] = useState({
     // Manuelle Mieter-Felder (nur wenn kein Datensatz übergeben)
     mieterName: mieter?.name || '',
@@ -55,10 +68,22 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     mietspiegelJahr: new Date().getFullYear().toString(),
     mietspiegelQuelle: 'Mietspiegel der Gemeinde',
     eigenerText: '',
-    vermieterName: '',
-    vermieterStrasse: '',
-    vermieterPlzOrt: '',
+    vermieterName: gespeicherteVermieterAdresse?.vermieterName || '',
+    vermieterStrasse: gespeicherteVermieterAdresse?.vermieterStrasse || '',
+    vermieterPlzOrt: gespeicherteVermieterAdresse?.vermieterPlzOrt || '',
   });
+
+  // Änderungen an den Vermieter-Absenderdaten für künftige Schreiben merken
+  useEffect(() => {
+    if (!form.vermieterName && !form.vermieterStrasse && !form.vermieterPlzOrt) return;
+    try {
+      localStorage.setItem(LS_VERMIETER_ADRESSE_KEY, JSON.stringify({
+        vermieterName: form.vermieterName,
+        vermieterStrasse: form.vermieterStrasse,
+        vermieterPlzOrt: form.vermieterPlzOrt,
+      }));
+    } catch {}
+  }, [form.vermieterName, form.vermieterStrasse, form.vermieterPlzOrt]);
 
   // Effektive Werte: aus Mieter-Datensatz ODER aus manuellen Feldern
   const effMieterName = mieter?.name || form.mieterName;

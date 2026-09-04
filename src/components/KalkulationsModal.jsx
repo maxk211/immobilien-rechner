@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
 import { loadKalkulationen, saveKalkulation, deleteKalkulation } from '../supabaseClient';
+import { getAktuelleMiete, getAktuelleUntermiete, getAktuellerWert } from '../utils/miete.js';
 import {
   Calculator, X, Home, RefreshCw, FolderOpen, Loader, AlertTriangle,
   Pencil, Trash2, Hammer, Building2, Wallet, BarChart3, ClipboardList,
@@ -9,7 +10,7 @@ import {
   Droplets, DoorOpen, Leaf, UtensilsCrossed, XCircle, Scale, FileText
 } from 'lucide-react';
 
-const KalkulationsModal = ({ onClose }) => {
+const KalkulationsModal = ({ onClose, portfolio = [] }) => {
   const [typ, setTyp] = useState('kauf'); // 'kauf' oder 'arbitrage'
 
   // Kauf-Parameter
@@ -63,6 +64,34 @@ const KalkulationsModal = ({ onClose }) => {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [editingId, setEditingId] = useState(null); // ID der gerade überschriebenen Kalkulation
+
+  // Bestehende Portfolio-Immobilien, passend zum aktuell gewählten Kalkulationstyp —
+  // erspart das erneute Eintippen von Kaufpreis/Miete/Finanzierung für ein "Was-wäre-wenn".
+  const ladbareImmobilien = portfolio.filter(i =>
+    typ === 'kauf' ? i.immobilienTyp !== 'mietimmobilie' : i.immobilienTyp === 'mietimmobilie'
+  );
+
+  const ladeAusPortfolio = (id) => {
+    const immo = portfolio.find(i => String(i.id) === String(id));
+    if (!immo) return;
+    if (typ === 'kauf') {
+      setKaufpreis(Number(immo.kaufpreis) || 0);
+      setNebenkosten(Number(immo.kaufnebenkosten) || 10);
+      setEigenkapital(Number(immo.eigenkapital) || 0);
+      setZinssatz(Number(immo.zinssatz) || 4.0);
+      setTilgung(Number(immo.tilgung) || 2.0);
+      setMietmodus('direkt');
+      setKaltmiete(getAktuelleMiete(immo) || 0);
+      const bk = getAktuellerWert(immo, 'instandhaltung') + getAktuellerWert(immo, 'verwaltung')
+        + getAktuellerWert(immo, 'hausgeld') + getAktuellerWert(immo, 'strom') + getAktuellerWert(immo, 'internet');
+      setBetriebskosten(bk || 0);
+    } else {
+      setEigeneWarmmiete(Number(immo.eigeneWarmmiete) || 0);
+      setAnzahlZimmer(Number(immo.anzahlZimmerVermietet) || 0);
+      setMietProZimmer(getAktuelleUntermiete(immo) || 0);
+    }
+    toast.success(`"${immo.name || immo.adresse || 'Immobilie'}" geladen`);
+  };
 
   // Berechnungen für Kaufimmobilie
   const kaufBerechnung = useMemo(() => {
@@ -284,6 +313,21 @@ const KalkulationsModal = ({ onClose }) => {
             >
               <RefreshCw size={16} className="inline mr-1"/>Miet-Arbitrage
             </button>
+            {!showSaved && ladbareImmobilien.length > 0 && (
+              <select
+                value=""
+                onChange={e => e.target.value && ladeAusPortfolio(e.target.value)}
+                className="px-3 py-2 rounded-lg font-semibold bg-purple-700 text-white hover:bg-purple-600 text-sm border border-purple-500 max-w-[220px]"
+                title="Werte einer bestehenden Immobilie übernehmen, statt sie neu einzutippen"
+              >
+                <option value="">
+                  Aus Portfolio laden…
+                </option>
+                {ladbareImmobilien.map(i => (
+                  <option key={i.id} value={i.id}>{i.name || i.adresse || i.plz || 'Immobilie'}</option>
+                ))}
+              </select>
+            )}
             <button
               onClick={() => setShowSaved(v => !v)}
               className={`px-4 py-2 rounded-lg font-semibold transition-all ml-auto ${showSaved ? 'bg-white text-purple-700' : 'bg-purple-700 text-white hover:bg-purple-600'}`}

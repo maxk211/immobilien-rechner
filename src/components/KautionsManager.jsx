@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Undo2, CheckCircle2, AlertCircle, Pencil, Trash2, Check } from 'lucide-react';
+import { Undo2, CheckCircle2, AlertCircle, Pencil, Trash2, Check, Sparkles } from 'lucide-react';
 
-const KautionsManager = ({ params, updateParams }) => {
+const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
   const kautionen = params.kautionen || [];
   const [showForm, setShowForm] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({
-    mieterName: '', mietbeginn: '', mietende: '',
+    mieterId: null, mieterName: '', mietbeginn: '', mietende: '',
     vereinbartBetrag: 0, eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
     zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
   });
@@ -16,11 +16,34 @@ const KautionsManager = ({ params, updateParams }) => {
     .reduce((s, k) => s + (Number(k.eingegangenBetrag) || 0), 0);
   const anzahlOffen = kautionen.filter(k => !k.eingegangen).length;
 
+  // Mieter mit hinterlegter Kaution, für die noch kein Eintrag in dieser Liste existiert —
+  // vermeidet, dass Name/Betrag/Datum ein zweites Mal von Hand erfasst werden müssen.
+  const offeneVorschlaege = mieterListe.filter(m =>
+    (Number(m.kaution_betrag) || 0) > 0 &&
+    !kautionen.some(k => k.mieterId === m.id)
+  );
+
   const openForm = (idx = null) => {
     setEditIdx(idx);
-    setForm(idx !== null ? { ...kautionen[idx] } : {
-      mieterName: '', mietbeginn: '', mietende: '',
+    setForm(idx !== null ? { mieterId: null, ...kautionen[idx] } : {
+      mieterId: null, mieterName: '', mietbeginn: '', mietende: '',
       vereinbartBetrag: 0, eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
+      zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
+    });
+    setShowForm(true);
+  };
+
+  const uebernehmeVorschlag = (m) => {
+    setEditIdx(null);
+    setForm({
+      mieterId: m.id,
+      mieterName: m.name || '',
+      mietbeginn: m.mietbeginn || '',
+      mietende: '',
+      vereinbartBetrag: Number(m.kaution_betrag) || 0,
+      eingegangen: !!m.kaution_bezahlt,
+      eingegangenAm: m.kaution_bezahlt_am || '',
+      eingegangenBetrag: m.kaution_bezahlt ? (Number(m.kaution_betrag) || 0) : 0,
       zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
     });
     setShowForm(true);
@@ -61,6 +84,25 @@ const KautionsManager = ({ params, updateParams }) => {
           <p className="text-2xl font-black text-indigo-700">{kautionen.length}</p>
         </div>
       </div>
+
+      {/* Vorschläge aus bereits erfassten Mietern — spart erneutes Eintippen von Name/Betrag */}
+      {offeneVorschlaege.length > 0 && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 space-y-2">
+          <p className="text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
+            <Sparkles size={13} /> Aus Mieterdaten übernehmen
+          </p>
+          {offeneVorschlaege.map(m => (
+            <button
+              key={m.id}
+              onClick={() => uebernehmeVorschlag(m)}
+              className="w-full flex items-center justify-between bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm hover:bg-indigo-100/50 transition-colors"
+            >
+              <span className="font-medium text-gray-800">{m.name}</span>
+              <span className="text-indigo-600 font-semibold">{(Number(m.kaution_betrag) || 0).toLocaleString('de-DE')} € übernehmen</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <button
         onClick={() => openForm()}
@@ -117,7 +159,10 @@ const KautionsManager = ({ params, updateParams }) => {
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">{editIdx !== null ? <><Pencil size={16} /> Kaution bearbeiten</> : '+ Kaution erfassen'}</h3>
             <div className="space-y-3">
               <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
-                <input value={form.mieterName} onChange={e => setForm({...form, mieterName: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Name" />
+                <input value={form.mieterName} onChange={e => setForm({...form, mieterName: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Name" list="kautionsmanager-mieter-liste" />
+                <datalist id="kautionsmanager-mieter-liste">
+                  {mieterListe.map(m => <option key={m.id} value={m.name} />)}
+                </datalist>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mietbeginn</label>

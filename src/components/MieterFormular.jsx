@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   User, FileText, TrendingUp, Paperclip, ClipboardList, AlertTriangle,
   CalendarDays, Key, Upload, Download, Trash2, X, CheckCircle2,
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
+import { getAktuelleMiete } from '../utils/miete.js';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 
 const MIETER_DOK_TYPEN = ['Mietvertrag', 'Personalausweis', 'Selbstauskunft', 'Bonitätsnachweis', 'SCHUFA-Auskunft', 'Übergabeprotokoll', 'Kautionsquittung', 'Sonstiges'];
@@ -54,6 +55,21 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
   // (nicht sofort bei "Anpassung hinzufügen") — sonst würde ein Abbrechen des
   // Formulars die Immobilien-Daten trotzdem schon verändert haben.
   const [pendingImmoSync, setPendingImmoSync] = useState(null);
+  // Sobald der Nutzer die Kaltmiete manuell ändert, hört die automatische
+  // Vorbefüllung aus der Immobilie auf, seinen Wert zu überschreiben.
+  const [kaltmieteBeruehrt, setKaltmieteBeruehrt] = useState(!!mieter);
+
+  // Neuen Mieter: Kaltmiete direkt aus der ausgewählten Immobilie übernehmen,
+  // statt sie ein zweites Mal von Hand eintippen zu lassen. Bestehende Mieter
+  // (Bearbeiten) werden nicht angetastet.
+  useEffect(() => {
+    if (mieter || kaltmieteBeruehrt) return;
+    const immo = portfolio.find(i => String(i.id) === String(form.immobilieId));
+    if (!immo) return;
+    const aktuelleMiete = getAktuelleMiete(immo);
+    if (aktuelleMiete) setForm(f => ({ ...f, kaltmiete: aktuelleMiete }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.immobilieId]);
 
   // Dokumente-Tab State
   const [dokTyp, setDokTyp] = useState('Mietvertrag');
@@ -367,8 +383,11 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Mon.)</label>
-                    <input type="number" value={form.kaltmiete} onChange={e => setForm({...form, kaltmiete: parseFloat(e.target.value) || ''})}
+                    <input type="number" value={form.kaltmiete} onChange={e => { setKaltmieteBeruehrt(true); setForm({...form, kaltmiete: parseFloat(e.target.value) || ''}); }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
+                    {!mieter && !kaltmieteBeruehrt && form.kaltmiete ? (
+                      <p className="text-[11px] text-indigo-500 mt-1">Aus Immobilie übernommen</p>
+                    ) : null}
                   </div>
                   <div className="flex flex-col justify-end">
                     {preisProQm ? (

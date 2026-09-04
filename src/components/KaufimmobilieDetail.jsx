@@ -1519,6 +1519,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               params={params}
               updateParams={updateParams}
               immobilie={immobilie}
+              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
             />
           )}
 
@@ -1526,6 +1527,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             <KautionsManager
               params={params}
               updateParams={updateParams}
+              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
             />
           )}
 

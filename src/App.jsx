@@ -1463,7 +1463,7 @@ function App() {
 
       {showKalkulation && (
         <ModalErrorBoundary onClose={() => setShowKalkulation(false)}>
-          <KalkulationsModal onClose={() => setShowKalkulation(false)} />
+          <KalkulationsModal onClose={() => setShowKalkulation(false)} portfolio={portfolio} />
         </ModalErrorBoundary>
       )}
 

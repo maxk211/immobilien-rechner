@@ -3,7 +3,7 @@ import { Wallet, TrendingDown, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { NK_KOSTENPOSITIONEN_DEFAULTS } from '../constants/index.js';
 
-const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
+const NKAbrechnungForm = ({ abrechnung, onSave, onCancel, mieterListe = [] }) => {
   const [form, setForm] = useState({
     ...abrechnung,
     kostenpositionen: abrechnung.kostenpositionen?.length > 0
@@ -32,7 +32,11 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel }) => {
           <div>
             <label className="block text-xs text-gray-500 mb-1">Mieter Name</label>
             <input type="text" value={form.mieterName || ''} onChange={e => update('mieterName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm" placeholder="Name des Mieters" />
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm" placeholder="Name des Mieters"
+              list="nkabrechnung-mieter-liste" />
+            <datalist id="nkabrechnung-mieter-liste">
+              {mieterListe.map(m => <option key={m.id} value={m.name} />)}
+            </datalist>
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Vorauszahlungen (€)</label>
