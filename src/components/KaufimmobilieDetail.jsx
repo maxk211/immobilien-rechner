@@ -478,6 +478,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           {/* Tab-Navigation — 2-stufig: 4 Haupt-Tabs + kontextuelle Sub-Tabs */}
           {(() => {
             const aktiveMieterAnzahl = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
+            // Sub-Tabs ohne Daten dezent zurückstufen, statt gleichrangig neben den
+            // aktiv genutzten Bereichen zu stehen — reduziert die gefühlte Komplexität
+            // für Nutzer mit z.B. nur einer Wohnung ohne Bausparvertrag/Mieter.
+            const HAT_DATEN = {
+              bauspar:      (params.bausparvertraege || []).length > 0,
+              mieter:       aktiveMieterAnzahl > 0,
+              nkabrechnung: (nkAbrechnungen || []).length > 0,
+              kaution:      (params.kautionen || []).length > 0,
+            };
             const GRUPPEN = [
               { id: 'uebersicht', icon: <BarChart3 size={13}/>, label: 'Übersicht',  first: 'uebersicht', subs: null },
               { id: 'finanzen',   icon: <Wallet size={13}/>,    label: 'Finanzen',    first: 'cashflow',
@@ -526,16 +535,21 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {/* Sub-Tabs */}
                 {aktiveGruppe.subs && (
                   <div className="flex gap-0.5 sm:gap-1 mt-2 bg-indigo-50 rounded-xl p-1 overflow-x-auto">
-                    {aktiveGruppe.subs.map(s => (
+                    {aktiveGruppe.subs.map(s => {
+                      const leer = HAT_DATEN[s.id] === false;
+                      return (
                       <button key={s.id} onClick={() => setActiveTab(s.id)}
-                        className={`flex-shrink-0 sm:flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-sm font-semibold rounded-lg transition-all text-center leading-tight whitespace-nowrap ${
+                        className={`flex-shrink-0 sm:flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-sm rounded-lg transition-all text-center leading-tight whitespace-nowrap ${
                           activeTab === s.id
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'text-indigo-400 hover:text-indigo-700 hover:bg-indigo-100'
+                            ? 'bg-indigo-600 text-white shadow-sm font-semibold'
+                            : leer
+                              ? 'text-slate-300 font-normal hover:text-indigo-500 hover:bg-indigo-100'
+                              : 'text-indigo-400 font-semibold hover:text-indigo-700 hover:bg-indigo-100'
                         }`}>
                         <span className="flex items-center justify-center gap-1">{s.icon}{s.label}</span>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

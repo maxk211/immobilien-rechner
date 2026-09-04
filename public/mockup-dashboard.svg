@@ -6,7 +6,7 @@
   <circle cx="40" cy="19" r="5.5" fill="#f59e0b" opacity="0.85"/>
   <circle cx="58" cy="19" r="5.5" fill="#22c55e" opacity="0.85"/>
   <rect x="110" y="11" width="380" height="16" rx="8" fill="#1e293b"/>
-  <text x="300" y="23" text-anchor="middle" fill="#64748b" font-size="9">immobilienportfolio.app</text>
+  <text x="300" y="23" text-anchor="middle" fill="#64748b" font-size="9">renditly.de/app</text>
 
   <!-- App area -->
   <rect x="1" y="37" width="778" height="442" rx="0" fill="#f1f5f9"/>
@@ -14,8 +14,7 @@
   <!-- App header -->
   <rect x="1" y="37" width="778" height="46" fill="#0f172a"/>
   <text x="22" y="65" fill="white" font-size="15" font-weight="700">🏠</text>
-  <text x="42" y="65" fill="white" font-size="14" font-weight="800">Immobilien</text>
-  <text x="124" y="65" fill="#60a5fa" font-size="14" font-weight="800">Portfolio</text>
+  <text x="42" y="65" fill="white" font-size="14" font-weight="800">renditly</text>
   <circle cx="750" cy="60" r="14" fill="#4f46e5"/>
   <text x="750" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="700">M</text>
 
