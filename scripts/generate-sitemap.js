@@ -164,6 +164,18 @@ routes.push({
 });
 
 routes.push({
+  url: '/renditly-vs-immoanalyse',
+  parts: [readSrc('src/vergleich/RenditlyVsImmoAnalyse.jsx')],
+  gitPaths: ['src/vergleich/RenditlyVsImmoAnalyse.jsx'],
+});
+
+routes.push({
+  url: '/hilfe',
+  parts: [readSrc('src/hilfe/HilfeCenter.jsx')],
+  gitPaths: ['src/hilfe/HilfeCenter.jsx'],
+});
+
+routes.push({
   url: '/immobilien-lexikon',
   parts: [stripChrome(readSrc('src/glossar/ImmobilienLexikon.jsx')), readSrc('src/glossar/glossarDaten.js')],
   gitPaths: ['src/glossar/ImmobilienLexikon.jsx', 'src/glossar/glossarDaten.js'],

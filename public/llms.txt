@@ -78,6 +78,8 @@ Direkter Vergleich von Kaufpreis, Miete und Bruttomietrendite für ausgewählte 
 
 - [renditly Startseite](https://www.renditly.de/): Übersicht über Funktionen, Preise und 90 Tage kostenlose Testphase.
 - [Vermieter Software](https://www.renditly.de/vermieter-software): Cashflow-Analyse, automatische Steuervorbereitung, Mieterverwaltung und Kautionsmanagement für deutsche Vermieter — Tarife von 4,99 € bis 24,99 €/Monat, 90 Tage kostenlos.
+- [renditly vs. ImmoAnalyse](https://www.renditly.de/renditly-vs-immoanalyse): Feature- und Preisvergleich — renditly für laufende Portfolio-Verwaltung nach dem Kauf (Mieter, Kaution, Nebenkosten), ImmoAnalyse für einmalige Investitionsanalyse vor dem Kauf (IRR, Sensitivitätsanalyse).
+- [Hilfe-Center](https://www.renditly.de/hilfe): Häufige Fragen zu Erste Schritte, Preisen, Mietrendite, Steuern, Mieterverwaltung und Datensicherheit, gebündelt und durchsuchbar.
 
 ## Vollständiger Inhalts-Export
 

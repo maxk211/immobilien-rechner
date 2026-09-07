@@ -39,6 +39,14 @@
       "destination": "/vermieter-software.html"
     },
     {
+      "source": "/renditly-vs-immoanalyse",
+      "destination": "/renditly-vs-immoanalyse.html"
+    },
+    {
+      "source": "/hilfe",
+      "destination": "/hilfe.html"
+    },
+    {
       "source": "/immobilien-lexikon",
       "destination": "/immobilien-lexikon.html"
     },

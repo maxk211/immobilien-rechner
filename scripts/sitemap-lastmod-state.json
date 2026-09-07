@@ -1,6 +1,6 @@
 {
   "/": {
-    "hash": "fb0c522e5a483b87",
+    "hash": "1811902731ea6748",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-rechner": {
@@ -221,6 +221,14 @@
   },
   "/spekulationsfrist-rechner": {
     "hash": "09ddfd111826c4bb",
+    "lastmod": "2026-09-07"
+  },
+  "/renditly-vs-immoanalyse": {
+    "hash": "2a86c5321c7de858",
+    "lastmod": "2026-09-07"
+  },
+  "/hilfe": {
+    "hash": "2a640210457d3266",
     "lastmod": "2026-09-07"
   }
 }

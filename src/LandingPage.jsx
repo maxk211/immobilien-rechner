@@ -5,7 +5,7 @@ import {
   Home, BarChart3, Wallet, Receipt, Users, TrendingUp, Building2,
   Check, X, Lock, Key, ShieldCheck, Globe, Mail, ArrowRight, Monitor,
   Eye, BellOff, Ban, Frown, Calculator, BookOpen, MapPin,
-  Landmark, Percent, CalendarClock, Hourglass
+  Landmark, Percent, CalendarClock, Hourglass, Scale
 } from 'lucide-react';
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
@@ -657,6 +657,8 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
               { icon: BarChart3, title: 'AfA & Steuern', desc: 'Abschreibung, Werbungskosten und Steuervorteile erklärt.', href: '/ratgeber/afa-und-steuern-vermietung' },
               { icon: BookOpen, title: 'Immobilien-Lexikon', desc: '29 Begriffe zu Rendite, Steuern, Recht & Finanzierung kurz erklärt.', href: '/immobilien-lexikon' },
               { icon: BookOpen, title: 'Alle Ratgeber-Artikel', desc: 'Nebenkosten, Mietspiegel, Grunderwerbsteuer & mehr — die komplette Übersicht.', href: '/ratgeber' },
+              { icon: Scale, title: 'renditly vs. ImmoAnalyse', desc: 'Feature- und Preisvergleich — welches Tool passt zu deiner Phase?', href: '/renditly-vs-immoanalyse' },
+              { icon: BookOpen, title: 'Hilfe-Center', desc: 'Alle Antworten zu Erste Schritte, Preisen, Steuern und Mieterverwaltung.', href: '/hilfe' },
             ].map((item) => (
               <a
                 key={item.href}
@@ -713,6 +715,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             <a href="/mietrendite-rechner" className="hover:text-slate-300 transition-colors">Rechner</a>
             <a href="/mietrendite-staedte" className="hover:text-slate-300 transition-colors">Städte</a>
             <a href="/ratgeber" className="hover:text-slate-300 transition-colors">Ratgeber</a>
+            <a href="/hilfe" className="hover:text-slate-300 transition-colors">Hilfe</a>
             <a href="#pricing" className="hover:text-slate-300 transition-colors">Preise</a>
             <button onClick={onLogin} className="hover:text-slate-300 transition-colors">Einloggen</button>
             <button onClick={onGetStarted} className="hover:text-slate-300 transition-colors">Registrieren</button>

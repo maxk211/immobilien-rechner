@@ -50,6 +50,8 @@ export default defineConfig({
         immobilienLexikon: resolve(__dirname, 'immobilien-lexikon.html'),
         mietrenditeReport: resolve(__dirname, 'mietrendite-report-2026.html'),
         vermieterSoftware: resolve(__dirname, 'vermieter-software.html'),
+        renditlyVsImmoAnalyse: resolve(__dirname, 'renditly-vs-immoanalyse.html'),
+        hilfe: resolve(__dirname, 'hilfe.html'),
         mietrenditeStaedte: resolve(__dirname, 'mietrendite-staedte.html'),
         ...staedteInputs,
         ...vergleichInputs,
