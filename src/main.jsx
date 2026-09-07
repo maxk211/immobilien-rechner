@@ -16,6 +16,9 @@ const SpekulationsfristRechner = lazy(() => import('./rechner/SpekulationsfristR
 const VermieterSoftwareLanding = lazy(() => import('./landing/VermieterSoftwareLanding.jsx'))
 const RenditlyVsImmoAnalyse = lazy(() => import('./vergleich/RenditlyVsImmoAnalyse.jsx'))
 const HilfeCenter = lazy(() => import('./hilfe/HilfeCenter.jsx'))
+const AboutPage = lazy(() => import('./trust/TrustPages.jsx').then((m) => ({ default: m.AboutPage })))
+const ContactPage = lazy(() => import('./trust/TrustPages.jsx').then((m) => ({ default: m.ContactPage })))
+const PrivacyPage = lazy(() => import('./trust/TrustPages.jsx').then((m) => ({ default: m.PrivacyPage })))
 const ImmobilienLexikon = lazy(() => import('./glossar/ImmobilienLexikon.jsx'))
 const MietrenditeReport = lazy(() => import('./report/MietrenditeReport.jsx'))
 const MietrenditeGuide = lazy(() => import('./ratgeber/MietrenditeGuide.jsx'))
@@ -61,6 +64,9 @@ const ROUTES = {
   '/vermieter-software': { Component: VermieterSoftwareLanding },
   '/renditly-vs-immoanalyse': { Component: RenditlyVsImmoAnalyse },
   '/hilfe': { Component: HilfeCenter },
+  '/about': { Component: AboutPage },
+  '/contact': { Component: ContactPage },
+  '/privacy': { Component: PrivacyPage },
   '/immobilien-lexikon': { Component: ImmobilienLexikon },
   '/mietrendite-report-2026': { Component: MietrenditeReport },
   '/ratgeber': { Component: RatgeberUebersicht },

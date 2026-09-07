@@ -202,6 +202,7 @@
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "renditly",
+      "legalName": "ImmoBros GbR",
       "url": "https://www.renditly.de",
       "logo": "https://www.renditly.de/renditly-symbol.png",
       "description": "renditly – Immobilienverwaltungs-Software für deutsche Investoren",
@@ -209,12 +210,52 @@
         "@type": "Place",
         "addressCountry": "DE"
       },
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "An der Hülling 6",
+        "postalCode": "93047",
+        "addressLocality": "Regensburg",
+        "addressCountry": "DE"
+      },
+      "contactPoint": [
+        {
+          "@type": "ContactPoint",
+          "email": "hallo@renditly.de",
+          "contactType": "customer support",
+          "areaServed": "DE",
+          "availableLanguage": ["German", "English"]
+        }
+      ],
       "sameAs": []
     }
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      Statischer Startinhalt (raw HTML, kein JS nötig): wird von React beim
+      Laden nahtlos ersetzt (createRoot().render() leert den Container),
+      sorgt aber dafür, dass Crawler/Agenten ohne JS-Ausführung echten,
+      inhaltlich korrekten Text sehen statt eines leeren <div>. Text ist
+      identisch zu den realen Aussagen auf der Startseite (Hero + Feature-
+      Sektion in src/LandingPage.jsx) — keine abweichenden Behauptungen.
+    -->
+    <div id="root">
+      <div style="background:#0f172a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:48px 20px;">
+        <div style="max-width:640px;margin:0 auto;">
+          <h1 style="font-size:2rem;font-weight:900;line-height:1.2;margin:0 0 16px;">Dein Immobilienportfolio. Endlich im Griff.</h1>
+          <p style="font-size:1.05rem;color:#cbd5e1;line-height:1.6;margin:0 0 28px;">renditly ist eine Immobilienverwaltungs-Software für deutsche Vermieter und Investoren. Rendite, Cashflow, Steuer und Mieter — alles an einem Ort, für Einsteiger mit einer Wohnung bis zum Profi mit mehreren Objekten.</p>
+
+          <h2 style="font-size:1.25rem;font-weight:800;margin:0 0 10px;">Was renditly kann</h2>
+          <p style="color:#cbd5e1;line-height:1.6;margin:0 0 24px;">Mietrendite und Cashflow automatisch berechnen, AfA und Werbungskosten für den Steuerberater vorbereiten, Mieter und Kautionen verwalten, Nebenkostenabrechnungen erstellen und Mehrfamilienhäuser mit mehreren Wohnungen abbilden — alles nach deutschem Miet- und Steuerrecht.</p>
+
+          <h2 style="font-size:1.25rem;font-weight:800;margin:0 0 10px;">Für wen renditly gebaut ist</h2>
+          <p style="color:#cbd5e1;line-height:1.6;margin:0 0 24px;">Für deutsche Vermieter und Immobilien-Investoren, vom Einsteiger mit einer Eigentumswohnung bis zum Profi mit mehreren Mehrfamilienhäusern. 90 Tage kostenlos testen, mit einer Immobilie und allen Features, ohne Kreditkarte.</p>
+
+          <h2 style="font-size:1.25rem;font-weight:800;margin:0 0 10px;">Kostenlose Rechner &amp; Ratgeber</h2>
+          <p style="color:#cbd5e1;line-height:1.6;margin:0;">Mietrendite-, AfA-, Grunderwerbsteuer-, Kaufnebenkosten-, Tilgungsplan- und Spekulationsfrist-Rechner sowie ein umfangreicher Ratgeber zu Mietrecht und Steuern stehen kostenlos und ohne Anmeldung unter <a href="/ratgeber" style="color:#a5b4fc;">renditly.de/ratgeber</a> zur Verfügung.</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

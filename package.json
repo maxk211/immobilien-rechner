@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/generate-sitemap.js",
+    "prebuild": "node scripts/generate-sitemap.js && node scripts/generate-markdown.js",
     "build": "vite build",
     "preview": "vite preview",
-    "sitemap": "node scripts/generate-sitemap.js"
+    "sitemap": "node scripts/generate-sitemap.js",
+    "markdown": "node scripts/generate-markdown.js",
+    "verify:agentic": "node scripts/verify-agentic-readiness.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.0",
+    "@vercel/functions": "^3.9.5",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.23.0",

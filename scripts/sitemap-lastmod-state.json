@@ -230,5 +230,17 @@
   "/hilfe": {
     "hash": "2a640210457d3266",
     "lastmod": "2026-09-07"
+  },
+  "/about": {
+    "hash": "b22ac4168df589fd",
+    "lastmod": "2026-09-07"
+  },
+  "/contact": {
+    "hash": "b22ac4168df589fd",
+    "lastmod": "2026-09-07"
+  },
+  "/privacy": {
+    "hash": "b22ac4168df589fd",
+    "lastmod": "2026-09-07"
   }
 }

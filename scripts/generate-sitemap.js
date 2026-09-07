@@ -176,6 +176,24 @@ routes.push({
 });
 
 routes.push({
+  url: '/about',
+  parts: [readSrc('src/trust/TrustPages.jsx')],
+  gitPaths: ['src/trust/TrustPages.jsx'],
+});
+
+routes.push({
+  url: '/contact',
+  parts: [readSrc('src/trust/TrustPages.jsx')],
+  gitPaths: ['src/trust/TrustPages.jsx'],
+});
+
+routes.push({
+  url: '/privacy',
+  parts: [readSrc('src/trust/TrustPages.jsx')],
+  gitPaths: ['src/trust/TrustPages.jsx'],
+});
+
+routes.push({
   url: '/immobilien-lexikon',
   parts: [stripChrome(readSrc('src/glossar/ImmobilienLexikon.jsx')), readSrc('src/glossar/glossarDaten.js')],
   gitPaths: ['src/glossar/ImmobilienLexikon.jsx', 'src/glossar/glossarDaten.js'],

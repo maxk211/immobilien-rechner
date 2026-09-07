@@ -47,6 +47,18 @@
       "destination": "/hilfe.html"
     },
     {
+      "source": "/about",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/contact.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
       "source": "/immobilien-lexikon",
       "destination": "/immobilien-lexikon.html"
     },
