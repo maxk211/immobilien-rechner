@@ -2,6 +2,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/((?!app).*)/",
+      "destination": "/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/mietrendite-rechner",
