@@ -28,83 +28,83 @@
     "lastmod": "2026-08-15"
   },
   "/mietrendite-essen": {
-    "hash": "10f2c16a71e104bc",
+    "hash": "9ac0d8d4168aa7cb",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-dortmund": {
-    "hash": "7395efedf500c92b",
+    "hash": "f4f9ae78ce5db163",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-berlin": {
-    "hash": "53e6352314f438bd",
+    "hash": "710ed26e26d1a08a",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-koeln": {
-    "hash": "011cc62fb19b67ac",
+    "hash": "ba42f5e34d288fd3",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-hamburg": {
-    "hash": "5a237214017e9cca",
+    "hash": "a66c813709428a74",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-stuttgart": {
-    "hash": "e1bd345933097d8a",
+    "hash": "8eb989ea8d3789a3",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-duesseldorf": {
-    "hash": "3bbc9419f6ccf201",
+    "hash": "689aa332fd1398ed",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-leipzig": {
-    "hash": "c9e9d4be07f008e7",
+    "hash": "8afbcd49a8b20d09",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-frankfurt": {
-    "hash": "cfab5f7765e2e5a1",
+    "hash": "df1ac3d0ee5e2c1a",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-muenchen": {
-    "hash": "bc91b2712df69ee3",
+    "hash": "3583658b0c21de49",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-berlin-vs-leipzig": {
-    "hash": "a4171e5051592d4f",
+    "hash": "8636eb0cd0a16028",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-berlin-vs-hamburg": {
-    "hash": "4582eab1d4c40104",
+    "hash": "4e151b25b8642ccf",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-muenchen-vs-frankfurt": {
-    "hash": "42d211919f4f5c13",
+    "hash": "b486da0a5af446b6",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-koeln-vs-duesseldorf": {
-    "hash": "5f1be906e14e4c41",
+    "hash": "21404c7015fd8bd9",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-dortmund-vs-essen": {
-    "hash": "403040e5a55dd9f0",
+    "hash": "346efdbac5188d72",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-stuttgart-vs-muenchen": {
-    "hash": "b51adecd738e24ac",
+    "hash": "86862be8ababe1bf",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-leipzig-vs-dortmund": {
-    "hash": "dbb6e40c59fcd94d",
+    "hash": "d5670a040fbaf83e",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-hamburg-vs-muenchen": {
-    "hash": "cbc92b5cb0eec28f",
+    "hash": "e2e9b816871e3546",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-berlin-vs-muenchen": {
-    "hash": "2083b04790aa63f5",
+    "hash": "4d09a87cf455a694",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-frankfurt-vs-duesseldorf": {
-    "hash": "942ac2721f695ca5",
+    "hash": "1aa55d8e0e092b6e",
     "lastmod": "2026-09-07"
   },
   "/ratgeber/nebenkostenabrechnung-vermieter": {
@@ -148,35 +148,35 @@
     "lastmod": "2026-08-09"
   },
   "/mietrendite-bremen": {
-    "hash": "74939974f40b79cf",
+    "hash": "ed4c567901145ba9",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-karlsruhe": {
-    "hash": "584853d07267ce5a",
+    "hash": "9e32a14a97ab2c8d",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-dresden": {
-    "hash": "8dcc7d297f11b836",
+    "hash": "42e281d120bb2515",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-hannover": {
-    "hash": "d144412e15927334",
+    "hash": "71756721829a5702",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-nuernberg": {
-    "hash": "9676057fe5c1ab99",
+    "hash": "e04aa7fb2a71c2c7",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-mannheim": {
-    "hash": "d23a54887e8a50d0",
+    "hash": "b95b39df504ae9e3",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-bonn": {
-    "hash": "2e6ead125c0cea1a",
+    "hash": "d0edcec59dfd95aa",
     "lastmod": "2026-09-07"
   },
   "/mietrendite-muenster": {
-    "hash": "7a6cc160d15422d4",
+    "hash": "8279ac5bc8dae42f",
     "lastmod": "2026-09-07"
   },
   "/ratgeber/kaution-richtig-anlegen": {
@@ -216,8 +216,8 @@
     "lastmod": "2026-08-15"
   },
   "/mietrendite-report-2026": {
-    "hash": "d81a79ee99ab187b",
-    "lastmod": "2026-08-15"
+    "hash": "807779a8f6e78dcd",
+    "lastmod": "2026-09-07"
   },
   "/spekulationsfrist-rechner": {
     "hash": "09ddfd111826c4bb",

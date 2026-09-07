@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { STAEDTE, STAEDTE_LISTE } from './staedteDaten';
 import { VERGLEICHE } from './vergleichDaten';
 import FloatingCTA from '../components/FloatingCTA';
+import ArticleMeta from '../components/ArticleMeta';
+import StatCard from '../components/StatCard';
+import CiteBlock from '../components/CiteBlock';
 
 const fmt = (n, decimals = 1) => isFinite(n) ? n.toFixed(decimals).replace('.', ',') : '–';
 const fmtEur = (n) => isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–';
+
+// Tier-1-Städte: Engel & Völkers Marktbericht, Stand Juni 2026 (einzelne, verifizierte Quelle)
+// Tier-2-Städte: aggregiert aus mehreren Immobilienportalen, Stand August 2026
+const TIER1_SLUGS = new Set(['berlin', 'hamburg', 'muenchen', 'koeln', 'frankfurt', 'stuttgart', 'duesseldorf', 'leipzig', 'dortmund', 'essen']);
 
 const RatingBadge = ({ value }) => {
   const good = value >= 4.2;
@@ -44,6 +51,11 @@ export default function StadtSeite({ slug }) {
   const andereStaedte = STAEDTE_LISTE.filter(s => s.slug !== slug).slice(0, 6);
   const passendeVergleiche = VERGLEICHE.filter(v => v.slugA === slug || v.slugB === slug);
 
+  const istTier1 = TIER1_SLUGS.has(slug);
+  const standText = istTier1 ? 'Engel & Völkers Marktbericht, Stand Juni 2026' : 'Aggregiert aus mehreren Immobilienportalen, Stand August 2026';
+  const zitatText = `Laut renditly liegt die durchschnittliche Bruttomietrendite für Anlageimmobilien in ${stadt.name} bei ${fmt(stadt.bruttorendite)} %. Quelle: https://www.renditly.de/mietrendite-${stadt.slug}`;
+  const apaText = `renditly (2026). Mietrendite ${stadt.name}. Abgerufen ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })} von https://www.renditly.de/mietrendite-${stadt.slug}`;
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       <FloatingCTA />
@@ -79,7 +91,7 @@ export default function StadtSeite({ slug }) {
         <div className="max-w-4xl mx-auto px-4">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3 py-1 text-xs text-indigo-200 mb-4">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
-            Marktdaten Juni 2026 · Engel &amp; Völkers
+            {istTier1 ? 'Marktdaten Juni 2026 · Engel & Völkers' : 'Marktdaten August 2026 · Mehrere Portale'}
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-tight">
             Mietrendite {stadt.name}
@@ -91,28 +103,38 @@ export default function StadtSeite({ slug }) {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+        <ArticleMeta
+          veroeffentlicht={istTier1 ? '31. Juli 2026' : '5. August 2026'}
+          aktualisiert="7. September 2026"
+          quelle={standText}
+        />
+
         {/* Datenkarten */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Ø Kaufpreis</div>
-            <div className="text-xl font-black text-slate-900">{fmtEur(stadt.kaufpreisM2)}</div>
-            <div className="text-xs text-slate-400">pro m²</div>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Ø Kaltmiete</div>
-            <div className="text-xl font-black text-slate-900">{fmt(stadt.mieteM2, 2)} €</div>
-            <div className="text-xs text-slate-400">pro m²/Monat</div>
-          </div>
-          <div className="col-span-2 sm:col-span-1 bg-indigo-600 rounded-2xl p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-indigo-200 mb-1">Bruttomietrendite</div>
-            <div className="text-xl font-black text-white">{fmt(stadt.bruttorendite)} %</div>
-            <div className="text-xs text-indigo-200">Ø für {stadt.name}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatCard
+            label="Ø Kaufpreis" value={fmtEur(stadt.kaufpreisM2)} sub="pro m²"
+            konfidenz={istTier1 ? 'verifiziert' : 'aggregiert'}
+            copyText={`Der durchschnittliche Kaufpreis in ${stadt.name} liegt bei ${fmtEur(stadt.kaufpreisM2)} pro m². Quelle: renditly.de/mietrendite-${stadt.slug}`}
+          />
+          <StatCard
+            label="Ø Kaltmiete" value={`${fmt(stadt.mieteM2, 2)} €`} sub="pro m²/Monat"
+            konfidenz={istTier1 ? 'verifiziert' : 'aggregiert'}
+            copyText={`Die durchschnittliche Kaltmiete in ${stadt.name} liegt bei ${fmt(stadt.mieteM2, 2)} €/m². Quelle: renditly.de/mietrendite-${stadt.slug}`}
+          />
+          <div className="col-span-2 sm:col-span-1">
+            <StatCard
+              label="Bruttomietrendite" value={`${fmt(stadt.bruttorendite)} %`} sub={`Ø für ${stadt.name}`} accent
+              konfidenz="berechnet"
+              copyText={zitatText}
+            />
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col justify-center">
             <RatingBadge value={stadt.bruttorendite} />
             <div className="text-xs text-slate-400 mt-2">im Städtevergleich</div>
           </div>
         </div>
+
+        <CiteBlock zitatText={zitatText} apaText={apaText} />
 
         {/* Analysetext */}
         <section className="mb-10">
@@ -273,7 +295,7 @@ export default function StadtSeite({ slug }) {
         </div>
 
         <p className="text-xs text-slate-400 mt-6 text-center">
-          Datenquelle: Engel &amp; Völkers Marktbericht Deutschland, Stand Juni 2026 (Angebotspreise). Werte sind Durchschnittswerte und können je nach Lage und Objekt stark abweichen.
+          Datenquelle: {standText} (Angebotspreise). Werte sind Durchschnittswerte und können je nach Lage und Objekt stark abweichen.
         </p>
       </main>
 

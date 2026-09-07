@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { STAEDTE_LISTE } from '../staedte/staedteDaten';
 import { ImpressumDatenschutzLinks } from '../components/ImpressumDatenschutz';
+import ArticleMeta from '../components/ArticleMeta';
+import StatCard from '../components/StatCard';
+import CiteBlock from '../components/CiteBlock';
 
 const fmt1 = (n) => (isFinite(n) ? n.toFixed(1).replace('.', ',') : '–');
 const fmtEur = (n) => (isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–');
 
 export default function MietrenditeReport() {
-  const [kopiert, setKopiert] = useState(false);
-
   const stats = useMemo(() => {
     const liste = STAEDTE_LISTE; // bereits nach bruttorendite absteigend sortiert
     const n = liste.length;
@@ -26,13 +27,7 @@ export default function MietrenditeReport() {
   }, []);
 
   const zitatText = `Laut renditly-Mietrendite-Report Deutschland 2026 liegt die durchschnittliche Bruttomietrendite über ${stats.n} deutsche Großstädte bei ${fmt1(stats.avgRendite)} %. Quelle: https://www.renditly.de/mietrendite-report-2026`;
-
-  const kopiereZitat = () => {
-    navigator.clipboard?.writeText(zitatText).then(() => {
-      setKopiert(true);
-      setTimeout(() => setKopiert(false), 2000);
-    });
-  };
+  const apaText = `renditly (2026). Mietrendite-Report Deutschland 2026. Abgerufen ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })} von https://www.renditly.de/mietrendite-report-2026`;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -70,40 +65,36 @@ export default function MietrenditeReport() {
       <main className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
 
         {/* Kern-Kennzahlen */}
+        <ArticleMeta
+          veroeffentlicht="15. August 2026"
+          aktualisiert="7. September 2026"
+          quelle="62 Datenpunkte aus 18 Städten"
+        />
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
-          <div className="bg-indigo-600 rounded-2xl p-4 border border-indigo-500">
-            <div className="text-xs font-semibold uppercase tracking-wide text-indigo-200 mb-1">Ø Bruttomietrendite</div>
-            <div className="text-2xl font-black text-white">{fmt1(stats.avgRendite)} %</div>
-            <div className="text-xs text-indigo-200 mt-0.5">über {stats.n} Städte</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-gray-100">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Höchste Rendite</div>
-            <div className="text-2xl font-black text-slate-900">{fmt1(stats.hoechsteRendite.bruttorendite)} %</div>
-            <div className="text-xs text-slate-400 mt-0.5">{stats.hoechsteRendite.name}</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-gray-100">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Niedrigste Rendite</div>
-            <div className="text-2xl font-black text-slate-900">{fmt1(stats.niedrigsteRendite.bruttorendite)} %</div>
-            <div className="text-xs text-slate-400 mt-0.5">{stats.niedrigsteRendite.name}</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-gray-100">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Ø Kaufpreis/m²</div>
-            <div className="text-2xl font-black text-slate-900">{fmtEur(stats.avgKaufpreis)}</div>
-            <div className="text-xs text-slate-400 mt-0.5">über {stats.n} Städte</div>
-          </div>
+          <StatCard
+            label="Ø Bruttomietrendite" value={`${fmt1(stats.avgRendite)} %`} sub={`über ${stats.n} Städte`} accent
+            konfidenz="berechnet"
+            copyText={`Die durchschnittliche Bruttomietrendite über ${stats.n} deutsche Großstädte liegt bei ${fmt1(stats.avgRendite)} %. Quelle: renditly.de/mietrendite-report-2026`}
+          />
+          <StatCard
+            label="Höchste Rendite" value={`${fmt1(stats.hoechsteRendite.bruttorendite)} %`} sub={stats.hoechsteRendite.name}
+            konfidenz="berechnet"
+            copyText={`${stats.hoechsteRendite.name} hat mit ${fmt1(stats.hoechsteRendite.bruttorendite)} % die höchste Bruttomietrendite aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+          />
+          <StatCard
+            label="Niedrigste Rendite" value={`${fmt1(stats.niedrigsteRendite.bruttorendite)} %`} sub={stats.niedrigsteRendite.name}
+            konfidenz="berechnet"
+            copyText={`${stats.niedrigsteRendite.name} hat mit ${fmt1(stats.niedrigsteRendite.bruttorendite)} % die niedrigste Bruttomietrendite aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+          />
+          <StatCard
+            label="Ø Kaufpreis/m²" value={fmtEur(stats.avgKaufpreis)} sub={`über ${stats.n} Städte`}
+            konfidenz="berechnet"
+            copyText={`Der durchschnittliche Kaufpreis über ${stats.n} deutsche Großstädte liegt bei ${fmtEur(stats.avgKaufpreis)} pro m². Quelle: renditly.de/mietrendite-report-2026`}
+          />
         </div>
 
-        {/* Zitat-Box */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 mb-10">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Für Journalisten & Blogger — zum Zitieren freigegeben</div>
-          <p className="text-sm text-slate-700 leading-relaxed mb-3">{zitatText}</p>
-          <button
-            onClick={kopiereZitat}
-            className="text-sm font-semibold text-indigo-600 hover:underline"
-          >
-            {kopiert ? '✓ Kopiert' : 'Zitat kopieren →'}
-          </button>
-        </div>
+        <CiteBlock zitatText={zitatText} apaText={apaText} />
 
         {/* Top/Flop 5 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
@@ -131,21 +122,95 @@ export default function MietrenditeReport() {
           </div>
         </div>
 
-        {/* Einordnung */}
-        <article className="prose-sm max-w-none mb-10">
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 mb-4">
-            <h2 className="text-base font-bold text-slate-900 mb-2">Die zentrale Erkenntnis: Kaufpreis schlägt Miete</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              {stats.teuersteKaufpreis.name} hat mit {fmtEur(stats.teuersteKaufpreis.kaufpreisM2)}/m² den höchsten Kaufpreis aller {stats.n} untersuchten Städte, während {stats.guenstigsteKaufpreis.name} mit {fmtEur(stats.guenstigsteKaufpreis.kaufpreisM2)}/m² am günstigsten ist. Bei der Kaltmiete liegt {stats.teuersteMiete.name} mit {fmt1(stats.teuersteMiete.mieteM2)} €/m² vorn, {stats.guenstigsteMiete.name} bildet mit {fmt1(stats.guenstigsteMiete.mieteM2)} €/m² das Schlusslicht. Entscheidend für die Rendite ist aber nicht die absolute Miete, sondern ihr Verhältnis zum Kaufpreis — und hier zeigt sich: Hohe Mieten allein machen noch keine gute Rendite, wenn der Kaufpreis überproportional mitgestiegen ist.
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
-            <h2 className="text-base font-bold text-slate-900 mb-2">Methodik</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Datenbasis sind die durchschnittlichen Kaufpreise und Kaltmieten pro Quadratmeter für {stats.n} deutsche Großstädte (Tier-1-Städte: Engel & Völkers Marktbericht Deutschland, Stand Juni 2026; Tier-2-Städte: aggregiert aus mehreren Immobilienportalen, Stand August 2026). Die Bruttomietrendite berechnet sich als Jahreskaltmiete pro m² geteilt durch den Kaufpreis pro m², multipliziert mit 100. Kaufnebenkosten, Instandhaltung und Leerstand sind in der Bruttomietrendite nicht enthalten — für eine realistischere Einschätzung empfiehlt sich die Nettomietrendite im Einzelfall.
-            </p>
-          </div>
-        </article>
+        {/* Themencluster: Kaufpreise, Mieten, Renditen */}
+        <div className="space-y-8 mb-10">
+          <section>
+            <h2 className="text-lg font-black text-slate-900 mb-3">Kaufpreise</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <StatCard
+                label="Teuerste Stadt" value={fmtEur(stats.teuersteKaufpreis.kaufpreisM2)} sub={`${stats.teuersteKaufpreis.name} · pro m²`}
+                konfidenz="aggregiert"
+                copyText={`${stats.teuersteKaufpreis.name} hat mit ${fmtEur(stats.teuersteKaufpreis.kaufpreisM2)}/m² den höchsten Kaufpreis aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+              />
+              <StatCard
+                label="Günstigste Stadt" value={fmtEur(stats.guenstigsteKaufpreis.kaufpreisM2)} sub={`${stats.guenstigsteKaufpreis.name} · pro m²`}
+                konfidenz="aggregiert"
+                copyText={`${stats.guenstigsteKaufpreis.name} hat mit ${fmtEur(stats.guenstigsteKaufpreis.kaufpreisM2)}/m² den niedrigsten Kaufpreis aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+              />
+              <StatCard
+                label="Ø Kaufpreis" value={fmtEur(stats.avgKaufpreis)} sub={`über ${stats.n} Städte · pro m²`}
+                konfidenz="berechnet"
+                copyText={`Der durchschnittliche Kaufpreis über ${stats.n} deutsche Großstädte liegt bei ${fmtEur(stats.avgKaufpreis)} pro m². Quelle: renditly.de/mietrendite-report-2026`}
+              />
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Einordnung</div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Zwischen {stats.teuersteKaufpreis.name} und {stats.guenstigsteKaufpreis.name} liegt eine Spanne von {fmtEur(stats.teuersteKaufpreis.kaufpreisM2 - stats.guenstigsteKaufpreis.kaufpreisM2)} pro m² — {stats.teuersteKaufpreis.name} kostet damit mehr als das {fmt1(stats.teuersteKaufpreis.kaufpreisM2 / stats.guenstigsteKaufpreis.kaufpreisM2)}-fache. Die Kaufpreise streuen zwischen den {stats.n} untersuchten Städten deutlich stärker als die Mieten, was zeigt: Lagequalität wird beim Kaufpreis stärker eingepreist als bei der laufenden Miete.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-black text-slate-900 mb-3">Mieten</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <StatCard
+                label="Teuerste Miete" value={`${fmt1(stats.teuersteMiete.mieteM2)} €`} sub={`${stats.teuersteMiete.name} · pro m²/Monat`}
+                konfidenz="aggregiert"
+                copyText={`${stats.teuersteMiete.name} hat mit ${fmt1(stats.teuersteMiete.mieteM2)} €/m² die höchste Kaltmiete aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+              />
+              <StatCard
+                label="Günstigste Miete" value={`${fmt1(stats.guenstigsteMiete.mieteM2)} €`} sub={`${stats.guenstigsteMiete.name} · pro m²/Monat`}
+                konfidenz="aggregiert"
+                copyText={`${stats.guenstigsteMiete.name} hat mit ${fmt1(stats.guenstigsteMiete.mieteM2)} €/m² die niedrigste Kaltmiete aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+              />
+              <StatCard
+                label="Ø Kaltmiete" value={`${fmt1(stats.avgMiete)} €`} sub={`über ${stats.n} Städte · pro m²/Monat`}
+                konfidenz="berechnet"
+                copyText={`Die durchschnittliche Kaltmiete über ${stats.n} deutsche Großstädte liegt bei ${fmt1(stats.avgMiete)} €/m². Quelle: renditly.de/mietrendite-report-2026`}
+              />
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Einordnung</div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Die Mieten streuen deutlich weniger als die Kaufpreise: {stats.teuersteMiete.name} kostet nur das {fmt1(stats.teuersteMiete.mieteM2 / stats.guenstigsteMiete.mieteM2)}-fache von {stats.guenstigsteMiete.name}, während der Kaufpreisfaktor bei {fmt1(stats.teuersteKaufpreis.kaufpreisM2 / stats.guenstigsteKaufpreis.kaufpreisM2)} liegt. Genau diese Asymmetrie zwischen Kaufpreis- und Mietspreizung ist der Haupttreiber für die Renditeunterschiede zwischen den Städten.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-black text-slate-900 mb-3">Renditen</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <StatCard
+                label="Höchste Rendite" value={`${fmt1(stats.hoechsteRendite.bruttorendite)} %`} sub={stats.hoechsteRendite.name}
+                konfidenz="berechnet"
+                copyText={`${stats.hoechsteRendite.name} hat mit ${fmt1(stats.hoechsteRendite.bruttorendite)} % die höchste Bruttomietrendite aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+              />
+              <StatCard
+                label="Niedrigste Rendite" value={`${fmt1(stats.niedrigsteRendite.bruttorendite)} %`} sub={stats.niedrigsteRendite.name}
+                konfidenz="berechnet"
+                copyText={`${stats.niedrigsteRendite.name} hat mit ${fmt1(stats.niedrigsteRendite.bruttorendite)} % die niedrigste Bruttomietrendite aller ${stats.n} untersuchten deutschen Großstädte. Quelle: renditly.de/mietrendite-report-2026`}
+              />
+              <StatCard
+                label="Ø Bruttomietrendite" value={`${fmt1(stats.avgRendite)} %`} sub={`über ${stats.n} Städte`}
+                konfidenz="berechnet"
+                copyText={`Die durchschnittliche Bruttomietrendite über ${stats.n} deutsche Großstädte liegt bei ${fmt1(stats.avgRendite)} %. Quelle: renditly.de/mietrendite-report-2026`}
+              />
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 mb-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Einordnung — Kaufpreis schlägt Miete</div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Entscheidend für die Rendite ist nicht die absolute Miethöhe, sondern ihr Verhältnis zum Kaufpreis. {stats.hoechsteRendite.name} führt bei der Rendite, obwohl weder die höchste noch die niedrigste Miete gezahlt wird — der vergleichsweise niedrige Kaufpreis macht den Unterschied. Hohe Mieten allein machen also noch keine gute Rendite, wenn der Kaufpreis überproportional mitgestiegen ist.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Methodik</div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Datenbasis sind die durchschnittlichen Kaufpreise und Kaltmieten pro Quadratmeter für {stats.n} deutsche Großstädte (Tier-1-Städte: Engel & Völkers Marktbericht Deutschland, Stand Juni 2026; Tier-2-Städte: aggregiert aus mehreren Immobilienportalen, Stand August 2026). Die Bruttomietrendite berechnet sich als Jahreskaltmiete pro m² geteilt durch den Kaufpreis pro m², multipliziert mit 100. Kaufnebenkosten, Instandhaltung und Leerstand sind in der Bruttomietrendite nicht enthalten — für eine realistischere Einschätzung empfiehlt sich die Nettomietrendite im Einzelfall.
+              </p>
+            </div>
+          </section>
+        </div>
 
         {/* Vollständige Tabelle */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm overflow-x-auto mb-10">

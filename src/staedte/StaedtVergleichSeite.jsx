@@ -1,9 +1,13 @@
 import { getVergleich, VERGLEICHE } from './vergleichDaten';
 import { STAEDTE_LISTE } from './staedteDaten';
 import FloatingCTA from '../components/FloatingCTA';
+import ArticleMeta from '../components/ArticleMeta';
+import CiteBlock from '../components/CiteBlock';
 
 const fmt = (n, decimals = 1) => isFinite(n) ? n.toFixed(decimals).replace('.', ',') : '–';
 const fmtEur = (n) => isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–';
+
+const TIER1_SLUGS = new Set(['berlin', 'hamburg', 'muenchen', 'koeln', 'frankfurt', 'stuttgart', 'duesseldorf', 'leipzig', 'dortmund', 'essen']);
 
 export default function StaedtVergleichSeite({ slugA, slugB }) {
   const daten = getVergleich(slugA, slugB);
@@ -12,6 +16,11 @@ export default function StaedtVergleichSeite({ slugA, slugB }) {
   const { a, b, text, faq } = daten;
   const renditeSieger = a.bruttorendite >= b.bruttorendite ? a : b;
   const preisSieger = a.kaufpreisM2 <= b.kaufpreisM2 ? a : b;
+
+  const istTier1 = TIER1_SLUGS.has(slugA) && TIER1_SLUGS.has(slugB);
+  const standText = istTier1 ? 'Engel & Völkers Marktbericht, Stand Juni 2026' : 'Aggregiert aus mehreren Immobilienportalen, Stand August 2026';
+  const zitatText = `Laut renditly bietet ${renditeSieger.name} mit ${fmt(renditeSieger.bruttorendite)} % die höhere Bruttomietrendite im Vergleich ${a.name} vs. ${b.name}. Quelle: https://www.renditly.de/mietrendite-${a.slug}-vs-${b.slug}`;
+  const apaText = `renditly (2026). Mietrendite ${a.name} vs. ${b.name}. Abgerufen ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })} von https://www.renditly.de/mietrendite-${a.slug}-vs-${b.slug}`;
 
   const weitereVergleiche = VERGLEICHE.filter(
     (v) => ![v.slugA, v.slugB].every((s) => [slugA, slugB].includes(s))
@@ -52,7 +61,7 @@ export default function StaedtVergleichSeite({ slugA, slugB }) {
         <div className="max-w-4xl mx-auto px-4">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3 py-1 text-xs text-indigo-200 mb-4">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
-            Marktdaten Juni 2026 · Engel &amp; Völkers
+            {istTier1 ? 'Marktdaten Juni 2026 · Engel & Völkers' : 'Marktdaten August 2026 · Mehrere Portale'}
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-tight">
             Mietrendite {a.name} vs. {b.name}
@@ -64,6 +73,12 @@ export default function StaedtVergleichSeite({ slugA, slugB }) {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+        <ArticleMeta
+          veroeffentlicht={istTier1 ? '9. August 2026' : '12. August 2026'}
+          aktualisiert="7. September 2026"
+          quelle={standText}
+        />
+
         {/* Vergleichstabelle */}
         <div className="overflow-x-auto mb-10 bg-white rounded-2xl border border-gray-100">
           <table className="w-full text-sm">
@@ -93,6 +108,8 @@ export default function StaedtVergleichSeite({ slugA, slugB }) {
             </tbody>
           </table>
         </div>
+
+        <CiteBlock zitatText={zitatText} apaText={apaText} />
 
         {/* Analysetext */}
         <section className="mb-10">
@@ -157,7 +174,7 @@ export default function StaedtVergleichSeite({ slugA, slugB }) {
         </div>
 
         <p className="text-xs text-slate-400 mt-6 text-center">
-          Datenquelle: Engel &amp; Völkers Marktbericht Deutschland, Stand Juni 2026 (Angebotspreise). Werte sind Durchschnittswerte und können je nach Lage und Objekt stark abweichen.
+          Datenquelle: {standText} (Angebotspreise). Werte sind Durchschnittswerte und können je nach Lage und Objekt stark abweichen.
         </p>
       </main>
 
