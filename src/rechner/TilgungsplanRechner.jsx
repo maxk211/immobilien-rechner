@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import FloatingCTA from '../components/FloatingCTA';
+import ResultCTA from '../components/ResultCTA';
 
 const fmt = (n, decimals = 2) => isFinite(n) ? n.toFixed(decimals).replace('.', ',') : '–';
 const fmtEur = (n) => isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–';
@@ -71,6 +73,7 @@ export default function TilgungsplanRechner() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
+      <FloatingCTA />
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-1.5 text-slate-900 hover:text-indigo-600 transition-colors">
@@ -163,6 +166,8 @@ export default function TilgungsplanRechner() {
           </table>
           <p className="text-xs text-slate-400 mt-3">* Ende der eingegebenen Zinsbindung — hier wird üblicherweise eine Anschlussfinanzierung fällig.</p>
         </div>
+
+        <ResultCTA text="renditly warnt dich automatisch, wenn deine Zinsbindung ausläuft — und rechnet die Anschlussfinanzierung direkt in deinen Cashflow ein." />
 
         <article className="mt-12 sm:mt-16 prose-sm max-w-none">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">

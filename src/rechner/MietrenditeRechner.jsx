@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import FloatingCTA from '../components/FloatingCTA';
+import ResultCTA from '../components/ResultCTA';
 
 const fmt = (n, decimals = 2) =>
   isFinite(n) ? n.toFixed(decimals).replace('.', ',') : '–';
@@ -72,6 +74,7 @@ export default function MietrenditeRechner() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
+      <FloatingCTA />
 
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
@@ -185,6 +188,8 @@ export default function MietrenditeRechner() {
             </div>
           </div>
         </div>
+
+        <ResultCTA text="Speichere diese Immobilie in renditly und tracke Rendite, Cashflow und Steuern automatisch — dauerhaft, nicht nur einmalig." />
 
         {/* Erklärtexte — wichtig für GEO */}
         <article className="mt-12 sm:mt-16 prose-sm max-w-none">

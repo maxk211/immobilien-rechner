@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { GRUNDERWERBSTEUER_SAETZE } from './grunderwerbsteuerSaetze';
+import FloatingCTA from '../components/FloatingCTA';
+import ResultCTA from '../components/ResultCTA';
 
 const fmtEur = (n) =>
   isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–';
@@ -40,6 +42,7 @@ export default function GrunderwerbsteuerRechner() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
+      <FloatingCTA />
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-1.5 text-slate-900 hover:text-indigo-600 transition-colors">
@@ -111,6 +114,8 @@ export default function GrunderwerbsteuerRechner() {
             </div>
           </div>
         </div>
+
+        <ResultCTA text="renditly kalkuliert Grunderwerbsteuer & alle Kaufnebenkosten automatisch bei jeder neuen Immobilie — und rechnet direkt deine Rendite danach aus." />
 
         <article className="mt-12 sm:mt-16 prose-sm max-w-none">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">

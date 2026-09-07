@@ -1,5 +1,6 @@
 import { getVergleich, VERGLEICHE } from './vergleichDaten';
 import { STAEDTE_LISTE } from './staedteDaten';
+import FloatingCTA from '../components/FloatingCTA';
 
 const fmt = (n, decimals = 1) => isFinite(n) ? n.toFixed(decimals).replace('.', ',') : '–';
 const fmtEur = (n) => isFinite(n) ? Math.round(n).toLocaleString('de-DE') + ' €' : '–';
@@ -18,6 +19,7 @@ export default function StaedtVergleichSeite({ slugA, slugB }) {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
+      <FloatingCTA />
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">

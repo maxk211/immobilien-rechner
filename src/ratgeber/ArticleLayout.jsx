@@ -1,6 +1,9 @@
+import FloatingCTA from '../components/FloatingCTA';
+
 export default function ArticleLayout({ kategorie, titel, untertitel, lesezeit, children, ctaText, related = [] }) {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
+      <FloatingCTA />
 
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
