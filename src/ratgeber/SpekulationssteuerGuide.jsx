@@ -21,6 +21,7 @@ export default function SpekulationssteuerGuide() {
         { href: '/ratgeber/afa-und-steuern-vermietung', titel: 'AfA und Steuern bei Vermietung: Der Leitfaden' },
         { href: '/ratgeber/erbschaftsteuer-immobilie', titel: 'Erbschaftsteuer und Schenkungsteuer bei Immobilien' },
         { href: '/afa-rechner', titel: 'AfA-Rechner', kategorie: 'Rechner' },
+        { href: '/spekulationsfrist-rechner', titel: 'Spekulationsfrist-Rechner', kategorie: 'Rechner' },
       ]}
     >
       <section>
@@ -38,6 +39,9 @@ export default function SpekulationssteuerGuide() {
         <Box title="Beispiel">
           Kaufvertrag am 15. März 2016 unterschrieben, Verkauf frühestens ab dem 16. März 2026 steuerfrei möglich. Ein Verkauf am 10. März 2026 — nur wenige Tage früher — würde die Frist noch verpassen und den vollen Gewinn steuerpflichtig machen.
         </Box>
+        <P>
+          Mit dem <a href="/spekulationsfrist-rechner" className="text-indigo-600 font-semibold hover:underline">kostenlosen Spekulationsfrist-Rechner</a> lässt sich das exakte Fristende auf den Tag genau berechnen — inklusive Sonderfall Schenkung oder Erbschaft, bei dem die Frist ab dem Kaufdatum des Vorbesitzers weiterläuft.
+        </P>
       </section>
 
       <section>

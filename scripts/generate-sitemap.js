@@ -152,6 +152,12 @@ routes.push({
 });
 
 routes.push({
+  url: '/spekulationsfrist-rechner',
+  parts: [stripChrome(readSrc('src/rechner/SpekulationsfristRechner.jsx'))],
+  gitPaths: ['src/rechner/SpekulationsfristRechner.jsx'],
+});
+
+routes.push({
   url: '/vermieter-software',
   parts: [readSrc('src/landing/VermieterSoftwareLanding.jsx')],
   gitPaths: ['src/landing/VermieterSoftwareLanding.jsx'],

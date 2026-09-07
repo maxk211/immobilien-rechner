@@ -5,7 +5,7 @@ import {
   Home, BarChart3, Wallet, Receipt, Users, TrendingUp, Building2,
   Check, X, Lock, Key, ShieldCheck, Globe, Mail, ArrowRight, Monitor,
   Eye, BellOff, Ban, Frown, Calculator, BookOpen, MapPin,
-  Landmark, Percent, CalendarClock
+  Landmark, Percent, CalendarClock, Hourglass
 } from 'lucide-react';
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
@@ -649,6 +649,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
               { icon: Landmark, title: 'Grunderwerbsteuer-Rechner', desc: 'Grunderwerbsteuer für alle 16 Bundesländer berechnen.', href: '/grunderwerbsteuer-rechner' },
               { icon: Percent, title: 'Kaufnebenkosten-Rechner', desc: 'Grunderwerbsteuer, Notar & Makler in einem Rechner.', href: '/kaufnebenkosten-rechner' },
               { icon: CalendarClock, title: 'Tilgungsplan-Rechner', desc: 'Annuitätendarlehen Jahr für Jahr durchrechnen.', href: '/tilgungsplan-rechner' },
+              { icon: Hourglass, title: 'Spekulationsfrist-Rechner', desc: 'Ab wann der Immobilienverkauf steuerfrei ist berechnen.', href: '/spekulationsfrist-rechner' },
               { icon: MapPin, title: 'Mietrendite nach Stadt', desc: 'Kaufpreise, Mieten und Renditen der 18 größten Städte im Vergleich.', href: '/mietrendite-staedte' },
               { icon: BarChart3, title: 'Mietrendite-Report 2026', desc: 'Datenstudie mit Rangliste und zitierbaren Kennzahlen zu 18 Städten.', href: '/mietrendite-report-2026' },
               { icon: BookOpen, title: 'Mietrendite berechnen', desc: 'Der komplette Guide mit Formeln und Beispielrechnung.', href: '/ratgeber/mietrendite-berechnen' },

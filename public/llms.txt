@@ -11,6 +11,7 @@ renditly hilft Immobilien-Investoren und Vermietern in Deutschland dabei, ihr Po
 - [Grunderwerbsteuer-Rechner](https://www.renditly.de/grunderwerbsteuer-rechner): Grunderwerbsteuer beim Immobilienkauf berechnen, mit aktuellen Sätzen aller 16 Bundesländer (3,5–6,5 %).
 - [Kaufnebenkosten-Rechner](https://www.renditly.de/kaufnebenkosten-rechner): Grunderwerbsteuer, Notar-/Grundbuchkosten und Maklerprovision in einem Rechner, inkl. Finanzierungsbedarf und Eigenkapitalquote.
 - [Tilgungsplan-Rechner](https://www.renditly.de/tilgungsplan-rechner): Annuitätendarlehen Jahr für Jahr durchrechnen — Restschuld, Zinsen und Tilgung, inkl. Restschuld nach Ende der Zinsbindung.
+- [Spekulationsfrist-Rechner](https://www.renditly.de/spekulationsfrist-rechner): 10-Jahresfrist beim Immobilienverkauf berechnen — ab wann steuerfrei, inkl. Sonderfall Schenkung/Erbschaft und Eigennutzung.
 
 ## Ratgeber
 

@@ -31,6 +31,10 @@
       "destination": "/tilgungsplan-rechner.html"
     },
     {
+      "source": "/spekulationsfrist-rechner",
+      "destination": "/spekulationsfrist-rechner.html"
+    },
+    {
       "source": "/vermieter-software",
       "destination": "/vermieter-software.html"
     },

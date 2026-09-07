@@ -12,6 +12,7 @@ const AfaRechner = lazy(() => import('./rechner/AfaRechner.jsx'))
 const GrunderwerbsteuerRechner = lazy(() => import('./rechner/GrunderwerbsteuerRechner.jsx'))
 const KaufnebenkostenRechner = lazy(() => import('./rechner/KaufnebenkostenRechner.jsx'))
 const TilgungsplanRechner = lazy(() => import('./rechner/TilgungsplanRechner.jsx'))
+const SpekulationsfristRechner = lazy(() => import('./rechner/SpekulationsfristRechner.jsx'))
 const VermieterSoftwareLanding = lazy(() => import('./landing/VermieterSoftwareLanding.jsx'))
 const ImmobilienLexikon = lazy(() => import('./glossar/ImmobilienLexikon.jsx'))
 const MietrenditeReport = lazy(() => import('./report/MietrenditeReport.jsx'))
@@ -54,6 +55,7 @@ const ROUTES = {
   '/grunderwerbsteuer-rechner': { Component: GrunderwerbsteuerRechner },
   '/kaufnebenkosten-rechner': { Component: KaufnebenkostenRechner },
   '/tilgungsplan-rechner': { Component: TilgungsplanRechner },
+  '/spekulationsfrist-rechner': { Component: SpekulationsfristRechner },
   '/vermieter-software': { Component: VermieterSoftwareLanding },
   '/immobilien-lexikon': { Component: ImmobilienLexikon },
   '/mietrendite-report-2026': { Component: MietrenditeReport },
