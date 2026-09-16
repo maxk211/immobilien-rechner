@@ -7,7 +7,9 @@ import { formatCurrency } from '../utils/format.js';
 
 const PRIORITAET = { rot: 0, gelb: 1, gruen: 2 };
 
-function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
+// Exportiert, damit Portfolio-Kacheln und die Immobilien-Übersicht dieselbe
+// Aufgaben-Logik nutzen können (gefiltert auf immoId) statt sie zu duplizieren.
+export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   const todos = [];
   const heute = new Date();
   const aktuellesJahr = heute.getFullYear();
@@ -322,7 +324,7 @@ function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   return todos.sort((a, b) => PRIORITAET[a.priority] - PRIORITAET[b.priority]);
 }
 
-const PRIORITY_STYLE = {
+export const PRIORITY_STYLE = {
   rot: { dot: 'bg-red-500', badge: 'bg-red-100 text-red-700', row: 'border-red-100 hover:bg-red-50' },
   gelb: { dot: 'bg-amber-400', badge: 'bg-amber-100 text-amber-700', row: 'border-amber-100 hover:bg-amber-50' },
   gruen: { dot: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700', row: 'border-emerald-100 hover:bg-emerald-50' },

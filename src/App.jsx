@@ -40,7 +40,7 @@ import ImmobilienFormular from './components/ImmobilienFormular';
 import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
 import PortfolioZiele from './components/PortfolioZiele';
-import VermieterTodos from './components/VermieterTodos';
+import VermieterTodos, { generiereAufgaben } from './components/VermieterTodos';
 import ErsteSchritte from './components/ErsteSchritte';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
@@ -1180,6 +1180,13 @@ function App() {
   const aktiveImmobilien = portfolio.filter(i => !isInaktiv(i));
   const inaktiveImmobilien = portfolio.filter(i => isInaktiv(i));
 
+  // Vermieter-Aufgaben einmal zentral berechnen — wird sowohl vom Kachel-Badge
+  // als auch von der Immobilien-Übersicht (gefiltert je immoId) genutzt.
+  const alleAufgaben = useMemo(
+    () => generiereAufgaben(portfolio, mieterListe, nkAbrechnungen),
+    [portfolio, mieterListe, nkAbrechnungen]
+  );
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Toast Notifications */}
@@ -1412,7 +1419,9 @@ function App() {
                   key={immobilie.id}
                   immobilie={immobilie}
                   mieterListe={mieterListe}
+                  aufgaben={alleAufgaben}
                   onClick={() => { setSelectedImmobilie(immobilie); setInitialTab(null); }}
+                  onOpenAufgabe={(todo) => { setSelectedImmobilie(immobilie); setInitialTab(todo?.targetTab || null); }}
                   onDelete={() => handleDelete(immobilie.id)}
                   onEdit={() => { setEditImmobilie(immobilie); setShowForm(true); }}
                 />
@@ -1499,6 +1508,7 @@ function App() {
             onSaveNK={handleSaveNK}
             onDeleteNK={handleDeleteNK}
             portfolio={portfolio}
+            aufgaben={alleAufgaben}
           />
         </ModalErrorBoundary>
       )}

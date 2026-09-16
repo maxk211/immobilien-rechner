@@ -187,7 +187,7 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
-const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab }) => {
+const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [] }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
 
@@ -341,6 +341,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const isGbR = params.eigentumsform === 'gbr';
   const anteilFaktor = isGbR ? (params.userAnteil ?? 100) / 100 : 1;
   const anteil = (v) => Math.round(v * anteilFaktor);
+
+  // Vermieter-Aufgaben, gefiltert auf diese Immobilie (bereits rot→gelb→grün sortiert)
+  const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
+  const naechsteAufgabe = eigeneAufgaben.find(t => t.priority !== 'gruen') || eigeneAufgaben[0] || null;
+
+  // Cashflow-Ampel: ist die Miete für den aktuellen Monat schon verbucht?
+  const heute = new Date();
+  const aktiveMieterKaufobjekt = mieterListe.some(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
+  const mieteAktuellerMonatBezahlt = (immobilie.mietEingaenge || []).some(e => {
+    const d = new Date(e.datum);
+    return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1);
+  });
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
@@ -547,6 +559,54 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           <TabErrorBoundary resetKey={activeTab}>
           {activeTab === 'uebersicht' && (
             <div className="space-y-5">
+              {/* Nächster wichtiger Termin + Cashflow-Ampel — Tagesgeschäft zuerst,
+                  bevor Marktwert/Vermögenswerte kommen. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {naechsteAufgabe ? (
+                  <button
+                    onClick={() => setActiveTab(naechsteAufgabe.targetTab)}
+                    className={`text-left rounded-2xl p-4 border transition-colors ${
+                      naechsteAufgabe.priority === 'rot' ? 'bg-red-50 border-red-200 hover:bg-red-100'
+                      : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                      : 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`w-2 h-2 rounded-full ${
+                        naechsteAufgabe.priority === 'rot' ? 'bg-red-500' : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-emerald-500'
+                      }`} />
+                      <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Nächster wichtiger Punkt</span>
+                    </div>
+                    <div className="font-semibold text-gray-800 text-sm leading-snug">{naechsteAufgabe.titel}</div>
+                    {eigeneAufgaben.length > 1 && (
+                      <div className="text-xs text-gray-400 mt-1">+ {eigeneAufgaben.length - 1} weitere offene Punkt{eigeneAufgaben.length - 1 !== 1 ? 'e' : ''}</div>
+                    )}
+                  </button>
+                ) : (
+                  <div className="rounded-2xl p-4 border bg-emerald-50 border-emerald-200 flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-500"/>
+                    <span className="text-sm font-semibold text-emerald-700">Keine offenen Punkte — alles erledigt</span>
+                  </div>
+                )}
+
+                {aktiveMieterKaufobjekt && (
+                  <button
+                    onClick={() => setActiveTab('mieteinnahmen')}
+                    className={`text-left rounded-2xl p-4 border transition-colors ${
+                      mieteAktuellerMonatBezahlt ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100' : 'bg-red-50 border-red-200 hover:bg-red-100'
+                    }`}
+                  >
+                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Miete {heute.toLocaleDateString('de-DE', { month: 'long' })}
+                    </div>
+                    <div className={`font-semibold text-sm flex items-center gap-1.5 ${mieteAktuellerMonatBezahlt ? 'text-emerald-700' : 'text-red-600'}`}>
+                      {mieteAktuellerMonatBezahlt ? <CheckCircle2 size={16}/> : <AlertTriangle size={16}/>}
+                      {mieteAktuellerMonatBezahlt ? 'Eingegangen' : 'Noch nicht verbucht'}
+                    </div>
+                  </button>
+                )}
+              </div>
+
               {/* Marktwert — Wertsteigerung selbst steht jetzt oben im KPI-Strip
                   neben Brutto/Netto/EK-Rendite, kein separates Chart mehr hier. */}
               <div>

@@ -162,7 +162,7 @@ const MehrfamilienhausDetail = ({
   immobilie, onClose, onEdit, onSave, initialTab,
   mieterListe = [], onSaveMieter, onDeleteMieter,
   nkAbrechnungen = [], onSaveNK, onDeleteNK,
-  portfolio = [],
+  portfolio = [], aufgaben = [],
 }) => {
   const [activeTab, setActiveTab] = useState(() =>
     initialTab ? (MFH_TAB_MAP[initialTab] ?? initialTab) : 'wohnungen'
@@ -188,6 +188,19 @@ const MehrfamilienhausDetail = ({
   const hatteJeMieter   = (w) => !!(w.mieterName || w.mietende || w.mietbeginn);
   const belegtWE        = wohnungen.filter(w => w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date())).length;
   const leerstandWE     = wohnungen.filter(w => hatteJeMieter(w) && !(w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()))).length;
+
+  // Vermieter-Aufgaben, gefiltert auf diese Immobilie (bereits rot→gelb→grün sortiert)
+  const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
+  const naechsteAufgabe = eigeneAufgaben.find(t => t.priority !== 'gruen') || eigeneAufgaben[0] || null;
+
+  // Cashflow-Ampel: wie viele der belegten Wohnungen haben diesen Monat schon Miete verbucht?
+  const heute = new Date();
+  const belegteWohnungenListe = wohnungen.filter(w => w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()));
+  const wohnungenMitMieteImMonat = belegteWohnungenListe.filter(w => (w.mietEingaenge || []).some(e => {
+    const d = new Date(e.datum);
+    return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1);
+  })).length;
+  const alleMietenEingegangen = belegteWohnungenListe.length > 0 && wohnungenMitMieteImMonat === belegteWohnungenListe.length;
   const auslastung      = wohnungen.length > 0 ? Math.round(belegtWE / wohnungen.length * 100) : 0;
   const kautionOffenAnzahl = wohnungen.filter(w => w.kautionBetrag > 0 && !w.kautionBezahlt).length;
   const aktiveMieterAnzahl = (mieterListe || []).filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -594,6 +607,48 @@ const MehrfamilienhausDetail = ({
           {/* ── ÜBERSICHT TAB ────────────────────────────────────────────────── */}
           {activeTab === 'uebersicht' && (
             <div className="space-y-4">
+              {/* Nächster wichtiger Termin + Cashflow-Ampel — Tagesgeschäft zuerst */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {naechsteAufgabe ? (
+                  <button
+                    onClick={() => setActiveTab(naechsteAufgabe.targetTab)}
+                    className={`text-left rounded-2xl p-4 border transition-colors ${
+                      naechsteAufgabe.priority === 'rot' ? 'bg-red-50 border-red-200 hover:bg-red-100'
+                      : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                      : 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`w-2 h-2 rounded-full ${
+                        naechsteAufgabe.priority === 'rot' ? 'bg-red-500' : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-emerald-500'
+                      }`} />
+                      <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Nächster wichtiger Punkt</span>
+                    </div>
+                    <div className="font-semibold text-gray-800 text-sm leading-snug">{naechsteAufgabe.titel}</div>
+                    {eigeneAufgaben.length > 1 && (
+                      <div className="text-xs text-gray-400 mt-1">+ {eigeneAufgaben.length - 1} weitere offene Punkt{eigeneAufgaben.length - 1 !== 1 ? 'e' : ''}</div>
+                    )}
+                  </button>
+                ) : (
+                  <div className="rounded-2xl p-4 border bg-emerald-50 border-emerald-200 flex items-center gap-2">
+                    <Check size={16} className="text-emerald-500"/>
+                    <span className="text-sm font-semibold text-emerald-700">Keine offenen Punkte — alles erledigt</span>
+                  </div>
+                )}
+
+                {belegteWohnungenListe.length > 0 && (
+                  <div className={`rounded-2xl p-4 border ${alleMietenEingegangen ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Miete {heute.toLocaleDateString('de-DE', { month: 'long' })}
+                    </div>
+                    <div className={`font-semibold text-sm flex items-center gap-1.5 ${alleMietenEingegangen ? 'text-emerald-700' : 'text-red-600'}`}>
+                      {alleMietenEingegangen ? <Check size={16}/> : <AlertTriangle size={16}/>}
+                      {wohnungenMitMieteImMonat}/{belegteWohnungenListe.length} WE eingegangen
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Auslastungsbalken */}
               <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Belegungsübersicht</p>
