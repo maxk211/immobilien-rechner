@@ -201,6 +201,19 @@ const MehrfamilienhausDetail = ({
     return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1);
   })).length;
   const alleMietenEingegangen = belegteWohnungenListe.length > 0 && wohnungenMitMieteImMonat === belegteWohnungenListe.length;
+
+  // Ein-Klick Abhaken pro Wohnung direkt aus der Übersicht — kein Umweg über den
+  // Einnahmen-Tab nötig. Speichert sofort (aggregiereUndSpeichere persistiert direkt).
+  const handleWohnungMieteAbhaken = (wIdx) => {
+    const heuteISO = new Date().toISOString().split('T')[0];
+    const w = wohnungen[wIdx];
+    const neuerEingang = { id: Date.now(), datum: heuteISO, betrag: Number(w.kaltmiete) || 0, typ: 'kaltmiete', notiz: '' };
+    const neu = [...wohnungen];
+    neu[wIdx] = { ...neu[wIdx], mietEingaenge: [...(neu[wIdx].mietEingaenge || []), neuerEingang] };
+    setWohnungen(neu);
+    aggregiereUndSpeichere(neu);
+  };
+
   const auslastung      = wohnungen.length > 0 ? Math.round(belegtWE / wohnungen.length * 100) : 0;
   const kautionOffenAnzahl = wohnungen.filter(w => w.kautionBetrag > 0 && !w.kautionBezahlt).length;
   const aktiveMieterAnzahl = (mieterListe || []).filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -648,6 +661,47 @@ const MehrfamilienhausDetail = ({
                   </div>
                 )}
               </div>
+
+              {/* Ein-Klick Abhaken pro Wohnung — direkt hier statt im Einnahmen-Tab */}
+              {belegteWohnungenListe.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Mieteingänge {heute.toLocaleDateString('de-DE', { month: 'long' })}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {belegteWohnungenListe.map((w) => {
+                      const wIdx = wohnungen.indexOf(w);
+                      const eintrag = (w.mietEingaenge || []).find(e => {
+                        const d = new Date(e.datum);
+                        return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1) && e.typ !== 'ausnahme';
+                      }) || null;
+                      return (
+                        <div key={w.id || wIdx} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-gray-800 truncate">{w.name || `WE ${wIdx + 1}`}</div>
+                            <div className="text-xs text-gray-400 truncate">{w.mieterName}</div>
+                          </div>
+                          {eintrag ? (
+                            <div className="text-right shrink-0">
+                              <div className="text-sm font-semibold text-emerald-600 flex items-center gap-1 justify-end"><CheckCircle2 size={14}/> {formatCurrency(eintrag.betrag)}</div>
+                              <div className="text-[10px] text-gray-400">{new Date(eintrag.datum).toLocaleDateString('de-DE')}</div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleWohnungMieteAbhaken(wIdx)}
+                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
+                            >
+                              <Check size={12}/> Erhalten ({formatCurrency(Number(w.kaltmiete) || 0)})
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Auslastungsbalken */}
               <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">

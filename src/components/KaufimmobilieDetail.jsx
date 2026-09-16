@@ -349,10 +349,25 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   // Cashflow-Ampel: ist die Miete für den aktuellen Monat schon verbucht?
   const heute = new Date();
   const aktiveMieterKaufobjekt = mieterListe.some(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
-  const mieteAktuellerMonatBezahlt = (immobilie.mietEingaenge || []).some(e => {
+  const mieteAktuellerMonatEintrag = (params.mietEingaenge || []).find(e => {
     const d = new Date(e.datum);
-    return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1);
-  });
+    return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1) && e.typ !== 'ausnahme';
+  }) || null;
+  const nkVomMieterAmpel = params.vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
+  const erwarteterMietBetrag = params.dauerauftrag
+    ? (params.dauerauftragBetrag || getAktuelleMiete(params) || 0)
+    : getAktuelleMiete(params) + nkVomMieterAmpel;
+
+  // Ein-Klick Abhaken direkt aus der Übersicht — spart den Umweg über den Mieteinnahmen-Tab.
+  // Speichert sofort (kein zusätzlicher "Speichern"-Klick nötig, wie bei jeder anderen Änderung hier).
+  const handleMieteAbhaken = () => {
+    const heuteISO = new Date().toISOString().split('T')[0];
+    const neuerEingang = { id: Date.now(), datum: heuteISO, betrag: erwarteterMietBetrag, typ: 'kaltmiete', notiz: '' };
+    const neueParams = { ...params, mietEingaenge: [...(params.mietEingaenge || []), neuerEingang] };
+    setParams(neueParams);
+    const gesamtEK = (neueParams.ekFuerNebenkosten || 0) + (neueParams.ekFuerKaufpreis || 0);
+    onSave({ ...immobilie, ...neueParams, eigenkapital: gesamtEK });
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
@@ -590,20 +605,37 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 )}
 
                 {aktiveMieterKaufobjekt && (
-                  <button
-                    onClick={() => setActiveTab('mieteinnahmen')}
-                    className={`text-left rounded-2xl p-4 border transition-colors ${
-                      mieteAktuellerMonatBezahlt ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100' : 'bg-red-50 border-red-200 hover:bg-red-100'
-                    }`}
-                  >
+                  <div className={`rounded-2xl p-4 border ${
+                    params.dauerauftrag || mieteAktuellerMonatEintrag ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                  }`}>
                     <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
                       Miete {heute.toLocaleDateString('de-DE', { month: 'long' })}
                     </div>
-                    <div className={`font-semibold text-sm flex items-center gap-1.5 ${mieteAktuellerMonatBezahlt ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {mieteAktuellerMonatBezahlt ? <CheckCircle2 size={16}/> : <AlertTriangle size={16}/>}
-                      {mieteAktuellerMonatBezahlt ? 'Eingegangen' : 'Noch nicht verbucht'}
-                    </div>
-                  </button>
+                    {params.dauerauftrag ? (
+                      <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
+                        <Zap size={16}/> Automatisch per Dauerauftrag
+                      </div>
+                    ) : mieteAktuellerMonatEintrag ? (
+                      <div>
+                        <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
+                          <CheckCircle2 size={16}/> {formatCurrency(mieteAktuellerMonatEintrag.betrag)} eingegangen
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">am {new Date(mieteAktuellerMonatEintrag.datum).toLocaleDateString('de-DE')}</div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="font-semibold text-sm text-red-600 flex items-center gap-1.5">
+                          <AlertTriangle size={16}/> Noch nicht verbucht
+                        </div>
+                        <button
+                          onClick={handleMieteAbhaken}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
+                        >
+                          <Check size={12}/> Erhalten ({formatCurrency(erwarteterMietBetrag)})
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
