@@ -49,6 +49,8 @@ const RatingBadge = ({ value, unit = '%' }) => {
   );
 };
 
+const ZIEL_RENDITE = 4;
+
 export default function MietrenditeRechner() {
   const [kaufpreis, setKaufpreis] = useState(300000);
   const [nebenkosten, setNebenkosten] = useState(10);
@@ -56,6 +58,8 @@ export default function MietrenditeRechner() {
   const [kaltmiete, setKaltmiete] = useState(900);
   const [kosten, setKosten] = useState(150);
   const [zins, setZins] = useState(3.8);
+  const [tilgung, setTilgung] = useState(2);
+  const [wohnflaeche, setWohnflaeche] = useState(70);
 
   const kp = parseFloat(kaufpreis) || 0;
   const nk = parseFloat(nebenkosten) || 0;
@@ -63,14 +67,34 @@ export default function MietrenditeRechner() {
   const km = parseFloat(kaltmiete) || 0;
   const ko = parseFloat(kosten) || 0;
   const zi = parseFloat(zins) || 0;
+  const til = parseFloat(tilgung) || 0;
+  const wf = parseFloat(wohnflaeche) || 0;
 
   const gesamtkosten = kp * (1 + nk / 100);
   const fremdkapital = Math.max(0, gesamtkosten - ek);
-  const rate = fremdkapital * (zi / 100 / 12);
+  const zinsAnteil = fremdkapital * (zi / 100 / 12);
+  const tilgungAnteil = fremdkapital * (til / 100 / 12);
+  const rate = zinsAnteil + tilgungAnteil;
   const brutto = kp > 0 ? (km * 12) / kp * 100 : 0;
   const netto = gesamtkosten > 0 ? ((km - ko) * 12) / gesamtkosten * 100 : 0;
   const cashflow = km - ko - rate;
   const cashonCash = ek > 0 ? (cashflow * 12) / ek * 100 : 0;
+
+  // Optimierungspotenzial: welche Kaltmiete bzw. welcher Kaufpreis wäre
+  // nötig, um die Zielrendite (4 % netto) zu erreichen?
+  const kaltmieteFuerZiel = gesamtkosten > 0 ? (ZIEL_RENDITE / 100) * gesamtkosten / 12 + ko : 0;
+  const kaufpreisFuerZiel = km - ko > 0 ? ((km - ko) * 12 * 100) / ZIEL_RENDITE / (1 + nk / 100) : 0;
+  const mieteProQm = wf > 0 ? km / wf : 0;
+  const zielMieteProQm = wf > 0 ? kaltmieteFuerZiel / wf : 0;
+
+  // Mieterhöhungs-Projektion: Kappungsgrenze § 558 BGB — max. 15 % innerhalb
+  // von 3 Jahren in Gebieten mit angespanntem Wohnungsmarkt (20 % sonst).
+  // Illustrativ mit dem verschärften 15-%-Satz, Kaufpreis/Kosten konstant.
+  const projektion = [3, 6, 9].map((jahre) => {
+    const kmProjiziert = km * Math.pow(1.15, jahre / 3);
+    const nettoProjiziert = gesamtkosten > 0 ? ((kmProjiziert - ko) * 12) / gesamtkosten * 100 : 0;
+    return { jahre, kmProjiziert, nettoProjiziert };
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -127,11 +151,13 @@ export default function MietrenditeRechner() {
             <h2 className="text-base font-bold text-slate-900 mb-5">Deine Immobilie</h2>
             <div className="space-y-4">
               <InputField label="Kaufpreis" value={kaufpreis} onChange={setKaufpreis} prefix="€" hint="Ohne Kaufnebenkosten" />
-              <InputField label="Kaufnebenkosten" value={nebenkosten} onChange={setNebenkosten} suffix="%" hint="Notar, Grunderwerbsteuer, Makler — typisch 8–12 %" />
+              <InputField label="Kaufnebenkosten" value={nebenkosten} onChange={setNebenkosten} suffix="%" hint="Notar, Grunderwerbsteuer, Makler — typisch 8–12 %. Mit 10 % bist du auf der sicheren Seite." />
               <InputField label="Eigenkapital" value={eigenkapital} onChange={setEigenkapital} prefix="€" hint="Für Cashflow- und Renditeberechnung" />
+              <InputField label="Wohnfläche" value={wohnflaeche} onChange={setWohnflaeche} suffix="m²" hint="Für die Kaltmiete pro m² und die Optimierungs-Empfehlung" />
               <InputField label="Kaltmiete pro Monat" value={kaltmiete} onChange={setKaltmiete} prefix="€" />
-              <InputField label="Laufende Kosten / Monat" value={kosten} onChange={setKosten} prefix="€" hint="Hausgeld, Instandhaltung, Verwaltung" />
-              <InputField label="Finanzierungszins" value={zins} onChange={setZins} suffix="%" hint="Aktueller Zinssatz für die Rate-Berechnung" />
+              <InputField label="Nicht umlagefähige Kosten / Monat" value={kosten} onChange={setKosten} prefix="€" hint="Verwaltung, Instandhaltungsrücklage, Mietausfallwagnis — nicht die umlagefähigen Betriebskosten, die der Mieter über die Nebenkostenabrechnung trägt und die die Rendite nicht mindern." />
+              <InputField label="Finanzierungszins" value={zins} onChange={setZins} suffix="%" hint="Aktueller Sollzins für die Rate-Berechnung" />
+              <InputField label="Anfängliche Tilgung" value={tilgung} onChange={setTilgung} suffix="%" hint="Üblich sind 1–3 % zu Beginn der Finanzierung" />
             </div>
           </div>
 
@@ -182,10 +208,57 @@ export default function MietrenditeRechner() {
               <div className="space-y-1.5 text-slate-600 text-xs">
                 <div className="flex justify-between"><span>Gesamtkosten (inkl. NK)</span><span className="font-medium text-slate-800">{fmtEur(gesamtkosten)}</span></div>
                 <div className="flex justify-between"><span>Fremdkapital</span><span className="font-medium text-slate-800">{fmtEur(fremdkapital)}</span></div>
-                <div className="flex justify-between"><span>Monatliche Zinsrate</span><span className="font-medium text-slate-800">{fmtEur(rate)}</span></div>
+                <div className="flex justify-between"><span>Monatliche Rate (Zins + Tilgung)</span><span className="font-medium text-slate-800">{fmtEur(rate)}</span></div>
+                <div className="flex justify-between pl-3"><span>davon Zins</span><span className="text-slate-500">{fmtEur(zinsAnteil)}</span></div>
+                <div className="flex justify-between pl-3"><span>davon Tilgung</span><span className="text-slate-500">{fmtEur(tilgungAnteil)}</span></div>
                 <div className="flex justify-between"><span>Jahreskaltmiete</span><span className="font-medium text-slate-800">{fmtEur(km * 12)}</span></div>
+                {wf > 0 && (
+                  <div className="flex justify-between"><span>Kaltmiete pro m²</span><span className="font-medium text-slate-800">{fmt(mieteProQm)} €/m²</span></div>
+                )}
               </div>
             </div>
+
+            {netto < ZIEL_RENDITE && gesamtkosten > 0 && (
+              <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4 text-sm">
+                <div className="font-semibold text-amber-800 mb-1.5">Optimierungspotenzial: Wie käme diese Immobilie auf {ZIEL_RENDITE} % netto?</div>
+                <div className="space-y-1 text-amber-700 text-xs leading-relaxed">
+                  <p>
+                    Aktuell liegt die Nettomietrendite bei {fmt(netto)} %. Um {ZIEL_RENDITE} % zu erreichen, müsste entweder
+                  </p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li>
+                      die Kaltmiete bei <strong>{fmtEur(kaltmieteFuerZiel)}/Monat</strong>{wf > 0 ? ` (${fmt(zielMieteProQm)} €/m² statt aktuell ${fmt(mieteProQm)} €/m²)` : ''} liegen,
+                    </li>
+                    <li>
+                      oder der Kaufpreis bei gleicher Miete auf <strong>{fmtEur(kaufpreisFuerZiel)}</strong> sinken (statt {fmtEur(kp)}).
+                    </li>
+                  </ul>
+                  <p className="pt-1">Realistisch ist meist eine Kombination: etwas Verhandlungsspielraum beim Kaufpreis plus eine Miete, die näher an der ortsüblichen Vergleichsmiete liegt.</p>
+                </div>
+              </div>
+            )}
+
+            {km > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-4 text-sm">
+                <div className="font-semibold text-slate-800 mb-1.5">Mieterhöhungs-Projektion (Kappungsgrenze)</div>
+                <p className="text-xs text-slate-500 mb-3">
+                  Illustrativ mit der verschärften 15-%-Kappungsgrenze (§ 558 BGB) in Gebieten mit angespanntem Wohnungsmarkt, alle 3 Jahre — in anderen Gebieten liegt die Grenze bei 20 %. Kaufpreis und Kosten bleiben konstant.
+                </p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  {projektion.map((p) => (
+                    <div key={p.jahre} className="bg-slate-50 rounded-xl p-2.5">
+                      <div className="text-xs text-slate-400 mb-0.5">Jahr {p.jahre}</div>
+                      <div className="text-sm font-bold text-slate-900">{fmt(p.nettoProjiziert)} %</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">{fmtEur(p.kmProjiziert)}/Mon.</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-2.5">
+                  Kein Automatismus: Jede Erhöhung muss aktiv geltend gemacht werden und bleibt zusätzlich durch die ortsübliche Vergleichsmiete laut Mietspiegel gedeckelt. Details im{' '}
+                  <a href="/ratgeber/mietspiegel-verstehen" className="text-indigo-600 hover:underline">Ratgeber zum Mietspiegel</a>.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -203,7 +276,7 @@ export default function MietrenditeRechner() {
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
               <h2 className="text-base font-bold text-slate-900 mb-2">Was ist die Nettomietrendite?</h2>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Die <strong>Nettomietrendite</strong> berücksichtigt alle Kosten: Hausgeld, Instandhaltungsrücklage, Verwaltung und die Kaufnebenkosten. <strong>Formel: (Kaltmiete − Kosten) × 12 / Gesamtinvestition × 100</strong>. Alles ab 4 % Netto gilt als rentabel; unter 2 % ist die Rendite für die meisten Märkte zu niedrig.
+                Die <strong>Nettomietrendite</strong> berücksichtigt die Kaufnebenkosten sowie die <strong>nicht umlagefähigen Kosten</strong> (Verwaltung, Instandhaltungsrücklage, Mietausfallwagnis) — umlagefähige Betriebskosten zählen nicht mit, da sie der Mieter über die Nebenkostenabrechnung trägt. <strong>Formel: (Kaltmiete − nicht umlagefähige Kosten) × 12 / Gesamtinvestition × 100</strong>. Alles ab 4 % Netto gilt als rentabel; unter 2 % ist die Rendite für die meisten Märkte zu niedrig.
               </p>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-5">

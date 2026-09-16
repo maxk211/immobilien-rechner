@@ -29,7 +29,7 @@ Datenbasis: 18 deutsche Großstädte. Ø Bruttomietrendite 3,9 %, Ø Kaufpreis 4
 
 Kaufpreise und Kaltmieten stammen für die zehn größten Märkte (Berlin bis Essen) aus dem Engel & Völkers Marktbericht Deutschland (Stand Juni 2026), für acht weitere Städte aus einer Aggregation mehrerer Immobilienportale (Stand August 2026). Die Bruttomietrendite wird als (Ø Kaltmiete × 12 / Ø Kaufpreis) × 100 berechnet.
 
-*Zitierbar als: renditly (2026). Mietrendite-Report Deutschland 2026. Abgerufen 07. September 2026 von https://www.renditly.de/mietrendite-report-2026*
+*Zitierbar als: renditly (2026). Mietrendite-Report Deutschland 2026. Abgerufen 16. September 2026 von https://www.renditly.de/mietrendite-report-2026*
 
 ---
 
