@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow, getAktuellerGesamtwert } from '../utils/berechnung.js';
 
-const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdit }) => {
+const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, onOpenAufgabe, onDelete, onEdit }) => {
   const [mfhExpanded, setMfhExpanded] = useState(false);
   const isMietimmobilie = immobilie.immobilienTyp === 'mietimmobilie';
   const isMFH = immobilie.immobilienTyp === 'mehrfamilienhaus';
@@ -39,6 +39,11 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
   const eigenkapital = (!isMietimmobilie && !isMFH) && restschuldInfo
     ? aktuellerWert - restschuldInfo.restschuld
     : null;
+
+  // Vermieter-Aufgaben, die genau diese Immobilie betreffen (bereits rot→gelb→grün sortiert)
+  const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
+  const aufgabenRot = eigeneAufgaben.filter(t => t.priority === 'rot').length;
+  const aufgabenOffen = eigeneAufgaben.filter(t => t.priority !== 'gruen').length;
 
   return (
     <div
@@ -84,6 +89,21 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], onClick, onDelete, onEdi
             )}
           </div>
           <div className="flex items-center gap-1 ml-2 shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenAufgabe ? onOpenAufgabe(eigeneAufgaben[0]) : (onClick && onClick()); }}
+              className="relative w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
+              title={aufgabenOffen > 0 ? `${aufgabenOffen} offene Aufgabe${aufgabenOffen !== 1 ? 'n' : ''}` : 'Keine offenen Aufgaben'}
+            >
+              {aufgabenOffen > 0
+                ? <ClipboardList size={14}/>
+                : <CheckCircle2 size={14} className="text-white/30"/>
+              }
+              {aufgabenOffen > 0 && (
+                <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[10px] font-bold text-white leading-none ${aufgabenRot > 0 ? 'bg-red-500' : 'bg-amber-400'}`}>
+                  {aufgabenOffen}
+                </span>
+              )}
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }}
               className="w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
