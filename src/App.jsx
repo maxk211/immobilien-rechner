@@ -40,7 +40,7 @@ import ImmobilienFormular from './components/ImmobilienFormular';
 import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
 import PortfolioZiele from './components/PortfolioZiele';
-import VermieterTodos, { generiereAufgaben } from './components/VermieterTodos';
+import { generiereAufgaben } from './components/VermieterTodos';
 import ErsteSchritte from './components/ErsteSchritte';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
@@ -1304,12 +1304,6 @@ function App() {
       <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
         <PortfolioOverview portfolio={portfolio} />
         <ErsteSchritte portfolio={portfolio} mieterListe={mieterListe} />
-        <VermieterTodos
-          portfolio={portfolio}
-          mieterListe={mieterListe}
-          nkAbrechnungen={nkAbrechnungen}
-          onSelectImmobilie={(immo, tab) => { setSelectedImmobilie(immo); setInitialTab(tab || null); }}
-        />
 
         {/* Navigation & Actions Bar */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
