@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRendite } from '../utils/berechnung.js';
@@ -335,37 +334,6 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const immobilieMitAktuellemKaufdatum = { ...immobilie, kaufdatum: params.kaufdatum };
   const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(immobilieMitAktuellemKaufdatum, aktuellerWert);
 
-  const wertentwicklungDaten = useMemo(() => {
-    if (!params.kaufdatum || !immobilie.kaufpreis) return [];
-    const kaufjahr = new Date(params.kaufdatum).getFullYear();
-    const aktuellesJahr = new Date().getFullYear();
-    const kaufpreis = immobilie.kaufpreis;
-    const wert = aktuellerWert || kaufpreis;
-    const wertsteigerungRate = (params.wertsteigerung || 2.0) / 100;
-    const jahreSeitKauf = Math.max(0, aktuellesJahr - kaufjahr);
-    const daten = [];
-
-    for (let i = 0; i <= jahreSeitKauf; i++) {
-      const fortschritt = jahreSeitKauf > 0 ? i / jahreSeitKauf : 1;
-      daten.push({
-        jahr: kaufjahr + i,
-        wert: Math.round(kaufpreis + (wert - kaufpreis) * fortschritt),
-        projektion: null,
-        kaufpreis: kaufpreis,
-      });
-    }
-
-    for (let i = 1; i <= 10; i++) {
-      daten.push({
-        jahr: aktuellesJahr + i,
-        wert: null,
-        projektion: Math.round(wert * Math.pow(1 + wertsteigerungRate, i)),
-        kaufpreis: kaufpreis,
-      });
-    }
-
-    return daten;
-  }, [params.kaufdatum, params.wertsteigerung, immobilie.kaufpreis, aktuellerWert]);
 
   const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : new Date().getFullYear();
   const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -448,8 +416,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           {/* KPI Strip */}
           {(() => {
             const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
+            const wsPositiv = wertsteigerungSeitKauf && wertsteigerungSeitKauf.absoluteSteigerung >= 0;
             return (
-              <div className="grid grid-cols-3 bg-white border-b border-gray-200 divide-x divide-gray-100">
+              <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
                   <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Brutto</div>
                   <div className="text-base sm:text-xl font-black text-slate-700">{fmtKPI(ergebnis.bruttorendite)}</div>
@@ -462,8 +431,23 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
                   <div className="text-base sm:text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
                 </div>
+                <div className="px-2 sm:px-4 py-2 sm:py-3">
+                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
+                  {wertsteigerungSeitKauf ? (
+                    <>
+                      <div className={`text-base sm:text-xl font-black ${wsPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {wsPositiv ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %
+                      </div>
+                      <div className="text-[10px] text-gray-400">
+                        {wsPositiv ? '+' : ''}{formatCurrency(isGbR ? anteil(wertsteigerungSeitKauf.absoluteSteigerung) : wertsteigerungSeitKauf.absoluteSteigerung)}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-base sm:text-xl font-black text-gray-300">—</div>
+                  )}
+                </div>
                 {isGbR && (
-                  <div className="col-span-3 px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-600">
+                  <div className="col-span-4 px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-600">
                     <span className="font-semibold flex items-center gap-1"><Landmark size={12}/> GbR-Modus:</span>
                     <span>Alle Euro-Beträge zeigen Ihren {params.userAnteil}%-Anteil</span>
                     <span className="ml-auto text-violet-400">Rendite-% bleiben unverändert (berechnet auf Ihren EK-Anteil)</span>
@@ -505,8 +489,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   { id: 'kaution',       label: 'Kaution' },
                 ]
               },
-              { id: 'objekt', icon: <Wrench size={13}/>,       label: 'Objekt', first: 'investitionen',
+              { id: 'objekt', icon: <Wrench size={13}/>,       label: 'Objekt', first: 'stammdaten',
                 subs: [
+                  { id: 'stammdaten',    label: 'Stammdaten' },
                   { id: 'investitionen', label: 'Investitionen' },
                   { id: 'zaehler',       label: 'Zähler' },
                   { id: 'dokumente',     icon: <FileText size={11}/>, label: 'Dokumente' },
@@ -562,8 +547,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           <TabErrorBoundary resetKey={activeTab}>
           {activeTab === 'uebersicht' && (
             <div className="space-y-5">
-              {/* Marktwert & Wertsteigerung */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Marktwert — Wertsteigerung selbst steht jetzt oben im KPI-Strip
+                  neben Brutto/Netto/EK-Rendite, kein separates Chart mehr hier. */}
+              <div>
                 <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
                   <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
                   <div className="mb-3">
@@ -619,70 +605,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   </a>
                   <p className="text-xs text-gray-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
                 </div>
-
-                {wertsteigerungSeitKauf && (
-                  <div className={`p-5 rounded-2xl border ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
-                    <h3 className={`text-sm font-bold uppercase tracking-wide mb-3 ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                      Wertsteigerung seit Kauf
-                    </h3>
-                    <div className={`text-3xl font-bold ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}{formatCurrency(wertsteigerungSeitKauf.absoluteSteigerung)}
-                    </div>
-                    {isGbR && (
-                      <div className="text-xs text-indigo-600 font-semibold mt-1">
-                        Ihr Anteil: {formatCurrency(anteil(wertsteigerungSeitKauf.absoluteSteigerung))}
-                      </div>
-                    )}
-                    <div className={`text-sm ${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {wertsteigerungSeitKauf.prozentSteigerung >= 0 ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)}% in {wertsteigerungSeitKauf.jahreSeitKauf.toFixed(1)} Jahren
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 mb-3">
-                      Jährliche Rendite: {wertsteigerungSeitKauf.jaehrlicheRendite.toFixed(2)}% p.a.
-                    </div>
-                    {wertentwicklungDaten.length > 0 && (
-                      <>
-                        <div className="flex gap-3 text-[10px] text-gray-400 mb-1">
-                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-blue-500"></span>Historisch</span>
-                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-px bg-green-400"></span>Projektion ({params.wertsteigerung ?? 2}% p.a.)</span>
-                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-amber-400"></span>Kaufpreis</span>
-                        </div>
-                        <ResponsiveContainer width="100%" height={160}>
-                          <AreaChart data={wertentwicklungDaten} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="gradWert" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/>
-                                <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                              </linearGradient>
-                              <linearGradient id="gradProj" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.12}/>
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
-                            <XAxis dataKey="jahr" tick={{ fontSize: 9 }} />
-                            <YAxis tickFormatter={(v) => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : (v/1000).toFixed(0)+'k'} tick={{ fontSize: 9 }} width={42} />
-                            <Tooltip
-                              formatter={(value, name) => [
-                                value ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value) : '–',
-                                name === 'wert' ? 'Marktwert' : name === 'projektion' ? 'Projektion' : 'Kaufpreis'
-                              ]}
-                              labelFormatter={(label) => `Jahr ${label}`}
-                            />
-                            <Area type="monotone" dataKey="wert" stroke="#2563eb" strokeWidth={2} fill="url(#gradWert)" dot={false} name="wert" connectNulls={false} />
-                            <Area type="monotone" dataKey="projektion" stroke="#10b981" strokeWidth={2} strokeDasharray="5 3" fill="url(#gradProj)" dot={false} name="projektion" connectNulls={false} />
-                            <ReferenceLine y={immobilie.kaufpreis} stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" label={{ value: formatCurrency(immobilie.kaufpreis), position: 'insideTopLeft', fontSize: 9, fill: '#f59e0b' }} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                        <div className="flex justify-between text-xs mt-2 pt-2 border-t border-green-100">
-                          <div><span className="text-gray-400">Kaufpreis </span><span className="font-semibold text-gray-700">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(immobilie.kaufpreis)}</span></div>
-                          <div><span className="text-gray-400">In 10 Jahren </span><span className="font-semibold text-green-600">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(aktuellerWert * Math.pow(1 + (params.wertsteigerung || 2) / 100, 10)))}</span></div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
+            </div>
+          )}
 
+          {activeTab === 'stammdaten' && (
+            <div className="space-y-5">
               {/* Objektdetails */}
               <div className="bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-2xl">
                 <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 sm:mb-4">Objektdetails</h3>

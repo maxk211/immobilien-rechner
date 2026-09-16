@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
-import { berechneRendite } from '../utils/berechnung.js';
+import { berechneRendite, berechneWertsteigerungSeitKauf } from '../utils/berechnung.js';
 import CashflowUebersicht from './CashflowUebersicht';
 import BausparManager from './BausparManager';
 import Steuerberechnung from './Steuerberechnung';
@@ -227,6 +227,14 @@ const MehrfamilienhausDetail = ({
     nebenkostenVomMieter: 0,
   }), [params, gesamtKaltmiete, aggregierteWEKosten]);
 
+  // Wertsteigerung seit Kauf — gleiche Logik/Helper wie bei Kaufimmobilie,
+  // damit beide Immobilientypen die Kennzahl konsistent ausweisen.
+  const aktuellerWertMFH = params.geschaetzterWert || params.kaufpreis || 0;
+  const wertsteigerungSeitKauf = berechneWertsteigerungSeitKauf(
+    { ...immobilie, kaufdatum: params.kaufdatum, kaufpreis: params.kaufpreis },
+    aktuellerWertMFH
+  );
+
   // Aktive Finanzierungsphase berechnen — identische Logik wie Finanzierung-Tab
   // Ergebnis: { rate, zinsen, tilgung, kreditbetrag, typ, zinssatz }
   const aktivePhaseBerechnung = useMemo(() => {
@@ -415,27 +423,56 @@ const MehrfamilienhausDetail = ({
           </div>
 
           {/* KPI Strip */}
-          <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
-            <div className="px-2 sm:px-4 py-2 sm:py-3">
-              <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Kaltmiete/mo</div>
-              <div className="text-sm sm:text-xl font-black text-slate-700">{formatCurrency(gesamtKaltmiete)}</div>
-            </div>
-            <div className="px-2 sm:px-4 py-2 sm:py-3">
-              <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Auslastung</div>
-              <div className={`text-sm sm:text-xl font-black ${auslastung < 80 ? 'text-red-600' : 'text-emerald-600'}`}>{auslastung} %</div>
-              <div className="text-[10px] text-gray-400">{belegtWE}/{wohnungen.length} WE</div>
-            </div>
-            <div className="px-2 sm:px-4 py-2 sm:py-3">
-              <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Brutto-Rendite</div>
-              <div className="text-sm sm:text-xl font-black text-slate-700">
-                {isFinite(ergebnis.bruttorendite) ? `${ergebnis.bruttorendite.toFixed(2)} %` : '—'}
+          {(() => {
+            const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
+            const wsPositiv = wertsteigerungSeitKauf && wertsteigerungSeitKauf.absoluteSteigerung >= 0;
+            return (
+              <div className="bg-white border-b border-gray-200">
+                {/* Zeile 1: Betriebskennzahlen */}
+                <div className="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
+                  <div className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Kaltmiete/mo</div>
+                    <div className="text-sm sm:text-xl font-black text-slate-700">{formatCurrency(gesamtKaltmiete)}</div>
+                  </div>
+                  <div className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Auslastung</div>
+                    <div className={`text-sm sm:text-xl font-black ${auslastung < 80 ? 'text-red-600' : 'text-emerald-600'}`}>{auslastung} %</div>
+                    <div className="text-[10px] text-gray-400">{belegtWE}/{wohnungen.length} WE</div>
+                  </div>
+                </div>
+                {/* Zeile 2: Rendite-Kennzahlen — gleiches Muster wie Kaufimmobilie */}
+                <div className="grid grid-cols-4 divide-x divide-gray-100">
+                  <div className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Brutto</div>
+                    <div className="text-base sm:text-xl font-black text-slate-700">{fmtKPI(ergebnis.bruttorendite)}</div>
+                  </div>
+                  <div className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Netto</div>
+                    <div className="text-base sm:text-xl font-black text-emerald-600">{fmtKPI(ergebnis.nettorendite)}</div>
+                  </div>
+                  <div className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
+                    <div className="text-base sm:text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                  </div>
+                  <div className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
+                    {wertsteigerungSeitKauf ? (
+                      <>
+                        <div className={`text-base sm:text-xl font-black ${wsPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {wsPositiv ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %
+                        </div>
+                        <div className="text-[10px] text-gray-400">
+                          {wsPositiv ? '+' : ''}{formatCurrency(wertsteigerungSeitKauf.absoluteSteigerung)}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-base sm:text-xl font-black text-gray-300">—</div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="px-2 sm:px-4 py-2 sm:py-3">
-              <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Gesamtfläche</div>
-              <div className="text-sm sm:text-xl font-black text-slate-700">{gesamtFlaeche} m²</div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* Tab-Inhalt */}
