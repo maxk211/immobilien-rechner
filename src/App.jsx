@@ -71,6 +71,14 @@ function App() {
   const [editMieter, setEditMieter] = useState(null);
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [nkAbrechnungen, setNkAbrechnungen] = useState([]);
+  // Vermieter-Aufgaben einmal zentral berechnen — wird sowohl vom Kachel-Badge
+  // als auch von der Immobilien-Übersicht (gefiltert je immoId) genutzt.
+  // WICHTIG: muss vor jedem early return (Auth/Loading) stehen — sonst
+  // Rules-of-Hooks-Verstoß ("Rendered more hooks than during the previous render").
+  const alleAufgaben = useMemo(
+    () => generiereAufgaben(portfolio, mieterListe, nkAbrechnungen),
+    [portfolio, mieterListe, nkAbrechnungen]
+  );
   const [showChangelog, setShowChangelog] = useState(false);
   const [showLaunchAnnouncement, setShowLaunchAnnouncement] = useState(false);
   const [showSelbstauskunftModal, setShowSelbstauskunftModal] = useState(false);
@@ -1179,13 +1187,6 @@ function App() {
     (i.immobilienTyp === 'mietimmobilie' && i.mietvertragEnde && new Date(i.mietvertragEnde) < heute);
   const aktiveImmobilien = portfolio.filter(i => !isInaktiv(i));
   const inaktiveImmobilien = portfolio.filter(i => isInaktiv(i));
-
-  // Vermieter-Aufgaben einmal zentral berechnen — wird sowohl vom Kachel-Badge
-  // als auch von der Immobilien-Übersicht (gefiltert je immoId) genutzt.
-  const alleAufgaben = useMemo(
-    () => generiereAufgaben(portfolio, mieterListe, nkAbrechnungen),
-    [portfolio, mieterListe, nkAbrechnungen]
-  );
 
   return (
     <div className="min-h-screen bg-slate-50">
