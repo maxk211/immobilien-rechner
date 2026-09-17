@@ -85,22 +85,22 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+    <div className="font-app min-h-screen bg-cream-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl border border-cream-200 w-full max-w-md p-8">
         {/* Zurück zur Startseite */}
-        <a href="/" className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors mb-4">
+        <a href="/" className="inline-flex items-center gap-1 text-xs text-cream-500 hover:text-cream-700 transition-colors mb-4">
           ← Zurück zur Startseite
         </a>
         {/* Logo & Titel */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-clay-500">
               <Home size={28} className="text-white" />
             </div>
           </div>
-          <h1 className="text-2xl font-black text-gray-900" style={{letterSpacing: '-0.02em'}}>renditly</h1>
-          <p className="text-indigo-500 text-xs font-medium mt-0.5" style={{letterSpacing: '0.05em'}}>DEIN IMMOBILIEN-PORTFOLIO</p>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-cream-900" style={{letterSpacing: '-0.02em'}}>renditly</h1>
+          <p className="text-clay-600 text-xs font-semibold mt-0.5" style={{letterSpacing: '0.05em'}}>DEIN IMMOBILIEN-PORTFOLIO</p>
+          <p className="text-cream-600 mt-1">
             {isResetMode
               ? 'Neues Passwort vergeben'
               : isLogin
@@ -111,14 +111,14 @@ export default function Auth() {
 
         {/* Fehlermeldung */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-4 p-3 bg-brick-50 border border-brick-200 rounded-lg text-brick-700 text-sm">
             {error}
           </div>
         )}
 
         {/* Erfolgsmeldung */}
         {message && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          <div className="mb-4 p-3 bg-sage-50 border border-sage-200 rounded-lg text-sage-700 text-sm">
             {message}
           </div>
         )}
@@ -127,14 +127,14 @@ export default function Auth() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isResetMode && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-cream-700 mb-1">
                 E-Mail Adresse
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-base sm:text-sm"
+                className="w-full px-4 py-3 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-400 focus:border-clay-400 transition-all text-base sm:text-sm"
                 placeholder="max@beispiel.de"
                 required={!isResetMode}
               />
@@ -142,14 +142,14 @@ export default function Auth() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-cream-700 mb-1">
               {isResetMode ? 'Neues Passwort' : 'Passwort'}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-base sm:text-sm"
+              className="w-full px-4 py-3 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-400 focus:border-clay-400 transition-all text-base sm:text-sm"
               placeholder="••••••••"
               required
               minLength={6}
@@ -160,7 +160,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
+              className="text-sm text-clay-600 hover:text-clay-800"
             >
               Passwort vergessen?
             </button>
@@ -169,7 +169,7 @@ export default function Auth() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-clay-500 text-white font-semibold rounded-lg hover:bg-clay-600 focus:ring-4 focus:ring-clay-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -198,17 +198,17 @@ export default function Auth() {
                 setError(null);
                 setMessage(null);
               }}
-              className="text-sm text-gray-600 hover:text-gray-800"
+              className="text-sm text-cream-600 hover:text-cream-800"
             >
               {isLogin ? (
                 <>
                   Noch kein Account?{' '}
-                  <span className="text-indigo-600 font-semibold">Jetzt registrieren</span>
+                  <span className="text-clay-600 font-semibold">Jetzt registrieren</span>
                 </>
               ) : (
                 <>
                   Bereits registriert?{' '}
-                  <span className="text-indigo-600 font-semibold">Zum Login</span>
+                  <span className="text-clay-600 font-semibold">Zum Login</span>
                 </>
               )}
             </button>
@@ -216,20 +216,20 @@ export default function Auth() {
         )}
 
         {/* Features */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center mb-3">Was dich erwartet:</p>
-          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+        <div className="mt-8 pt-6 border-t border-cream-200">
+          <p className="text-xs text-cream-500 text-center mb-3">Was dich erwartet:</p>
+          <div className="grid grid-cols-2 gap-2 text-xs text-cream-700">
             <div className="flex items-center gap-1">
-              <Check size={12} className="text-green-500" /> Portfolio-Übersicht
+              <Check size={12} className="text-sage-500" /> Portfolio-Übersicht
             </div>
             <div className="flex items-center gap-1">
-              <Check size={12} className="text-green-500" /> Rendite-Berechnung
+              <Check size={12} className="text-sage-500" /> Rendite-Berechnung
             </div>
             <div className="flex items-center gap-1">
-              <Check size={12} className="text-green-500" /> Steuer-Export
+              <Check size={12} className="text-sage-500" /> Steuer-Export
             </div>
             <div className="flex items-center gap-1">
-              <Check size={12} className="text-green-500" /> Cloud-Speicherung
+              <Check size={12} className="text-sage-500" /> Cloud-Speicherung
             </div>
           </div>
         </div>
