@@ -8,11 +8,11 @@ import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung } from '../utils/b
 function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = false, separator = false, plus = false, hideZero = false }) {
   if (hideZero && !monat && !jahr) return null;
   const colors = {
-    green: 'text-emerald-600',
-    red: 'text-red-500',
-    blue: 'text-indigo-600',
-    orange: 'text-orange-500',
-    gray: 'text-gray-700',
+    green: 'text-sage-600',
+    red: 'text-brick-500',
+    blue: 'text-clay-600',
+    orange: 'text-honey-500',
+    gray: 'text-cream-700',
   };
   const textClass = `${colors[color]} ${bold ? 'font-bold' : ''}`;
   const sign = (v) => v > 0 && plus ? '+' : v < 0 ? '−' : '';
@@ -20,8 +20,8 @@ function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = fa
 
   return (
     <>
-      {separator && <tr><td colSpan={3}><div className="border-t border-gray-200 my-0.5" /></td></tr>}
-      <tr className={bold ? 'bg-gray-50' : ''}>
+      {separator && <tr><td colSpan={3}><div className="border-t border-cream-200 my-0.5" /></td></tr>}
+      <tr className={bold ? 'bg-cream-50' : ''}>
         <td className={`py-1.5 pr-2 text-xs ${textClass} ${einzug ? 'pl-4' : 'pl-1'}`}>{label}</td>
         <td className={`py-1.5 text-right text-xs ${textClass} font-${bold ? 'bold' : 'medium'} pr-3`}>{fmt(monat)}</td>
         <td className={`py-1.5 text-right text-xs ${textClass} font-${bold ? 'bold' : 'medium'} pr-1`}>{fmt(jahr)}</td>
@@ -214,29 +214,29 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
   }, [params, ergebnis, kaufjahr, aktuellesJahr, investitionen]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-white border border-cream-200 rounded-xl overflow-hidden">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-cream-100">
         <div>
-          <h3 className="font-bold text-gray-800 flex items-center gap-1"><Wallet size={16} /> Cashflow-Übersicht</h3>
+          <h3 className="font-bold text-cream-800 flex items-center gap-1"><Wallet size={16} /> Cashflow-Übersicht</h3>
           {isGbR && (
-            <span className="text-[10px] text-violet-600 font-medium flex items-center gap-0.5">
+            <span className="text-[10px] text-clay-600 font-medium flex items-center gap-0.5">
               <Landmark size={11} /> GbR — Ihr {Math.round(anteilFaktor * 100)}%-Anteil
             </span>
           )}
         </div>
         {/* Tab Toggle */}
-        <div className="flex bg-gray-100 rounded-lg p-1 gap-0.5">
+        <div className="flex bg-cream-100 rounded-lg p-1 gap-0.5">
           <button
             onClick={() => setTab('aktuell')}
-            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'aktuell' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'aktuell' ? 'bg-white shadow text-clay-600 font-semibold' : 'text-cream-500 hover:text-cream-700'}`}
           >
             {aktuellesJahr}
           </button>
           <button
             onClick={() => setTab('verlauf')}
-            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'verlauf' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'verlauf' ? 'bg-white shadow text-clay-600 font-semibold' : 'text-cream-500 hover:text-cream-700'}`}
           >
             Verlauf & Prognose
           </button>
@@ -248,7 +248,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         <div className="p-4">
           <table className="w-full">
             <thead>
-              <tr className="text-[10px] text-gray-400 uppercase tracking-wide">
+              <tr className="text-[10px] text-cream-400 uppercase tracking-wide">
                 <th className="text-left pb-2 pl-1">Position</th>
                 <th className="text-right pb-2 pr-3">Monatlich</th>
                 <th className="text-right pb-2 pr-1">Jährlich</th>
@@ -256,7 +256,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
             </thead>
             <tbody>
               {/* EINNAHMEN */}
-              <tr><td colSpan={3} className="pt-1 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Einnahmen</td></tr>
+              <tr><td colSpan={3} className="pt-1 pb-0.5 pl-1 text-[10px] font-bold text-cream-400 uppercase tracking-wide">Einnahmen</td></tr>
               <CfZeile label="Kaltmiete" color="green" monat={a(monat.einnahmen)} jahr={a(monat.einnahmen * 12)} />
               {monat.stellplatz > 0 && (
                 <CfZeile
@@ -273,7 +273,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                 monat={a(monat.gesamtEinnahmen)} jahr={a(monat.gesamtEinnahmen * 12)} />
 
               {/* BETRIEBSKOSTEN */}
-              <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Bewirtschaftungskosten</td></tr>
+              <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-cream-400 uppercase tracking-wide">Bewirtschaftungskosten</td></tr>
               <CfZeile label="Nebenkosten" color="red" monat={a(monat.nk)} jahr={a(monat.nk * 12)} hideZero />
               <CfZeile label="Instandhaltung" color="red" monat={a(monat.inst)} jahr={a(monat.inst * 12)} hideZero />
               <CfZeile label="Verwaltung" color="red" monat={a(monat.verw)} jahr={a(monat.verw * 12)} hideZero />
@@ -284,7 +284,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                 monat={a(monat.gesamtBetrieb)} jahr={a(monat.gesamtBetrieb * 12)} />
 
               {/* FINANZIERUNG */}
-              <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Finanzierung</td></tr>
+              <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-cream-400 uppercase tracking-wide">Finanzierung</td></tr>
               <CfZeile label="Schuldzinsen" color="red"
                 monat={a(monat.zinsen)}
                 jahr={a(jahresKredit?.zinsen ?? monat.zinsen * 12)} />
@@ -318,37 +318,37 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               return (
                 <>
                   {/* Cashflow vor Tilgung */}
-                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.vorTilgung >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.vorTilgung >= 0 ? 'bg-sage-50 border-sage-200' : 'bg-brick-50 border-brick-200'}`}>
                     <div>
-                      <div className="font-bold text-sm text-gray-800">Cashflow vor Tilgung</div>
-                      <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Zinsen{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
+                      <div className="font-bold text-sm text-cream-800">Cashflow vor Tilgung</div>
+                      <div className="text-[11px] text-cream-500">Einnahmen − Betrieb − Zinsen{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
                     </div>
                     <div className="text-right">
-                      <div className={`text-xl font-black ${monat.vorTilgung >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <div className={`text-xl font-black ${monat.vorTilgung >= 0 ? 'text-sage-600' : 'text-brick-600'}`}>
                         {monat.vorTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.vorTilgung))}
-                        <span className="text-xs font-normal text-gray-400">/Mo</span>
+                        <span className="text-xs font-normal text-cream-400">/Mo</span>
                       </div>
-                      <div className={`text-sm font-semibold ${vorTilgungJahr >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <div className={`text-sm font-semibold ${vorTilgungJahr >= 0 ? 'text-sage-600' : 'text-brick-600'}`}>
                         {vorTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(vorTilgungJahr))}
-                        <span className="text-xs font-normal text-gray-400">/Jahr</span>
+                        <span className="text-xs font-normal text-cream-400">/Jahr</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Cashflow nach Tilgung */}
-                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.nachTilgung >= 0 ? 'bg-emerald-100 border-emerald-300' : 'bg-red-100 border-red-300'}`}>
+                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.nachTilgung >= 0 ? 'bg-sage-100 border-sage-300' : 'bg-brick-100 border-brick-300'}`}>
                     <div>
-                      <div className="font-bold text-sm text-gray-800">Cashflow nach Tilgung</div>
-                      <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Kreditrate{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
+                      <div className="font-bold text-sm text-cream-800">Cashflow nach Tilgung</div>
+                      <div className="text-[11px] text-cream-500">Einnahmen − Betrieb − Kreditrate{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
                     </div>
                     <div className="text-right">
-                      <div className={`text-xl font-black ${monat.nachTilgung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                      <div className={`text-xl font-black ${monat.nachTilgung >= 0 ? 'text-sage-700' : 'text-brick-700'}`}>
                         {monat.nachTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.nachTilgung))}
-                        <span className="text-xs font-normal text-gray-400">/Mo</span>
+                        <span className="text-xs font-normal text-cream-400">/Mo</span>
                       </div>
-                      <div className={`text-sm font-semibold ${nachTilgungJahr >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                      <div className={`text-sm font-semibold ${nachTilgungJahr >= 0 ? 'text-sage-700' : 'text-brick-700'}`}>
                         {nachTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(nachTilgungJahr))}
-                        <span className="text-xs font-normal text-gray-400">/Jahr</span>
+                        <span className="text-xs font-normal text-cream-400">/Jahr</span>
                       </div>
                     </div>
                   </div>
@@ -358,7 +358,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
           </div>
 
           {/* Info zu Tilgung */}
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-indigo-700">
+          <div className="mt-3 p-3 bg-clay-50 border border-clay-100 rounded-xl text-xs text-clay-700">
             <span className="font-semibold">Zur Tilgung:</span> Der Tilgungsanteil ({formatCurrency(a(monat.tilgung))}/Mo) ist kein Verlust — er baut
             Eigenkapital auf. Der Cashflow <em>vor</em> Tilgung zeigt, ob die Immobilie
             aus eigener Kraft alle laufenden Kosten + Zinsen trägt.
@@ -377,7 +377,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       {tab === 'verlauf' && (
         <div className="p-4">
           {/* Disclaimer */}
-          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+          <div className="mb-3 p-3 bg-honey-50 border border-honey-200 rounded-xl text-xs text-honey-800">
             <span className="font-bold inline-flex items-center gap-1"><AlertTriangle size={12}/> Hinweis zu historischen Werten:</span> Vorjahres-Cashflows
             sind nur korrekt, wenn Miethistorie und Kostenwerte gepflegt wurden.
             Mietanpassungen (geplante & vergangene) werden automatisch pro Jahr berücksichtigt.
@@ -389,47 +389,47 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               const af = anteilFaktor;
               return (
                 <div key={d.jahr} className={`rounded-xl border p-3 ${
-                  d.istAktuell ? 'bg-blue-50 border-blue-300' :
-                  d.istPrognose ? 'bg-gray-50 border-dashed border-gray-200' :
-                  'bg-white border-gray-100'
+                  d.istAktuell ? 'bg-clay-50 border-clay-300' :
+                  d.istPrognose ? 'bg-cream-50 border-dashed border-cream-200' :
+                  'bg-white border-cream-100'
                 }`}>
                   {/* Header: Jahr + CF nach Tilgung */}
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`font-bold text-sm ${d.istAktuell ? 'text-indigo-700' : d.istPrognose ? 'text-gray-400' : 'text-gray-700'}`}>
+                      <span className={`font-bold text-sm ${d.istAktuell ? 'text-clay-700' : d.istPrognose ? 'text-cream-400' : 'text-cream-700'}`}>
                         {d.jahr}
                       </span>
-                      {d.istAktuell && <span className="text-[10px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded-full font-bold">Aktuell</span>}
-                      {d.istPrognose && <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">Prognose</span>}
-                      {d.istVorjahr && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Vorjahr</span>}
+                      {d.istAktuell && <span className="text-[10px] bg-clay-200 text-clay-800 px-1.5 py-0.5 rounded-full font-bold">Aktuell</span>}
+                      {d.istPrognose && <span className="text-[10px] bg-cream-200 text-cream-500 px-1.5 py-0.5 rounded-full">Prognose</span>}
+                      {d.istVorjahr && <span className="text-[10px] bg-honey-100 text-honey-700 px-1.5 py-0.5 rounded-full">Vorjahr</span>}
                     </div>
                     <div className="text-right">
-                      <div className={`font-black text-sm ${d.cashflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                      <div className={`font-black text-sm ${d.cashflow >= 0 ? 'text-sage-700' : 'text-brick-700'}`}>
                         {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * af))}
-                        <span className="text-[10px] font-normal text-gray-400 ml-0.5">nach Tilg.</span>
+                        <span className="text-[10px] font-normal text-cream-400 ml-0.5">nach Tilg.</span>
                       </div>
-                      <div className={`text-[11px] font-semibold ${d.cfVorTilgung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <div className={`text-[11px] font-semibold ${d.cfVorTilgung >= 0 ? 'text-sage-500' : 'text-brick-500'}`}>
                         {d.cfVorTilgung >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cfVorTilgung * af))}
-                        <span className="text-[10px] font-normal text-gray-400 ml-0.5">vor Tilg.</span>
+                        <span className="text-[10px] font-normal text-cream-400 ml-0.5">vor Tilg.</span>
                       </div>
                     </div>
                   </div>
                   {/* Kennzahlen */}
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <div className="text-gray-400 mb-0.5">Einnahmen</div>
-                      <div className="text-emerald-600 font-semibold">{formatCurrency(Math.round(d.einnahmen * af))}</div>
+                      <div className="text-cream-400 mb-0.5">Einnahmen</div>
+                      <div className="text-sage-600 font-semibold">{formatCurrency(Math.round(d.einnahmen * af))}</div>
                       {d.stellplatzJahr > 0 && (
-                        <div className="text-[10px] text-emerald-400">inkl. {formatCurrency(Math.round(d.stellplatzJahr * af))} SP</div>
+                        <div className="text-[10px] text-sage-400">inkl. {formatCurrency(Math.round(d.stellplatzJahr * af))} SP</div>
                       )}
                     </div>
                     <div>
-                      <div className="text-gray-400 mb-0.5">Betrieb</div>
-                      <div className="text-red-500 font-semibold">{formatCurrency(Math.round(d.betrieb * af))}</div>
+                      <div className="text-cream-400 mb-0.5">Betrieb</div>
+                      <div className="text-brick-500 font-semibold">{formatCurrency(Math.round(d.betrieb * af))}</div>
                     </div>
                     <div>
-                      <div className="text-gray-400 mb-0.5">Kumuliert</div>
-                      <div className={`font-semibold ${d.kumuliert >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
+                      <div className="text-cream-400 mb-0.5">Kumuliert</div>
+                      <div className={`font-semibold ${d.kumuliert >= 0 ? 'text-clay-600' : 'text-brick-600'}`}>
                         {formatCurrency(Math.round(d.kumuliert * af))}
                       </div>
                     </div>
@@ -443,50 +443,50 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-gray-50 text-gray-500">
+                <tr className="bg-cream-50 text-cream-500">
                   <th className="text-left p-2 font-semibold rounded-l">Jahr</th>
-                  <th className="text-right p-2 text-emerald-600 font-semibold">Einnahmen</th>
-                  <th className="text-right p-2 text-red-500 font-semibold">Betrieb</th>
-                  <th className="text-right p-2 text-red-600 font-semibold">Kreditrate</th>
-                  <th className="text-right p-2 text-orange-500 font-semibold">Invest.</th>
-                  <th className="text-right p-2 text-emerald-500 font-semibold">CF vor Tilg.</th>
-                  <th className="text-right p-2 font-bold text-gray-800">CF nach Tilg.</th>
-                  <th className="text-right p-2 text-indigo-600 font-semibold rounded-r">Kumuliert</th>
+                  <th className="text-right p-2 text-sage-600 font-semibold">Einnahmen</th>
+                  <th className="text-right p-2 text-brick-500 font-semibold">Betrieb</th>
+                  <th className="text-right p-2 text-brick-600 font-semibold">Kreditrate</th>
+                  <th className="text-right p-2 text-honey-500 font-semibold">Invest.</th>
+                  <th className="text-right p-2 text-sage-500 font-semibold">CF vor Tilg.</th>
+                  <th className="text-right p-2 font-bold text-cream-800">CF nach Tilg.</th>
+                  <th className="text-right p-2 text-clay-600 font-semibold rounded-r">Kumuliert</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-cream-100">
                 {verlaufDaten.map(d => (
                   <tr key={d.jahr} className={`${
-                    d.istAktuell ? 'bg-blue-50 font-semibold' :
-                    d.istPrognose ? 'text-gray-400 bg-gray-50/50' :
-                    'hover:bg-gray-50'
+                    d.istAktuell ? 'bg-clay-50 font-semibold' :
+                    d.istPrognose ? 'text-cream-400 bg-cream-50/50' :
+                    'hover:bg-cream-50'
                   }`}>
                     <td className="p-2">
                       <div className="flex items-center gap-1.5">
                         <span>{d.jahr}</span>
-                        {d.istAktuell && <span className="text-[9px] bg-blue-200 text-blue-800 px-1 py-0.5 rounded-full font-bold">Aktuell</span>}
-                        {d.istPrognose && <span className="text-[9px] bg-gray-200 text-gray-500 px-1 py-0.5 rounded-full">Prognose</span>}
-                        {d.istVorjahr && <span className="text-[9px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded-full">Vorjahr</span>}
+                        {d.istAktuell && <span className="text-[9px] bg-clay-200 text-clay-800 px-1 py-0.5 rounded-full font-bold">Aktuell</span>}
+                        {d.istPrognose && <span className="text-[9px] bg-cream-200 text-cream-500 px-1 py-0.5 rounded-full">Prognose</span>}
+                        {d.istVorjahr && <span className="text-[9px] bg-honey-100 text-honey-700 px-1 py-0.5 rounded-full">Vorjahr</span>}
                       </div>
                     </td>
-                    <td className="p-2 text-right text-emerald-600">
+                    <td className="p-2 text-right text-sage-600">
                       {formatCurrency(Math.round(d.einnahmen * anteilFaktor))}
                       {d.stellplatzJahr > 0 && (
-                        <div className="text-[10px] text-emerald-400 font-normal">
+                        <div className="text-[10px] text-sage-400 font-normal">
                           inkl. {formatCurrency(Math.round(d.stellplatzJahr * anteilFaktor))} SP
                         </div>
                       )}
                     </td>
-                    <td className="p-2 text-right text-red-500">{formatCurrency(Math.round(d.betrieb * anteilFaktor))}</td>
-                    <td className="p-2 text-right text-red-600">{formatCurrency(Math.round(d.kreditrate * anteilFaktor))}</td>
-                    <td className="p-2 text-right text-orange-500">{d.investitionen > 0 ? formatCurrency(Math.round(d.investitionen * anteilFaktor)) : '—'}</td>
-                    <td className={`p-2 text-right font-semibold ${d.cfVorTilgung >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    <td className="p-2 text-right text-brick-500">{formatCurrency(Math.round(d.betrieb * anteilFaktor))}</td>
+                    <td className="p-2 text-right text-brick-600">{formatCurrency(Math.round(d.kreditrate * anteilFaktor))}</td>
+                    <td className="p-2 text-right text-honey-500">{d.investitionen > 0 ? formatCurrency(Math.round(d.investitionen * anteilFaktor)) : '—'}</td>
+                    <td className={`p-2 text-right font-semibold ${d.cfVorTilgung >= 0 ? 'text-sage-600' : 'text-brick-500'}`}>
                       {d.cfVorTilgung >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cfVorTilgung * anteilFaktor))}
                     </td>
-                    <td className={`p-2 text-right font-bold ${d.cashflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    <td className={`p-2 text-right font-bold ${d.cashflow >= 0 ? 'text-sage-700' : 'text-brick-700'}`}>
                       {d.cashflow >= 0 ? '+' : ''}{formatCurrency(Math.round(d.cashflow * anteilFaktor))}
                     </td>
-                    <td className={`p-2 text-right ${d.kumuliert >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
+                    <td className={`p-2 text-right ${d.kumuliert >= 0 ? 'text-clay-600' : 'text-brick-600'}`}>
                       {formatCurrency(Math.round(d.kumuliert * anteilFaktor))}
                     </td>
                   </tr>
@@ -495,7 +495,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
             </table>
           </div>
 
-          <div className="mt-3 p-2 bg-gray-50 rounded-lg text-xs text-gray-500">
+          <div className="mt-3 p-2 bg-cream-50 rounded-lg text-xs text-cream-500">
             Mietanpassungen (geplante Mieterhöhungen) werden monatlich gewichtet eingerechnet.
             Anschlussfinanzierungen werden aus den Finanzierungsphasen übernommen.
           </div>

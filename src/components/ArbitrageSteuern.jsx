@@ -89,18 +89,18 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
   return (
     <div className="space-y-5">
       {/* Steuersatz Slider */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+      <div className="bg-white border border-cream-200 rounded-2xl p-4 shadow-sm">
         <div className="flex justify-between items-center mb-2">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Persönlicher Steuersatz (Grenzsteuersatz)</p>
-          <span className="text-lg font-black text-purple-700">{steuersatz} %</span>
+          <p className="text-xs font-bold text-cream-500 uppercase tracking-wide">Persönlicher Steuersatz (Grenzsteuersatz)</p>
+          <span className="text-lg font-black text-clay-700">{steuersatz} %</span>
         </div>
         <input type="range" min={0} max={45} step={1} value={steuersatz}
           onChange={e => handleSteuersatzChange(Number(e.target.value))}
-          className="w-full accent-purple-600" />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          className="w-full accent-clay-600" />
+        <div className="flex justify-between text-xs text-cream-400 mt-1">
           <span>0 %</span><span>14 %</span><span>25 %</span><span>42 %</span><span>45 %</span>
         </div>
-        <p className="text-[10px] text-gray-400 mt-2">
+        <p className="text-[10px] text-cream-400 mt-2">
           Tipp: Du zahlst auf Einkünfte aus Untervermietung deinen persönlichen Einkommensteuersatz (§ 21 EStG).
           Bei einem zu versteuernden Einkommen von 50.000 € / Jahr liegt der Grenzsteuersatz bei ca. 35–42 %.
         </p>
@@ -111,7 +111,7 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
         <div className="flex gap-1.5 flex-wrap">
           {jahre.map(j => (
             <button key={j} onClick={() => setTabJahr(j)}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${tabJahr === j ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'}`}>
+              className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${tabJahr === j ? 'bg-clay-600 text-white border-clay-600' : 'bg-white text-cream-600 border-cream-200 hover:border-clay-300'}`}>
               {j}
             </button>
           ))}
@@ -119,57 +119,57 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
       )}
 
       {/* Jahres-Steuererklärung */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-        <div className="bg-purple-50 px-4 py-3 border-b border-purple-100">
-          <p className="text-xs font-bold text-purple-800 uppercase tracking-wide">§ 21 EStG — Einkünfte aus Untervermietung {tabJahr}</p>
+      <div className="bg-white border border-cream-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-clay-50 px-4 py-3 border-b border-clay-100">
+          <p className="text-xs font-bold text-clay-800 uppercase tracking-wide">§ 21 EStG — Einkünfte aus Untervermietung {tabJahr}</p>
         </div>
         <table className="w-full">
-          <tbody className="divide-y divide-gray-50 text-sm">
+          <tbody className="divide-y divide-cream-50 text-sm">
             <tr>
-              <td className="py-3 px-4 text-gray-600">
+              <td className="py-3 px-4 text-cream-600">
                 Einnahmen aus Untervermietung
-                <div className="text-xs text-gray-400">{zimmerVermietet} Zimmer × Untermiete × Monate</div>
+                <div className="text-xs text-cream-400">{zimmerVermietet} Zimmer × Untermiete × Monate</div>
               </td>
-              <td className="py-3 px-4 text-right font-semibold text-emerald-600">+{formatCurrency(aktJahrDaten.einnahmen)}</td>
+              <td className="py-3 px-4 text-right font-semibold text-sage-600">+{formatCurrency(aktJahrDaten.einnahmen)}</td>
             </tr>
             <tr>
-              <td className="py-3 px-4 text-gray-600">
+              <td className="py-3 px-4 text-cream-600">
                 − Anteilige Warmmiete (Werbungskosten)
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-cream-400">
                   {zimmerVermietet}/{zimmerGesamt} Zimmer = {Math.round(anteil * 100)} % × Warmmiete
                 </div>
               </td>
-              <td className="py-3 px-4 text-right font-semibold text-red-500">−{formatCurrency(aktJahrDaten.wkWarmmiete)}</td>
+              <td className="py-3 px-4 text-right font-semibold text-brick-500">−{formatCurrency(aktJahrDaten.wkWarmmiete)}</td>
             </tr>
             <tr>
-              <td className="py-3 px-4 text-gray-600">
+              <td className="py-3 px-4 text-cream-600">
                 − Anteilige Nebenkosten (Werbungskosten)
-                <div className="text-xs text-gray-400">{Math.round(anteil * 100)} % × Strom/Internet/GEZ</div>
+                <div className="text-xs text-cream-400">{Math.round(anteil * 100)} % × Strom/Internet/GEZ</div>
               </td>
-              <td className="py-3 px-4 text-right font-semibold text-red-500">−{formatCurrency(aktJahrDaten.wkNK)}</td>
+              <td className="py-3 px-4 text-right font-semibold text-brick-500">−{formatCurrency(aktJahrDaten.wkNK)}</td>
             </tr>
-            <tr className="bg-purple-50 border-t-2 border-purple-200">
-              <td className="py-3 px-4 font-bold text-gray-800">
+            <tr className="bg-clay-50 border-t-2 border-clay-200">
+              <td className="py-3 px-4 font-bold text-cream-800">
                 = Zu versteuernder Überschuss
-                <div className="text-xs text-gray-500 font-normal">Zeile 21 der Anlage V</div>
+                <div className="text-xs text-cream-500 font-normal">Zeile 21 der Anlage V</div>
               </td>
-              <td className={`py-3 px-4 text-right font-black text-base ${(aktJahrDaten.einnahmen - aktWerbungskosten) >= 0 ? 'text-purple-700' : 'text-emerald-600'}`}>
+              <td className={`py-3 px-4 text-right font-black text-base ${(aktJahrDaten.einnahmen - aktWerbungskosten) >= 0 ? 'text-clay-700' : 'text-sage-600'}`}>
                 {(aktJahrDaten.einnahmen - aktWerbungskosten) >= 0 ? '+' : ''}{formatCurrency(aktJahrDaten.einnahmen - aktWerbungskosten)}
               </td>
             </tr>
             <tr>
-              <td className="py-3 px-4 text-gray-600">
+              <td className="py-3 px-4 text-cream-600">
                 Einkommensteuer auf Überschuss
-                <div className="text-xs text-gray-400">{steuersatz} % Grenzsteuersatz</div>
+                <div className="text-xs text-cream-400">{steuersatz} % Grenzsteuersatz</div>
               </td>
-              <td className="py-3 px-4 text-right font-semibold text-orange-600">−{formatCurrency(Math.max(0, (aktJahrDaten.einnahmen - aktWerbungskosten) * steuersatz / 100))}</td>
+              <td className="py-3 px-4 text-right font-semibold text-honey-600">−{formatCurrency(Math.max(0, (aktJahrDaten.einnahmen - aktWerbungskosten) * steuersatz / 100))}</td>
             </tr>
-            <tr className="bg-gray-50 border-t-2 border-gray-200">
-              <td className="py-3 px-4 font-bold text-gray-800">
+            <tr className="bg-cream-50 border-t-2 border-cream-200">
+              <td className="py-3 px-4 font-bold text-cream-800">
                 Netto-Cashflow nach Steuern
-                <div className="text-xs text-gray-500 font-normal">Cashflow − Steuern</div>
+                <div className="text-xs text-cream-500 font-normal">Cashflow − Steuern</div>
               </td>
-              <td className={`py-3 px-4 text-right font-black text-base ${aktNettoCFnachSteuer >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              <td className={`py-3 px-4 text-right font-black text-base ${aktNettoCFnachSteuer >= 0 ? 'text-sage-600' : 'text-brick-600'}`}>
                 {aktNettoCFnachSteuer >= 0 ? '+' : ''}{formatCurrency(aktNettoCFnachSteuer)}
               </td>
             </tr>
@@ -178,8 +178,8 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
       </div>
 
       {/* Steuer-Anteil Visualisierung */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Einnahmen-Aufteilung {tabJahr}</p>
+      <div className="bg-white border border-cream-200 rounded-2xl p-4 shadow-sm">
+        <p className="text-xs font-bold text-cream-500 uppercase tracking-wide mb-3">Einnahmen-Aufteilung {tabJahr}</p>
         {(() => {
           const total = aktJahrDaten.einnahmen || 1;
           const wk = aktJahrDaten.wkWarmmiete + aktJahrDaten.wkNK;
@@ -187,10 +187,10 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
           const steuerBetrag = Math.round(Math.max(0, (aktJahrDaten.einnahmen - wk) * steuersatz / 100));
           const netto = aktJahrDaten.einnahmen - aktWarmmiete * 12 - ((params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36)) * 12 - steuerBetrag;
           const teile = [
-            { label: 'Steuer', wert: steuerBetrag, farbe: '#a855f7', pct: Math.round(steuerBetrag / total * 100) },
-            { label: 'Eigene Kosten', wert: eigenkosten + Math.round(((params.arbitrageStrom||0)+(params.arbitrageInternet||0)+(params.arbitrageGEZ??18.36)) * 12 * (1 - anteil)), farbe: '#f87171', pct: 0 },
-            { label: 'Werbungskosten (absetzbar)', wert: wk, farbe: '#fb923c', pct: Math.round(wk / total * 100) },
-            { label: 'Netto verbleibend', wert: Math.max(0, netto), farbe: '#34d399', pct: 0 },
+            { label: 'Steuer', wert: steuerBetrag, farbe: '#B5652E', pct: Math.round(steuerBetrag / total * 100) },
+            { label: 'Eigene Kosten', wert: eigenkosten + Math.round(((params.arbitrageStrom||0)+(params.arbitrageInternet||0)+(params.arbitrageGEZ??18.36)) * 12 * (1 - anteil)), farbe: '#AD4632', pct: 0 },
+            { label: 'Werbungskosten (absetzbar)', wert: wk, farbe: '#A06A21', pct: Math.round(wk / total * 100) },
+            { label: 'Netto verbleibend', wert: Math.max(0, netto), farbe: '#5E8339', pct: 0 },
           ];
           // fill pcts
           const used = teile[0].pct + teile[2].pct;
@@ -211,8 +211,8 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
                   <div key={i} className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: t.farbe }} />
                     <div>
-                      <span className="text-xs text-gray-600">{t.label}</span>
-                      <span className="text-xs font-bold text-gray-800 ml-1">{formatCurrency(t.wert)}</span>
+                      <span className="text-xs text-cream-600">{t.label}</span>
+                      <span className="text-xs font-bold text-cream-800 ml-1">{formatCurrency(t.wert)}</span>
                     </div>
                   </div>
                 ))}
@@ -224,31 +224,31 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
 
       {/* Jahresvergleich */}
       {jahresDaten.length > 1 && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Jahresvergleich Steuerlast</p>
+        <div className="bg-white border border-cream-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-cream-50 px-4 py-3 border-b border-cream-100">
+            <p className="text-xs font-bold text-cream-500 uppercase tracking-wide">Jahresvergleich Steuerlast</p>
           </div>
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left py-2 px-4 text-gray-500 font-semibold">Jahr</th>
-                <th className="text-right py-2 px-3 text-gray-500 font-semibold">Einnahmen</th>
-                <th className="text-right py-2 px-3 text-gray-500 font-semibold">WK</th>
-                <th className="text-right py-2 px-3 text-gray-500 font-semibold">Überschuss</th>
-                <th className="text-right py-2 px-3 text-gray-500 font-semibold">Steuer</th>
+              <tr className="bg-cream-50 border-b border-cream-100">
+                <th className="text-left py-2 px-4 text-cream-500 font-semibold">Jahr</th>
+                <th className="text-right py-2 px-3 text-cream-500 font-semibold">Einnahmen</th>
+                <th className="text-right py-2 px-3 text-cream-500 font-semibold">WK</th>
+                <th className="text-right py-2 px-3 text-cream-500 font-semibold">Überschuss</th>
+                <th className="text-right py-2 px-3 text-cream-500 font-semibold">Steuer</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-cream-50">
               {jahresDaten.filter(d => d.einnahmen > 0).map(d => (
-                <tr key={d.jahr} className={`hover:bg-gray-50 ${d.jahr === tabJahr ? 'bg-purple-50' : ''}`}
+                <tr key={d.jahr} className={`hover:bg-cream-50 ${d.jahr === tabJahr ? 'bg-clay-50' : ''}`}
                   onClick={() => setTabJahr(d.jahr)} style={{ cursor: 'pointer' }}>
-                  <td className="py-2 px-4 font-semibold text-gray-700">{d.jahr}</td>
-                  <td className="py-2 px-3 text-right text-emerald-600">+{formatCurrency(d.einnahmen)}</td>
-                  <td className="py-2 px-3 text-right text-orange-500">−{formatCurrency(d.wkWarmmiete + d.wkNK)}</td>
-                  <td className={`py-2 px-3 text-right font-bold ${d.ueberschuss >= 0 ? 'text-purple-600' : 'text-emerald-600'}`}>
+                  <td className="py-2 px-4 font-semibold text-cream-700">{d.jahr}</td>
+                  <td className="py-2 px-3 text-right text-sage-600">+{formatCurrency(d.einnahmen)}</td>
+                  <td className="py-2 px-3 text-right text-honey-500">−{formatCurrency(d.wkWarmmiete + d.wkNK)}</td>
+                  <td className={`py-2 px-3 text-right font-bold ${d.ueberschuss >= 0 ? 'text-clay-600' : 'text-sage-600'}`}>
                     {d.ueberschuss >= 0 ? '+' : ''}{formatCurrency(d.ueberschuss)}
                   </td>
-                  <td className="py-2 px-3 text-right text-orange-600 font-semibold">
+                  <td className="py-2 px-3 text-right text-honey-600 font-semibold">
                     {d.ueberschuss > 0 ? `−${formatCurrency(Math.round(d.ueberschuss * steuersatz / 100))}` : '–'}
                   </td>
                 </tr>
@@ -259,9 +259,9 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
       )}
 
       {/* Hinweisbox */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <p className="text-xs font-semibold text-amber-800 mb-1 flex items-center gap-1"><AlertTriangle size={14} /> Wichtige Hinweise zur Untervermietungssteuer</p>
-        <ul className="text-xs text-amber-700 space-y-1">
+      <div className="bg-honey-50 border border-honey-200 rounded-xl p-4">
+        <p className="text-xs font-semibold text-honey-800 mb-1 flex items-center gap-1"><AlertTriangle size={14} /> Wichtige Hinweise zur Untervermietungssteuer</p>
+        <ul className="text-xs text-honey-700 space-y-1">
           <li>• Einnahmen aus Untervermietung sind nach <strong>§ 21 EStG</strong> als Einkünfte aus V+V zu erklären.</li>
           <li>• Absetzbar sind nur die <strong>anteiligen</strong> Kosten (nach Zimmer-Verhältnis, nicht Fläche — falls keine genaue Flächenaufteilung).</li>
           <li>• Liegt der Überschuss unter <strong>256 € / Jahr</strong>, gilt die Freigrenze (§ 22 EStG) — keine Steuerpflicht.</li>

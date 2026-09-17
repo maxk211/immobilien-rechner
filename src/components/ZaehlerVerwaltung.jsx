@@ -96,9 +96,9 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
   };
 
   const farbeKlassen = {
-    amber: { border: 'border-amber-200', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700', btn: 'bg-amber-500 hover:bg-amber-600' },
-    blue:  { border: 'border-blue-200',  bg: 'bg-blue-50',  badge: 'bg-blue-100 text-indigo-700',  btn: 'bg-indigo-500 hover:bg-indigo-600'  },
-    red:   { border: 'border-red-200',   bg: 'bg-red-50',   badge: 'bg-red-100 text-red-700',    btn: 'bg-red-500 hover:bg-red-600'    },
+    amber: { border: 'border-honey-200', bg: 'bg-honey-50', badge: 'bg-honey-100 text-honey-700', btn: 'bg-honey-500 hover:bg-honey-600' },
+    blue:  { border: 'border-clay-200',  bg: 'bg-clay-50',  badge: 'bg-clay-100 text-clay-700',  btn: 'bg-clay-500 hover:bg-clay-600'  },
+    red:   { border: 'border-brick-200',   bg: 'bg-brick-50',   badge: 'bg-brick-100 text-brick-700',    btn: 'bg-brick-500 hover:bg-brick-600'    },
   };
 
   return (
@@ -106,13 +106,13 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
       {/* Header + Neuen Zähler hinzufügen */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <div className="text-base font-bold text-gray-800">Zählerverwaltung</div>
-          <div className="text-xs text-gray-400">Strom, Wasser, Heizung — beliebig viele Zähler pro Typ</div>
+          <div className="text-base font-bold text-cream-800">Zählerverwaltung</div>
+          <div className="text-xs text-cream-400">Strom, Wasser, Heizung — beliebig viele Zähler pro Typ</div>
         </div>
         <div className="flex gap-2">
           {ZAEHLER_TYPEN.map(t => (
             <button key={t.id} onClick={() => { setNeuerZaehlerTyp(t.id); setNeuerZaehlerForm({ bezeichnung: '', zaehlernummer: '', einheit: t.einheit }); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-cream-200 bg-white rounded-xl hover:bg-cream-50 transition-colors">
               {t.icon} {t.label}
             </button>
           ))}
@@ -125,28 +125,28 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
         const fb = farbeKlassen[typInfo.farbe];
         return (
           <div className={`rounded-2xl border ${fb.border} ${fb.bg} p-4 space-y-3`}>
-            <div className="font-semibold text-sm text-gray-700">{typInfo.icon} Neuer {typInfo.label}-Zähler</div>
+            <div className="font-semibold text-sm text-cream-700">{typInfo.icon} Neuer {typInfo.label}-Zähler</div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Bezeichnung</label>
+                <label className="block text-xs text-cream-500 mb-1">Bezeichnung</label>
                 <input type="text" value={neuerZaehlerForm.bezeichnung}
                   onChange={e => setNeuerZaehlerForm(f => ({...f, bezeichnung: e.target.value}))}
                   placeholder={`${typInfo.label} 1`}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400" />
+                  className="w-full px-2 py-1.5 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-clay-400" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Zählernummer</label>
+                <label className="block text-xs text-cream-500 mb-1">Zählernummer</label>
                 <input type="text" value={neuerZaehlerForm.zaehlernummer}
                   onChange={e => setNeuerZaehlerForm(f => ({...f, zaehlernummer: e.target.value}))}
                   placeholder="z.B. 12345678"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400" />
+                  className="w-full px-2 py-1.5 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-clay-400" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Einheit</label>
+                <label className="block text-xs text-cream-500 mb-1">Einheit</label>
                 <input type="text" value={neuerZaehlerForm.einheit}
                   onChange={e => setNeuerZaehlerForm(f => ({...f, einheit: e.target.value}))}
                   placeholder={typInfo.einheit}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400" />
+                  className="w-full px-2 py-1.5 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-clay-400" />
               </div>
             </div>
             <div className="flex gap-2">
@@ -155,7 +155,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                 Zähler anlegen
               </button>
               <button onClick={() => setNeuerZaehlerTyp(null)}
-                className="px-4 py-1.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50">
+                className="px-4 py-1.5 text-xs font-semibold bg-white border border-cream-200 text-cream-500 rounded-lg hover:bg-cream-50">
                 Abbrechen
               </button>
             </div>
@@ -165,8 +165,8 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
 
       {/* Zähler-Liste */}
       {zaehler.length === 0 && !neuerZaehlerTyp && (
-        <div className="text-center py-12 text-gray-400">
-          <div className="flex justify-center mb-3"><Gauge size={40} className="text-gray-300" /></div>
+        <div className="text-center py-12 text-cream-400">
+          <div className="flex justify-center mb-3"><Gauge size={40} className="text-cream-300" /></div>
           <div className="font-medium">Noch keine Zähler angelegt</div>
           <div className="text-sm mt-1">Füge oben einen Strom-, Wasser- oder Heizungszähler hinzu</div>
         </div>
@@ -194,19 +194,19 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                     <div className="flex items-center gap-3">
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${fb.badge}`}>{z.einheit}</span>
                       <div>
-                        <div className="font-semibold text-sm text-gray-800">{z.bezeichnung}</div>
-                        {z.zaehlernummer && <div className="text-xs text-gray-400">Nr. {z.zaehlernummer}</div>}
+                        <div className="font-semibold text-sm text-cream-800">{z.bezeichnung}</div>
+                        {z.zaehlernummer && <div className="text-xs text-cream-400">Nr. {z.zaehlernummer}</div>}
                       </div>
-                      {!z.aktiv && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Inaktiv / Getauscht</span>}
+                      {!z.aktiv && <span className="text-xs bg-cream-200 text-cream-500 px-2 py-0.5 rounded-full">Inaktiv / Getauscht</span>}
                     </div>
                     <div className="flex items-center gap-3">
                       {letzteAblesung && (
                         <div className="text-right">
-                          <div className="text-sm font-bold text-gray-800">{letzteAblesung.stand.toLocaleString('de-DE')} {z.einheit}</div>
-                          <div className="text-xs text-gray-400">{new Date(letzteAblesung.datum).toLocaleDateString('de-DE')}</div>
+                          <div className="text-sm font-bold text-cream-800">{letzteAblesung.stand.toLocaleString('de-DE')} {z.einheit}</div>
+                          <div className="text-xs text-cream-400">{new Date(letzteAblesung.datum).toLocaleDateString('de-DE')}</div>
                         </div>
                       )}
-                      <span className="text-gray-400">{isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
+                      <span className="text-cream-400">{isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
                     </div>
                   </div>
 
@@ -221,19 +221,19 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                         </button>
                         {z.aktiv && (
                           <button onClick={() => handleZaehlerDeaktivieren(z.id)}
-                            className="px-3 py-1.5 text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100">
+                            className="px-3 py-1.5 text-xs font-semibold border border-honey-200 text-honey-600 bg-honey-50 rounded-lg hover:bg-honey-100">
                             Als getauscht markieren
                           </button>
                         )}
                         <button onClick={() => handleZaehlerLoeschen(z.id)}
-                          className="px-3 py-1.5 text-xs font-semibold border border-red-200 text-red-500 bg-white rounded-lg hover:bg-red-50">
+                          className="px-3 py-1.5 text-xs font-semibold border border-brick-200 text-brick-500 bg-white rounded-lg hover:bg-brick-50">
                           Löschen
                         </button>
                       </div>
 
                       {/* Ablesungen */}
                       {sorted.length === 0 ? (
-                        <div className="text-xs text-gray-400 italic py-2">Noch keine Ablesungen — füge die erste Ablesung hinzu</div>
+                        <div className="text-xs text-cream-400 italic py-2">Noch keine Ablesungen — füge die erste Ablesung hinzu</div>
                       ) : (
                         <div className="space-y-2">
                           {sorted.map((a, idx) => {
@@ -241,32 +241,32 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                               ? verbrauchListe.find(v => v.bis === a.datum)
                               : null;
                             return (
-                              <div key={a.id} className={`flex items-start justify-between gap-3 p-3 rounded-xl border ${a.istTausch ? 'border-orange-200 bg-orange-50' : 'border-gray-100 bg-gray-50'}`}>
+                              <div key={a.id} className={`flex items-start justify-between gap-3 p-3 rounded-xl border ${a.istTausch ? 'border-honey-200 bg-honey-50' : 'border-cream-100 bg-cream-50'}`}>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-bold text-gray-800">
+                                    <span className="text-sm font-bold text-cream-800">
                                       {a.stand.toLocaleString('de-DE')} {z.einheit}
                                     </span>
-                                    <span className="text-xs text-gray-400">{new Date(a.datum).toLocaleDateString('de-DE')}</span>
+                                    <span className="text-xs text-cream-400">{new Date(a.datum).toLocaleDateString('de-DE')}</span>
                                     {a.istTausch && (
-                                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"><RefreshCw size={11} /> Zählertausch</span>
+                                      <span className="text-xs bg-honey-100 text-honey-700 px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"><RefreshCw size={11} /> Zählertausch</span>
                                     )}
                                     {verbrauch && !verbrauch.istTausch && verbrauch.verbrauch != null && (
-                                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                      <span className="text-xs bg-sage-100 text-sage-700 px-2 py-0.5 rounded-full">
                                         Verbrauch: {verbrauch.verbrauch.toLocaleString('de-DE')} {z.einheit}
                                       </span>
                                     )}
                                   </div>
                                   {a.istTausch && a.altStand != null && (
-                                    <div className="text-xs text-orange-600 mt-0.5">Alter Zähler Endstand: {a.altStand.toLocaleString('de-DE')} {z.einheit}</div>
+                                    <div className="text-xs text-honey-600 mt-0.5">Alter Zähler Endstand: {a.altStand.toLocaleString('de-DE')} {z.einheit}</div>
                                   )}
-                                  {a.notiz && <div className="text-xs text-gray-500 mt-0.5">{a.notiz}</div>}
+                                  {a.notiz && <div className="text-xs text-cream-500 mt-0.5">{a.notiz}</div>}
                                 </div>
                                 <div className="flex gap-1 shrink-0">
                                   <button onClick={() => handleEditOeffnen(z.id, a)}
-                                    className="text-xs text-indigo-500 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-blue-50"><Pencil size={12} /></button>
+                                    className="text-xs text-clay-500 hover:text-clay-700 px-2 py-1 rounded-lg hover:bg-clay-50"><Pencil size={12} /></button>
                                   <button onClick={() => handleAbleseLoeschen(z.id, a.id)}
-                                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50"><X size={12} /></button>
+                                    className="text-xs text-brick-400 hover:text-brick-600 px-2 py-1 rounded-lg hover:bg-brick-50"><X size={12} /></button>
                                 </div>
                               </div>
                             );
@@ -291,49 +291,49 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
         return (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
-              <div className="font-bold text-gray-800 flex items-center gap-1">{editAblesung ? <><Pencil size={14} /> Ablesung bearbeiten</> : '+ Ablesung eintragen'}</div>
-              <div className="text-xs text-gray-500">{typInfo.icon} {z.bezeichnung} {z.zaehlernummer ? `· Nr. ${z.zaehlernummer}` : ''}</div>
+              <div className="font-bold text-cream-800 flex items-center gap-1">{editAblesung ? <><Pencil size={14} /> Ablesung bearbeiten</> : '+ Ablesung eintragen'}</div>
+              <div className="text-xs text-cream-500">{typInfo.icon} {z.bezeichnung} {z.zaehlernummer ? `· Nr. ${z.zaehlernummer}` : ''}</div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Datum</label>
+                  <label className="block text-xs text-cream-500 mb-1">Datum</label>
                   <input type="date" value={ableseForm.datum}
                     onChange={e => setAbleseForm(f => ({...f, datum: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-400" />
+                    className="w-full px-3 py-2 border border-cream-300 rounded-xl text-sm focus:ring-2 focus:ring-clay-400" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Zählerstand ({z.einheit})</label>
+                  <label className="block text-xs text-cream-500 mb-1">Zählerstand ({z.einheit})</label>
                   <input type="number" step="0.001" value={ableseForm.stand}
                     onChange={e => setAbleseForm(f => ({...f, stand: e.target.value}))}
                     placeholder="z.B. 12345"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-400" />
+                    className="w-full px-3 py-2 border border-cream-300 rounded-xl text-sm focus:ring-2 focus:ring-clay-400" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Notiz (optional)</label>
+                <label className="block text-xs text-cream-500 mb-1">Notiz (optional)</label>
                 <input type="text" value={ableseForm.notiz}
                   onChange={e => setAbleseForm(f => ({...f, notiz: e.target.value}))}
                   placeholder="z.B. Jahresablesung, Mieterübergabe…"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-400" />
+                  className="w-full px-3 py-2 border border-cream-300 rounded-xl text-sm focus:ring-2 focus:ring-clay-400" />
               </div>
 
               {/* Zählertausch */}
-              <div className={`rounded-xl border p-3 space-y-2 ${ableseForm.istTausch ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`rounded-xl border p-3 space-y-2 ${ableseForm.istTausch ? 'border-honey-300 bg-honey-50' : 'border-cream-200 bg-cream-50'}`}>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={ableseForm.istTausch}
                     onChange={e => setAbleseForm(f => ({...f, istTausch: e.target.checked, altStand: ''}))}
                     className="rounded" />
-                  <span className="text-sm font-semibold text-gray-700 flex items-center gap-1"><RefreshCw size={13} /> Zählertausch bei dieser Ablesung</span>
+                  <span className="text-sm font-semibold text-cream-700 flex items-center gap-1"><RefreshCw size={13} /> Zählertausch bei dieser Ablesung</span>
                 </label>
                 {ableseForm.istTausch && (
                   <div>
-                    <label className="block text-xs text-orange-700 mb-1">Endstand alter Zähler ({z.einheit})</label>
+                    <label className="block text-xs text-honey-700 mb-1">Endstand alter Zähler ({z.einheit})</label>
                     <input type="number" step="0.001" value={ableseForm.altStand}
                       onChange={e => setAbleseForm(f => ({...f, altStand: e.target.value}))}
                       placeholder="Letzter Stand des alten Zählers"
-                      className="w-full px-3 py-2 border border-orange-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 bg-white" />
-                    <div className="text-xs text-orange-600 mt-1">Der eingetragene Zählerstand oben ist der Anfangsstand des neuen Zählers.</div>
+                      className="w-full px-3 py-2 border border-honey-300 rounded-xl text-sm focus:ring-2 focus:ring-honey-400 bg-white" />
+                    <div className="text-xs text-honey-600 mt-1">Der eingetragene Zählerstand oben ist der Anfangsstand des neuen Zählers.</div>
                   </div>
                 )}
               </div>
@@ -344,7 +344,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                   Speichern
                 </button>
                 <button onClick={() => { setAbleseModal(null); setEditAblesung(null); }}
-                  className="px-4 py-2 text-sm font-semibold border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50">
+                  className="px-4 py-2 text-sm font-semibold border border-cream-200 text-cream-600 rounded-xl hover:bg-cream-50">
                   Abbrechen
                 </button>
               </div>

@@ -50,10 +50,10 @@ const ZIEL_TYPEN = [
 ];
 
 const COLOR_MAP = {
-  emerald: { bar: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: 'bg-emerald-100 text-emerald-600' },
-  blue: { bar: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: 'bg-blue-100 text-blue-600' },
-  amber: { bar: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: 'bg-amber-100 text-amber-600' },
-  violet: { bar: 'bg-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200', icon: 'bg-violet-100 text-violet-600' },
+  emerald: { bar: 'bg-sage-500', bg: 'bg-sage-50', text: 'text-sage-700', border: 'border-sage-200', icon: 'bg-sage-100 text-sage-600' },
+  blue: { bar: 'bg-clay-500', bg: 'bg-clay-50', text: 'text-clay-700', border: 'border-clay-200', icon: 'bg-clay-100 text-clay-600' },
+  amber: { bar: 'bg-honey-500', bg: 'bg-honey-50', text: 'text-honey-700', border: 'border-honey-200', icon: 'bg-honey-100 text-honey-600' },
+  violet: { bar: 'bg-clay-500', bg: 'bg-clay-50', text: 'text-clay-700', border: 'border-clay-200', icon: 'bg-clay-100 text-clay-600' },
 };
 
 function ladeZiele() {
@@ -135,12 +135,12 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
   if (inline) {
     if (!hatZiele && !editMode) {
       return (
-        <div className="h-full rounded-2xl bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 p-4 flex items-center justify-between gap-4 shadow-sm">
+        <div className="h-full rounded-2xl bg-gradient-to-r from-cream-800 to-cream-900 border border-cream-700 p-4 flex items-center justify-between gap-4 shadow-sm">
           <div>
             <div className="text-white font-bold text-sm mb-0.5 flex items-center gap-1"><Target size={14}/>Portfolio-Ziele</div>
-            <div className="text-slate-400 text-xs">Cashflow, Immobilien, Vermögen & Rendite tracken</div>
+            <div className="text-cream-400 text-xs">Cashflow, Immobilien, Vermögen & Rendite tracken</div>
           </div>
-          <button onClick={startEdit} className="flex-shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-all">
+          <button onClick={startEdit} className="flex-shrink-0 px-3 py-1.5 bg-clay-600 hover:bg-clay-500 text-white text-xs font-semibold rounded-lg transition-all">
             Ziele setzen
           </button>
         </div>
@@ -149,9 +149,9 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
 
     if (editMode) {
       return (
-        <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-4">
+        <div className="rounded-2xl bg-white border border-cream-200 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="font-bold text-gray-800 text-sm flex items-center gap-1"><Target size={14}/>Ziele bearbeiten</span>
+            <span className="font-bold text-cream-800 text-sm flex items-center gap-1"><Target size={14}/>Ziele bearbeiten</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {ZIEL_TYPEN.map(typ => {
@@ -159,7 +159,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
               return (
                 <div key={typ.id} className={`p-3 rounded-xl border ${c.border} ${c.bg}`}>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-gray-600 flex items-center gap-1">{typ.icon} {typ.label}</span>
+                    <span className="text-xs font-semibold text-cream-600 flex items-center gap-1">{typ.icon} {typ.label}</span>
                     <button
                       onClick={() => {
                         const u = { ...editZiele };
@@ -167,7 +167,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                         else u[typ.id] = typ.defaultZiel;
                         setEditZiele(u);
                       }}
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-all flex items-center gap-0.5 ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-gray-400 bg-gray-100'}`}
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-all flex items-center gap-0.5 ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-cream-400 bg-cream-100'}`}
                     >
                       {editZiele[typ.id] != null ? <Check size={10}/> : '○'}
                     </button>
@@ -175,7 +175,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                   {editZiele[typ.id] != null && (
                     <input type="number" value={editZiele[typ.id]} step={typ.step}
                       onChange={e => setEditZiele({ ...editZiele, [typ.id]: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-right focus:ring-1 focus:ring-indigo-400"
+                      className="w-full px-2 py-1 border border-cream-300 rounded-lg text-xs font-bold text-right focus:ring-1 focus:ring-clay-400"
                     />
                   )}
                 </div>
@@ -183,8 +183,8 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
             })}
           </div>
           <div className="flex gap-2 mt-3">
-            <button onClick={() => setEditMode(false)} className="flex-1 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">Abbrechen</button>
-            <button onClick={saveEdit} className="flex-1 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700">Speichern</button>
+            <button onClick={() => setEditMode(false)} className="flex-1 py-1.5 border border-cream-200 rounded-lg text-xs text-cream-600 hover:bg-cream-50">Abbrechen</button>
+            <button onClick={saveEdit} className="flex-1 py-1.5 bg-clay-600 text-white rounded-lg text-xs font-bold hover:bg-clay-700">Speichern</button>
           </div>
         </div>
       );
@@ -193,10 +193,10 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
     // Inline Ziele-Anzeige
     const aktiveZiele = ZIEL_TYPEN.filter(t => ziele[t.id] != null);
     return (
-      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-3 sm:p-4 h-full">
+      <div className="rounded-2xl bg-white border border-cream-200 shadow-sm p-3 sm:p-4 h-full">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Target size={12}/>Portfolio-Ziele</span>
-          <button onClick={startEdit} className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold">Bearbeiten</button>
+          <span className="text-xs font-bold text-cream-500 uppercase tracking-wide flex items-center gap-1"><Target size={12}/>Portfolio-Ziele</span>
+          <button onClick={startEdit} className="text-xs text-clay-500 hover:text-clay-700 font-semibold">Bearbeiten</button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {aktiveZiele.map(typ => {
@@ -208,19 +208,19 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
             return (
               <div key={typ.id} className={`p-2.5 rounded-xl border ${c.border} ${c.bg}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-gray-500 font-medium truncate">{typ.label}</span>
-                  <span className={`text-[10px] font-black ml-1 ${erreicht ? 'text-emerald-600' : c.text}`}>{prozent.toFixed(0)}%</span>
+                  <span className="text-[10px] text-cream-500 font-medium truncate">{typ.label}</span>
+                  <span className={`text-[10px] font-black ml-1 ${erreicht ? 'text-sage-600' : c.text}`}>{prozent.toFixed(0)}%</span>
                 </div>
                 <div className={`text-sm font-black ${c.text}`}>{typ.format(istWert)}</div>
-                <div className="text-[10px] text-gray-400">/ {typ.format(zielWert)}</div>
+                <div className="text-[10px] text-cream-400">/ {typ.format(zielWert)}</div>
                 <div className="w-full bg-white/70 rounded-full h-1.5 mt-1.5 overflow-hidden">
-                  <div className={`h-1.5 rounded-full transition-all duration-700 ${erreicht ? 'bg-emerald-500' : c.bar}`} style={{ width: `${prozent}%` }} />
+                  <div className={`h-1.5 rounded-full transition-all duration-700 ${erreicht ? 'bg-sage-500' : c.bar}`} style={{ width: `${prozent}%` }} />
                 </div>
               </div>
             );
           })}
           {aktiveZiele.length === 0 && (
-            <div className="col-span-4 text-xs text-gray-400 py-2">Keine Ziele gesetzt — klicke "Bearbeiten"</div>
+            <div className="col-span-4 text-xs text-cream-400 py-2">Keine Ziele gesetzt — klicke "Bearbeiten"</div>
           )}
         </div>
       </div>
@@ -230,12 +230,12 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
   // ── STANDALONE MODE (separates Widget) ───────────────────────────────────
   if (!hatZiele && !editMode) {
     return (
-      <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-5 mb-4 flex items-center justify-between gap-4 shadow">
+      <div className="bg-gradient-to-r from-cream-800 to-cream-900 rounded-2xl p-5 mb-4 flex items-center justify-between gap-4 shadow">
         <div>
           <div className="text-white font-bold text-base mb-0.5 flex items-center gap-1"><Target size={16}/>Portfolio-Ziele</div>
-          <div className="text-slate-400 text-sm">Setze dir Ziele — Cashflow, Immobilien-Anzahl, Vermögen & Rendite.</div>
+          <div className="text-cream-400 text-sm">Setze dir Ziele — Cashflow, Immobilien-Anzahl, Vermögen & Rendite.</div>
         </div>
-        <button onClick={startEdit} className="flex-shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-all">
+        <button onClick={startEdit} className="flex-shrink-0 px-4 py-2 bg-clay-600 hover:bg-clay-500 text-white text-sm font-semibold rounded-xl transition-all">
           Ziele setzen
         </button>
       </div>
@@ -243,22 +243,22 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-all select-none" onClick={() => !editMode && setCollapsed(c => !c)}>
+    <div className="bg-white border border-cream-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-cream-50 transition-all select-none" onClick={() => !editMode && setCollapsed(c => !c)}>
         <div className="flex items-center gap-2">
-          <Target size={16} className="text-gray-500"/>
-          <span className="font-bold text-gray-800">Portfolio-Ziele</span>
-          {hatZiele && !editMode && <span className="text-xs text-gray-400 ml-1">{ZIEL_TYPEN.filter(t => ziele[t.id] != null).length} aktive Ziele</span>}
+          <Target size={16} className="text-cream-500"/>
+          <span className="font-bold text-cream-800">Portfolio-Ziele</span>
+          {hatZiele && !editMode && <span className="text-xs text-cream-400 ml-1">{ZIEL_TYPEN.filter(t => ziele[t.id] != null).length} aktive Ziele</span>}
         </div>
         <div className="flex items-center gap-2">
-          {!editMode && <button onClick={e => { e.stopPropagation(); startEdit(); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold px-2 py-1 rounded-lg hover:bg-indigo-50 transition-all">Bearbeiten</button>}
-          {!editMode && <span className={`text-gray-400 text-sm transition-transform ${collapsed ? '' : 'rotate-180'}`}><ChevronDown size={14}/></span>}
+          {!editMode && <button onClick={e => { e.stopPropagation(); startEdit(); }} className="text-xs text-clay-600 hover:text-clay-800 font-semibold px-2 py-1 rounded-lg hover:bg-clay-50 transition-all">Bearbeiten</button>}
+          {!editMode && <span className={`text-cream-400 text-sm transition-transform ${collapsed ? '' : 'rotate-180'}`}><ChevronDown size={14}/></span>}
         </div>
       </div>
 
       {editMode && (
-        <div className="px-5 pb-5 pt-1 border-t border-gray-100">
-          <p className="text-sm text-gray-500 mb-4">Setze deine Zielwerte. Nur aktivierte Ziele werden angezeigt.</p>
+        <div className="px-5 pb-5 pt-1 border-t border-cream-100">
+          <p className="text-sm text-cream-500 mb-4">Setze deine Zielwerte. Nur aktivierte Ziele werden angezeigt.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {ZIEL_TYPEN.map(typ => {
               const c = COLOR_MAP[typ.color];
@@ -267,31 +267,31 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">{typ.icon}<span className={`font-semibold text-sm ${c.text}`}>{typ.label}</span></div>
                     <button onClick={() => { const u = { ...editZiele }; if (u[typ.id] != null) u[typ.id] = null; else u[typ.id] = typ.defaultZiel; setEditZiele(u); }}
-                      className={`text-xs px-2 py-0.5 rounded-full font-semibold transition-all flex items-center gap-1 ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-gray-400 bg-gray-100'}`}>
+                      className={`text-xs px-2 py-0.5 rounded-full font-semibold transition-all flex items-center gap-1 ${editZiele[typ.id] != null ? `${c.text} bg-white border ${c.border}` : 'text-cream-400 bg-cream-100'}`}>
                       {editZiele[typ.id] != null ? <><Check size={10}/>Aktiv</> : 'Inaktiv'}
                     </button>
                   </div>
                   {editZiele[typ.id] != null && (
                     <div className="flex items-center gap-2 mt-2">
                       <input type="number" value={editZiele[typ.id]} step={typ.step} onChange={e => setEditZiele({ ...editZiele, [typ.id]: parseFloat(e.target.value) || 0 })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm font-bold text-right focus:ring-2 focus:ring-indigo-400" />
-                      <span className="text-sm text-gray-500 whitespace-nowrap">{typ.unit}</span>
+                        className="flex-1 px-3 py-2 border border-cream-300 rounded-lg text-base sm:text-sm font-bold text-right focus:ring-2 focus:ring-clay-400" />
+                      <span className="text-sm text-cream-500 whitespace-nowrap">{typ.unit}</span>
                     </div>
                   )}
-                  {editZiele[typ.id] == null && <div className="text-xs text-gray-400 mt-1">Klicke auf "Inaktiv" um das Ziel zu aktivieren</div>}
+                  {editZiele[typ.id] == null && <div className="text-xs text-cream-400 mt-1">Klicke auf "Inaktiv" um das Ziel zu aktivieren</div>}
                 </div>
               );
             })}
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={() => setEditMode(false)} className="flex-1 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Abbrechen</button>
-            <button onClick={saveEdit} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">Speichern</button>
+            <button onClick={() => setEditMode(false)} className="flex-1 py-2 border border-cream-200 rounded-xl text-sm text-cream-600 hover:bg-cream-50 transition-all">Abbrechen</button>
+            <button onClick={saveEdit} className="flex-1 py-2 bg-clay-600 text-white rounded-xl text-sm font-bold hover:bg-clay-700 transition-all">Speichern</button>
           </div>
         </div>
       )}
 
       {!editMode && !collapsed && hatZiele && (
-        <div className="px-5 pb-5 pt-1 border-t border-gray-100">
+        <div className="px-5 pb-5 pt-1 border-t border-cream-100">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
             {ZIEL_TYPEN.filter(t => ziele[t.id] != null).map(typ => {
               const zielWert = ziele[typ.id];
@@ -303,19 +303,19 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                 <div key={typ.id} className={`p-4 rounded-xl border ${c.border} ${c.bg}`}>
                   <div className="flex items-center justify-between mb-1">
                     <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center`}>
-                      {erreicht ? <CheckCircle2 size={16} className="text-emerald-500"/> : typ.icon}
+                      {erreicht ? <CheckCircle2 size={16} className="text-sage-500"/> : typ.icon}
                     </div>
-                    <span className={`text-xs font-bold ${erreicht ? 'text-emerald-600' : c.text}`}>{prozent.toFixed(0)}%</span>
+                    <span className={`text-xs font-bold ${erreicht ? 'text-sage-600' : c.text}`}>{prozent.toFixed(0)}%</span>
                   </div>
                   <div className="mt-2 mb-1">
-                    <div className="text-xs text-gray-500 mb-0.5">{typ.label}</div>
+                    <div className="text-xs text-cream-500 mb-0.5">{typ.label}</div>
                     <div className={`text-lg font-black ${c.text}`}>{typ.format(istWert)}</div>
-                    <div className="text-xs text-gray-400">Ziel: {typ.format(zielWert)}</div>
+                    <div className="text-xs text-cream-400">Ziel: {typ.format(zielWert)}</div>
                   </div>
                   <div className="w-full bg-white/70 rounded-full h-2 mt-2 overflow-hidden">
-                    <div className={`h-2 rounded-full transition-all duration-700 ${erreicht ? 'bg-emerald-500' : c.bar}`} style={{ width: `${prozent}%` }} />
+                    <div className={`h-2 rounded-full transition-all duration-700 ${erreicht ? 'bg-sage-500' : c.bar}`} style={{ width: `${prozent}%` }} />
                   </div>
-                  {erreicht && <div className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1"><Trophy size={12}/>Ziel erreicht!</div>}
+                  {erreicht && <div className="text-xs text-sage-600 font-semibold mt-1 flex items-center gap-1"><Trophy size={12}/>Ziel erreicht!</div>}
                 </div>
               );
             })}

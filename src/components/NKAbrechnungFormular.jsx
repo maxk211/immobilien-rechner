@@ -88,46 +88,46 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-teal-700 text-white p-5 rounded-t-xl flex justify-between items-center">
+        <div className="sticky top-0 bg-sage-700 text-white p-5 rounded-t-xl flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2"><FileText size={18} /> NK-Abrechnung: {mieter.name}</h2>
-            <p className="text-teal-200 text-sm">{immo ? (immo.name || immo.adresse) : ''}</p>
+            <p className="text-sage-200 text-sm">{immo ? (immo.name || immo.adresse) : ''}</p>
           </div>
-          <button onClick={onClose} className="text-white hover:text-teal-200"><X size={20} /></button>
+          <button onClick={onClose} className="text-white hover:text-sage-200"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Basisdaten */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="col-span-2 md:col-span-1">
-              <label className="block text-xs text-gray-600 mb-1 font-semibold">Abrechnungsjahr</label>
+              <label className="block text-xs text-cream-600 mb-1 font-semibold">Abrechnungsjahr</label>
               <input type="number" value={form.abrechnungsjahr}
                 onChange={e => setForm(f => ({...f, abrechnungsjahr: parseInt(e.target.value)}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
+                className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-sage-500 text-sm" required />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1 font-semibold">Mieterfl. (m²)</label>
+              <label className="block text-xs text-cream-600 mb-1 font-semibold">Mieterfl. (m²)</label>
               <input type="number" step="0.01" value={form.mieterflaeche}
                 onChange={e => setForm(f => ({...f, mieterflaeche: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
+                className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-sage-500 text-sm" required />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1 font-semibold">Gesamtfl. (m²)</label>
+              <label className="block text-xs text-cream-600 mb-1 font-semibold">Gesamtfl. (m²)</label>
               <input type="number" step="0.01" value={form.gesamtflaeche}
                 onChange={e => setForm(f => ({...f, gesamtflaeche: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
+                className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-sage-500 text-sm" required />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1 font-semibold">Anz. Parteien</label>
+              <label className="block text-xs text-cream-600 mb-1 font-semibold">Anz. Parteien</label>
               <input type="number" value={form.anzahlParteien}
                 onChange={e => setForm(f => ({...f, anzahlParteien: parseInt(e.target.value) || 1}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" min="1" />
+                className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-sage-500 text-sm" min="1" />
             </div>
           </div>
 
           {/* Anteil-Info */}
           {mf > 0 && gf > 0 && (
-            <div className="bg-teal-50 rounded-lg px-4 py-2 text-sm text-teal-700">
+            <div className="bg-sage-50 rounded-lg px-4 py-2 text-sm text-sage-700">
               Mieteranteil nach Fläche: <strong>{((mf / gf) * 100).toFixed(1)} %</strong>
               {' '}({mf} m² von {gf} m²)
             </div>
@@ -136,9 +136,9 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
           {/* Kostenpositionen */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <p className="text-sm font-semibold text-gray-700">Kostenpositionen</p>
+              <p className="text-sm font-semibold text-cream-700">Kostenpositionen</p>
               <button type="button" onClick={addPos}
-                className="text-xs px-3 py-1 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200">
+                className="text-xs px-3 py-1 bg-sage-100 text-sage-700 rounded-lg hover:bg-sage-200">
                 + Position hinzufügen
               </button>
             </div>
@@ -146,27 +146,27 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
               {form.kostenpositionen.map((pos, idx) => {
                 const anteil = berechneMieteranteil(pos, mf, gf, ap);
                 return (
-                  <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                  <div key={idx} className="bg-cream-50 rounded-lg p-3">
                     <div className="grid grid-cols-12 gap-2 items-end">
                       <div className="col-span-12 md:col-span-4">
-                        <label className="block text-xs text-gray-500 mb-1">Bezeichnung</label>
+                        <label className="block text-xs text-cream-500 mb-1">Bezeichnung</label>
                         <input type="text" value={pos.bezeichnung}
                           onChange={e => updatePos(idx, 'bezeichnung', e.target.value)}
                           placeholder="z.B. Heizung"
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
+                          className="w-full px-2 py-1.5 border border-cream-300 rounded text-sm focus:ring-1 focus:ring-sage-500" />
                       </div>
                       <div className="col-span-5 md:col-span-2">
-                        <label className="block text-xs text-gray-500 mb-1">Gesamtkosten (€)</label>
+                        <label className="block text-xs text-cream-500 mb-1">Gesamtkosten (€)</label>
                         <input type="number" step="0.01" value={pos.gesamtkosten}
                           onChange={e => updatePos(idx, 'gesamtkosten', e.target.value)}
                           placeholder="0,00"
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
+                          className="w-full px-2 py-1.5 border border-cream-300 rounded text-sm focus:ring-1 focus:ring-sage-500" />
                       </div>
                       <div className="col-span-5 md:col-span-2">
-                        <label className="block text-xs text-gray-500 mb-1">Schlüssel</label>
+                        <label className="block text-xs text-cream-500 mb-1">Schlüssel</label>
                         <select value={pos.umlageschluessel}
                           onChange={e => updatePos(idx, 'umlageschluessel', e.target.value)}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500">
+                          className="w-full px-2 py-1.5 border border-cream-300 rounded text-sm focus:ring-1 focus:ring-sage-500">
                           <option value="wohnflaeche">Wohnfläche</option>
                           <option value="kopf">Pro Partei</option>
                           <option value="fest">Fester Betrag</option>
@@ -174,25 +174,25 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
                       </div>
                       {pos.umlageschluessel === 'fest' ? (
                         <div className="col-span-5 md:col-span-2">
-                          <label className="block text-xs text-gray-500 mb-1">Mieteranteil (€)</label>
+                          <label className="block text-xs text-cream-500 mb-1">Mieteranteil (€)</label>
                           <input type="number" step="0.01" value={pos.mieteranteil_fest}
                             onChange={e => updatePos(idx, 'mieteranteil_fest', e.target.value)}
-                            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
+                            className="w-full px-2 py-1.5 border border-cream-300 rounded text-sm focus:ring-1 focus:ring-sage-500" />
                         </div>
                       ) : (
                         <div className="col-span-5 md:col-span-2 flex items-end pb-1.5">
-                          <span className="text-sm text-teal-700 font-semibold">
+                          <span className="text-sm text-sage-700 font-semibold">
                             = {anteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                           </span>
                         </div>
                       )}
                       <div className="col-span-2 md:col-span-1 flex items-end justify-end pb-0.5">
                         <button type="button" onClick={() => removePos(idx)}
-                          className="text-red-400 hover:text-red-600"><X size={16} /></button>
+                          className="text-brick-400 hover:text-brick-600"><X size={16} /></button>
                       </div>
                     </div>
                     {pos.umlageschluessel === 'fest' && (
-                      <div className="text-right text-xs text-teal-600 mt-1">
+                      <div className="text-right text-xs text-sage-600 mt-1">
                         = {anteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </div>
                     )}
@@ -203,23 +203,23 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
           </div>
 
           {/* Vorauszahlungen + Ergebnis */}
-          <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+          <div className="bg-clay-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Gesamte NK-Kosten des Mieters:</span>
-              <span className="font-bold text-gray-800">
+              <span className="text-cream-600">Gesamte NK-Kosten des Mieters:</span>
+              <span className="font-bold text-cream-800">
                 {gesamtMieteranteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             </div>
             <div className="flex gap-3 items-end">
               <div className="flex-1">
-                <label className="block text-xs text-gray-600 mb-1 font-semibold">Geleistete Vorauszahlungen (€)</label>
+                <label className="block text-xs text-cream-600 mb-1 font-semibold">Geleistete Vorauszahlungen (€)</label>
                 <input type="number" step="0.01" value={form.vorauszahlungenGesamt}
                   onChange={e => setForm(f => ({...f, vorauszahlungenGesamt: e.target.value}))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
+                  className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-sm" />
               </div>
             </div>
             <div className={`flex justify-between items-center p-3 rounded-lg font-bold text-sm ${
-              ergebnis > 0 ? 'bg-red-100 text-red-700' : ergebnis < 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+              ergebnis > 0 ? 'bg-brick-100 text-brick-700' : ergebnis < 0 ? 'bg-sage-100 text-sage-700' : 'bg-cream-100 text-cream-600'
             }`}>
               <span>{ergebnis > 0 ? '💸 Nachzahlung Mieter:' : ergebnis < 0 ? '💚 Guthaben Mieter:' : 'Ergebnis:'}</span>
               <span>{Math.abs(ergebnis).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
@@ -229,29 +229,29 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
           {/* Status + Notizen */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600 mb-1 font-semibold">Status</label>
+              <label className="block text-xs text-cream-600 mb-1 font-semibold">Status</label>
               <select value={form.status} onChange={e => setForm(f => ({...f, status: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
+                className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-sage-500 text-sm">
                 <option value="entwurf">Entwurf</option>
                 <option value="versendet">Versendet</option>
                 <option value="abgeschlossen">Abgeschlossen</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1 font-semibold">Notizen</label>
+              <label className="block text-xs text-cream-600 mb-1 font-semibold">Notizen</label>
               <input type="text" value={form.notizen} onChange={e => setForm(f => ({...f, notizen: e.target.value}))}
                 placeholder="Interne Notizen..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" />
+                className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-sage-500 text-sm" />
             </div>
           </div>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              className="flex-1 px-4 py-2 border border-cream-300 text-cream-700 rounded-lg hover:bg-cream-50">
               Abbrechen
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-semibold disabled:opacity-50">
+              className="flex-1 px-4 py-2 bg-sage-600 text-white rounded-lg hover:bg-sage-700 font-semibold disabled:opacity-50">
               {saving ? 'Speichern...' : 'Speichern'}
             </button>
           </div>
