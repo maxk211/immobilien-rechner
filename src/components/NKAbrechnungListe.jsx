@@ -13,24 +13,24 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
     .sort((a, b) => b.abrechnungsjahr - a.abrechnungsjahr);
 
   const statusColor = {
-    entwurf: 'bg-honey-100 text-honey-700',
-    versendet: 'bg-clay-100 text-clay-700',
-    abgeschlossen: 'bg-sage-100 text-sage-700'
+    entwurf: 'bg-yellow-100 text-yellow-700',
+    versendet: 'bg-blue-100 text-indigo-700',
+    abgeschlossen: 'bg-green-100 text-green-700'
   };
   const statusLabel = { entwurf: 'Entwurf', versendet: 'Versendet', abgeschlossen: 'Abgeschlossen' };
 
   return (
     <div className="mt-4">
       <div className="flex justify-between items-center mb-3">
-        <p className="text-sm font-semibold text-cream-700 flex items-center gap-1"><FileText size={14} /> NK-Abrechnungen</p>
+        <p className="text-sm font-semibold text-gray-700 flex items-center gap-1"><FileText size={14} /> NK-Abrechnungen</p>
         <button onClick={() => { setEditAbrechnung(null); setShowForm(true); }}
-          className="text-xs px-3 py-1 bg-sage-100 text-sage-700 rounded-lg hover:bg-sage-200">
+          className="text-xs px-3 py-1 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200">
           + Neue Abrechnung
         </button>
       </div>
 
       {meinAbrechnungen.length === 0 ? (
-        <p className="text-xs text-cream-400 italic">Noch keine NK-Abrechnungen für diesen Mieter.</p>
+        <p className="text-xs text-gray-400 italic">Noch keine NK-Abrechnungen für diesen Mieter.</p>
       ) : (
         <div className="space-y-2">
           {meinAbrechnungen.map(a => {
@@ -41,18 +41,18 @@ const NKAbrechnungListe = ({ mieter, nkAbrechnungen, portfolio, onSave, onDelete
             const gesamt = positionen.reduce((s, p) => s + berechneMieteranteil(p, mf, gf, ap), 0);
             const ergebnis = gesamt - (Number(a.vorauszahlungen_gesamt) || 0);
             return (
-              <div key={a.id} className="flex items-center justify-between bg-cream-50 rounded-lg px-3 py-2 text-sm">
+              <div key={a.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm">
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-cream-800">{a.abrechnungsjahr}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[a.status] || 'bg-cream-100'}`}>
+                  <span className="font-semibold text-gray-800">{a.abrechnungsjahr}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[a.status] || 'bg-gray-100'}`}>
                     {statusLabel[a.status] || a.status}
                   </span>
-                  <span className={`text-xs font-semibold ${ergebnis > 0 ? 'text-brick-600' : 'text-sage-600'}`}>
+                  <span className={`text-xs font-semibold ${ergebnis > 0 ? 'text-red-600' : 'text-green-600'}`}>
                     {ergebnis > 0 ? `+${Math.abs(ergebnis).toLocaleString('de-DE', {maximumFractionDigits:0})} € NK` : `-${Math.abs(ergebnis).toLocaleString('de-DE', {maximumFractionDigits:0})} € Gut.`}
                   </span>
                 </div>
                 <button onClick={() => setViewAbrechnung(a)}
-                  className="text-xs px-2 py-1 bg-sage-50 text-sage-700 rounded hover:bg-sage-100">
+                  className="text-xs px-2 py-1 bg-teal-50 text-teal-700 rounded hover:bg-teal-100">
                   Ansehen
                 </button>
               </div>

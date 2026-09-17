@@ -1162,11 +1162,11 @@ function App() {
   // Loading Screen
   if (loading) {
     return (
-      <div className="font-app min-h-screen bg-cream-900 flex items-center justify-center">
+      <div className="font-app min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
-          <div className="w-16 h-16 bg-clay-500 rounded-2xl flex items-center justify-center mx-auto mb-5"><Home size={32} className="text-white" /></div>
-          <div className="animate-spin h-6 w-6 border-3 border-clay-300 border-t-transparent rounded-full mx-auto" style={{borderWidth:'3px'}}></div>
-          <p className="mt-4 text-cream-300 text-sm">Portfolio wird geladen…</p>
+          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg"><Home size={32} className="text-white" /></div>
+          <div className="animate-spin h-6 w-6 border-3 border-indigo-400 border-t-transparent rounded-full mx-auto" style={{borderWidth:'3px'}}></div>
+          <p className="mt-4 text-slate-400 text-sm">Portfolio wird geladen…</p>
         </div>
       </div>
     );
@@ -1189,12 +1189,12 @@ function App() {
   const inaktiveImmobilien = portfolio.filter(i => isInaktiv(i));
 
   return (
-    <div className="font-app min-h-screen bg-cream-50">
+    <div className="font-app min-h-screen bg-slate-50">
       {/* Toast Notifications */}
       <Toaster position="top-right" toastOptions={{
         duration: 4000,
         style: { borderRadius: '12px', fontSize: '14px', fontWeight: '500' },
-        success: { iconTheme: { primary: '#B5652E', secondary: '#fff' } },
+        success: { iconTheme: { primary: '#4f46e5', secondary: '#fff' } },
         error: { duration: 5000 }
       }} />
       {/* Custom Confirm Dialog */}
@@ -1223,17 +1223,17 @@ function App() {
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-start gap-3 mb-4">
-              <div className="text-clay-500"><PartyPopper size={28} /></div>
+              <div className="text-indigo-500"><PartyPopper size={28} /></div>
               <div>
-                <h2 className="text-lg font-black text-cream-900">Was ist neu?</h2>
-                <p className="text-xs text-cream-400">Version {CHANGELOG_VERSION}</p>
+                <h2 className="text-lg font-black text-gray-900">Was ist neu?</h2>
+                <p className="text-xs text-gray-400">Version {CHANGELOG_VERSION}</p>
               </div>
             </div>
             <ul className="space-y-2.5 mb-6">
               {CHANGELOG_EINTRAEGE.map((e, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm">
                   <span className="text-base leading-snug">{e.emoji}</span>
-                  <span className="text-cream-700 leading-snug">{e.text}</span>
+                  <span className="text-gray-700 leading-snug">{e.text}</span>
                 </li>
               ))}
             </ul>
@@ -1242,7 +1242,7 @@ function App() {
                 try { localStorage.setItem('changelogVersion', CHANGELOG_VERSION); } catch(e) {}
                 setShowChangelog(false);
               }}
-              className="w-full py-2.5 bg-clay-600 text-white font-bold rounded-xl hover:bg-clay-700 transition-colors"
+              className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors"
             >
               Alles klar!
             </button>
@@ -1251,40 +1251,40 @@ function App() {
       )}
 
       {/* Header */}
-      <header className="bg-cream-900 text-white px-4 shadow-xl border-b border-cream-800">
+      <header className="bg-slate-900 text-white px-4 shadow-xl border-b border-slate-800">
         <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-clay-500">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
               <Home size={18} className="text-white" />
             </div>
             <div>
-              <div className="font-semibold text-white text-lg leading-tight tracking-tight" style={{letterSpacing: '-0.02em'}}>
+              <div className="font-black text-white text-lg leading-tight tracking-tight" style={{letterSpacing: '-0.02em'}}>
                 renditly
               </div>
-              <div className="text-xs hidden sm:block text-clay-300" style={{letterSpacing: '0.02em'}}>Rendite · Cashflow · Vermögen</div>
+              <div className="text-xs hidden sm:block" style={{color: '#818cf8', letterSpacing: '0.02em'}}>Rendite · Cashflow · Vermögen</div>
             </div>
           </div>
           <div className="flex items-center gap-4">
             {syncStatus === 'syncing' && (
-              <div className="flex items-center gap-1.5 text-cream-400 text-xs">
-                <div className="animate-spin h-3 w-3 border-2 border-cream-400 border-t-transparent rounded-full"></div>
+              <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                <div className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full"></div>
                 Sync…
               </div>
             )}
             {syncStatus === 'error' && (
-              <span className="text-brick-400 text-xs flex items-center gap-1"><AlertTriangle size={12} /> Sync-Fehler</span>
+              <span className="text-red-400 text-xs flex items-center gap-1"><AlertTriangle size={12} /> Sync-Fehler</span>
             )}
-            <div className="flex items-center gap-2 border-l border-cream-700 pl-4">
+            <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
               {/* Mobile: Avatar-Button tippt direkt auf Logout-Dropdown */}
               <div className="relative group">
-                <button className="w-7 h-7 bg-clay-600 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-clay-500 transition-colors"
+                <button className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-indigo-500 transition-colors"
                   title="Account">
                   {session.user.email.charAt(0).toUpperCase()}
                 </button>
                 {/* Dropdown — sichtbar auf Mobile via group-focus-within, auf Desktop via group-hover */}
-                <div className="absolute right-0 top-9 w-44 bg-cream-800 border border-cream-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
-                  <div className="px-3 py-2 text-xs text-cream-400 truncate border-b border-cream-700">{session.user.email}</div>
-                  <button onClick={handleLogout} className="w-full text-left px-3 py-2.5 text-sm text-cream-300 hover:bg-cream-700 hover:text-white transition-colors">
+                <div className="absolute right-0 top-9 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
+                  <div className="px-3 py-2 text-xs text-slate-400 truncate border-b border-slate-700">{session.user.email}</div>
+                  <button onClick={handleLogout} className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
                     Abmelden
                   </button>
                 </div>
@@ -1308,13 +1308,13 @@ function App() {
         {/* Navigation & Actions Bar */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           {/* Tab Navigation */}
-          <div className="flex gap-1 bg-white border border-cream-200 rounded-xl p-1 shadow-sm">
+          <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
             <button
               onClick={() => setActiveView('portfolio')}
-              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeView === 'portfolio' ? 'bg-cream-900 text-white shadow-sm' : 'text-cream-500 hover:text-cream-800'}`}
+              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeView === 'portfolio' ? 'bg-slate-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
             >
               <Home size={15} /> Immobilien
-              {portfolio.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'portfolio' ? 'bg-white/20' : 'bg-cream-100'}`}>{aktiveImmobilien.length}</span>}
+              {portfolio.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'portfolio' ? 'bg-white/20' : 'bg-gray-100'}`}>{aktiveImmobilien.length}</span>}
             </button>
           </div>
 
@@ -1325,53 +1325,53 @@ function App() {
               <>
                 <button
                   onClick={handleSelbstauskunft}
-                  className="hidden sm:flex px-3 py-2 bg-white border border-clay-200 text-clay-700 rounded-xl hover:bg-clay-50 items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
+                  className="hidden sm:flex px-3 py-2 bg-white border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-50 items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
                 >
                   <ClipboardList size={16} /> Selbstauskunft
                 </button>
                 <button
                   onClick={handleExport}
-                  className="hidden sm:flex px-3 py-2 bg-white border border-cream-200 text-cream-600 rounded-xl hover:bg-cream-50 items-center gap-1.5 text-sm shadow-sm transition-colors"
+                  className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors"
                 >
                   <Upload size={16} /> Export
                 </button>
                 <div className="relative group hidden sm:block">
-                  <button className="px-3 py-2 bg-white border border-cream-200 text-sage-700 rounded-xl hover:bg-sage-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
+                  <button className="px-3 py-2 bg-white border border-gray-200 text-emerald-700 rounded-xl hover:bg-emerald-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
                     <BarChart3 size={16} /> Steuer-Export
                   </button>
-                  <div className="absolute right-0 mt-1 w-40 bg-white border border-cream-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                  <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                     {[...Array(5)].map((_, i) => {
                       const year = new Date().getFullYear() - i;
                       return (
                         <button key={year} onClick={() => handleSteuerExport(year)}
-                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-sage-50 text-cream-700 border-b border-cream-100 last:border-0">
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-emerald-50 text-gray-700 border-b border-gray-100 last:border-0">
                           {year}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-                <label className="hidden sm:flex px-3 py-2 bg-white border border-cream-200 text-cream-600 rounded-xl hover:bg-cream-50 items-center gap-1.5 text-sm shadow-sm transition-colors cursor-pointer">
+                <label className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors cursor-pointer">
                   <Download size={16} /> Import
                   <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                 </label>
                 {/* Mobile: Mehr-Menü */}
                 <div className="relative group sm:hidden">
-                  <button className="px-3 py-2 bg-white border border-cream-200 text-cream-600 rounded-xl text-sm shadow-sm font-semibold">
+                  <button className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm shadow-sm font-semibold">
                     ⋯ Mehr
                   </button>
-                  <div className="absolute right-0 mt-1 w-48 bg-white border border-cream-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
-                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-clay-700 hover:bg-clay-50 border-b border-cream-100 font-semibold flex items-center gap-1.5"><ClipboardList size={15} /> Selbstauskunft</button>
-                    <button onClick={handleExport} className="w-full text-left px-4 py-3 text-sm text-cream-700 hover:bg-cream-50 border-b border-cream-100 flex items-center gap-1.5"><Upload size={15} /> Daten exportieren</button>
+                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
+                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold flex items-center gap-1.5"><ClipboardList size={15} /> Selbstauskunft</button>
+                    <button onClick={handleExport} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5"><Upload size={15} /> Daten exportieren</button>
                     {[...Array(3)].map((_, i) => {
                       const year = new Date().getFullYear() - i;
                       return (
-                        <button key={year} onClick={() => handleSteuerExport(year)} className="w-full text-left px-4 py-3 text-sm text-sage-700 hover:bg-sage-50 border-b border-cream-100 last:border-0 flex items-center gap-1.5">
+                        <button key={year} onClick={() => handleSteuerExport(year)} className="w-full text-left px-4 py-3 text-sm text-emerald-700 hover:bg-emerald-50 border-b border-gray-100 last:border-0 flex items-center gap-1.5">
                           <BarChart3 size={15} /> Steuer {year}
                         </button>
                       );
                     })}
-                    <label className="w-full flex items-center gap-1.5 px-4 py-3 text-sm text-cream-700 hover:bg-cream-50 cursor-pointer">
+                    <label className="w-full flex items-center gap-1.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                       <Download size={15} /> Import
                       <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                     </label>
@@ -1381,13 +1381,13 @@ function App() {
             )}
             <button
               onClick={() => setShowKalkulation(true)}
-              className="hidden sm:flex px-3 py-2 bg-clay-50 border border-clay-200 text-clay-700 rounded-xl hover:bg-clay-100 items-center gap-1.5 text-sm shadow-sm transition-colors"
+              className="hidden sm:flex px-3 py-2 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-100 items-center gap-1.5 text-sm shadow-sm transition-colors"
             >
               <Calculator size={16} /> Kalkulation
             </button>
             <button
               onClick={() => canAddImmo ? setShowForm(true) : setShowUpgradeModal(true)}
-              className="px-4 py-2 bg-cream-900 text-white rounded-xl hover:bg-cream-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
+              className="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
             >
               + Neue Immobilie
             </button>
@@ -1395,13 +1395,13 @@ function App() {
         </div>
 
         {activeView === 'portfolio' && (portfolio.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 sm:p-16 text-center shadow-sm border border-cream-200">
-            <div className="w-20 h-20 bg-clay-50 rounded-2xl flex items-center justify-center mx-auto mb-5"><Home size={40} className="text-clay-400" /></div>
-            <h3 className="text-xl font-bold text-cream-800 mb-2">Noch keine Immobilien</h3>
-            <p className="text-cream-400 mb-6 max-w-sm mx-auto">Füge deine erste Immobilie hinzu, um Rendite und Cashflow zu berechnen.</p>
+          <div className="bg-white rounded-2xl p-8 sm:p-16 text-center shadow-sm border border-gray-200">
+            <div className="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-5"><Home size={40} className="text-indigo-400" /></div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Noch keine Immobilien</h3>
+            <p className="text-gray-400 mb-6 max-w-sm mx-auto">Füge deine erste Immobilie hinzu, um Rendite und Cashflow zu berechnen.</p>
             <button
               onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-clay-600 text-white rounded-xl hover:bg-clay-700 font-semibold shadow-sm transition-colors"
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-semibold shadow-sm transition-colors"
             >
               + Erste Immobilie hinzufügen
             </button>
@@ -1423,8 +1423,8 @@ function App() {
               ))}
             </div>
             {inaktiveImmobilien.length > 0 && (
-              <details className="mt-8 bg-white border border-cream-200 rounded-2xl overflow-hidden shadow-sm">
-                <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-cream-400 hover:text-cream-600 flex items-center gap-2 select-none">
+              <details className="mt-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-gray-400 hover:text-gray-600 flex items-center gap-2 select-none">
                   <Archive size={16} />
                   Inaktive / beendete Immobilien ({inaktiveImmobilien.length})
                 </summary>
@@ -1512,111 +1512,111 @@ function App() {
       {showSelbstauskunftModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="bg-honey-700 text-white px-5 py-4 flex justify-between items-center flex-shrink-0">
+            <div className="bg-amber-700 text-white px-5 py-4 flex justify-between items-center flex-shrink-0">
               <div>
                 <h2 className="text-lg font-bold flex items-center gap-2"><ClipboardList size={18} /> Selbstauskunft generieren</h2>
-                <p className="text-honey-200 text-xs mt-0.5">Angaben werden lokal gespeichert und beim nächsten Mal vorausgefüllt</p>
+                <p className="text-amber-200 text-xs mt-0.5">Angaben werden lokal gespeichert und beim nächsten Mal vorausgefüllt</p>
               </div>
-              <button onClick={() => setShowSelbstauskunftModal(false)} className="text-white hover:text-honey-200"><X size={20} /></button>
+              <button onClick={() => setShowSelbstauskunftModal(false)} className="text-white hover:text-amber-200"><X size={20} /></button>
             </div>
             <div className="overflow-y-auto flex-1 p-5 space-y-5">
               {/* Persönliche Daten */}
-              <div className="bg-clay-50 border border-clay-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-clay-800 mb-3">👤 Persönliche Angaben</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-blue-800 mb-3">👤 Persönliche Angaben</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-xs text-cream-600 mb-1">Name (Vor- und Nachname)</label>
+                    <label className="block text-xs text-gray-600 mb-1">Name (Vor- und Nachname)</label>
                     <input type="text" value={selbstauskunftDaten.name} placeholder="Max Mustermann"
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-honey-400" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Familienstand</label>
+                    <label className="block text-xs text-gray-600 mb-1">Familienstand</label>
                     <select value={selbstauskunftDaten.familienstand}
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, familienstand: e.target.value }))}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-honey-400">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
                       {['ledig', 'verheiratet', 'geschieden', 'verwitwet', 'eingetragene Lebenspartnerschaft'].map(v =>
                         <option key={v} value={v}>{v}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Wohnsituation</label>
+                    <label className="block text-xs text-gray-600 mb-1">Wohnsituation</label>
                     <select value={selbstauskunftDaten.wohnsituation}
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, wohnsituation: e.target.value }))}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-honey-400">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
                       {['zur Miete', 'im Eigentum', 'bei Familie / Eltern', 'sonstiges'].map(v =>
                         <option key={v} value={v}>{v}</option>)}
                     </select>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs text-cream-600 mb-1">Anschrift</label>
+                    <label className="block text-xs text-gray-600 mb-1">Anschrift</label>
                     <input type="text" value={selbstauskunftDaten.anschrift} placeholder="Musterstraße 1, 12345 Musterstadt"
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, anschrift: e.target.value }))}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-honey-400" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Tätigkeit / Beruf</label>
+                    <label className="block text-xs text-gray-600 mb-1">Tätigkeit / Beruf</label>
                     <input type="text" value={selbstauskunftDaten.taetigkeit} placeholder="z.B. Geschäftsführer / 100 % Gesellschafter …"
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, taetigkeit: e.target.value }))}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-honey-400" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Monatliches Gehalt (€ netto)</label>
+                    <label className="block text-xs text-gray-600 mb-1">Monatliches Gehalt (€ netto)</label>
                     <input type="number" value={selbstauskunftDaten.monatlGehalt} placeholder="3500"
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, monatlGehalt: e.target.value }))}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-honey-400" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
                 </div>
               </div>
 
               {/* Sonstige Vermögenswerte */}
-              <div className="bg-sage-50 border border-sage-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-sage-800 mb-3">💰 Sonstige Vermögenswerte</p>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-emerald-800 mb-3">💰 Sonstige Vermögenswerte</p>
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Bargeld / Bankguthaben (€)</label>
+                      <label className="block text-xs text-gray-600 mb-1">Bargeld / Bankguthaben (€)</label>
                       <input type="number" value={selbstauskunftDaten.bargeld} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, bargeld: e.target.value }))}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-sage-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Institut / Erläuterung</label>
+                      <label className="block text-xs text-gray-600 mb-1">Institut / Erläuterung</label>
                       <input type="text" value={selbstauskunftDaten.bargeldBeschreibung} placeholder="z.B. N26, Trade Republic"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, bargeldBeschreibung: e.target.value }))}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-sage-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Depot / Aktien & ETFs (€)</label>
+                      <label className="block text-xs text-gray-600 mb-1">Depot / Aktien & ETFs (€)</label>
                       <input type="number" value={selbstauskunftDaten.depot} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, depot: e.target.value }))}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-sage-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Institut / Erläuterung</label>
+                      <label className="block text-xs text-gray-600 mb-1">Institut / Erläuterung</label>
                       <input type="text" value={selbstauskunftDaten.depotBeschreibung} placeholder="z.B. Scalable, Trade Republic"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, depotBeschreibung: e.target.value }))}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-sage-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Beteiligung (€ Wert)</label>
+                      <label className="block text-xs text-gray-600 mb-1">Beteiligung (€ Wert)</label>
                       <input type="number" value={selbstauskunftDaten.beteiligungWert} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, beteiligungWert: e.target.value }))}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-sage-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Beschreibung</label>
+                      <label className="block text-xs text-gray-600 mb-1">Beschreibung</label>
                       <input type="text" value={selbstauskunftDaten.beteiligungBeschreibung} placeholder="z.B. GmbH via Holding (100 %)"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, beteiligungBeschreibung: e.target.value }))}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-sage-400" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
                   </div>
                   {(parseFloat(selbstauskunftDaten.bargeld)||0) + (parseFloat(selbstauskunftDaten.depot)||0) + (parseFloat(selbstauskunftDaten.beteiligungWert)||0) > 0 && (
-                    <div className="bg-sage-100 rounded-lg px-3 py-2 text-sm font-bold text-sage-800">
+                    <div className="bg-emerald-100 rounded-lg px-3 py-2 text-sm font-bold text-emerald-800">
                       Summe sonstige Vermögenswerte: {((parseFloat(selbstauskunftDaten.bargeld)||0) + (parseFloat(selbstauskunftDaten.depot)||0) + (parseFloat(selbstauskunftDaten.beteiligungWert)||0)).toLocaleString('de-DE')} €
                     </div>
                   )}
@@ -1625,16 +1625,16 @@ function App() {
 
               {/* Sonstige Verbindlichkeiten */}
               <div>
-                <label className="block text-sm font-semibold text-cream-700 mb-1 flex items-center gap-1.5"><AlertTriangle size={14} /> Sonstige Verbindlichkeiten</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5"><AlertTriangle size={14} /> Sonstige Verbindlichkeiten</label>
                 <textarea value={selbstauskunftDaten.sonstigeVerbindlichkeiten} rows={2}
                   onChange={e => setSelbstauskunftDaten(d => ({ ...d, sonstigeVerbindlichkeiten: e.target.value }))}
-                  className="w-full px-3 py-2 border border-cream-300 rounded-lg text-sm focus:ring-2 focus:ring-honey-400" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
               </div>
             </div>
 
-            <div className="flex gap-3 p-4 border-t border-cream-100 flex-shrink-0">
+            <div className="flex gap-3 p-4 border-t border-gray-100 flex-shrink-0">
               <button onClick={() => setShowSelbstauskunftModal(false)}
-                className="flex-1 px-4 py-3 border border-cream-300 text-cream-700 rounded-xl hover:bg-cream-50 font-semibold">
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold">
                 Abbrechen
               </button>
               <button
@@ -1643,7 +1643,7 @@ function App() {
                   setShowSelbstauskunftModal(false);
                   generateSelbstauskunftPDF(selbstauskunftDaten);
                 }}
-                className="flex-1 px-4 py-3 bg-honey-700 text-white rounded-xl hover:bg-honey-800 font-semibold flex items-center justify-center gap-2">
+                className="flex-1 px-4 py-3 bg-amber-700 text-white rounded-xl hover:bg-amber-800 font-semibold flex items-center justify-center gap-2">
                 <Download size={16} /> PDF generieren
               </button>
             </div>
@@ -1651,12 +1651,12 @@ function App() {
         </div>
       )}
 
-      <footer className="bg-cream-800 text-cream-400 py-6 mt-12">
+      <footer className="bg-gray-800 text-gray-400 py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="flex items-center justify-center gap-1">Erstellt mit <Heart size={14} className="text-brick-400" /> für Immobilieninvestoren</p>
+          <p className="flex items-center justify-center gap-1">Erstellt mit <Heart size={14} className="text-red-400" /> für Immobilieninvestoren</p>
           <p className="text-sm mt-2">Alle Berechnungen ohne Gewähr. Keine Anlageberatung.</p>
           <div className="mt-3 flex justify-center">
-            <ImpressumDatenschutzLinks className="text-cream-500 hover:text-cream-300" />
+            <ImpressumDatenschutzLinks className="text-gray-500 hover:text-gray-300" />
           </div>
         </div>
       </footer>

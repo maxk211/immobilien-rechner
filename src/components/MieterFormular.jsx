@@ -231,19 +231,19 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
       <div className="bg-white w-full rounded-t-3xl sm:rounded-xl shadow-2xl sm:max-w-2xl h-[93vh] sm:h-[95vh] flex flex-col overflow-hidden">
         {/* Mobile drag handle */}
         <div className="sm:hidden flex-shrink-0 flex justify-center pt-2.5 pb-1">
-          <div className="w-10 h-1.5 bg-cream-200 rounded-full"></div>
+          <div className="w-10 h-1.5 bg-gray-200 rounded-full"></div>
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 bg-clay-700 text-white px-4 sm:px-5 py-4 sm:py-5 flex justify-between items-center">
+        <div className="flex-shrink-0 bg-indigo-700 text-white px-4 sm:px-5 py-4 sm:py-5 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-bold">{form.id ? 'Mieter bearbeiten' : 'Neuer Mieter'}</h2>
-          <button onClick={onClose} className="text-white hover:text-clay-200"><X size={20} /></button>
+          <button onClick={onClose} className="text-white hover:text-blue-200"><X size={20} /></button>
         </div>
 
         {/* Tab-Navigation */}
-        <div className="flex border-b border-cream-200 bg-cream-50 px-2 sm:px-4 flex-shrink-0 overflow-x-auto">
+        <div className="flex border-b border-gray-200 bg-gray-50 px-2 sm:px-4 flex-shrink-0 overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 sm:flex-1 px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center whitespace-nowrap ${activeTab === tab.id ? 'border-clay-600 text-clay-600 bg-white' : 'border-transparent text-cream-500 hover:text-cream-700'}`}>
+              className={`flex-shrink-0 sm:flex-1 px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors text-center whitespace-nowrap ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               <span className="sm:hidden flex items-center gap-1 justify-center">{tab.icon}{tab.textMobile}</span>
               <span className="hidden sm:flex items-center gap-1 justify-center">{tab.icon}{tab.text}</span>
             </button>
@@ -253,9 +253,9 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-5">
           {/* Immobilie (immer sichtbar) */}
           <div>
-            <label className="block text-sm font-semibold text-cream-700 mb-1">Immobilie *</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Immobilie *</label>
             <select value={form.immobilieId} onChange={e => setForm({...form, immobilieId: e.target.value})}
-              className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" required>
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" required>
               <option value="">— Immobilie wählen —</option>
               {portfolio.map(i => <option key={i.id} value={i.id}>{i.name || i.adresse || i.plz}</option>)}
             </select>
@@ -264,41 +264,41 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
           {/* === TAB: STAMMDATEN === */}
           {activeTab === 'stammdaten' && (
             <>
-              <div className="bg-cream-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-cream-700 mb-3 flex items-center gap-1.5"><User size={14} /> Stammdaten</p>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5"><User size={14} /> Stammdaten</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-xs text-cream-600 mb-1">Name *</label>
+                    <label className="block text-xs text-gray-600 mb-1">Name *</label>
                     <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" required />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" required />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Email</label>
+                    <label className="block text-xs text-gray-600 mb-1">Email</label>
                     <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Telefon</label>
+                    <label className="block text-xs text-gray-600 mb-1">Telefon</label>
                     <input type="tel" value={form.telefon} onChange={e => setForm({...form, telefon: e.target.value})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs text-cream-600 mb-1">Zimmer / Einheit</label>
+                    <label className="block text-xs text-gray-600 mb-1">Zimmer / Einheit</label>
                     <input type="text" value={form.zimmerBezeichnung} onChange={e => setForm({...form, zimmerBezeichnung: e.target.value})}
                       placeholder="z.B. Zimmer 2, Ganze Wohnung, EG links"
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                 </div>
               </div>
 
               {/* Mahnwesen */}
-              <div className="bg-honey-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-honey-800 mb-3 flex items-center gap-1.5"><AlertTriangle size={14} /> Mahnwesen</p>
+              <div className="bg-orange-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-orange-800 mb-3 flex items-center gap-1.5"><AlertTriangle size={14} /> Mahnwesen</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Mahnstufe</label>
+                    <label className="block text-xs text-gray-600 mb-1">Mahnstufe</label>
                     <select value={form.mahnstufe} onChange={e => setForm({...form, mahnstufe: parseInt(e.target.value)})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm">
                       <option value={0}>Keine Mahnung</option>
                       <option value={1}>1. Mahnung</option>
                       <option value={2}>2. Mahnung</option>
@@ -307,9 +307,9 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   </div>
                   {form.mahnstufe > 0 && (
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Letzte Mahnung am</label>
+                      <label className="block text-xs text-gray-600 mb-1">Letzte Mahnung am</label>
                       <input type="date" value={form.letzteMahnungAm} onChange={e => setForm({...form, letzteMahnungAm: e.target.value})}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                     </div>
                   )}
                 </div>
@@ -317,9 +317,9 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
 
               {/* Notizen */}
               <div>
-                <label className="block text-xs text-cream-600 mb-1">Notizen</label>
+                <label className="block text-xs text-gray-600 mb-1">Notizen</label>
                 <textarea value={form.notizen} onChange={e => setForm({...form, notizen: e.target.value})}
-                  rows={3} className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm"
+                  rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                   placeholder="Besonderheiten, Vereinbarungen, etc." />
               </div>
             </>
@@ -329,11 +329,11 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
           {activeTab === 'mietvertrag' && (
             <>
               {/* Vertragstyp */}
-              <div className="bg-clay-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-clay-800 mb-3 flex items-center gap-1.5"><ClipboardList size={14} /> Vertragsart</p>
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-indigo-800 mb-3 flex items-center gap-1.5"><ClipboardList size={14} /> Vertragsart</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-xs text-cream-600 mb-1">Vertragstyp</label>
+                    <label className="block text-xs text-gray-600 mb-1">Vertragstyp</label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
                         { val: 'unbefristet', icon: <InfinityIcon size={14} />, label: 'Unbefristet' },
@@ -343,16 +343,16 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                       ].map(opt => (
                         <button key={opt.val} type="button"
                           onClick={() => setForm(f => ({ ...f, vertragstyp: opt.val }))}
-                          className={`px-3 py-2 rounded-lg text-sm font-semibold border-2 transition-colors flex items-center gap-1.5 justify-center ${form.vertragstyp === opt.val ? 'border-clay-500 bg-clay-500 text-white' : 'border-cream-200 text-cream-600 hover:border-clay-300'}`}>
+                          className={`px-3 py-2 rounded-lg text-sm font-semibold border-2 transition-colors flex items-center gap-1.5 justify-center ${form.vertragstyp === opt.val ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-gray-200 text-gray-600 hover:border-indigo-300'}`}>
                           {opt.icon} {opt.label}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Kündigungsfrist</label>
+                    <label className="block text-xs text-gray-600 mb-1">Kündigungsfrist</label>
                     <select value={form.kuendigungsfrist} onChange={e => setForm({...form, kuendigungsfrist: e.target.value})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm">
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm">
                       <option value="3 Monate">3 Monate</option>
                       <option value="6 Monate">6 Monate</option>
                       <option value="12 Monate">12 Monate</option>
@@ -360,43 +360,43 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Nächste Anpassung</label>
+                    <label className="block text-xs text-gray-600 mb-1">Nächste Anpassung</label>
                     <input type="date" value={form.naechsteAnpassungDatum} onChange={e => setForm({...form, naechsteAnpassungDatum: e.target.value})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                 </div>
               </div>
 
               {/* Mietdetails */}
-              <div className="bg-white border border-cream-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-cream-700 mb-3 flex items-center gap-1.5"><Banknote size={14} /> Mietkonditionen</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5"><Banknote size={14} /> Mietkonditionen</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Mietbeginn</label>
+                    <label className="block text-xs text-gray-600 mb-1">Mietbeginn</label>
                     <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Mietende (opt.)</label>
+                    <label className="block text-xs text-gray-600 mb-1">Mietende (opt.)</label>
                     <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Kaltmiete (€/Mon.)</label>
+                    <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Mon.)</label>
                     <input type="number" value={form.kaltmiete} onChange={e => { setKaltmieteBeruehrt(true); setForm({...form, kaltmiete: parseFloat(e.target.value) || ''}); }}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" step="10" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
                     {!mieter && !kaltmieteBeruehrt && form.kaltmiete ? (
-                      <p className="text-[11px] text-clay-500 mt-1">Aus Immobilie übernommen</p>
+                      <p className="text-[11px] text-indigo-500 mt-1">Aus Immobilie übernommen</p>
                     ) : null}
                   </div>
                   <div className="flex flex-col justify-end">
                     {preisProQm ? (
-                      <div className="bg-sage-50 border border-sage-200 rounded-lg p-3 text-center">
-                        <div className="text-xl font-black text-sage-700">{preisProQm} €/m²</div>
-                        <div className="text-xs text-sage-500 mt-0.5">bei {wohnflaeche} m² Wohnfläche</div>
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                        <div className="text-xl font-black text-emerald-700">{preisProQm} €/m²</div>
+                        <div className="text-xs text-emerald-500 mt-0.5">bei {wohnflaeche} m² Wohnfläche</div>
                       </div>
                     ) : (
-                      <div className="bg-cream-50 border border-dashed border-cream-300 rounded-lg p-3 text-center text-xs text-cream-400">
+                      <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-3 text-center text-xs text-gray-400">
                         €/m² erscheint wenn Kaltmiete + Fläche bekannt
                       </div>
                     )}
@@ -405,26 +405,26 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               </div>
 
               {/* Kaution */}
-              <div className="bg-honey-50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-honey-800 mb-3 flex items-center gap-1.5"><Key size={14} /> Kaution</p>
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-1.5"><Key size={14} /> Kaution</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-cream-600 mb-1">Kautionshöhe (€)</label>
+                    <label className="block text-xs text-gray-600 mb-1">Kautionshöhe (€)</label>
                     <input type="number" value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
-                      className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div className="flex items-end pb-0.5">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={form.kautionBezahlt} onChange={e => setForm({...form, kautionBezahlt: e.target.checked})}
-                        className="w-4 h-4 rounded accent-clay-600" />
-                      <span className="text-sm text-cream-700">Bezahlt</span>
+                        className="w-4 h-4 rounded accent-indigo-600" />
+                      <span className="text-sm text-gray-700">Bezahlt</span>
                     </label>
                   </div>
                   {form.kautionBezahlt && (
                     <div>
-                      <label className="block text-xs text-cream-600 mb-1">Bezahlt am</label>
+                      <label className="block text-xs text-gray-600 mb-1">Bezahlt am</label>
                       <input type="date" value={form.kautionBezahltAm} onChange={e => setForm({...form, kautionBezahltAm: e.target.value})}
-                        className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:ring-2 focus:ring-clay-500 text-base sm:text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                     </div>
                   )}
                 </div>
@@ -438,43 +438,43 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {/* Aktuelle Miete + €/qm */}
               {kaltmieteNum > 0 && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-clay-50 border border-clay-200 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-black text-clay-700">{formatCurrency(kaltmieteNum)}</div>
-                    <div className="text-xs text-clay-500 font-semibold mt-1">Aktuelle Kaltmiete/Mo.</div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-black text-indigo-700">{formatCurrency(kaltmieteNum)}</div>
+                    <div className="text-xs text-indigo-500 font-semibold mt-1">Aktuelle Kaltmiete/Mo.</div>
                   </div>
                   {preisProQm && (
-                    <div className="bg-sage-50 border border-sage-200 rounded-xl p-4 text-center">
-                      <div className="text-2xl font-black text-sage-700">{preisProQm} €/m²</div>
-                      <div className="text-xs text-sage-500 font-semibold mt-1">bei {wohnflaeche} m² Wohnfläche</div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-black text-emerald-700">{preisProQm} €/m²</div>
+                      <div className="text-xs text-emerald-500 font-semibold mt-1">bei {wohnflaeche} m² Wohnfläche</div>
                     </div>
                   )}
                 </div>
               )}
 
               {/* Anpassungs-Historie */}
-              <div className="bg-white border border-cream-200 rounded-xl overflow-hidden">
-                <div className="px-4 py-3 bg-cream-50 border-b border-cream-200">
-                  <p className="text-sm font-semibold text-cream-700 flex items-center gap-1.5"><CalendarDays size={14} /> Mietanpassungen Historie</p>
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                  <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><CalendarDays size={14} /> Mietanpassungen Historie</p>
                 </div>
                 {form.mietanpassungenMieter.length === 0 ? (
-                  <div className="p-6 text-center text-cream-400 text-sm">Noch keine Mietanpassungen erfasst</div>
+                  <div className="p-6 text-center text-gray-400 text-sm">Noch keine Mietanpassungen erfasst</div>
                 ) : (
-                  <div className="divide-y divide-cream-50">
+                  <div className="divide-y divide-gray-50">
                     {[...form.mietanpassungenMieter].reverse().map(a => {
                       const qmPreis = wohnflaeche > 0 ? (a.betrag / wohnflaeche).toFixed(2) : null;
                       return (
                         <div key={a.id} className="flex items-center gap-3 px-4 py-3">
                           <div className="flex-1">
-                            <div className="font-semibold text-cream-800">{formatCurrency(a.betrag)}/Mo.
-                              {qmPreis && <span className="ml-2 text-xs text-cream-400 font-normal">({qmPreis} €/m²)</span>}
+                            <div className="font-semibold text-gray-800">{formatCurrency(a.betrag)}/Mo.
+                              {qmPreis && <span className="ml-2 text-xs text-gray-400 font-normal">({qmPreis} €/m²)</span>}
                             </div>
-                            <div className="text-xs text-cream-500 mt-0.5">
+                            <div className="text-xs text-gray-500 mt-0.5">
                               {new Date(a.datum).toLocaleDateString('de-DE')}
-                              {a.grund && <span className="ml-2 text-cream-400">· {a.grund}</span>}
+                              {a.grund && <span className="ml-2 text-gray-400">· {a.grund}</span>}
                             </div>
                           </div>
                           <button type="button" onClick={() => removeMietanpassung(a.id)}
-                            className="text-brick-400 hover:text-brick-600 text-sm px-2 py-1 rounded hover:bg-brick-50">
+                            className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded hover:bg-red-50">
                             <X size={14} />
                           </button>
                         </div>
@@ -485,46 +485,46 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               </div>
 
               {/* Neue Anpassung hinzufügen */}
-              <div className="bg-cream-50 border border-cream-200 rounded-xl p-4">
-                <p className="text-xs font-bold text-cream-600 uppercase mb-3">+ Neue Mietanpassung</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-xs font-bold text-gray-600 uppercase mb-3">+ Neue Mietanpassung</p>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-xs text-cream-500 mb-1">Gültig ab</label>
+                    <label className="block text-xs text-gray-500 mb-1">Gültig ab</label>
                     <input type="date" value={newAnpassung.datum} onChange={e => setNewAnpassung(a => ({ ...a, datum: e.target.value }))}
-                      className="w-full px-2 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-clay-400" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-indigo-400" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-500 mb-1">Neue Kaltmiete (€)</label>
+                    <label className="block text-xs text-gray-500 mb-1">Neue Kaltmiete (€)</label>
                     <input type="number" value={newAnpassung.betrag} onChange={e => setNewAnpassung(a => ({ ...a, betrag: e.target.value }))}
                       placeholder="0" step="10"
-                      className="w-full px-2 py-2 border border-cream-300 rounded-lg text-sm focus:ring-1 focus:ring-clay-400 text-right" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-indigo-400 text-right" />
                   </div>
                   <div>
-                    <label className="block text-xs text-cream-500 mb-1">Grund (opt.)</label>
+                    <label className="block text-xs text-gray-500 mb-1">Grund (opt.)</label>
                     <input type="text" value={newAnpassung.grund} onChange={e => setNewAnpassung(a => ({ ...a, grund: e.target.value }))}
                       placeholder="z.B. Mietspiegel"
-                      className="w-full px-2 py-2 border border-cream-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-clay-400" />
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-1 focus:ring-indigo-400" />
                   </div>
                 </div>
                 {newAnpassung.betrag && wohnflaeche > 0 && (
-                  <div className="mt-2 text-xs text-sage-600 font-semibold">
+                  <div className="mt-2 text-xs text-emerald-600 font-semibold">
                     = {(parseFloat(newAnpassung.betrag) / wohnflaeche).toFixed(2)} €/m²
                   </div>
                 )}
                 <button type="button" onClick={addMietanpassung}
                   disabled={!newAnpassung.datum || !newAnpassung.betrag}
-                  className="mt-3 w-full py-2 bg-clay-600 text-white text-sm font-semibold rounded-lg hover:bg-clay-700 disabled:opacity-40">
+                  className="mt-3 w-full py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-40">
                   Anpassung hinzufügen
                 </button>
               </div>
 
               {/* Letzte formale Mieterhöhung */}
-              <div className="bg-honey-50 border border-honey-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-honey-800 mb-1 flex items-center gap-1.5"><ScrollText size={14} /> Letzte Mieterhöhung nach § 558 BGB</p>
-                <p className="text-xs text-honey-600 mb-3">Datum der letzten formalen Mieterhöhung (Grundlage für 3-Jahres-Kappungsgrenze)</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-amber-800 mb-1 flex items-center gap-1.5"><ScrollText size={14} /> Letzte Mieterhöhung nach § 558 BGB</p>
+                <p className="text-xs text-amber-600 mb-3">Datum der letzten formalen Mieterhöhung (Grundlage für 3-Jahres-Kappungsgrenze)</p>
                 <input type="date" value={form.letzteMieterhoehung}
                   onChange={e => setForm({ ...form, letzteMieterhoehung: e.target.value })}
-                  className="w-full px-3 py-2 border border-honey-300 rounded-lg focus:ring-2 focus:ring-honey-400 text-base sm:text-sm bg-white" />
+                  className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-base sm:text-sm bg-white" />
                 {form.letzteMieterhoehung && (() => {
                   const letzte = new Date(form.letzteMieterhoehung);
                   const naechste = new Date(letzte);
@@ -532,7 +532,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   const heute = new Date();
                   const monateVerbleibend = (naechste - heute) / (1000 * 60 * 60 * 24 * 30.44);
                   return (
-                    <div className={`mt-2 text-xs font-semibold flex items-center gap-1 ${monateVerbleibend <= 0 ? 'text-sage-700' : monateVerbleibend <= 3 ? 'text-honey-700' : 'text-honey-600'}`}>
+                    <div className={`mt-2 text-xs font-semibold flex items-center gap-1 ${monateVerbleibend <= 0 ? 'text-emerald-700' : monateVerbleibend <= 3 ? 'text-amber-700' : 'text-amber-600'}`}>
                       {monateVerbleibend <= 0
                         ? <><CheckCircle2 size={12} /> Nächste Mieterhöhung ist jetzt möglich</>
                         : `Nächste Mieterhöhung möglich ab: ${naechste.toLocaleDateString('de-DE')} (in ${Math.ceil(monateVerbleibend)} Mon.)`}
@@ -548,12 +548,12 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
             <div className="space-y-4">
               {/* Typ-Auswahl */}
               <div>
-                <p className="text-xs font-semibold text-cream-600 mb-2">Dokumenttyp auswählen:</p>
+                <p className="text-xs font-semibold text-gray-600 mb-2">Dokumenttyp auswählen:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {MIETER_DOK_TYPEN.map(t => (
                     <button key={t} type="button" onClick={() => setDokTyp(t)}
                       className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all flex items-center gap-1 ${
-                        dokTyp === t ? 'bg-clay-600 text-white shadow-sm' : 'bg-cream-100 text-cream-600 hover:bg-cream-200'
+                        dokTyp === t ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}>
                       {MIETER_DOK_ICONS[t]} {t}
                     </button>
@@ -564,16 +564,16 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {/* Upload-Zone */}
               <div
                 className="border-2 border-dashed rounded-xl p-4 transition-colors"
-                style={{ borderColor: dokDragOver ? '#B5652E' : '#DDCEB8', background: dokDragOver ? '#FCF1E8' : '#FBF7F1' }}
+                style={{ borderColor: dokDragOver ? '#3b82f6' : '#d1d5db', background: dokDragOver ? '#eff6ff' : '#f9fafb' }}
                 onDragOver={e => { e.preventDefault(); setDokDragOver(true); }}
                 onDragLeave={() => setDokDragOver(false)}
                 onDrop={e => { e.preventDefault(); setDokDragOver(false); handleDokFiles(e.dataTransfer.files); }}>
                 <label className={`flex flex-col items-center gap-2 cursor-pointer ${dokUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                   <span className="text-2xl flex justify-center">
-                    {dokUploading ? <Loader2 size={24} className="animate-spin text-cream-400" /> : <Upload size={24} className="text-cream-400" />}
+                    {dokUploading ? <Loader2 size={24} className="animate-spin text-gray-400" /> : <Upload size={24} className="text-gray-400" />}
                   </span>
-                  <p className="text-sm font-semibold text-cream-700">{dokUploading ? 'Wird hochgeladen…' : 'Datei hochladen'}</p>
-                  <p className="text-xs text-cream-400">
+                  <p className="text-sm font-semibold text-gray-700">{dokUploading ? 'Wird hochgeladen…' : 'Datei hochladen'}</p>
+                  <p className="text-xs text-gray-400">
                     {mieter?.id ? 'Klicken oder Datei hierher ziehen · max. 20 MB' : 'Wird beim Speichern des Mieters hochgeladen'}
                   </p>
                   <input type="file" multiple className="hidden"
@@ -581,7 +581,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                     onChange={e => handleDokFiles(e.target.files)} />
                 </label>
                 {dokFehler && (
-                  <p className="text-xs text-brick-600 text-center mt-2 flex items-center justify-center gap-1">
+                  <p className="text-xs text-red-600 text-center mt-2 flex items-center justify-center gap-1">
                     <AlertTriangle size={12} /> {dokFehler}
                   </p>
                 )}
@@ -590,18 +590,18 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {/* Pending Files (nur bei neuem Mieter) */}
               {pendingFiles.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-honey-700 mb-1 flex items-center gap-1">
+                  <p className="text-xs font-semibold text-amber-700 mb-1 flex items-center gap-1">
                     <Loader2 size={12} /> Wird beim Speichern hochgeladen:
                   </p>
                   {pendingFiles.map((pf, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-honey-50 border border-honey-200 rounded-lg px-3 py-2">
+                    <div key={idx} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       <span className="text-base flex items-center">{MIETER_DOK_ICONS[pf.typ] || <Paperclip size={14} />}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-cream-800 truncate">{pf.file.name}</p>
-                        <p className="text-xs text-honey-600">{pf.typ} · {formatBytes(pf.file.size)}</p>
+                        <p className="text-xs font-semibold text-gray-800 truncate">{pf.file.name}</p>
+                        <p className="text-xs text-amber-600">{pf.typ} · {formatBytes(pf.file.size)}</p>
                       </div>
                       <button type="button" onClick={() => removePending(idx)}
-                        className="text-brick-400 hover:text-brick-600 flex-shrink-0">
+                        className="text-red-400 hover:text-red-600 flex-shrink-0">
                         <X size={16} />
                       </button>
                     </div>
@@ -612,20 +612,20 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {/* Bereits hochgeladene Dokumente (bestehender Mieter) */}
               {mieterDokumente.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-cream-600 mb-1">Hochgeladene Dokumente:</p>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Hochgeladene Dokumente:</p>
                   {mieterDokumente.map(doc => (
-                    <div key={doc.id} className="flex items-center gap-2 bg-white border border-cream-200 rounded-lg px-3 py-2 group">
+                    <div key={doc.id} className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 group">
                       <span className="text-base flex items-center">{MIETER_DOK_ICONS[doc.typ] || <Paperclip size={14} />}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-cream-800 truncate">{doc.name}</p>
-                        <p className="text-xs text-cream-400">{doc.typ} · {formatBytes(doc.groesse)} · {new Date(doc.hochgeladenAm).toLocaleDateString('de-DE')}</p>
+                        <p className="text-xs font-semibold text-gray-800 truncate">{doc.name}</p>
+                        <p className="text-xs text-gray-400">{doc.typ} · {formatBytes(doc.groesse)} · {new Date(doc.hochgeladenAm).toLocaleDateString('de-DE')}</p>
                       </div>
                       <button type="button" onClick={() => handleDokDownload(doc)} disabled={ladeId === doc.id}
-                        className="p-1 text-clay-600 hover:bg-clay-50 rounded disabled:opacity-50" title="Herunterladen">
+                        className="p-1 text-indigo-600 hover:bg-blue-50 rounded disabled:opacity-50" title="Herunterladen">
                         {ladeId === doc.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                       </button>
                       <button type="button" onClick={() => handleDokDelete(doc)}
-                        className="p-1 text-brick-400 hover:bg-brick-50 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Löschen">
+                        className="p-1 text-red-400 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Löschen">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -634,20 +634,20 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               )}
 
               {mieterDokumente.length === 0 && pendingFiles.length === 0 && !mieter?.id && (
-                <p className="text-xs text-cream-400 text-center py-2 flex items-center justify-center gap-1">
+                <p className="text-xs text-gray-400 text-center py-2 flex items-center justify-center gap-1">
                   <Lightbulb size={12} /> Du kannst schon jetzt Dokumente auswählen — sie werden zusammen mit dem Mieter gespeichert.
                 </p>
               )}
             </div>
           )}
 
-          <div className="flex gap-3 pt-2 border-t border-cream-100 pb-2">
+          <div className="flex gap-3 pt-2 border-t border-gray-100 pb-2">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-3 border border-cream-300 text-cream-700 rounded-xl hover:bg-cream-50 font-semibold">
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold">
               Abbrechen
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 px-4 py-3 bg-clay-600 text-white rounded-xl hover:bg-clay-700 font-semibold disabled:opacity-50">
+              className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-semibold disabled:opacity-50">
               {saving ? 'Speichern...' : saving && pendingFiles.length > 0 ? 'Speichern & Hochladen...' : 'Speichern'}
             </button>
           </div>

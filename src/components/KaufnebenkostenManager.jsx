@@ -76,17 +76,17 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="font-medium text-cream-700">Kaufnebenkosten</h4>
-        <div className="flex bg-cream-200 rounded-lg p-1">
+        <h4 className="font-medium text-gray-700">Kaufnebenkosten</h4>
+        <div className="flex bg-gray-200 rounded-lg p-1">
           <button
             onClick={() => handleModusChange('prozent')}
-            className={`px-2 py-1 text-xs rounded-md transition-colors ${modus === 'prozent' ? 'bg-white shadow text-clay-600 font-semibold' : 'text-cream-600'}`}
+            className={`px-2 py-1 text-xs rounded-md transition-colors ${modus === 'prozent' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
           >
             Pauschal %
           </button>
           <button
             onClick={() => handleModusChange('manuell')}
-            className={`px-2 py-1 text-xs rounded-md transition-colors ${modus === 'manuell' ? 'bg-white shadow text-clay-600 font-semibold' : 'text-cream-600'}`}
+            className={`px-2 py-1 text-xs rounded-md transition-colors ${modus === 'manuell' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-600'}`}
           >
             Aufgeschlüsselt
           </button>
@@ -104,14 +104,14 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
             step={0.5}
             unit="%"
           />
-          <div className="text-sm text-cream-600 mt-2">
+          <div className="text-sm text-gray-600 mt-2">
             = {formatCurrency(kaufpreis * (params.kaufnebenkosten / 100))}
           </div>
         </div>
       ) : (
         <div>
           <div className="mb-3">
-            <label className="block text-xs text-cream-600 mb-1">Bundesland (für Grunderwerbsteuer)</label>
+            <label className="block text-xs text-gray-600 mb-1">Bundesland (für Grunderwerbsteuer)</label>
             <select
               value={bundesland}
               onChange={(e) => handleBundeslandChange(e.target.value)}
@@ -132,7 +132,7 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
               { key: 'sonstige', label: 'Sonstige' }
             ].map(({ key, label }) => (
               <div key={key} className="flex justify-between items-center">
-                <label className="text-sm text-cream-600">{label}</label>
+                <label className="text-sm text-gray-600">{label}</label>
                 <div className="flex items-center gap-1">
                   <input
                     type="number"
@@ -140,30 +140,30 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
                     onChange={(e) => handlePositionChange(key, e.target.value)}
                     className="w-24 px-2 py-1 border rounded text-sm text-right"
                   />
-                  <span className="text-xs text-cream-500">€</span>
+                  <span className="text-xs text-gray-500">€</span>
                 </div>
               </div>
             ))}
           </div>
 
           <div className="mt-3 pt-3 border-t flex justify-between items-center">
-            <span className="font-medium text-cream-700">Nebenkosten gesamt</span>
+            <span className="font-medium text-gray-700">Nebenkosten gesamt</span>
             <span className="font-bold">{formatCurrency(kaufnebenkostenAbsolut)}</span>
           </div>
         </div>
       )}
 
       {/* Gesamtinvestition Anzeige */}
-      <div className="mt-4 p-3 bg-clay-50 rounded-lg">
-        <div className="flex justify-between text-sm text-cream-600">
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+        <div className="flex justify-between text-sm text-gray-600">
           <span>Kaufpreis:</span>
           <span>{formatCurrency(kaufpreis)}</span>
         </div>
-        <div className="flex justify-between text-sm text-cream-600">
+        <div className="flex justify-between text-sm text-gray-600">
           <span>+ Nebenkosten:</span>
           <span>{formatCurrency(kaufnebenkostenAbsolut)}</span>
         </div>
-        <div className="flex justify-between font-bold text-clay-700 pt-2 border-t border-clay-200 mt-2">
+        <div className="flex justify-between font-bold text-blue-700 pt-2 border-t border-blue-200 mt-2">
           <span>Gesamtinvestition:</span>
           <span>{formatCurrency(gesamtinvestition)}</span>
         </div>

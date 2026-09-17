@@ -32,7 +32,7 @@ const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-1">
-        <label className="text-sm font-medium text-cream-700">{label}</label>
+        <label className="text-sm font-medium text-gray-700">{label}</label>
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -43,9 +43,9 @@ const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }
             min={min}
             max={max}
             step={step}
-            className="w-24 px-2 py-1 text-right text-sm border border-cream-300 rounded focus:outline-none focus:ring-2 focus:ring-clay-500"
+            className="w-24 px-2 py-1 text-right text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span className="text-sm text-cream-500 w-8">{unit}</span>
+          <span className="text-sm text-gray-500 w-8">{unit}</span>
         </div>
       </div>
       <input
@@ -57,7 +57,7 @@ const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="w-full"
       />
-      {info && <p className="text-xs text-cream-500 mt-1">{info}</p>}
+      {info && <p className="text-xs text-gray-500 mt-1">{info}</p>}
     </div>
   );
 };
