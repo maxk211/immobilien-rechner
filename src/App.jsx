@@ -1162,11 +1162,11 @@ function App() {
   // Loading Screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="font-app min-h-screen bg-cream-900 flex items-center justify-center">
         <div className="text-center text-white">
-          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg"><Home size={32} className="text-white" /></div>
-          <div className="animate-spin h-6 w-6 border-3 border-indigo-400 border-t-transparent rounded-full mx-auto" style={{borderWidth:'3px'}}></div>
-          <p className="mt-4 text-slate-400 text-sm">Portfolio wird geladen…</p>
+          <div className="w-16 h-16 bg-clay-500 rounded-2xl flex items-center justify-center mx-auto mb-5"><Home size={32} className="text-white" /></div>
+          <div className="animate-spin h-6 w-6 border-3 border-clay-300 border-t-transparent rounded-full mx-auto" style={{borderWidth:'3px'}}></div>
+          <p className="mt-4 text-cream-300 text-sm">Portfolio wird geladen…</p>
         </div>
       </div>
     );
@@ -1189,7 +1189,7 @@ function App() {
   const inaktiveImmobilien = portfolio.filter(i => isInaktiv(i));
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="font-app min-h-screen bg-cream-50">
       {/* Toast Notifications */}
       <Toaster position="top-right" toastOptions={{
         duration: 4000,

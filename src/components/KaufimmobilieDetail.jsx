@@ -378,46 +378,46 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
         </div>
         {/* Header */}
         <div className="flex-shrink-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
+          <div className="bg-cream-900 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1"><Home size={11}/> Kaufimmobilie</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-clay-400/15 text-clay-200 flex items-center gap-1"><Home size={11}/> Kaufimmobilie</span>
                   {isGbR && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-cream-100 flex items-center gap-1">
                       <Landmark size={11}/> GbR · {params.userAnteil}% Ihr Anteil
                     </span>
                   )}
                   {params.aktiv === false && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500/60 text-white">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-cream-200">
                       Aufgegeben {params.aufgabedatum ? new Date(params.aufgabedatum).toLocaleDateString('de-DE') : ''}
                     </span>
                   )}
                 </div>
-                <h2 className="text-lg sm:text-2xl font-black text-white truncate">{immobilie.name}</h2>
+                <h2 className="text-lg sm:text-2xl font-semibold text-white truncate">{immobilie.name}</h2>
                 {(immobilie.plz || immobilie.adresse) && (
-                  <p className="text-slate-300 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.plz} {immobilie.adresse}</p>
+                  <p className="text-cream-300 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.plz} {immobilie.adresse}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
                 {params.aktiv === false ? (
                   <button onClick={() => { updateParams({...params, aktiv: true, aufgabedatum: ''}); }}
-                    className="px-3 py-1.5 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors flex items-center gap-1">
+                    className="px-3 py-1.5 bg-white text-cream-800 rounded-xl text-sm font-semibold hover:bg-cream-50 transition-colors flex items-center gap-1">
                     <Check size={14}/> Reaktivieren
                   </button>
                 ) : (
                   <details className="relative">
-                    <summary className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold cursor-pointer list-none transition-colors">
+                    <summary className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-semibold cursor-pointer list-none transition-colors">
                       Aufgeben
                     </summary>
-                    <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-20 w-72">
-                      <p className="text-sm font-bold text-gray-800 mb-1">Immobilie aufgeben</p>
-                      <p className="text-xs text-gray-400 mb-3">Daten bleiben für den Steuerexport erhalten.</p>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Datum der Aufgabe</label>
+                    <div className="absolute right-0 top-10 bg-white border border-cream-200 rounded-2xl shadow-xl p-4 z-20 w-72">
+                      <p className="text-sm font-semibold text-cream-800 mb-1">Immobilie aufgeben</p>
+                      <p className="text-xs text-cream-400 mb-3">Daten bleiben für den Steuerexport erhalten.</p>
+                      <label className="block text-xs font-medium text-cream-600 mb-1">Datum der Aufgabe</label>
                       <input type="date" defaultValue={new Date().toISOString().split('T')[0]} id="aufgabedatum-input"
-                        className="w-full px-2 py-1.5 border rounded-xl text-sm mb-3 focus:ring-2 focus:ring-red-400" />
+                        className="w-full px-2 py-1.5 border border-cream-300 rounded-xl text-sm mb-3 focus:ring-2 focus:ring-brick-300" />
                       <button onClick={() => { const datum = document.getElementById('aufgabedatum-input').value; updateParams({...params, aktiv: false, aufgabedatum: datum}); }}
-                        className="w-full px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 text-sm font-bold">
+                        className="w-full px-3 py-2 bg-brick-500 text-white rounded-xl hover:bg-brick-600 text-sm font-semibold">
                         Immobilie aufgeben
                       </button>
                     </div>
@@ -425,18 +425,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 )}
                 {hasChanges && (
                   <button onClick={handleSave}
-                    className="px-4 py-2 bg-white text-slate-700 rounded-xl hover:bg-slate-50 font-bold text-sm shadow-sm transition-colors">
+                    className="px-4 py-2 bg-white text-cream-800 rounded-xl hover:bg-cream-50 font-semibold text-sm transition-colors">
                     Speichern
                   </button>
                 )}
                 {onEdit && (
                   <button onClick={onEdit}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-semibold transition-colors"
                     title="Stammdaten bearbeiten">
                     <Pencil size={14} className="inline mr-1"/>Bearbeiten
                   </button>
                 )}
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-cream-300 hover:text-white"><X size={20}/></button>
               </div>
             </div>
           </div>
@@ -445,39 +445,39 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
             const wsPositiv = wertsteigerungSeitKauf && wertsteigerungSeitKauf.absoluteSteigerung >= 0;
             return (
-              <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
+              <div className="grid grid-cols-4 bg-white border-b border-cream-200 divide-x divide-cream-100">
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
-                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Brutto</div>
-                  <div className="text-base sm:text-xl font-black text-slate-700">{fmtKPI(ergebnis.bruttorendite)}</div>
+                  <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Brutto</div>
+                  <div className="text-base sm:text-xl font-bold text-cream-800">{fmtKPI(ergebnis.bruttorendite)}</div>
                 </div>
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
-                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Netto</div>
-                  <div className="text-base sm:text-xl font-black text-emerald-600">{fmtKPI(ergebnis.nettorendite)}</div>
+                  <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Netto</div>
+                  <div className="text-base sm:text-xl font-bold text-sage-600">{fmtKPI(ergebnis.nettorendite)}</div>
                 </div>
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
-                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
-                  <div className="text-base sm:text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                  <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">EK-Rendite</div>
+                  <div className="text-base sm:text-xl font-bold text-clay-600">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
                 </div>
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
-                  <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
+                  <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
                   {wertsteigerungSeitKauf ? (
                     <>
-                      <div className={`text-base sm:text-xl font-black ${wsPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <div className={`text-base sm:text-xl font-bold ${wsPositiv ? 'text-sage-600' : 'text-brick-500'}`}>
                         {wsPositiv ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %
                       </div>
-                      <div className="text-[10px] text-gray-400">
+                      <div className="text-[10px] text-cream-400">
                         {wsPositiv ? '+' : ''}{formatCurrency(isGbR ? anteil(wertsteigerungSeitKauf.absoluteSteigerung) : wertsteigerungSeitKauf.absoluteSteigerung)}
                       </div>
                     </>
                   ) : (
-                    <div className="text-base sm:text-xl font-black text-gray-300">—</div>
+                    <div className="text-base sm:text-xl font-bold text-cream-300">—</div>
                   )}
                 </div>
                 {isGbR && (
-                  <div className="col-span-4 px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-600">
+                  <div className="col-span-4 px-4 py-2 bg-cream-50 border-t border-cream-200 flex items-center gap-2 text-xs text-cream-600">
                     <span className="font-semibold flex items-center gap-1"><Landmark size={12}/> GbR-Modus:</span>
                     <span>Alle Euro-Beträge zeigen Ihren {params.userAnteil}%-Anteil</span>
-                    <span className="ml-auto text-violet-400">Rendite-% bleiben unverändert (berechnet auf Ihren EK-Anteil)</span>
+                    <span className="ml-auto text-clay-400">Rendite-% bleiben unverändert (berechnet auf Ihren EK-Anteil)</span>
                   </div>
                 )}
               </div>
@@ -530,15 +530,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             ) || GRUPPEN[0];
 
             return (
-              <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-5 pb-2 mb-4 border-b border-slate-100">
+              <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-5 pb-2 mb-4 border-b border-cream-100">
                 {/* Haupt-Tabs */}
-                <div className="grid grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1">
+                <div className="grid grid-cols-4 gap-1 bg-cream-100 rounded-xl p-1">
                   {GRUPPEN.map(g => (
                     <button key={g.id} onClick={() => setActiveTab(g.first)}
                       className={`py-2 px-1 text-[11px] sm:text-sm font-semibold rounded-lg transition-all text-center leading-tight ${
                         aktiveGruppe.id === g.id
-                          ? 'bg-white text-indigo-700 shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800'
+                          ? 'bg-white text-clay-700'
+                          : 'text-cream-500 hover:text-cream-800'
                       }`}>
                       <span className="flex items-center justify-center gap-1">{g.icon}{g.label}</span>
                     </button>
@@ -546,17 +546,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
                 {/* Sub-Tabs */}
                 {aktiveGruppe.subs && (
-                  <div className="flex gap-0.5 sm:gap-1 mt-2 bg-indigo-50 rounded-xl p-1 overflow-x-auto">
+                  <div className="flex gap-0.5 sm:gap-1 mt-2 bg-clay-50 rounded-xl p-1 overflow-x-auto">
                     {aktiveGruppe.subs.map(s => {
                       const leer = HAT_DATEN[s.id] === false;
                       return (
                       <button key={s.id} onClick={() => setActiveTab(s.id)}
                         className={`flex-shrink-0 sm:flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-sm rounded-lg transition-all text-center leading-tight whitespace-nowrap ${
                           activeTab === s.id
-                            ? 'bg-indigo-600 text-white shadow-sm font-semibold'
+                            ? 'bg-clay-500 text-white font-semibold'
                             : leer
-                              ? 'text-slate-300 font-normal hover:text-indigo-500 hover:bg-indigo-100'
-                              : 'text-indigo-400 font-semibold hover:text-indigo-700 hover:bg-indigo-100'
+                              ? 'text-cream-300 font-normal hover:text-clay-500 hover:bg-clay-100'
+                              : 'text-clay-500 font-semibold hover:text-clay-700 hover:bg-clay-100'
                         }`}>
                         <span className="flex items-center justify-center gap-1">{s.icon}{s.label}</span>
                       </button>
@@ -581,55 +581,55 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <button
                     onClick={() => setActiveTab(naechsteAufgabe.targetTab)}
                     className={`text-left rounded-2xl p-4 border transition-colors ${
-                      naechsteAufgabe.priority === 'rot' ? 'bg-red-50 border-red-200 hover:bg-red-100'
-                      : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
-                      : 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                      naechsteAufgabe.priority === 'rot' ? 'bg-brick-50 border-brick-200 hover:bg-brick-100'
+                      : naechsteAufgabe.priority === 'gelb' ? 'bg-honey-50 border-honey-200 hover:bg-honey-100'
+                      : 'bg-sage-50 border-sage-200 hover:bg-sage-100'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`w-2 h-2 rounded-full ${
-                        naechsteAufgabe.priority === 'rot' ? 'bg-red-500' : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-emerald-500'
+                        naechsteAufgabe.priority === 'rot' ? 'bg-brick-500' : naechsteAufgabe.priority === 'gelb' ? 'bg-honey-400' : 'bg-sage-500'
                       }`} />
-                      <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Nächster wichtiger Punkt</span>
+                      <span className="text-xs font-bold uppercase tracking-wide text-cream-500">Nächster wichtiger Punkt</span>
                     </div>
-                    <div className="font-semibold text-gray-800 text-sm leading-snug">{naechsteAufgabe.titel}</div>
+                    <div className="font-semibold text-cream-800 text-sm leading-snug">{naechsteAufgabe.titel}</div>
                     {eigeneAufgaben.length > 1 && (
-                      <div className="text-xs text-gray-400 mt-1">+ {eigeneAufgaben.length - 1} weitere offene Punkt{eigeneAufgaben.length - 1 !== 1 ? 'e' : ''}</div>
+                      <div className="text-xs text-cream-400 mt-1">+ {eigeneAufgaben.length - 1} weitere offene Punkt{eigeneAufgaben.length - 1 !== 1 ? 'e' : ''}</div>
                     )}
                   </button>
                 ) : (
-                  <div className="rounded-2xl p-4 border bg-emerald-50 border-emerald-200 flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-emerald-500"/>
-                    <span className="text-sm font-semibold text-emerald-700">Keine offenen Punkte — alles erledigt</span>
+                  <div className="rounded-2xl p-4 border bg-sage-50 border-sage-200 flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-sage-500"/>
+                    <span className="text-sm font-semibold text-sage-700">Keine offenen Punkte — alles erledigt</span>
                   </div>
                 )}
 
                 {aktiveMieterKaufobjekt && (
                   <div className={`rounded-2xl p-4 border ${
-                    params.dauerauftrag || mieteAktuellerMonatEintrag ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                    params.dauerauftrag || mieteAktuellerMonatEintrag ? 'bg-sage-50 border-sage-200' : 'bg-brick-50 border-brick-200'
                   }`}>
-                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    <div className="text-xs font-bold uppercase tracking-wide text-cream-500 mb-1">
                       Miete {heute.toLocaleDateString('de-DE', { month: 'long' })}
                     </div>
                     {params.dauerauftrag ? (
-                      <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
+                      <div className="font-semibold text-sm flex items-center gap-1.5 text-sage-700">
                         <Zap size={16}/> Automatisch per Dauerauftrag
                       </div>
                     ) : mieteAktuellerMonatEintrag ? (
                       <div>
-                        <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
+                        <div className="font-semibold text-sm flex items-center gap-1.5 text-sage-700">
                           <CheckCircle2 size={16}/> {formatCurrency(mieteAktuellerMonatEintrag.betrag)} eingegangen
                         </div>
-                        <div className="text-xs text-gray-400 mt-0.5">am {new Date(mieteAktuellerMonatEintrag.datum).toLocaleDateString('de-DE')}</div>
+                        <div className="text-xs text-cream-400 mt-0.5">am {new Date(mieteAktuellerMonatEintrag.datum).toLocaleDateString('de-DE')}</div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="font-semibold text-sm text-red-600 flex items-center gap-1.5">
+                        <div className="font-semibold text-sm text-brick-600 flex items-center gap-1.5">
                           <AlertTriangle size={16}/> Noch nicht verbucht
                         </div>
                         <button
                           onClick={handleMieteAbhaken}
-                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
+                          className="px-3 py-1.5 bg-sage-500 hover:bg-sage-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
                         >
                           <Check size={12}/> Erhalten ({formatCurrency(erwarteterMietBetrag)})
                         </button>
@@ -642,26 +642,26 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               {/* Marktwert — Wertsteigerung selbst steht jetzt oben im KPI-Strip
                   neben Brutto/Netto/EK-Rendite, kein separates Chart mehr hier. */}
               <div>
-                <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
-                  <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
+                <div className="bg-clay-50 border border-clay-100 p-5 rounded-2xl">
+                  <h3 className="text-sm font-bold text-clay-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
+                    <label className="block text-sm font-medium text-cream-700 mb-1">Preis pro m² eingeben</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
                         value={qmPreis}
                         onChange={(e) => handleQmPreisChange(e.target.value)}
-                        className="w-32 px-3 py-2 text-base sm:text-lg font-bold text-indigo-600 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                        className="w-32 px-3 py-2 text-base sm:text-lg font-bold text-clay-600 border border-clay-300 rounded-lg focus:ring-2 focus:ring-clay-400 focus:outline-none bg-white"
                         placeholder="4000"
                       />
-                      <span className="text-sm font-bold text-indigo-600">€/m²</span>
-                      <span className="text-gray-400">×</span>
-                      <span className="text-sm text-gray-600">{params.wohnflaeche} m²</span>
-                      <span className="text-gray-400">=</span>
+                      <span className="text-sm font-bold text-clay-600">€/m²</span>
+                      <span className="text-cream-400">×</span>
+                      <span className="text-sm text-cream-600">{params.wohnflaeche} m²</span>
+                      <span className="text-cream-400">=</span>
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-cream-700 mb-1">
                       {stellplatzWert > 0 ? 'Wohnungswert' : 'Berechneter Gesamtwert'}
                     </label>
                     <div className="flex items-center gap-2">
@@ -669,20 +669,20 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         type="number"
                         value={params.geschaetzterWert || ''}
                         onChange={(e) => handleGesamtwertChange(e.target.value)}
-                        className="w-40 px-3 py-2 text-base sm:text-xl font-bold text-indigo-600 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                        className="w-40 px-3 py-2 text-base sm:text-xl font-bold text-clay-600 border border-clay-300 rounded-lg focus:ring-2 focus:ring-clay-400 focus:outline-none bg-white"
                         placeholder="350000"
                       />
-                      <span className="text-xl font-bold text-indigo-600">€</span>
+                      <span className="text-xl font-bold text-clay-600">€</span>
                     </div>
                     {stellplatzWert > 0 && (
-                      <div className="mt-2 text-xs text-gray-500 space-y-0.5">
+                      <div className="mt-2 text-xs text-cream-500 space-y-0.5">
                         <div className="flex items-center gap-1">
-                          <span className="text-gray-400">+ {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(stellplatzWert)}</span>
-                          <span className="text-gray-400">Stellplatz (Kaufpreis)</span>
+                          <span className="text-cream-400">+ {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(stellplatzWert)}</span>
+                          <span className="text-cream-400">Stellplatz (Kaufpreis)</span>
                         </div>
-                        <div className="flex items-center gap-1 font-semibold text-indigo-600">
+                        <div className="flex items-center gap-1 font-semibold text-clay-600">
                           <span>= {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(aktuellerWert)}</span>
-                          <span className="font-normal text-gray-500">Gesamtwert</span>
+                          <span className="font-normal text-cream-500">Gesamtwert</span>
                         </div>
                       </div>
                     )}
@@ -691,11 +691,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-clay-500 text-white rounded-lg hover:bg-clay-600 text-sm"
                   >
                     <Search size={14}/> Preis bei Homeday recherchieren
                   </a>
-                  <p className="text-xs text-gray-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
+                  <p className="text-xs text-cream-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
                 </div>
               </div>
             </div>

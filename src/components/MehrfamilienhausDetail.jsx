@@ -414,36 +414,36 @@ const MehrfamilienhausDetail = ({
 
         {/* Header */}
         <div className="flex-shrink-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-600 to-orange-700 px-4 sm:px-6 pt-3 sm:pt-5 pb-3 sm:pb-4 text-white">
+          <div className="bg-cream-900 px-4 sm:px-6 pt-3 sm:pt-5 pb-3 sm:pb-4 text-white">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <Building2 size={18}/>
-                  <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">MFH · {wohnungen.length} WE</span>
+                  <Building2 size={18} className="text-sage-300"/>
+                  <span className="text-xs font-semibold bg-sage-400/15 text-sage-200 px-2 py-0.5 rounded-full">MFH · {wohnungen.length} WE</span>
                   {kautionOffenAnzahl > 0 && (
-                    <span className="text-xs font-semibold bg-red-500/80 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <span className="inline-block w-2 h-2 rounded-full bg-red-300"/> {kautionOffenAnzahl}× Kaution offen
+                    <span className="text-xs font-semibold bg-brick-400/20 text-brick-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-full bg-brick-300"/> {kautionOffenAnzahl}× Kaution offen
                     </span>
                   )}
                 </div>
-                <h2 className="text-base sm:text-2xl font-black truncate">{immobilie.name}</h2>
+                <h2 className="text-base sm:text-2xl font-semibold truncate">{immobilie.name}</h2>
                 {(immobilie.plz || immobilie.adresse) && (
-                  <p className="text-white/80 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.plz} {immobilie.adresse}</p>
+                  <p className="text-cream-300 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.plz} {immobilie.adresse}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 ml-3 shrink-0">
                 {onEdit && (
                   <button onClick={onEdit}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors">
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-semibold transition-colors">
                     <Pencil size={14} className="inline mr-1"/>Bearbeiten
                   </button>
                 )}
                 {hasChanges && (
-                  <button onClick={handleSave} className="px-3 py-1.5 bg-white text-amber-700 rounded-xl text-xs font-bold shadow-sm">
+                  <button onClick={handleSave} className="px-3 py-1.5 bg-white text-cream-800 rounded-xl text-xs font-bold">
                     Speichern
                   </button>
                 )}
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-cream-300 hover:text-white"><X size={20}/></button>
               </div>
             </div>
           </div>
@@ -453,46 +453,46 @@ const MehrfamilienhausDetail = ({
             const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
             const wsPositiv = wertsteigerungSeitKauf && wertsteigerungSeitKauf.absoluteSteigerung >= 0;
             return (
-              <div className="bg-white border-b border-gray-200">
+              <div className="bg-white border-b border-cream-200">
                 {/* Zeile 1: Betriebskennzahlen */}
-                <div className="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
+                <div className="grid grid-cols-2 divide-x divide-cream-100 border-b border-cream-100">
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Kaltmiete/mo</div>
-                    <div className="text-sm sm:text-xl font-black text-slate-700">{formatCurrency(gesamtKaltmiete)}</div>
+                    <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Kaltmiete/mo</div>
+                    <div className="text-sm sm:text-xl font-bold text-cream-800">{formatCurrency(gesamtKaltmiete)}</div>
                   </div>
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Auslastung</div>
-                    <div className={`text-sm sm:text-xl font-black ${auslastung < 80 ? 'text-red-600' : 'text-emerald-600'}`}>{auslastung} %</div>
-                    <div className="text-[10px] text-gray-400">{belegtWE}/{wohnungen.length} WE</div>
+                    <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Auslastung</div>
+                    <div className={`text-sm sm:text-xl font-bold ${auslastung < 80 ? 'text-brick-500' : 'text-sage-600'}`}>{auslastung} %</div>
+                    <div className="text-[10px] text-cream-400">{belegtWE}/{wohnungen.length} WE</div>
                   </div>
                 </div>
                 {/* Zeile 2: Rendite-Kennzahlen — gleiches Muster wie Kaufimmobilie */}
-                <div className="grid grid-cols-4 divide-x divide-gray-100">
+                <div className="grid grid-cols-4 divide-x divide-cream-100">
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Brutto</div>
-                    <div className="text-base sm:text-xl font-black text-slate-700">{fmtKPI(ergebnis.bruttorendite)}</div>
+                    <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Brutto</div>
+                    <div className="text-base sm:text-xl font-bold text-cream-800">{fmtKPI(ergebnis.bruttorendite)}</div>
                   </div>
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Netto</div>
-                    <div className="text-base sm:text-xl font-black text-emerald-600">{fmtKPI(ergebnis.nettorendite)}</div>
+                    <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Netto</div>
+                    <div className="text-base sm:text-xl font-bold text-sage-600">{fmtKPI(ergebnis.nettorendite)}</div>
                   </div>
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
-                    <div className="text-base sm:text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                    <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">EK-Rendite</div>
+                    <div className="text-base sm:text-xl font-bold text-clay-600">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
                   </div>
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
+                    <div className="text-[10px] sm:text-xs text-cream-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
                     {wertsteigerungSeitKauf ? (
                       <>
-                        <div className={`text-base sm:text-xl font-black ${wsPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+                        <div className={`text-base sm:text-xl font-bold ${wsPositiv ? 'text-sage-600' : 'text-brick-500'}`}>
                           {wsPositiv ? '+' : ''}{wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %
                         </div>
-                        <div className="text-[10px] text-gray-400">
+                        <div className="text-[10px] text-cream-400">
                           {wsPositiv ? '+' : ''}{formatCurrency(wertsteigerungSeitKauf.absoluteSteigerung)}
                         </div>
                       </>
                     ) : (
-                      <div className="text-base sm:text-xl font-black text-gray-300">—</div>
+                      <div className="text-base sm:text-xl font-bold text-cream-300">—</div>
                     )}
                   </div>
                 </div>
@@ -505,15 +505,15 @@ const MehrfamilienhausDetail = ({
         <div className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
 
           {/* ── Tab-Navigation ───────────────────────────────────────────────── */}
-          <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-4 pb-2 mb-4 border-b border-slate-100">
+          <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-4 pb-2 mb-4 border-b border-cream-100">
             {/* Haupt-Tabs */}
-            <div className={`grid grid-cols-5 gap-1 bg-slate-100 rounded-xl p-1`}>
+            <div className={`grid grid-cols-5 gap-1 bg-cream-100 rounded-xl p-1`}>
               {GRUPPEN.map(g => (
                 <button key={g.id} onClick={() => setActiveTab(g.first ?? g.id)}
                   className={`py-2 px-1 text-[10px] sm:text-sm font-semibold rounded-lg transition-all text-center leading-tight ${
                     aktiveGruppe.id === g.id
-                      ? 'bg-white text-amber-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-white text-sage-700'
+                      : 'text-cream-500 hover:text-cream-800'
                   }`}>
                   <span className="flex items-center justify-center gap-1">{g.icon}{g.label}</span>
                 </button>
@@ -521,13 +521,13 @@ const MehrfamilienhausDetail = ({
             </div>
             {/* Sub-Tabs */}
             {aktiveGruppe.subs && (
-              <div className="flex gap-0.5 sm:gap-1 mt-2 bg-amber-50 rounded-xl p-1 overflow-x-auto">
+              <div className="flex gap-0.5 sm:gap-1 mt-2 bg-sage-50 rounded-xl p-1 overflow-x-auto">
                 {aktiveGruppe.subs.map(s => (
                   <button key={s.id} onClick={() => setActiveTab(s.id)}
                     className={`flex-shrink-0 sm:flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-sm font-semibold rounded-lg transition-all text-center whitespace-nowrap ${
                       activeTab === s.id
-                        ? 'bg-amber-600 text-white shadow-sm'
-                        : 'text-amber-500 hover:text-amber-700 hover:bg-amber-100'
+                        ? 'bg-sage-600 text-white'
+                        : 'text-sage-600 hover:text-sage-800 hover:bg-sage-100'
                     }`}>
                     {s.label}
                   </button>
@@ -542,19 +542,19 @@ const MehrfamilienhausDetail = ({
           {activeTab === 'wohnungen' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-500">Wohneinheiten nach Etage</p>
+                <p className="text-sm text-cream-500">Wohneinheiten nach Etage</p>
                 <button onClick={() => openWohnungForm()}
-                  className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-1">
+                  className="px-3 py-1.5 text-xs font-semibold bg-sage-600 text-white rounded-lg hover:bg-sage-700 flex items-center gap-1">
                   <Plus size={13}/> Wohnung
                 </button>
               </div>
               {wohnungen.length === 0 ? (
-                <div className="text-center py-14 text-gray-400">
-                  <Building2 size={48} className="mx-auto mb-3 text-gray-300"/>
+                <div className="text-center py-14 text-cream-400">
+                  <Building2 size={48} className="mx-auto mb-3 text-cream-300"/>
                   <p className="text-base font-semibold">Noch keine Wohneinheiten</p>
                   <p className="text-sm mt-1">Füge deine Wohneinheiten hinzu</p>
                   <button onClick={() => openWohnungForm()}
-                    className="mt-4 px-5 py-2.5 bg-amber-500 text-white rounded-xl font-semibold text-sm hover:bg-amber-600">
+                    className="mt-4 px-5 py-2.5 bg-sage-500 text-white rounded-xl font-semibold text-sm hover:bg-sage-600">
                     + Erste Wohnung anlegen
                   </button>
                 </div>
@@ -563,9 +563,9 @@ const MehrfamilienhausDetail = ({
                   {Object.entries(etageGruppen).map(([etage, wes]) => (
                     <div key={etage}>
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="h-px flex-1 bg-gray-200"/>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{etage}</span>
-                        <div className="h-px flex-1 bg-gray-200"/>
+                        <div className="h-px flex-1 bg-cream-200"/>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-cream-400 bg-cream-100 px-2 py-0.5 rounded-full">{etage}</span>
+                        <div className="h-px flex-1 bg-cream-200"/>
                       </div>
                       <div className={`grid gap-3 ${wes.length === 1 ? 'grid-cols-1' : wes.length === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
                         {wes.map((w) => {
@@ -573,38 +573,38 @@ const MehrfamilienhausDetail = ({
                           const ausgezogen = w.mietende && new Date(w.mietende) < new Date();
                           return (
                             <div key={w.id || w.originalIdx}
-                              className={`rounded-2xl border-2 p-3 sm:p-4 transition-all hover:shadow-md cursor-pointer ${belegt ? 'border-emerald-200 bg-emerald-50/50' : ausgezogen ? 'border-gray-200 bg-gray-50' : hatteJeMieter(w) ? 'border-red-200 bg-red-50/50' : 'border-blue-100 bg-blue-50/30'}`}
+                              className={`rounded-2xl border-2 p-3 sm:p-4 transition-all hover:border-cream-300 cursor-pointer ${belegt ? 'border-sage-200 bg-sage-50/50' : ausgezogen ? 'border-cream-200 bg-cream-50' : hatteJeMieter(w) ? 'border-brick-200 bg-brick-50/50' : 'border-clay-100 bg-clay-50/30'}`}
                               onClick={() => openWohnungForm(w.originalIdx)}>
                               <div className="flex items-start justify-between mb-2">
                                 {(() => {
                                   const jeMieter = hatteJeMieter(w);
-                                  if (belegt) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-0.5"><Check size={10}/>Vermietet</span>;
-                                  if (ausgezogen) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Ausgezogen</span>;
-                                  if (jeMieter) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex items-center gap-0.5"><AlertTriangle size={10}/>Leerstand</span>;
-                                  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-400">Noch kein Mieter</span>;
+                                  if (belegt) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sage-100 text-sage-700 flex items-center gap-0.5"><Check size={10}/>Vermietet</span>;
+                                  if (ausgezogen) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cream-100 text-cream-500">Ausgezogen</span>;
+                                  if (jeMieter) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brick-100 text-brick-600 flex items-center gap-0.5"><AlertTriangle size={10}/>Leerstand</span>;
+                                  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-clay-50 text-clay-400">Noch kein Mieter</span>;
                                 })()}
                                 <button onClick={e => { e.stopPropagation(); deleteWohnung(w.originalIdx); }}
-                                  className="text-gray-300 hover:text-red-500 p-0.5 rounded" title="Löschen">
+                                  className="text-cream-300 hover:text-brick-500 p-0.5 rounded" title="Löschen">
                                   <X size={12}/>
                                 </button>
                               </div>
-                              <p className="font-bold text-gray-900 text-sm sm:text-base leading-tight">{w.name || `WE ${w.originalIdx + 1}`}</p>
-                              {w.wohnflaeche > 0 && <p className="text-xs text-gray-400 mt-0.5">{w.wohnflaeche} m²</p>}
-                              <p className={`text-base sm:text-xl font-black mt-2 ${belegt ? 'text-emerald-700' : (Number(w.kaltmiete) > 0 ? 'text-slate-500' : 'text-gray-300')}`}>
+                              <p className="font-semibold text-cream-900 text-sm sm:text-base leading-tight">{w.name || `WE ${w.originalIdx + 1}`}</p>
+                              {w.wohnflaeche > 0 && <p className="text-xs text-cream-400 mt-0.5">{w.wohnflaeche} m²</p>}
+                              <p className={`text-base sm:text-xl font-bold mt-2 ${belegt ? 'text-sage-700' : (Number(w.kaltmiete) > 0 ? 'text-cream-500' : 'text-cream-300')}`}>
                                 {Number(w.kaltmiete) > 0 ? formatCurrency(Number(w.kaltmiete)) : '—'}
-                                {Number(w.kaltmiete) > 0 && <span className="text-xs font-normal text-gray-400">/mo</span>}
+                                {Number(w.kaltmiete) > 0 && <span className="text-xs font-normal text-cream-400">/mo</span>}
                               </p>
-                              {w.mieterName && <p className="text-xs text-gray-600 mt-1 truncate flex items-center gap-1"><User size={10}/> {w.mieterName}</p>}
-                              {w.mietbeginn && belegt && <p className="text-[10px] text-gray-400">seit {new Date(w.mietbeginn).toLocaleDateString('de-DE')}</p>}
+                              {w.mieterName && <p className="text-xs text-cream-600 mt-1 truncate flex items-center gap-1"><User size={10}/> {w.mieterName}</p>}
+                              {w.mietbeginn && belegt && <p className="text-[10px] text-cream-400">seit {new Date(w.mietbeginn).toLocaleDateString('de-DE')}</p>}
                               {w.kautionBetrag > 0 && (
-                                <span className={`mt-2 inline-block text-[10px] px-1.5 py-0.5 rounded-full ${w.kautionBezahlt ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                                  {w.kautionBezahlt ? <CheckCircle2 size={12} className='text-emerald-600 inline mr-0.5'/> : <span className='inline-block w-2 h-2 rounded-full bg-red-500 mr-0.5'/>}
+                                <span className={`mt-2 inline-block text-[10px] px-1.5 py-0.5 rounded-full ${w.kautionBezahlt ? 'bg-sage-100 text-sage-600' : 'bg-brick-100 text-brick-600'}`}>
+                                  {w.kautionBezahlt ? <CheckCircle2 size={12} className='text-sage-600 inline mr-0.5'/> : <span className='inline-block w-2 h-2 rounded-full bg-brick-500 mr-0.5'/>}
                                   Kaution {formatCurrency(w.kautionBetrag)}
                                 </span>
                               )}
                               <div className="mt-2 pt-2 border-t border-current border-opacity-10 flex justify-between items-center">
-                                <span className="text-[10px] text-gray-400">Klicken zum Bearbeiten</span>
-                                <Pencil size={12} className="text-gray-300"/>
+                                <span className="text-[10px] text-cream-400">Klicken zum Bearbeiten</span>
+                                <Pencil size={12} className="text-cream-300"/>
                               </div>
                             </div>
                           );
@@ -626,35 +626,35 @@ const MehrfamilienhausDetail = ({
                   <button
                     onClick={() => setActiveTab(naechsteAufgabe.targetTab)}
                     className={`text-left rounded-2xl p-4 border transition-colors ${
-                      naechsteAufgabe.priority === 'rot' ? 'bg-red-50 border-red-200 hover:bg-red-100'
-                      : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
-                      : 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                      naechsteAufgabe.priority === 'rot' ? 'bg-brick-50 border-brick-200 hover:bg-brick-100'
+                      : naechsteAufgabe.priority === 'gelb' ? 'bg-honey-50 border-honey-200 hover:bg-honey-100'
+                      : 'bg-sage-50 border-sage-200 hover:bg-sage-100'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`w-2 h-2 rounded-full ${
-                        naechsteAufgabe.priority === 'rot' ? 'bg-red-500' : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-emerald-500'
+                        naechsteAufgabe.priority === 'rot' ? 'bg-brick-500' : naechsteAufgabe.priority === 'gelb' ? 'bg-honey-400' : 'bg-sage-500'
                       }`} />
-                      <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Nächster wichtiger Punkt</span>
+                      <span className="text-xs font-bold uppercase tracking-wide text-cream-500">Nächster wichtiger Punkt</span>
                     </div>
-                    <div className="font-semibold text-gray-800 text-sm leading-snug">{naechsteAufgabe.titel}</div>
+                    <div className="font-semibold text-cream-800 text-sm leading-snug">{naechsteAufgabe.titel}</div>
                     {eigeneAufgaben.length > 1 && (
-                      <div className="text-xs text-gray-400 mt-1">+ {eigeneAufgaben.length - 1} weitere offene Punkt{eigeneAufgaben.length - 1 !== 1 ? 'e' : ''}</div>
+                      <div className="text-xs text-cream-400 mt-1">+ {eigeneAufgaben.length - 1} weitere offene Punkt{eigeneAufgaben.length - 1 !== 1 ? 'e' : ''}</div>
                     )}
                   </button>
                 ) : (
-                  <div className="rounded-2xl p-4 border bg-emerald-50 border-emerald-200 flex items-center gap-2">
-                    <Check size={16} className="text-emerald-500"/>
-                    <span className="text-sm font-semibold text-emerald-700">Keine offenen Punkte — alles erledigt</span>
+                  <div className="rounded-2xl p-4 border bg-sage-50 border-sage-200 flex items-center gap-2">
+                    <Check size={16} className="text-sage-500"/>
+                    <span className="text-sm font-semibold text-sage-700">Keine offenen Punkte — alles erledigt</span>
                   </div>
                 )}
 
                 {belegteWohnungenListe.length > 0 && (
-                  <div className={`rounded-2xl p-4 border ${alleMietenEingegangen ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                  <div className={`rounded-2xl p-4 border ${alleMietenEingegangen ? 'bg-sage-50 border-sage-200' : 'bg-brick-50 border-brick-200'}`}>
+                    <div className="text-xs font-bold uppercase tracking-wide text-cream-500 mb-1">
                       Miete {heute.toLocaleDateString('de-DE', { month: 'long' })}
                     </div>
-                    <div className={`font-semibold text-sm flex items-center gap-1.5 ${alleMietenEingegangen ? 'text-emerald-700' : 'text-red-600'}`}>
+                    <div className={`font-semibold text-sm flex items-center gap-1.5 ${alleMietenEingegangen ? 'text-sage-700' : 'text-brick-600'}`}>
                       {alleMietenEingegangen ? <Check size={16}/> : <AlertTriangle size={16}/>}
                       {wohnungenMitMieteImMonat}/{belegteWohnungenListe.length} WE eingegangen
                     </div>
@@ -664,13 +664,13 @@ const MehrfamilienhausDetail = ({
 
               {/* Ein-Klick Abhaken pro Wohnung — direkt hier statt im Einnahmen-Tab */}
               {belegteWohnungenListe.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                <div className="bg-white border border-cream-200 rounded-2xl overflow-hidden">
+                  <div className="px-4 py-2.5 bg-cream-50 border-b border-cream-100">
+                    <span className="text-xs font-bold text-cream-500 uppercase tracking-wide">
                       Mieteingänge {heute.toLocaleDateString('de-DE', { month: 'long' })}
                     </span>
                   </div>
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-cream-50">
                     {belegteWohnungenListe.map((w) => {
                       const wIdx = wohnungen.indexOf(w);
                       const eintrag = (w.mietEingaenge || []).find(e => {
@@ -680,18 +680,18 @@ const MehrfamilienhausDetail = ({
                       return (
                         <div key={w.id || wIdx} className="flex items-center justify-between gap-3 px-4 py-2.5">
                           <div className="min-w-0">
-                            <div className="text-sm font-semibold text-gray-800 truncate">{w.name || `WE ${wIdx + 1}`}</div>
-                            <div className="text-xs text-gray-400 truncate">{w.mieterName}</div>
+                            <div className="text-sm font-semibold text-cream-800 truncate">{w.name || `WE ${wIdx + 1}`}</div>
+                            <div className="text-xs text-cream-400 truncate">{w.mieterName}</div>
                           </div>
                           {eintrag ? (
                             <div className="text-right shrink-0">
-                              <div className="text-sm font-semibold text-emerald-600 flex items-center gap-1 justify-end"><CheckCircle2 size={14}/> {formatCurrency(eintrag.betrag)}</div>
-                              <div className="text-[10px] text-gray-400">{new Date(eintrag.datum).toLocaleDateString('de-DE')}</div>
+                              <div className="text-sm font-semibold text-sage-600 flex items-center gap-1 justify-end"><CheckCircle2 size={14}/> {formatCurrency(eintrag.betrag)}</div>
+                              <div className="text-[10px] text-cream-400">{new Date(eintrag.datum).toLocaleDateString('de-DE')}</div>
                             </div>
                           ) : (
                             <button
                               onClick={() => handleWohnungMieteAbhaken(wIdx)}
-                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
+                              className="px-3 py-1.5 bg-sage-500 hover:bg-sage-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
                             >
                               <Check size={12}/> Erhalten ({formatCurrency(Number(w.kaltmiete) || 0)})
                             </button>
@@ -704,92 +704,92 @@ const MehrfamilienhausDetail = ({
               )}
 
               {/* Auslastungsbalken */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Belegungsübersicht</p>
+              <div className="bg-white border border-cream-200 rounded-2xl p-4">
+                <p className="text-xs font-bold text-cream-500 uppercase tracking-wide mb-3">Belegungsübersicht</p>
                 <div className="flex rounded-full overflow-hidden h-4 mb-3">
-                  <div style={{ width: `${auslastung}%` }} className="bg-emerald-500 transition-all"/>
-                  <div style={{ width: `${100 - auslastung}%` }} className="bg-red-200 transition-all"/>
+                  <div style={{ width: `${auslastung}%` }} className="bg-sage-500 transition-all"/>
+                  <div style={{ width: `${100 - auslastung}%` }} className="bg-brick-200 transition-all"/>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span className="text-emerald-600 font-semibold flex items-center gap-0.5"><Check size={12}/> {belegtWE} belegt</span>
-                  <span className="text-red-500 font-semibold flex items-center gap-0.5"><AlertTriangle size={12}/> {leerstandWE} leer</span>
+                <div className="flex justify-between text-xs text-cream-500">
+                  <span className="text-sage-600 font-semibold flex items-center gap-0.5"><Check size={12}/> {belegtWE} belegt</span>
+                  <span className="text-brick-500 font-semibold flex items-center gap-0.5"><AlertTriangle size={12}/> {leerstandWE} leer</span>
                 </div>
               </div>
               {/* Wohnungstabelle */}
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Alle Wohneinheiten</p>
+              <div className="bg-white border border-cream-200 rounded-2xl overflow-hidden">
+                <div className="bg-cream-50 px-4 py-2 border-b border-cream-100">
+                  <p className="text-xs font-bold text-cream-500 uppercase tracking-wide">Alle Wohneinheiten</p>
                 </div>
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left py-2 px-4 text-gray-400 font-semibold">Wohnung</th>
-                      <th className="text-right py-2 px-2 text-gray-400 font-semibold hidden sm:table-cell">m²</th>
-                      <th className="text-right py-2 px-2 text-gray-400 font-semibold">Miete</th>
-                      <th className="text-left py-2 px-3 text-gray-400 font-semibold">Mieter</th>
-                      <th className="text-center py-2 px-2 text-gray-400 font-semibold">Status</th>
+                    <tr className="bg-cream-50 border-b border-cream-100">
+                      <th className="text-left py-2 px-4 text-cream-400 font-semibold">Wohnung</th>
+                      <th className="text-right py-2 px-2 text-cream-400 font-semibold hidden sm:table-cell">m²</th>
+                      <th className="text-right py-2 px-2 text-cream-400 font-semibold">Miete</th>
+                      <th className="text-left py-2 px-3 text-cream-400 font-semibold">Mieter</th>
+                      <th className="text-center py-2 px-2 text-cream-400 font-semibold">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-cream-50">
                     {wohnungen.map((w, idx) => {
                       const belegt = w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date());
                       return (
-                        <tr key={w.id || idx} className="hover:bg-gray-50 cursor-pointer" onClick={() => { openWohnungForm(idx); }}>
+                        <tr key={w.id || idx} className="hover:bg-cream-50 cursor-pointer" onClick={() => { openWohnungForm(idx); }}>
                           <td className="py-2 px-4">
-                            <span className="font-semibold text-gray-800">{w.name || `WE ${idx + 1}`}</span>
-                            {w.etage && <span className="text-gray-400 ml-1">· {w.etage}</span>}
+                            <span className="font-semibold text-cream-800">{w.name || `WE ${idx + 1}`}</span>
+                            {w.etage && <span className="text-cream-400 ml-1">· {w.etage}</span>}
                           </td>
-                          <td className="py-2 px-2 text-right text-gray-500 hidden sm:table-cell">{w.wohnflaeche > 0 ? `${w.wohnflaeche} m²` : '—'}</td>
-                          <td className={`py-2 px-2 text-right font-bold ${belegt ? 'text-emerald-600' : Number(w.kaltmiete) > 0 ? 'text-gray-400' : 'text-gray-200'}`}>
+                          <td className="py-2 px-2 text-right text-cream-500 hidden sm:table-cell">{w.wohnflaeche > 0 ? `${w.wohnflaeche} m²` : '—'}</td>
+                          <td className={`py-2 px-2 text-right font-bold ${belegt ? 'text-sage-600' : Number(w.kaltmiete) > 0 ? 'text-cream-500' : 'text-cream-300'}`}>
                             {Number(w.kaltmiete) > 0 ? formatCurrency(Number(w.kaltmiete)) : '—'}
                           </td>
-                          <td className="py-2 px-3 text-gray-600 truncate max-w-[120px]">{w.mieterName || <span className="text-red-400">Kein Mieter</span>}</td>
+                          <td className="py-2 px-3 text-cream-600 truncate max-w-[120px]">{w.mieterName || <span className="text-brick-400">Kein Mieter</span>}</td>
                           <td className="py-2 px-2 text-center">
                             {belegt
-                              ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700"><Check size={12}/></span>
+                              ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-sage-100 text-sage-700"><Check size={12}/></span>
                               : hatteJeMieter(w)
-                                ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600"><Circle size={12}/></span>
-                                : <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-400">—</span>
+                                ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-brick-100 text-brick-600"><Circle size={12}/></span>
+                                : <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-cream-100 text-cream-400">—</span>
                             }
                           </td>
                         </tr>
                       );
                     })}
-                    <tr className="bg-gray-50 border-t border-gray-200">
-                      <td className="py-2 px-4 font-bold text-gray-700">Gesamt ({wohnungen.length} WE)</td>
-                      <td className="py-2 px-2 text-right font-semibold text-gray-600 hidden sm:table-cell">{gesamtFlaeche} m²</td>
-                      <td className="py-2 px-2 text-right font-black text-emerald-700">{formatCurrency(gesamtKaltmiete)}</td>
-                      <td colSpan={2} className="py-2 px-2 text-right text-xs text-gray-400">{auslastung} % Auslastung</td>
+                    <tr className="bg-cream-50 border-t border-cream-200">
+                      <td className="py-2 px-4 font-bold text-cream-700">Gesamt ({wohnungen.length} WE)</td>
+                      <td className="py-2 px-2 text-right font-semibold text-cream-600 hidden sm:table-cell">{gesamtFlaeche} m²</td>
+                      <td className="py-2 px-2 text-right font-bold text-sage-700">{formatCurrency(gesamtKaltmiete)}</td>
+                      <td colSpan={2} className="py-2 px-2 text-right text-xs text-cream-400">{auslastung} % Auslastung</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
               {/* Finanz-KPIs */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                  <p className="text-xs text-gray-400 mb-1">Soll-Miete (100 %)</p>
-                  <p className="text-xl font-black text-gray-800">{formatCurrency(gesamtKaltmiete)}</p>
-                  <p className="text-xs text-gray-400">{formatCurrency(gesamtKaltmiete * 12)}/Jahr</p>
+                <div className="bg-white border border-cream-200 rounded-xl p-4">
+                  <p className="text-xs text-cream-400 mb-1">Soll-Miete (100 %)</p>
+                  <p className="text-xl font-bold text-cream-800">{formatCurrency(gesamtKaltmiete)}</p>
+                  <p className="text-xs text-cream-400">{formatCurrency(gesamtKaltmiete * 12)}/Jahr</p>
                 </div>
-                <div className={`border rounded-xl p-4 shadow-sm ${leerstandWE > 0 ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                  <p className="text-xs text-gray-400 mb-1">Mietausfall (Leerstand)</p>
-                  <p className={`text-xl font-black ${leerstandWE > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                <div className={`border rounded-xl p-4 ${leerstandWE > 0 ? 'bg-brick-50 border-brick-200' : 'bg-sage-50 border-sage-200'}`}>
+                  <p className="text-xs text-cream-400 mb-1">Mietausfall (Leerstand)</p>
+                  <p className={`text-xl font-bold ${leerstandWE > 0 ? 'text-brick-500' : 'text-sage-600'}`}>
                     {/* Mietausfall: gleiche Definition wie leerstandWE (hatteJeMieter + nicht belegt) */}
                     {leerstandWE > 0 ? '−' : ''}{formatCurrency(wohnungen.filter(w => hatteJeMieter(w) && !(w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()))).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0))}
                   </p>
-                  <p className="text-xs text-gray-400">{leerstandWE} WE leer</p>
+                  <p className="text-xs text-cream-400">{leerstandWE} WE leer</p>
                 </div>
                 {params.kaufpreis > 0 && (
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <p className="text-xs text-gray-400 mb-1">Kaufpreis</p>
-                    <p className="text-xl font-black text-gray-800">{formatCurrency(params.kaufpreis)}</p>
-                    {immobilie.kaufdatum && <p className="text-xs text-gray-400">gekauft {new Date(immobilie.kaufdatum).toLocaleDateString('de-DE')}</p>}
+                  <div className="bg-white border border-cream-200 rounded-xl p-4">
+                    <p className="text-xs text-cream-400 mb-1">Kaufpreis</p>
+                    <p className="text-xl font-bold text-cream-800">{formatCurrency(params.kaufpreis)}</p>
+                    {immobilie.kaufdatum && <p className="text-xs text-cream-400">gekauft {new Date(immobilie.kaufdatum).toLocaleDateString('de-DE')}</p>}
                   </div>
                 )}
                 {(params.geschaetzterWert || params.kaufpreis) > 0 && (
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 shadow-sm">
-                    <p className="text-xs text-gray-400 mb-1">Aktueller Wert</p>
-                    <p className="text-xl font-black text-indigo-700">{formatCurrency(params.geschaetzterWert || params.kaufpreis)}</p>
+                  <div className="bg-clay-50 border border-clay-200 rounded-xl p-4">
+                    <p className="text-xs text-cream-400 mb-1">Aktueller Wert</p>
+                    <p className="text-xl font-bold text-clay-700">{formatCurrency(params.geschaetzterWert || params.kaufpreis)}</p>
                   </div>
                 )}
               </div>
