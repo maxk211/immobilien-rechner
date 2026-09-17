@@ -71,19 +71,19 @@ const UpgradeModal = ({
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-0">
           <div>
-            <h2 className="text-2xl font-black text-cream-900">{title}</h2>
-            <p className="text-cream-500 text-sm mt-1">{sub}</p>
+            <h2 className="text-2xl font-black text-gray-900">{title}</h2>
+            <p className="text-gray-500 text-sm mt-1">{sub}</p>
 
             {/* Trial-Banner */}
             {currentPlan === 'trial' && trialDaysLeft > 0 && (
-              <div className="flex items-center gap-1.5 mt-2 text-honey-600 text-xs font-semibold">
+              <div className="flex items-center gap-1.5 mt-2 text-amber-600 text-xs font-semibold">
                 <Clock size={12}/> Noch {trialDaysLeft} {trialDaysLeft === 1 ? 'Tag' : 'Tage'} kostenlos testen
               </div>
             )}
           </div>
           <button
             onClick={onClose}
-            className="text-cream-400 hover:text-cream-600 transition-colors p-1 rounded-lg hover:bg-cream-100 ml-4 flex-shrink-0"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100 ml-4 flex-shrink-0"
           >
             <X size={20}/>
           </button>
@@ -91,13 +91,13 @@ const UpgradeModal = ({
 
         {/* Billing Toggle */}
         <div className="flex justify-center pt-5 pb-4">
-          <div className="flex bg-cream-100 rounded-xl p-1 gap-1 text-sm font-semibold">
+          <div className="flex bg-gray-100 rounded-xl p-1 gap-1 text-sm font-semibold">
             <button
               onClick={() => setBilling('monthly')}
               className={`px-4 py-1.5 rounded-lg transition-all ${
                 billing === 'monthly'
-                  ? 'bg-white text-cream-900 shadow-sm'
-                  : 'text-cream-500 hover:text-cream-700'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Monatlich
@@ -106,12 +106,12 @@ const UpgradeModal = ({
               onClick={() => setBilling('yearly')}
               className={`px-4 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
                 billing === 'yearly'
-                  ? 'bg-white text-cream-900 shadow-sm'
-                  : 'text-cream-500 hover:text-cream-700'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Jährlich
-              <span className="bg-sage-100 text-sage-700 text-xs px-1.5 py-0.5 rounded-md font-bold">
+              <span className="bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0.5 rounded-md font-bold">
                 –20 %
               </span>
             </button>
@@ -132,13 +132,13 @@ const UpgradeModal = ({
                 key={key}
                 className={`relative rounded-2xl border-2 flex flex-col transition-all ${
                   popular
-                    ? 'border-clay-500 shadow-lg shadow-clay-100'
-                    : 'border-cream-200 hover:border-cream-300'
+                    ? 'border-indigo-500 shadow-lg shadow-indigo-100'
+                    : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 {popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-clay-600 text-white text-xs font-bold px-3 py-0.5 rounded-full">
+                    <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-0.5 rounded-full">
                       Beliebt
                     </span>
                   </div>
@@ -147,12 +147,12 @@ const UpgradeModal = ({
                 <div className="p-5 flex-1 flex flex-col">
                   {/* Plan-Name & Icon */}
                   <div className="flex items-center gap-2 mb-3">
-                    <div className={`p-1.5 rounded-lg ${popular ? 'bg-clay-100' : 'bg-cream-100'}`}>
-                      <Icon size={16} className={popular ? 'text-clay-600' : 'text-cream-600'}/>
+                    <div className={`p-1.5 rounded-lg ${popular ? 'bg-indigo-100' : 'bg-gray-100'}`}>
+                      <Icon size={16} className={popular ? 'text-indigo-600' : 'text-gray-600'}/>
                     </div>
-                    <span className="font-black text-cream-900">{plan.label}</span>
+                    <span className="font-black text-gray-900">{plan.label}</span>
                     {isCurrent && (
-                      <span className="ml-auto text-xs bg-cream-100 text-cream-500 px-2 py-0.5 rounded-full font-medium">
+                      <span className="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
                         Aktuell
                       </span>
                     )}
@@ -163,31 +163,31 @@ const UpgradeModal = ({
                     {billing === 'yearly' ? (
                       <>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-black text-cream-900">{price.perMonth}</span>
-                          <span className="text-cream-400 text-sm">/Mo</span>
+                          <span className="text-3xl font-black text-gray-900">{price.perMonth}</span>
+                          <span className="text-gray-400 text-sm">/Mo</span>
                         </div>
-                        <div className="text-xs text-cream-400 mt-0.5">
+                        <div className="text-xs text-gray-400 mt-0.5">
                           {price.display} jährlich · {price.saveLabel}
                         </div>
                       </>
                     ) : (
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-cream-900">{price.display}</span>
-                        <span className="text-cream-400 text-sm">/Mo</span>
+                        <span className="text-3xl font-black text-gray-900">{price.display}</span>
+                        <span className="text-gray-400 text-sm">/Mo</span>
                       </div>
                     )}
                   </div>
 
                   {/* Immobilien-Limit */}
-                  <div className={`text-xs font-bold mb-4 mt-1 ${popular ? 'text-clay-600' : 'text-cream-500'}`}>
+                  <div className={`text-xs font-bold mb-4 mt-1 ${popular ? 'text-indigo-600' : 'text-gray-500'}`}>
                     {plan.maxImmobilien === Infinity ? 'Unlimitierte Immobilien' : `Bis zu ${plan.maxImmobilien} Immobili${plan.maxImmobilien === 1 ? 'e' : 'en'}`}
                   </div>
 
                   {/* Feature-Liste */}
                   <ul className="space-y-2 flex-1">
                     {PLAN_FEATURES[key].map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-cream-600">
-                        <Check size={14} className={`mt-0.5 flex-shrink-0 ${popular ? 'text-clay-500' : 'text-sage-500'}`}/>
+                      <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
+                        <Check size={14} className={`mt-0.5 flex-shrink-0 ${popular ? 'text-indigo-500' : 'text-emerald-500'}`}/>
                         {f}
                       </li>
                     ))}
@@ -199,10 +199,10 @@ const UpgradeModal = ({
                     disabled={isCurrent}
                     className={`mt-5 w-full py-2.5 rounded-xl font-bold text-sm transition-all ${
                       isCurrent
-                        ? 'bg-cream-100 text-cream-400 cursor-default'
+                        ? 'bg-gray-100 text-gray-400 cursor-default'
                         : popular
-                          ? 'bg-clay-600 hover:bg-clay-700 text-white shadow-sm'
-                          : 'bg-cream-900 hover:bg-cream-800 text-white'
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                          : 'bg-gray-900 hover:bg-gray-800 text-white'
                     }`}
                   >
                     {isCurrent ? 'Aktueller Plan' : `${plan.label} wählen`}
@@ -214,13 +214,13 @@ const UpgradeModal = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-cream-100 px-6 py-3 flex items-center justify-between">
-          <p className="text-xs text-cream-400">
+        <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-between">
+          <p className="text-xs text-gray-400">
             Jederzeit kündbar · Sicher via Stripe · Keine versteckten Kosten
           </p>
           <button
             onClick={onClose}
-            className="text-xs text-cream-400 hover:text-cream-600 underline underline-offset-2"
+            className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
           >
             Schließen
           </button>

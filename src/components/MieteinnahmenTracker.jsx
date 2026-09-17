@@ -147,13 +147,13 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
   }, 0);
 
   const statusConfig = {
-    bezahlt:      { bg: 'bg-sage-50 border-sage-200', icon: <Check size={12}/>, iconColor: 'text-sage-600', label: 'bg-sage-100 text-sage-700' },
-    dauerauftrag: { bg: 'bg-sage-50 border-sage-200', icon: <Zap size={12}/>, iconColor: 'text-sage-500', label: 'bg-sage-100 text-sage-700' },
-    teilweise:    { bg: 'bg-honey-50 border-honey-200', icon: '~', iconColor: 'text-honey-600', label: 'bg-honey-100 text-honey-700' },
-    offen:        { bg: 'bg-brick-50 border-brick-200', icon: <X size={12}/>, iconColor: 'text-brick-500', label: 'bg-brick-100 text-brick-700' },
-    nicht_bezahlt:{ bg: 'bg-brick-50 border-brick-300', icon: <X size={12}/>, iconColor: 'text-brick-600', label: 'bg-brick-100 text-brick-700' },
-    zukunft:      { bg: 'bg-cream-50 border-cream-200', icon: '–', iconColor: 'text-cream-300', label: 'bg-cream-100 text-cream-400' },
-    vor_kauf:     { bg: 'bg-cream-50 border-cream-100', icon: '○', iconColor: 'text-cream-200', label: 'bg-cream-100 text-cream-300' },
+    bezahlt:      { bg: 'bg-emerald-50 border-emerald-200', icon: <Check size={12}/>, iconColor: 'text-emerald-600', label: 'bg-emerald-100 text-emerald-700' },
+    dauerauftrag: { bg: 'bg-emerald-50 border-emerald-200', icon: <Zap size={12}/>, iconColor: 'text-emerald-500', label: 'bg-emerald-100 text-emerald-700' },
+    teilweise:    { bg: 'bg-amber-50 border-amber-200', icon: '~', iconColor: 'text-amber-600', label: 'bg-amber-100 text-amber-700' },
+    offen:        { bg: 'bg-red-50 border-red-200', icon: <X size={12}/>, iconColor: 'text-red-500', label: 'bg-red-100 text-red-700' },
+    nicht_bezahlt:{ bg: 'bg-red-50 border-red-300', icon: <X size={12}/>, iconColor: 'text-red-600', label: 'bg-red-100 text-red-700' },
+    zukunft:      { bg: 'bg-gray-50 border-gray-200', icon: '–', iconColor: 'text-gray-300', label: 'bg-gray-100 text-gray-400' },
+    vor_kauf:     { bg: 'bg-gray-50 border-gray-100', icon: '○', iconColor: 'text-gray-200', label: 'bg-gray-100 text-gray-300' },
   };
 
   // Monatsliste generieren: von Kaufdatum bis heute
@@ -207,36 +207,36 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
   return (
     <div className="space-y-5">
       {/* Dauerauftrag-Einstellung */}
-      <div className={`rounded-2xl border p-5 ${isDauerauftrag ? 'bg-sage-50 border-sage-200' : 'bg-white border-cream-200'}`}>
+      <div className={`rounded-2xl border p-5 ${isDauerauftrag ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'}`}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => updateParams({ ...params, dauerauftrag: !isDauerauftrag, dauerauftragBetrag: dauerauftragBetrag || erwarteterBetrag })}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isDauerauftrag ? 'bg-sage-500' : 'bg-cream-300'}`}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isDauerauftrag ? 'bg-emerald-500' : 'bg-gray-300'}`}
             >
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${isDauerauftrag ? 'translate-x-6' : ''}`}></span>
             </button>
             <div>
-              <div className="font-bold text-cream-800 text-sm flex items-center gap-1"><Zap size={14} /> Dauerauftrag</div>
-              <div className="text-xs text-cream-500">Miete kommt automatisch — kein manuelles Abhaken nötig</div>
+              <div className="font-bold text-gray-800 text-sm flex items-center gap-1"><Zap size={14} /> Dauerauftrag</div>
+              <div className="text-xs text-gray-500">Miete kommt automatisch — kein manuelles Abhaken nötig</div>
             </div>
           </div>
           {isDauerauftrag && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-cream-500 font-medium">Erwarteter Betrag:</span>
+              <span className="text-xs text-gray-500 font-medium">Erwarteter Betrag:</span>
               <input
                 type="number"
                 value={dauerauftragBetrag}
                 onChange={e => updateParams({ ...params, dauerauftragBetrag: parseFloat(e.target.value) || 0 })}
-                className="w-28 px-3 py-1.5 text-sm font-bold border border-sage-300 rounded-lg text-sage-700 bg-white focus:ring-2 focus:ring-sage-400"
+                className="w-28 px-3 py-1.5 text-sm font-bold border border-emerald-300 rounded-lg text-emerald-700 bg-white focus:ring-2 focus:ring-emerald-400"
               />
-              <span className="text-sm text-cream-500">€/Monat</span>
+              <span className="text-sm text-gray-500">€/Monat</span>
             </div>
           )}
         </div>
         {isDauerauftrag && (
-          <p className="text-xs text-sage-600 mt-3">
+          <p className="text-xs text-emerald-600 mt-3">
             Alle vergangenen Monate werden als <Check size={12} className="inline" /> bezahlt angezeigt. Nur Ausnahmen (Verspätung, falscher Betrag) müssen erfasst werden.
           </p>
         )}
@@ -244,17 +244,17 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
 
       {/* Übersicht Forderungen */}
       {offenAnzahl > 0 && (
-        <div className="bg-brick-50 border border-brick-200 rounded-2xl p-4 flex items-center gap-4">
-          <div className="text-3xl font-black text-brick-500">{offenAnzahl}</div>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-4">
+          <div className="text-3xl font-black text-red-500">{offenAnzahl}</div>
           <div className="flex-1">
-            <div className="font-bold text-brick-700">
+            <div className="font-bold text-red-700">
               {forderungen.filter(f => f.status === 'offen').length > 0 && forderungen.filter(f => f.status === 'teilweise').length > 0
                 ? `${forderungen.filter(f => f.status === 'offen').length} offen, ${forderungen.filter(f => f.status === 'teilweise').length} teilbezahlt`
                 : forderungen.filter(f => f.status === 'offen').length > 0
                   ? `${offenAnzahl} offene Forderung${offenAnzahl !== 1 ? 'en' : ''}`
                   : `${offenAnzahl} Forderung${offenAnzahl !== 1 ? 'en' : ''} teilbezahlt`}
             </div>
-            <div className="text-sm text-brick-600">Ausstehend gesamt: <strong>{formatCurrency(offenGesamt)}</strong></div>
+            <div className="text-sm text-red-600">Ausstehend gesamt: <strong>{formatCurrency(offenGesamt)}</strong></div>
           </div>
         </div>
       )}
@@ -264,32 +264,32 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         <div className="flex gap-1">
           {jahre.map(j => (
             <button key={j} onClick={() => setFilterJahr(j)}
-              className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-cream-900 text-white' : 'bg-cream-100 text-cream-600 hover:bg-cream-200'}`}>
+              className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
               {j}
             </button>
           ))}
         </div>
-        <div className="text-right text-sm text-cream-500">
-          <span>Einnahmen {filterJahr}: <span className="font-bold text-clay-700">{formatCurrency(jahresEinnahmen)}</span></span>
+        <div className="text-right text-sm text-gray-500">
+          <span>Einnahmen {filterJahr}: <span className="font-bold text-indigo-700">{formatCurrency(jahresEinnahmen)}</span></span>
           {nkVomMieter > 0 && (
-            <div className="text-xs text-cream-400 mt-0.5">
-              davon Kaltmiete: <span className="font-semibold text-cream-600">{formatCurrency(jahresKalt)}</span>
-              {' · '}NK: <span className="font-semibold text-cream-600">{formatCurrency(jahresNKEingegangen)}</span>
+            <div className="text-xs text-gray-400 mt-0.5">
+              davon Kaltmiete: <span className="font-semibold text-gray-600">{formatCurrency(jahresKalt)}</span>
+              {' · '}NK: <span className="font-semibold text-gray-600">{formatCurrency(jahresNKEingegangen)}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Hinweis: Verlaufshistorie optional */}
-      <div className="flex items-start gap-2 p-3 bg-honey-50 rounded-lg border border-honey-200 text-xs text-honey-700">
+      <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-700">
         <Info size={14} className="shrink-0 mt-0.5" />
         <span><strong>Hinweis:</strong> Die erwarteten Beträge basieren auf der aktuellen Kaltmiete. Eine Verlaufshistorie (Mietanpassungen) ist <strong>optional</strong> — nur für den Miete-Verlaufsgraph relevant, nicht für Berechnungen.</span>
       </div>
 
       {/* Forderungs-Liste */}
-      <div className="bg-white border border-cream-200 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-cream-50 border-b border-cream-200 text-xs font-semibold text-cream-400 uppercase tracking-wide">
+        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wide">
           <div className="col-span-3">Monat</div>
           <div className="col-span-3 text-right">Forderung</div>
           <div className="col-span-3 text-right">Eingegangen</div>
@@ -300,47 +300,47 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         {forderungen.filter(f => f.jahr === filterJahr).map((f, idx) => {
           const isExpanded = detailMonat === f.monatKey;
           return (
-            <div key={f.monatKey} className={`border-b border-cream-100 last:border-0 ${isExpanded ? 'bg-clay-50' : ''}`}>
+            <div key={f.monatKey} className={`border-b border-gray-100 last:border-0 ${isExpanded ? 'bg-blue-50' : ''}`}>
               <div className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
                 {/* Monat */}
                 <div className="col-span-3">
-                  <div className="font-semibold text-cream-800 text-sm">{MONATE_NAMEN[f.monat]}</div>
-                  <div className="text-xs text-cream-400">{f.jahr}</div>
+                  <div className="font-semibold text-gray-800 text-sm">{MONATE_NAMEN[f.monat]}</div>
+                  <div className="text-xs text-gray-400">{f.jahr}</div>
                 </div>
                 {/* Forderung */}
                 <div className="col-span-3 text-right">
-                  <div className="text-sm font-semibold text-cream-700">{formatCurrency(f.forderungBetrag)}</div>
+                  <div className="text-sm font-semibold text-gray-700">{formatCurrency(f.forderungBetrag)}</div>
                 </div>
                 {/* Eingegangen */}
                 <div className="col-span-3 text-right">
                   {f.status === 'dauerauftrag' ? (
-                    <div className="text-sm font-semibold text-sage-600 flex items-center gap-1"><Zap size={12} /> Auto</div>
+                    <div className="text-sm font-semibold text-emerald-600 flex items-center gap-1"><Zap size={12} /> Auto</div>
                   ) : f.eingegangen > 0 ? (
-                    <div className={`text-sm font-bold ${f.eingegangen >= f.forderungBetrag ? 'text-sage-600' : 'text-honey-600'}`}>
+                    <div className={`text-sm font-bold ${f.eingegangen >= f.forderungBetrag ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {formatCurrency(f.eingegangen)}
                     </div>
                   ) : (
-                    <div className="text-sm text-cream-300">—</div>
+                    <div className="text-sm text-gray-300">—</div>
                   )}
                   {/* Differenz: Typo-Fix (f.differenz statt f.diferenz) */}
                   {f.eingegangen > 0 && f.differenz !== 0 && (
-                    <div className={`text-[10px] font-semibold ${f.differenz > 0 ? 'text-sage-500' : 'text-brick-500'}`}>
+                    <div className={`text-[10px] font-semibold ${f.differenz > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                       {f.differenz > 0 ? '+' : ''}{formatCurrency(f.differenz)}
                     </div>
                   )}
                   {/* Restforderung bei Teilzahlung */}
                   {f.status === 'teilweise' && (
-                    <div className="text-[10px] text-brick-500 font-semibold">
+                    <div className="text-[10px] text-red-500 font-semibold">
                       noch {formatCurrency(f.forderungBetrag - f.eingegangen)} offen
                     </div>
                   )}
                 </div>
                 {/* Status Badge */}
                 <div className="col-span-2 flex justify-center">
-                  {f.status === 'beglichen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sage-100 text-sage-700 inline-flex items-center gap-0.5"><Check size={10} /> Beglichen</span>}
-                  {f.status === 'dauerauftrag' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sage-100 text-sage-600 inline-flex items-center gap-0.5"><Zap size={10} /> Auto</span>}
-                  {f.status === 'teilweise' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-honey-100 text-honey-700">~ Teilweise</span>}
-                  {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brick-100 text-brick-600 inline-flex items-center gap-0.5"><X size={10} /> Offen</span>}
+                  {f.status === 'beglichen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 inline-flex items-center gap-0.5"><Check size={10} /> Beglichen</span>}
+                  {f.status === 'dauerauftrag' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600 inline-flex items-center gap-0.5"><Zap size={10} /> Auto</span>}
+                  {f.status === 'teilweise' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">~ Teilweise</span>}
+                  {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 inline-flex items-center gap-0.5"><X size={10} /> Offen</span>}
                 </div>
                 {/* Actions */}
                 <div className="col-span-1 flex justify-end items-center gap-1">
@@ -354,7 +354,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                           datum: heute, betrag: f.forderungBetrag, notiz: '', typ: 'kaltmiete'
                         }]);
                       }}
-                      className="px-2 py-1 bg-sage-500 hover:bg-sage-600 text-white text-xs font-bold rounded-lg transition-colors"
+                      className="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors"
                       title={`${formatCurrency(f.forderungBetrag)} als eingegangen markieren`}
                     >
                       <Check size={12} />
@@ -363,7 +363,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                   {/* Dropdown für Detailansicht / Korrektur */}
                   <button
                     onClick={() => setDetailMonat(isExpanded ? null : f.monatKey)}
-                    className="text-cream-300 hover:text-cream-500 text-sm leading-none px-1"
+                    className="text-gray-300 hover:text-gray-500 text-sm leading-none px-1"
                     title={isExpanded ? 'Schließen' : 'Details / Korrektur'}
                   >
                     {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -373,27 +373,27 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
 
               {/* Expanded Detail */}
               {isExpanded && (
-                <div className="px-4 pb-4 space-y-3 border-t border-clay-100">
+                <div className="px-4 pb-4 space-y-3 border-t border-blue-100">
                   {/* Bestehende Zahlungen */}
                   {f.zahlungen.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-xs font-semibold text-cream-500 uppercase tracking-wide mb-2">Gebuchte Zahlungen</p>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gebuchte Zahlungen</p>
                       <div className="space-y-1.5">
                         {f.zahlungen.map(z => {
                           const zahlungMieter = z.mieterId ? mieterListe.find(m => String(m.id) === String(z.mieterId)) : null;
                           return (
-                            <div key={z.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-cream-200 text-sm">
+                            <div key={z.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-200 text-sm">
                               <div>
-                                <span className="font-semibold text-sage-700">{formatCurrency(z.betrag)}</span>
-                                <span className="text-cream-400 ml-2 text-xs">eingegangen {new Date(z.datum).toLocaleDateString('de-DE')}</span>
+                                <span className="font-semibold text-emerald-700">{formatCurrency(z.betrag)}</span>
+                                <span className="text-gray-400 ml-2 text-xs">eingegangen {new Date(z.datum).toLocaleDateString('de-DE')}</span>
                                 {zahlungMieter && (
-                                  <span className="ml-2 text-xs bg-clay-50 text-clay-600 px-1.5 py-0.5 rounded-full font-medium inline-flex items-center gap-0.5">
+                                  <span className="ml-2 text-xs bg-blue-50 text-indigo-600 px-1.5 py-0.5 rounded-full font-medium inline-flex items-center gap-0.5">
                                     <User size={11} /> {zahlungMieter.name}
                                   </span>
                                 )}
-                                {z.notiz && <span className="text-cream-400 ml-2 text-xs">· {z.notiz}</span>}
+                                {z.notiz && <span className="text-gray-400 ml-2 text-xs">· {z.notiz}</span>}
                               </div>
-                              <button onClick={() => handleDeleteEingang(z.id)} className="text-brick-400 hover:text-brick-600 text-xs px-2"><X size={12} /></button>
+                              <button onClick={() => handleDeleteEingang(z.id)} className="text-red-400 hover:text-red-600 text-xs px-2"><X size={12} /></button>
                             </div>
                           );
                         })}
@@ -418,24 +418,24 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         })}
 
         {forderungen.filter(f => f.jahr === filterJahr).length === 0 && (
-          <div className="px-4 py-8 text-center text-cream-400 text-sm">
+          <div className="px-4 py-8 text-center text-gray-400 text-sm">
             Kein Kaufdatum hinterlegt oder keine Monate in diesem Jahr.
           </div>
         )}
       </div>
 
       {/* NK-Abrechnungen */}
-      <div className="bg-white border border-cream-200 rounded-2xl p-5 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-cream-600 uppercase tracking-wide flex items-center gap-1"><FileText size={14} /> NK-Abrechnungen</h3>
+          <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1"><FileText size={14} /> NK-Abrechnungen</h3>
           <button onClick={() => setShowNKModal(true)}
-            className="px-3 py-1.5 bg-clay-600 text-white text-xs font-bold rounded-lg hover:bg-clay-700 transition-colors">
+            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
             + NK-Abrechnung
           </button>
         </div>
 
         {nkAbrechnungen.length === 0 ? (
-          <p className="text-sm text-cream-400 text-center py-3">Noch keine NK-Abrechnungen erfasst</p>
+          <p className="text-sm text-gray-400 text-center py-3">Noch keine NK-Abrechnungen erfasst</p>
         ) : (
           <div className="space-y-3">
             {nkAbrechnungen.map(abr => {
@@ -458,32 +458,32 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                 updateParams({ ...params, nkAbrechnungen: updated });
               };
               return (
-                <div key={abr.id} className={`rounded-xl border p-4 ${istVollstaendigBezahlt ? 'bg-sage-50 border-sage-200' : abr.typ === 'nachzahlung' ? 'bg-sage-50 border-sage-200' : 'bg-honey-50 border-honey-200'}`}>
+                <div key={abr.id} className={`rounded-xl border p-4 ${istVollstaendigBezahlt ? 'bg-emerald-50 border-emerald-200' : abr.typ === 'nachzahlung' ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'}`}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${abr.typ === 'nachzahlung' ? 'bg-sage-100 text-sage-700' : 'bg-honey-100 text-honey-700'}`}>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${abr.typ === 'nachzahlung' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                           {abr.typ === 'nachzahlung' ? <span className="inline-flex items-center gap-1"><TrendingDown size={12} /> Nachzahlung</span> : <span className="inline-flex items-center gap-1"><Wallet size={12} /> Erstattung</span>}
                         </span>
-                        <span className="text-xs text-cream-500">NK {abr.abrechnungsjahr}</span>
-                        {istVollstaendigBezahlt && <span className="text-xs font-bold text-sage-600 inline-flex items-center gap-0.5"><Check size={11} /> Abgeschlossen</span>}
+                        <span className="text-xs text-gray-500">NK {abr.abrechnungsjahr}</span>
+                        {istVollstaendigBezahlt && <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-0.5"><Check size={11} /> Abgeschlossen</span>}
                       </div>
-                      <div className="text-lg font-black text-cream-800 mt-1">{formatCurrency(abr.gesamtbetrag)}</div>
-                      {abr.notiz && <div className="text-xs text-cream-500">{abr.notiz}</div>}
+                      <div className="text-lg font-black text-gray-800 mt-1">{formatCurrency(abr.gesamtbetrag)}</div>
+                      {abr.notiz && <div className="text-xs text-gray-500">{abr.notiz}</div>}
                     </div>
-                    <button onClick={deleteAbr} className="text-brick-400 hover:text-brick-600 text-xs"><X size={12} /></button>
+                    <button onClick={deleteAbr} className="text-red-400 hover:text-red-600 text-xs"><X size={12} /></button>
                   </div>
                   {/* Raten */}
                   <div className="space-y-1.5">
                     {abr.raten.map(rate => (
-                      <div key={rate.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border text-sm ${rate.bezahlt ? 'bg-sage-50 border-sage-200 text-sage-700' : 'bg-white border-cream-200'}`}>
+                      <div key={rate.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border text-sm ${rate.bezahlt ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-center gap-2">
                           <button onClick={() => toggleRate(rate.id)}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center text-xs font-bold transition-colors ${rate.bezahlt ? 'bg-sage-500 border-sage-500 text-white' : 'border-cream-300 hover:border-sage-400'}`}>
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center text-xs font-bold transition-colors ${rate.bezahlt ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 hover:border-emerald-400'}`}>
                             {rate.bezahlt ? <Check size={10} /> : ''}
                           </button>
-                          <span className={`font-semibold ${rate.bezahlt ? '' : 'text-cream-800'}`}>{formatCurrency(rate.betrag)}</span>
-                          <span className="text-xs text-cream-400">
+                          <span className={`font-semibold ${rate.bezahlt ? '' : 'text-gray-800'}`}>{formatCurrency(rate.betrag)}</span>
+                          <span className="text-xs text-gray-400">
                             {rate.bezahlt ? `bezahlt ${rate.bezahltAm ? new Date(rate.bezahltAm).toLocaleDateString('de-DE') : ''}` : `fällig ${new Date(rate.faelligDatum).toLocaleDateString('de-DE')}`}
                           </span>
                         </div>
@@ -491,7 +491,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                     ))}
                   </div>
                   {!istVollstaendigBezahlt && (
-                    <div className="mt-2 text-xs text-cream-500">
+                    <div className="mt-2 text-xs text-gray-500">
                       Noch offen: <strong>{formatCurrency(abr.gesamtbetrag - bezahltBetrag)}</strong> ({offeneRaten.length} Rate{offeneRaten.length !== 1 ? 'n' : ''})
                     </div>
                   )}

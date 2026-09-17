@@ -325,9 +325,9 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
 }
 
 export const PRIORITY_STYLE = {
-  rot: { dot: 'bg-brick-500', badge: 'bg-brick-100 text-brick-700', row: 'border-brick-100 hover:bg-brick-50' },
-  gelb: { dot: 'bg-honey-400', badge: 'bg-honey-100 text-honey-700', row: 'border-honey-100 hover:bg-honey-50' },
-  gruen: { dot: 'bg-sage-500', badge: 'bg-sage-100 text-sage-700', row: 'border-sage-100 hover:bg-sage-50' },
+  rot: { dot: 'bg-red-500', badge: 'bg-red-100 text-red-700', row: 'border-red-100 hover:bg-red-50' },
+  gelb: { dot: 'bg-amber-400', badge: 'bg-amber-100 text-amber-700', row: 'border-amber-100 hover:bg-amber-50' },
+  gruen: { dot: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700', row: 'border-emerald-100 hover:bg-emerald-50' },
 };
 
 const LS_AKTIV_KEY = 'vermieter-todos-aktiv';
@@ -358,50 +358,50 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
   const anzahlGruen = todos.filter(t => t.priority === 'gruen').length;
 
   return (
-    <div className="bg-white border border-cream-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-cream-50 transition-all select-none"
+        className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-all select-none"
         onClick={() => aktiv && setCollapsed(c => !c)}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <CheckCircle2 size={18} className={aktiv ? 'text-sage-500' : 'text-cream-300'} />
-          <span className={`font-bold ${aktiv ? 'text-cream-800' : 'text-cream-400'}`}>Vermieter-Aufgaben</span>
+          <CheckCircle2 size={18} className={aktiv ? 'text-emerald-500' : 'text-gray-300'} />
+          <span className={`font-bold ${aktiv ? 'text-gray-800' : 'text-gray-400'}`}>Vermieter-Aufgaben</span>
           {aktiv && todos.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
               {anzahlRot > 0 && (
-                <span className="text-xs font-bold bg-brick-100 text-brick-700 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                   {anzahlRot} dringend
                 </span>
               )}
               {anzahlGelb > 0 && (
-                <span className="text-xs font-bold bg-honey-100 text-honey-700 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                   {anzahlGelb} offen
                 </span>
               )}
               {anzahlGruen > 0 && (
-                <span className="text-xs font-bold bg-sage-100 text-sage-700 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                   {anzahlGruen} Hinweis
                 </span>
               )}
             </div>
           )}
           {!aktiv && (
-            <span className="text-xs text-cream-400">deaktiviert</span>
+            <span className="text-xs text-gray-400">deaktiviert</span>
           )}
         </div>
 
         {/* Regler (Toggle) */}
         <button
           onClick={toggleAktiv}
-          className={`relative flex-shrink-0 w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none mx-2 ${aktiv ? 'bg-sage-500' : 'bg-cream-200'}`}
+          className={`relative flex-shrink-0 w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none mx-2 ${aktiv ? 'bg-emerald-500' : 'bg-gray-200'}`}
           title={aktiv ? 'Aufgaben deaktivieren' : 'Aufgaben aktivieren'}
         >
           <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${aktiv ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
 
         {aktiv && (
-          <span className={`text-cream-400 transition-transform inline-flex ${collapsed ? '' : 'rotate-180'}`}>
+          <span className={`text-gray-400 transition-transform inline-flex ${collapsed ? '' : 'rotate-180'}`}>
             <ChevronDown size={14} />
           </span>
         )}
@@ -409,17 +409,17 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
 
       {/* Content — nur wenn aktiv und nicht collapsed */}
       {aktiv && !collapsed && (
-        <div className="border-t border-cream-100">
+        <div className="border-t border-gray-100">
           {todos.length === 0 ? (
             <div className="text-center py-10 px-5">
               <div className="flex justify-center mb-3">
-                <CheckCircle2 size={40} className="text-sage-400" />
+                <CheckCircle2 size={40} className="text-emerald-400" />
               </div>
-              <div className="font-bold text-cream-700 mb-1">Alles erledigt!</div>
-              <div className="text-sm text-cream-400">Keine offenen Aufgaben. Gut gemacht.</div>
+              <div className="font-bold text-gray-700 mb-1">Alles erledigt!</div>
+              <div className="text-sm text-gray-400">Keine offenen Aufgaben. Gut gemacht.</div>
             </div>
           ) : (
-            <div className="divide-y divide-cream-50">
+            <div className="divide-y divide-gray-50">
               {todos.map(todo => {
                 const style = PRIORITY_STYLE[todo.priority];
                 const immo = portfolio.find(i => i.id === todo.immoId);
@@ -430,18 +430,18 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                     className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row} ${immo && onSelectImmobilie ? 'cursor-pointer' : ''}`}
                   >
                     <div className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${style.dot}`} />
-                    <div className="flex-shrink-0 w-7 flex items-center justify-center text-cream-500">
+                    <div className="flex-shrink-0 w-7 flex items-center justify-center text-gray-500">
                       {todo.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-cream-800 text-sm leading-snug truncate">{todo.titel}</div>
-                      <div className="text-xs text-cream-400 mt-0.5 truncate">{todo.sub}</div>
+                      <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
+                      <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
                     </div>
                     <div className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${style.badge}`}>
                       {todo.badge}
                     </div>
                     {immo && onSelectImmobilie && (
-                      <div className="flex-shrink-0 text-cream-300 text-sm">›</div>
+                      <div className="flex-shrink-0 text-gray-300 text-sm">›</div>
                     )}
                   </div>
                 );
