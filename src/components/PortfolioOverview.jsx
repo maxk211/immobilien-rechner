@@ -115,54 +115,54 @@ const PortfolioOverview = ({ portfolio }) => {
       {/* Top KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
         {/* Cashflow — most important, gets visual prominence */}
-        <div className={`col-span-2 md:col-span-1 rounded-2xl p-3 sm:p-5 border ${cfPositiv ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Monatl. Cashflow</div>
-          <div className={`text-2xl sm:text-3xl font-black ${cfPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
+        <div className={`col-span-2 md:col-span-1 rounded-2xl p-3 sm:p-5 border ${cfPositiv ? 'bg-sage-50 border-sage-200' : 'bg-brick-50 border-brick-200'}`}>
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-cream-500 mb-1">Monatl. Cashflow</div>
+          <div className={`text-2xl sm:text-3xl font-black ${cfPositiv ? 'text-sage-600' : 'text-brick-600'}`}>
             {stats.gesamtCashflowMonat >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowMonat)}
           </div>
-          <div className={`text-xs mt-1 font-medium ${cfPositiv ? 'text-emerald-500' : 'text-red-400'}`}>
+          <div className={`text-xs mt-1 font-medium ${cfPositiv ? 'text-sage-500' : 'text-brick-400'}`}>
             {stats.gesamtCashflowJahr >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowJahr)} p.a.
           </div>
-          <div className="text-xs text-gray-400 mt-0.5 hidden sm:block">nach Kredit &amp; Kosten</div>
+          <div className="text-xs text-cream-400 mt-0.5 hidden sm:block">nach Kredit &amp; Kosten</div>
         </div>
 
         {/* Mieteinnahmen */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Mieteinnahmen</div>
-          <div className="text-xl sm:text-2xl font-black text-gray-800">{formatCurrency(stats.gesamtMieteMonat)}</div>
-          <div className="text-xs text-gray-400 mt-1 font-medium">{formatCurrency(stats.gesamtMieteJahr)} p.a.</div>
+        <div className="rounded-2xl bg-white border border-cream-200 p-3 sm:p-5 shadow-sm">
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-cream-400 mb-1">Mieteinnahmen</div>
+          <div className="text-xl sm:text-2xl font-black text-cream-800">{formatCurrency(stats.gesamtMieteMonat)}</div>
+          <div className="text-xs text-cream-400 mt-1 font-medium">{formatCurrency(stats.gesamtMieteJahr)} p.a.</div>
         </div>
 
         {/* Gesamtwert */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Portfoliowert</div>
-          <div className="text-xl sm:text-2xl font-black text-slate-800">{formatCurrency(stats.gesamtWert)}</div>
+        <div className="rounded-2xl bg-white border border-cream-200 p-3 sm:p-5 shadow-sm">
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-cream-400 mb-1">Portfoliowert</div>
+          <div className="text-xl sm:text-2xl font-black text-cream-800">{formatCurrency(stats.gesamtWert)}</div>
           {stats.wertsteigerung !== 0 && (
-            <div className={`text-xs mt-1 font-semibold flex items-center gap-0.5 ${stats.wertsteigerung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+            <div className={`text-xs mt-1 font-semibold flex items-center gap-0.5 ${stats.wertsteigerung >= 0 ? 'text-sage-500' : 'text-brick-500'}`}>
               {stats.wertsteigerung >= 0 ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {formatCurrency(Math.abs(stats.wertsteigerung))}
             </div>
           )}
-          <div className="text-xs text-gray-400 mt-0.5">
+          <div className="text-xs text-cream-400 mt-0.5">
             {stats.anzahl} Objekt{stats.anzahl !== 1 ? 'e' : ''}
           </div>
         </div>
 
         {/* EK-Rendite */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">EK-Rendite</div>
+        <div className="rounded-2xl bg-white border border-cream-200 p-3 sm:p-5 shadow-sm">
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-cream-400 mb-1">EK-Rendite</div>
           {stats.ekRendite !== null ? (
             <>
-              <div className={`text-xl sm:text-2xl font-black ${stats.ekRendite >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+              <div className={`text-xl sm:text-2xl font-black ${stats.ekRendite >= 0 ? 'text-honey-600' : 'text-brick-600'}`}>
                 {stats.ekRendite >= 0 ? '+' : ''}{stats.ekRendite.toFixed(1)} %
               </div>
-              <div className="text-xs text-gray-400 mt-1 font-medium">
+              <div className="text-xs text-cream-400 mt-1 font-medium">
                 EK: {formatCurrency(stats.gesamtEigenkapital)}
               </div>
             </>
           ) : (
             <>
-              <div className="text-xl sm:text-2xl font-black text-gray-300">–</div>
-              <div className="text-xs text-gray-400 mt-1">Kein EK erfasst</div>
+              <div className="text-xl sm:text-2xl font-black text-cream-300">–</div>
+              <div className="text-xs text-cream-400 mt-1">Kein EK erfasst</div>
             </>
           )}
         </div>
@@ -172,12 +172,12 @@ const PortfolioOverview = ({ portfolio }) => {
       {stats.anzahlKaufimmobilien > 0 && (
         <div className="flex flex-col sm:flex-row gap-3 mb-4 items-stretch">
           {/* Freies Vermögen — kompakt */}
-          <div className="flex-shrink-0 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 p-3 sm:p-4 shadow-sm sm:w-48">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Freies Vermögen</div>
-            <div className="text-lg sm:text-xl font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
-            <div className="text-xs text-amber-500 mt-0.5">Marktwert − Restschuld</div>
+          <div className="flex-shrink-0 rounded-2xl bg-gradient-to-br from-honey-50 to-honey-50 border border-honey-200 p-3 sm:p-4 shadow-sm sm:w-48">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-honey-600 mb-1">Freies Vermögen</div>
+            <div className="text-lg sm:text-xl font-black text-honey-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
+            <div className="text-xs text-honey-500 mt-0.5">Marktwert − Restschuld</div>
             {stats.gesamtRestschuld > 0 && (
-              <div className="text-[10px] text-gray-400 mt-0.5">Schulden: {formatCurrency(stats.gesamtRestschuld)}</div>
+              <div className="text-[10px] text-cream-400 mt-0.5">Schulden: {formatCurrency(stats.gesamtRestschuld)}</div>
             )}
           </div>
           {/* Portfolio-Ziele inline */}
@@ -189,50 +189,50 @@ const PortfolioOverview = ({ portfolio }) => {
 
       {/* Vermögensdetails pro Objekt */}
       {stats.vermoegenProImmo.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
+        <div className="bg-white border border-cream-200 rounded-2xl shadow-sm overflow-hidden mb-4">
           <button
             onClick={() => setShowVermoegenDetail(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-cream-50 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-700 text-sm flex items-center gap-1"><BarChart3 size={16}/>Vermögensaufbau pro Objekt</span>
-              <span className="text-xs text-gray-400">{stats.vermoegenProImmo.length} Kaufobjekt{stats.vermoegenProImmo.length !== 1 ? 'e' : ''}</span>
+              <span className="font-bold text-cream-700 text-sm flex items-center gap-1"><BarChart3 size={16}/>Vermögensaufbau pro Objekt</span>
+              <span className="text-xs text-cream-400">{stats.vermoegenProImmo.length} Kaufobjekt{stats.vermoegenProImmo.length !== 1 ? 'e' : ''}</span>
             </div>
-            <span className="text-gray-400 text-sm">{showVermoegenDetail ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
+            <span className="text-cream-400 text-sm">{showVermoegenDetail ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
           </button>
           {showVermoegenDetail && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-y border-gray-100">
+                <thead className="bg-cream-50 border-y border-cream-100">
                   <tr>
-                    <th className="text-left px-3 sm:px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Objekt</th>
-                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Kaufpreis</th>
-                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Marktwert</th>
-                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Restschuld</th>
-                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-amber-700 uppercase">Freies EK</th>
-                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-teal-600 uppercase">Tilgung {new Date().getFullYear()}</th>
+                    <th className="text-left px-3 sm:px-4 py-2 text-xs font-semibold text-cream-500 uppercase">Objekt</th>
+                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-cream-500 uppercase">Kaufpreis</th>
+                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-cream-500 uppercase">Marktwert</th>
+                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-cream-500 uppercase">Restschuld</th>
+                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-honey-700 uppercase">Freies EK</th>
+                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-sage-600 uppercase">Tilgung {new Date().getFullYear()}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-cream-50">
                   {stats.vermoegenProImmo.map(v => (
-                    <tr key={v.id} className="hover:bg-gray-50">
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-gray-800 truncate max-w-[120px] sm:max-w-[160px] text-sm">{v.name}</td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-right text-gray-500">{formatCurrency(v.kaufpreis)}</td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-right text-gray-700 font-semibold">{formatCurrency(v.marktwert)}</td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-right text-red-500">{formatCurrency(v.restschuld)}</td>
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-amber-800 font-bold text-sm">{formatCurrency(v.freiVermoegen)}</td>
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-teal-700 font-bold text-sm">+{formatCurrency(v.tilgungJahr)}</td>
+                    <tr key={v.id} className="hover:bg-cream-50">
+                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-cream-800 truncate max-w-[120px] sm:max-w-[160px] text-sm">{v.name}</td>
+                      <td className="hidden sm:table-cell px-4 py-3 text-right text-cream-500">{formatCurrency(v.kaufpreis)}</td>
+                      <td className="hidden sm:table-cell px-4 py-3 text-right text-cream-700 font-semibold">{formatCurrency(v.marktwert)}</td>
+                      <td className="hidden sm:table-cell px-4 py-3 text-right text-brick-500">{formatCurrency(v.restschuld)}</td>
+                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-honey-800 font-bold text-sm">{formatCurrency(v.freiVermoegen)}</td>
+                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-sage-700 font-bold text-sm">+{formatCurrency(v.tilgungJahr)}</td>
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-slate-100 border-t-2 border-slate-200">
+                <tfoot className="bg-cream-100 border-t-2 border-cream-200">
                   <tr>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-black text-gray-800 text-xs uppercase">Gesamt</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-gray-600">{formatCurrency(stats.gesamtKaufpreis)}</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-gray-800">{formatCurrency(stats.gesamtWert)}</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-red-600">{formatCurrency(stats.gesamtRestschuld)}</td>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</td>
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-black text-cream-800 text-xs uppercase">Gesamt</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-cream-600">{formatCurrency(stats.gesamtKaufpreis)}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-cream-800">{formatCurrency(stats.gesamtWert)}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-brick-600">{formatCurrency(stats.gesamtRestschuld)}</td>
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-honey-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-sage-700">+{formatCurrency(stats.gesamtTilgungJahr)}</td>
                   </tr>
                 </tfoot>
               </table>

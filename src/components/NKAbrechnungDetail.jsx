@@ -19,7 +19,7 @@ const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
     versendet: <span className="inline-flex items-center gap-1"><Mail size={12} /> Versendet</span>,
     abgeschlossen: <span className="inline-flex items-center gap-1"><CheckCircle2 size={12} /> Abgeschlossen</span>
   };
-  const statusColor = { entwurf: 'bg-yellow-100 text-yellow-700', versendet: 'bg-blue-100 text-indigo-700', abgeschlossen: 'bg-green-100 text-green-700' };
+  const statusColor = { entwurf: 'bg-honey-100 text-honey-700', versendet: 'bg-clay-100 text-clay-700', abgeschlossen: 'bg-sage-100 text-sage-700' };
 
   const exportPDF = async () => {
     const jsPDF = await getJsPDF();
@@ -130,44 +130,44 @@ const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-teal-700 text-white p-5 rounded-t-xl flex justify-between items-center">
+        <div className="sticky top-0 bg-sage-700 text-white p-5 rounded-t-xl flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2"><FileText size={18} /> NK-Abrechnung {abrechnung.abrechnungsjahr}</h2>
-            <p className="text-teal-200 text-sm">{abrechnung.mieter_name} · {abrechnung.immobilie_name}</p>
+            <p className="text-sage-200 text-sm">{abrechnung.mieter_name} · {abrechnung.immobilie_name}</p>
           </div>
-          <button onClick={onClose} className="text-white hover:text-teal-200"><X size={20} /></button>
+          <button onClick={onClose} className="text-white hover:text-sage-200"><X size={20} /></button>
         </div>
 
         <div className="p-6 space-y-4">
           {/* Status */}
           <div className="flex items-center justify-between">
-            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${statusColor[abrechnung.status] || 'bg-gray-100 text-gray-600'}`}>
+            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${statusColor[abrechnung.status] || 'bg-cream-100 text-cream-600'}`}>
               {statusBadge[abrechnung.status] || abrechnung.status}
             </span>
-            <span className="text-xs text-gray-400">Erstellt: {new Date(abrechnung.created_at).toLocaleDateString('de-DE')}</span>
+            <span className="text-xs text-cream-400">Erstellt: {new Date(abrechnung.created_at).toLocaleDateString('de-DE')}</span>
           </div>
 
           {/* Flächeninfo */}
-          <div className="bg-gray-50 rounded-lg p-3 text-sm grid grid-cols-3 gap-2">
-            <div><div className="text-xs text-gray-500">Mieterfläche</div><div className="font-semibold">{mf} m²</div></div>
-            <div><div className="text-xs text-gray-500">Gesamtfläche</div><div className="font-semibold">{gf} m²</div></div>
-            <div><div className="text-xs text-gray-500">Anteil</div><div className="font-semibold text-teal-700">{gf > 0 ? ((mf/gf)*100).toFixed(1) : '—'} %</div></div>
+          <div className="bg-cream-50 rounded-lg p-3 text-sm grid grid-cols-3 gap-2">
+            <div><div className="text-xs text-cream-500">Mieterfläche</div><div className="font-semibold">{mf} m²</div></div>
+            <div><div className="text-xs text-cream-500">Gesamtfläche</div><div className="font-semibold">{gf} m²</div></div>
+            <div><div className="text-xs text-cream-500">Anteil</div><div className="font-semibold text-sage-700">{gf > 0 ? ((mf/gf)*100).toFixed(1) : '—'} %</div></div>
           </div>
 
           {/* Positionen */}
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">Kostenaufstellung</p>
+            <p className="text-sm font-semibold text-cream-700 mb-2">Kostenaufstellung</p>
             <div className="space-y-1">
               {positionen.map((pos, idx) => {
                 const anteil = berechneMieteranteil(pos, mf, gf, ap);
                 return (
-                  <div key={idx} className="flex justify-between text-sm py-1 border-b border-gray-100">
-                    <span className="text-gray-700">{pos.bezeichnung}</span>
+                  <div key={idx} className="flex justify-between text-sm py-1 border-b border-cream-100">
+                    <span className="text-cream-700">{pos.bezeichnung}</span>
                     <div className="text-right">
-                      <span className="font-semibold text-gray-800">
+                      <span className="font-semibold text-cream-800">
                         {anteil.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </span>
-                      <span className="text-xs text-gray-400 ml-1">
+                      <span className="text-xs text-cream-400 ml-1">
                         (von {(Number(pos.gesamtkosten)||0).toLocaleString('de-DE', {minimumFractionDigits:2})} €)
                       </span>
                     </div>
@@ -178,37 +178,37 @@ const NKAbrechnungDetail = ({ abrechnung, onEdit, onDelete, onClose }) => {
           </div>
 
           {/* Ergebnis */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+          <div className="bg-cream-50 rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">NK-Kosten gesamt (Ihr Anteil)</span>
+              <span className="text-cream-600">NK-Kosten gesamt (Ihr Anteil)</span>
               <span className="font-semibold">{gesamtMieteranteil.toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">./. Vorauszahlungen</span>
+              <span className="text-cream-600">./. Vorauszahlungen</span>
               <span className="font-semibold">− {vorauszahlungen.toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
             </div>
-            <div className={`flex justify-between font-bold pt-2 border-t border-gray-200 ${ergebnis > 0 ? 'text-red-700' : ergebnis < 0 ? 'text-green-700' : 'text-gray-700'}`}>
+            <div className={`flex justify-between font-bold pt-2 border-t border-cream-200 ${ergebnis > 0 ? 'text-brick-700' : ergebnis < 0 ? 'text-sage-700' : 'text-cream-700'}`}>
               <span className="flex items-center gap-1">{ergebnis > 0 ? <><TrendingDown size={14} /> Nachzahlung Mieter</> : ergebnis < 0 ? <><TrendingUp size={14} /> Guthaben Mieter</> : 'Ergebnis'}</span>
               <span>{Math.abs(ergebnis).toLocaleString('de-DE', {minimumFractionDigits:2})} €</span>
             </div>
           </div>
 
           {abrechnung.notizen && (
-            <div className="text-xs text-gray-500 bg-gray-50 rounded p-3 flex items-start gap-1"><FileText size={12} className="mt-0.5 shrink-0" /> {abrechnung.notizen}</div>
+            <div className="text-xs text-cream-500 bg-cream-50 rounded p-3 flex items-start gap-1"><FileText size={12} className="mt-0.5 shrink-0" /> {abrechnung.notizen}</div>
           )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
             <button onClick={exportPDF}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-semibold text-sm">
+              className="flex-1 px-4 py-2 bg-sage-600 text-white rounded-lg hover:bg-sage-700 font-semibold text-sm">
               <Download size={14} className="inline mr-1" /> PDF herunterladen
             </button>
             <button onClick={onEdit}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center gap-1">
+              className="px-4 py-2 bg-cream-100 text-cream-700 rounded-lg hover:bg-cream-200 text-sm flex items-center gap-1">
               <Pencil size={14} /> Bearbeiten
             </button>
             <button onClick={onDelete}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm">
+              className="px-4 py-2 bg-brick-50 text-brick-600 rounded-lg hover:bg-brick-100 text-sm">
               <Trash2 size={14} />
             </button>
           </div>

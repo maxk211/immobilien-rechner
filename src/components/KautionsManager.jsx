@@ -62,43 +62,43 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
   };
 
   const statusBadge = (k) => {
-    if (k.zurueckgegeben) return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1"><Undo2 size={11} /> Zurückgegeben</span>;
-    if (k.eingegangen) return <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700 inline-flex items-center gap-1"><CheckCircle2 size={11} /> Eingegangen</span>;
-    return <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600 inline-flex items-center gap-1"><AlertCircle size={11} /> Ausstehend</span>;
+    if (k.zurueckgegeben) return <span className="px-2 py-0.5 text-xs rounded-full bg-cream-100 text-cream-600 inline-flex items-center gap-1"><Undo2 size={11} /> Zurückgegeben</span>;
+    if (k.eingegangen) return <span className="px-2 py-0.5 text-xs rounded-full bg-sage-100 text-sage-700 inline-flex items-center gap-1"><CheckCircle2 size={11} /> Eingegangen</span>;
+    return <span className="px-2 py-0.5 text-xs rounded-full bg-brick-100 text-brick-600 inline-flex items-center gap-1"><AlertCircle size={11} /> Ausstehend</span>;
   };
 
   return (
     <div className="space-y-4">
       {/* Übersicht */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-emerald-600 font-semibold uppercase mb-1">Kaution gehalten</p>
-          <p className="text-2xl font-black text-emerald-700">{totalGehalten.toLocaleString('de-DE')} €</p>
+        <div className="bg-sage-50 border border-sage-200 rounded-xl p-4 text-center">
+          <p className="text-xs text-sage-600 font-semibold uppercase mb-1">Kaution gehalten</p>
+          <p className="text-2xl font-black text-sage-700">{totalGehalten.toLocaleString('de-DE')} €</p>
         </div>
-        <div className={`${anzahlOffen > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 text-center`}>
-          <p className="text-xs text-gray-600 font-semibold uppercase mb-1">Ausstehend</p>
-          <p className={`text-2xl font-black ${anzahlOffen > 0 ? 'text-red-600' : 'text-gray-400'}`}>{anzahlOffen}</p>
+        <div className={`${anzahlOffen > 0 ? 'bg-brick-50 border-brick-200' : 'bg-cream-50 border-cream-200'} border rounded-xl p-4 text-center`}>
+          <p className="text-xs text-cream-600 font-semibold uppercase mb-1">Ausstehend</p>
+          <p className={`text-2xl font-black ${anzahlOffen > 0 ? 'text-brick-600' : 'text-cream-400'}`}>{anzahlOffen}</p>
         </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-indigo-600 font-semibold uppercase mb-1">Gesamt Einträge</p>
-          <p className="text-2xl font-black text-indigo-700">{kautionen.length}</p>
+        <div className="bg-clay-50 border border-clay-200 rounded-xl p-4 text-center">
+          <p className="text-xs text-clay-600 font-semibold uppercase mb-1">Gesamt Einträge</p>
+          <p className="text-2xl font-black text-clay-700">{kautionen.length}</p>
         </div>
       </div>
 
       {/* Vorschläge aus bereits erfassten Mietern — spart erneutes Eintippen von Name/Betrag */}
       {offeneVorschlaege.length > 0 && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 space-y-2">
-          <p className="text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
+        <div className="bg-clay-50 border border-clay-100 rounded-xl p-3 space-y-2">
+          <p className="text-xs font-semibold text-clay-700 flex items-center gap-1.5">
             <Sparkles size={13} /> Aus Mieterdaten übernehmen
           </p>
           {offeneVorschlaege.map(m => (
             <button
               key={m.id}
               onClick={() => uebernehmeVorschlag(m)}
-              className="w-full flex items-center justify-between bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm hover:bg-indigo-100/50 transition-colors"
+              className="w-full flex items-center justify-between bg-white border border-clay-200 rounded-lg px-3 py-2 text-sm hover:bg-clay-100/50 transition-colors"
             >
-              <span className="font-medium text-gray-800">{m.name}</span>
-              <span className="text-indigo-600 font-semibold">{(Number(m.kaution_betrag) || 0).toLocaleString('de-DE')} € übernehmen</span>
+              <span className="font-medium text-cream-800">{m.name}</span>
+              <span className="text-clay-600 font-semibold">{(Number(m.kaution_betrag) || 0).toLocaleString('de-DE')} € übernehmen</span>
             </button>
           ))}
         </div>
@@ -106,22 +106,22 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
 
       <button
         onClick={() => openForm()}
-        className="w-full py-2 border-2 border-dashed border-blue-300 rounded-xl text-indigo-600 text-sm font-semibold hover:bg-blue-50"
+        className="w-full py-2 border-2 border-dashed border-clay-300 rounded-xl text-clay-600 text-sm font-semibold hover:bg-clay-50"
       >
         + Kaution hinzufügen
       </button>
 
       {/* Liste */}
       {kautionen.length === 0 ? (
-        <p className="text-center text-gray-400 text-sm py-6">Noch keine Kautionen erfasst.</p>
+        <p className="text-center text-cream-400 text-sm py-6">Noch keine Kautionen erfasst.</p>
       ) : (
         <div className="space-y-3">
           {kautionen.map((k, idx) => (
-            <div key={k.id || idx} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div key={k.id || idx} className="bg-white border border-cream-200 rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <p className="font-semibold text-gray-900">{k.mieterName || 'Unbekannter Mieter'}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="font-semibold text-cream-900">{k.mieterName || 'Unbekannter Mieter'}</p>
+                  <p className="text-xs text-cream-500">
                     {k.mietbeginn && `Mietbeginn: ${k.mietbeginn}`}
                     {k.mietende && ` · Ende: ${k.mietende}`}
                   </p>
@@ -130,22 +130,22 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
               </div>
               <div className="grid grid-cols-3 gap-2 text-sm mb-3">
                 <div>
-                  <span className="text-gray-500 text-xs">Vereinbart</span>
+                  <span className="text-cream-500 text-xs">Vereinbart</span>
                   <p className="font-semibold">{(Number(k.vereinbartBetrag) || 0).toLocaleString('de-DE')} €</p>
                 </div>
                 <div>
-                  <span className="text-gray-500 text-xs">Eingegangen</span>
+                  <span className="text-cream-500 text-xs">Eingegangen</span>
                   <p className="font-semibold">{k.eingegangen ? `${(Number(k.eingegangenBetrag) || 0).toLocaleString('de-DE')} €` : '—'}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500 text-xs">Abzug</span>
-                  <p className="font-semibold text-red-600">{k.abzugBetrag > 0 ? `-${Number(k.abzugBetrag).toLocaleString('de-DE')} €` : '—'}</p>
+                  <span className="text-cream-500 text-xs">Abzug</span>
+                  <p className="font-semibold text-brick-600">{k.abzugBetrag > 0 ? `-${Number(k.abzugBetrag).toLocaleString('de-DE')} €` : '—'}</p>
                 </div>
               </div>
-              {k.abzugGrund && <p className="text-xs text-gray-500 mb-2">Abzugsgrund: {k.abzugGrund}</p>}
+              {k.abzugGrund && <p className="text-xs text-cream-500 mb-2">Abzugsgrund: {k.abzugGrund}</p>}
               <div className="flex gap-2">
-                <button onClick={() => openForm(idx)} className="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-1"><Pencil size={11} /> Bearbeiten</button>
-                <button onClick={() => deleteKaution(idx)} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center gap-1"><Trash2 size={11} /> Löschen</button>
+                <button onClick={() => openForm(idx)} className="px-3 py-1 text-xs bg-cream-100 rounded-lg hover:bg-cream-200 flex items-center gap-1"><Pencil size={11} /> Bearbeiten</button>
+                <button onClick={() => deleteKaution(idx)} className="px-3 py-1 text-xs bg-brick-50 text-brick-600 rounded-lg hover:bg-brick-100 flex items-center gap-1"><Trash2 size={11} /> Löschen</button>
               </div>
             </div>
           ))}
@@ -156,36 +156,36 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">{editIdx !== null ? <><Pencil size={16} /> Kaution bearbeiten</> : '+ Kaution erfassen'}</h3>
+            <h3 className="text-lg font-bold text-cream-900 mb-4 flex items-center gap-2">{editIdx !== null ? <><Pencil size={16} /> Kaution bearbeiten</> : '+ Kaution erfassen'}</h3>
             <div className="space-y-3">
-              <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
+              <div><label className="block text-xs font-semibold text-cream-600 mb-1">Mieter/in</label>
                 <input value={form.mieterName} onChange={e => setForm({...form, mieterName: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Name" list="kautionsmanager-mieter-liste" />
                 <datalist id="kautionsmanager-mieter-liste">
                   {mieterListe.map(m => <option key={m.id} value={m.name} />)}
                 </datalist>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mietbeginn</label>
+                <div><label className="block text-xs font-semibold text-cream-600 mb-1">Mietbeginn</label>
                   <input type="date" value={form.mietbeginn} onChange={e => setForm({...form, mietbeginn: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
                 </div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Mietende</label>
+                <div><label className="block text-xs font-semibold text-cream-600 mb-1">Mietende</label>
                   <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
                 </div>
               </div>
-              <div><label className="block text-xs font-semibold text-gray-600 mb-1">Vereinbarter Kautionsbetrag (€)</label>
+              <div><label className="block text-xs font-semibold text-cream-600 mb-1">Vereinbarter Kautionsbetrag (€)</label>
                 <input type="number" value={form.vereinbartBetrag} onChange={e => setForm({...form, vereinbartBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
               </div>
               <div className="border-t pt-3">
                 <label className="flex items-center gap-2 cursor-pointer mb-2">
-                  <input type="checkbox" checked={form.eingegangen} onChange={e => setForm({...form, eingegangen: e.target.checked})} className="w-4 h-4 rounded accent-emerald-500" />
-                  <span className="text-sm font-semibold text-emerald-700 flex items-center gap-1"><Check size={14} /> Kaution eingegangen</span>
+                  <input type="checkbox" checked={form.eingegangen} onChange={e => setForm({...form, eingegangen: e.target.checked})} className="w-4 h-4 rounded accent-sage-500" />
+                  <span className="text-sm font-semibold text-sage-700 flex items-center gap-1"><Check size={14} /> Kaution eingegangen</span>
                 </label>
                 {form.eingegangen && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-xs text-gray-600 mb-1">Eingegangen am</label>
+                    <div><label className="block text-xs text-cream-600 mb-1">Eingegangen am</label>
                       <input type="date" value={form.eingegangenAm} onChange={e => setForm({...form, eingegangenAm: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
                     </div>
-                    <div><label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
+                    <div><label className="block text-xs text-cream-600 mb-1">Betrag (€)</label>
                       <input type="number" value={form.eingegangenBetrag} onChange={e => setForm({...form, eingegangenBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
                     </div>
                   </div>
@@ -194,19 +194,19 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
               <div className="border-t pt-3">
                 <label className="flex items-center gap-2 cursor-pointer mb-2">
                   <input type="checkbox" checked={form.zurueckgegeben} onChange={e => setForm({...form, zurueckgegeben: e.target.checked})} className="w-4 h-4 rounded" />
-                  <span className="text-sm font-semibold text-gray-700 flex items-center gap-1"><Undo2 size={14} /> Kaution zurückgegeben</span>
+                  <span className="text-sm font-semibold text-cream-700 flex items-center gap-1"><Undo2 size={14} /> Kaution zurückgegeben</span>
                 </label>
                 {form.zurueckgegeben && (
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block text-xs text-gray-600 mb-1">Zurückgegeben am</label>
+                      <div><label className="block text-xs text-cream-600 mb-1">Zurückgegeben am</label>
                         <input type="date" value={form.zurueckgegebenAm} onChange={e => setForm({...form, zurueckgegebenAm: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
                       </div>
-                      <div><label className="block text-xs text-gray-600 mb-1">Abzug (€)</label>
+                      <div><label className="block text-xs text-cream-600 mb-1">Abzug (€)</label>
                         <input type="number" value={form.abzugBetrag} onChange={e => setForm({...form, abzugBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
                       </div>
                     </div>
-                    <div><label className="block text-xs text-gray-600 mb-1">Abzugsgrund</label>
+                    <div><label className="block text-xs text-cream-600 mb-1">Abzugsgrund</label>
                       <input value={form.abzugGrund} onChange={e => setForm({...form, abzugGrund: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="z.B. Schäden, ausst. Nebenkosten..." />
                     </div>
                   </div>
@@ -214,8 +214,8 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => setShowForm(false)} className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Abbrechen</button>
-              <button onClick={saveForm} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold">Speichern</button>
+              <button onClick={() => setShowForm(false)} className="flex-1 py-2 bg-cream-100 rounded-lg text-sm font-semibold">Abbrechen</button>
+              <button onClick={saveForm} className="flex-1 py-2 bg-clay-600 text-white rounded-lg text-sm font-semibold">Speichern</button>
             </div>
           </div>
         </div>
