@@ -129,7 +129,8 @@ const KalkulationsModal = ({ onClose, portfolio = [] }) => {
     const cashflowNachSteuer = (cashflowMonat * 12) - steuerEffekt;
 
     const bruttoRendite = (jahresMiete / kaufpreis) * 100;
-    const eigenkapitalRendite = eigenkapital > 0 ? (cashflowNachSteuer / eigenkapital) * 100 : 0;
+    // Abschnitt 7.5: bei 0€ EK ist die Rendite nicht definiert, nicht 0%.
+    const eigenkapitalRendite = eigenkapital > 0 ? (cashflowNachSteuer / eigenkapital) * 100 : null;
 
     return {
       miete,
@@ -714,8 +715,9 @@ const KalkulationsModal = ({ onClose, portfolio = [] }) => {
                     </div>
                     <div className="text-center p-2 bg-white rounded">
                       <div className="text-xs text-gray-500">EK-Rendite (n. Steuer)</div>
-                      <div className={`text-xl font-bold ${kaufBerechnung.eigenkapitalRendite >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {kaufBerechnung.eigenkapitalRendite.toFixed(2)}%
+                      {/* Abschnitt 7.5: kein EK erfasst → "n. v." in Grau statt irreführender "0,00%" */}
+                      <div className={`text-xl font-bold ${kaufBerechnung.eigenkapitalRendite == null ? 'text-gray-400' : kaufBerechnung.eigenkapitalRendite >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {kaufBerechnung.eigenkapitalRendite == null ? 'n. v.' : `${kaufBerechnung.eigenkapitalRendite.toFixed(2)}%`}
                       </div>
                     </div>
                   </div>

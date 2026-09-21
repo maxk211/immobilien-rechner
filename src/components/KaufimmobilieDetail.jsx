@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, berechneMietStatusFuerMonat } from '../utils/miete.js';
@@ -21,7 +21,7 @@ import {
   BarChart3, Wallet, Users, Wrench, Home, Landmark, MapPin, AlertTriangle,
   Pencil, X, Check, CheckCircle2, ParkingCircle, Car, FileText, CalendarDays,
   TrendingUp, TrendingDown, Building2, Key, User, Search, Upload, Download,
-  Trash2, FolderOpen, Loader2, ClipboardList, Zap, Receipt, Hash,
+  Trash2, FolderOpen, Loader2, ClipboardList, Zap, Receipt, Hash, MoreVertical,
 } from 'lucide-react';
 
 // ─── Dokumente-Tab ────────────────────────────────────────────────────────────
@@ -290,6 +290,33 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
   const [activeTab, setActiveTab] = useState(() => initialTab || 'uebersicht');
   const [mieterhoeungMieter, setMieterhoeungMieter] = useState(null); // Mieterhöhungs-Modal
+  // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben —
+  // Inhalt konnte mitten in einer langen Ansicht (z.B. Finanzierung) hängen bleiben.
+  const scrollContainerRef = useRef(null);
+  useEffect(() => { scrollContainerRef.current?.scrollTo(0, 0); }, [activeTab]);
+
+  // Abschnitt 6 + 7.2: "Aufgeben" hieß missverständlich wie "Aufgaben" (To-dos) und war
+  // optisch gleichrangig neben "Bearbeiten" — jetzt "Verkauft oder abgegeben" im
+  // Überlaufmenü, mit richtigem Escape/Klick-daneben/Abbrechen-Verhalten statt <details>.
+  const [showUeberlaufMenu, setShowUeberlaufMenu] = useState(false);
+  const [showAufgebenDialog, setShowAufgebenDialog] = useState(false);
+  const [aufgabedatumEntwurf, setAufgabedatumEntwurf] = useState('');
+  const ueberlaufRef = useRef(null);
+  const aufgebenDialogRef = useRef(null);
+  useEffect(() => {
+    if (!showUeberlaufMenu && !showAufgebenDialog) return;
+    const onKeyDown = (e) => { if (e.key === 'Escape') { setShowUeberlaufMenu(false); setShowAufgebenDialog(false); } };
+    const onClickOutside = (e) => {
+      if (showUeberlaufMenu && ueberlaufRef.current && !ueberlaufRef.current.contains(e.target)) setShowUeberlaufMenu(false);
+      if (showAufgebenDialog && aufgebenDialogRef.current && !aufgebenDialogRef.current.contains(e.target)) setShowAufgebenDialog(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onClickOutside);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onClickOutside);
+    };
+  }, [showUeberlaufMenu, showAufgebenDialog]);
 
   const updateParams = (newParams) => {
     setParams(newParams);
@@ -415,22 +442,41 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <Check size={14}/> Reaktivieren
                   </button>
                 ) : (
-                  <details className="relative">
-                    <summary className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold cursor-pointer list-none transition-colors">
-                      Aufgeben
-                    </summary>
-                    <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-20 w-72">
-                      <p className="text-sm font-bold text-gray-800 mb-1">Immobilie aufgeben</p>
-                      <p className="text-xs text-gray-400 mb-3">Daten bleiben für den Steuerexport erhalten.</p>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Datum der Aufgabe</label>
-                      <input type="date" defaultValue={new Date().toISOString().split('T')[0]} id="aufgabedatum-input"
-                        className="w-full px-2 py-1.5 border rounded-xl text-sm mb-3 focus:ring-2 focus:ring-red-400" />
-                      <button onClick={() => { const datum = document.getElementById('aufgabedatum-input').value; updateParams({...params, aktiv: false, aufgabedatum: datum}); }}
-                        className="w-full px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 text-sm font-bold">
-                        Immobilie aufgeben
-                      </button>
-                    </div>
-                  </details>
+                  <div className="relative" ref={ueberlaufRef}>
+                    <button onClick={() => setShowUeberlaufMenu(v => !v)} title="Weitere Aktionen"
+                      className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl transition-colors">
+                      <MoreVertical size={16}/>
+                    </button>
+                    {showUeberlaufMenu && (
+                      <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-2xl shadow-xl py-1.5 z-20 w-56">
+                        <button
+                          onClick={() => { setAufgabedatumEntwurf(new Date().toISOString().split('T')[0]); setShowUeberlaufMenu(false); setShowAufgebenDialog(true); }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-medium">
+                          Verkauft oder abgegeben
+                        </button>
+                      </div>
+                    )}
+                    {showAufgebenDialog && (
+                      <div ref={aufgebenDialogRef} className="absolute right-0 top-10 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-20 w-72">
+                        <p className="text-sm font-bold text-gray-800 mb-1">Als verkauft oder abgegeben markieren</p>
+                        <p className="text-xs text-gray-400 mb-3">Daten bleiben für den Steuerexport erhalten.</p>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Datum</label>
+                        <input type="date" value={aufgabedatumEntwurf}
+                          onChange={e => setAufgabedatumEntwurf(e.target.value)}
+                          className="w-full px-2 py-1.5 border rounded-xl text-sm mb-3 focus:ring-2 focus:ring-red-400" />
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowAufgebenDialog(false)}
+                            className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 text-sm font-bold">
+                            Abbrechen
+                          </button>
+                          <button onClick={() => { updateParams({...params, aktiv: false, aufgabedatum: aufgabedatumEntwurf}); setShowAufgebenDialog(false); }}
+                            className="flex-1 px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 text-sm font-bold">
+                            Bestätigen
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
                 {hasChanges && (
                   <button onClick={handleSave}
@@ -465,7 +511,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
                   <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
-                  <div className="text-base sm:text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                  {/* Abschnitt 7.5: kein EK erfasst → "n. v." in Grau statt irreführender "0,00%" */}
+                  <div className={`text-base sm:text-xl font-black ${ergebnis.eigenkapitalRendite == null ? 'text-gray-400' : 'text-amber-700'}`}>
+                    {ergebnis.eigenkapitalRendite == null ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite)}
+                  </div>
                 </div>
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
                   <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
@@ -494,7 +543,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           })()}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
           {/* Tab-Navigation — 2-stufig: 4 Haupt-Tabs + kontextuelle Sub-Tabs */}
           {(() => {
             const aktiveMieterAnzahl = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -506,6 +555,14 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               mieter:       aktiveMieterAnzahl > 0,
               nkabrechnung: (nkAbrechnungen || []).length > 0,
               kaution:      (params.kautionen || []).length > 0,
+            };
+            // Abschnitt 7.4: dezent zurückgestufte Sub-Tabs waren ohne Erklärung
+            // ausgegraut — Tooltip nennt den Grund statt den Nutzer raten zu lassen.
+            const LEER_HINWEIS = {
+              bauspar:      'Noch kein Bausparvertrag hinterlegt',
+              mieter:       'Noch kein aktiver Mieter hinterlegt',
+              nkabrechnung: 'Noch keine Nebenkostenabrechnung erstellt',
+              kaution:      'Noch keine Kaution erfasst',
             };
             const GRUPPEN = [
               { id: 'uebersicht', icon: <BarChart3 size={13}/>, label: 'Übersicht',  first: 'uebersicht', subs: null },
@@ -519,7 +576,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               },
               { id: 'vermietung', icon: <Users size={13}/>,     label: 'Vermietung',  first: 'mieteinnahmen',
                 subs: [
-                  { id: 'mieteinnahmen', label: 'Einnahmen' },
+                  { id: 'mieteinnahmen', label: 'Mieteingänge' },
                   { id: 'mieter',        label: aktiveMieterAnzahl > 0 ? `Mieter (${aktiveMieterAnzahl})` : 'Mieter' },
                   { id: 'nkabrechnung',  label: 'NK-Abrechnung' },
                   { id: 'kaution',       label: 'Kaution' },
@@ -560,6 +617,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       const leer = HAT_DATEN[s.id] === false;
                       return (
                       <button key={s.id} onClick={() => setActiveTab(s.id)}
+                        title={leer ? LEER_HINWEIS[s.id] : undefined}
                         className={`flex-shrink-0 sm:flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-sm rounded-lg transition-all text-center leading-tight whitespace-nowrap ${
                           activeTab === s.id
                             ? 'bg-indigo-600 text-white shadow-sm font-semibold'
