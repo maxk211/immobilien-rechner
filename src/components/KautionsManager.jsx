@@ -7,7 +7,7 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({
     mieterId: null, mieterName: '', mietbeginn: '', mietende: '',
-    vereinbartBetrag: 0, eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
+    vereinbartBetrag: 0, verwahrform: '', eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
     zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
   });
 
@@ -27,7 +27,7 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
     setEditIdx(idx);
     setForm(idx !== null ? { mieterId: null, ...kautionen[idx] } : {
       mieterId: null, mieterName: '', mietbeginn: '', mietende: '',
-      vereinbartBetrag: 0, eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
+      vereinbartBetrag: 0, verwahrform: '', eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
       zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
     });
     setShowForm(true);
@@ -44,6 +44,7 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
       eingegangen: !!m.kaution_bezahlt,
       eingegangenAm: m.kaution_bezahlt_am || '',
       eingegangenBetrag: m.kaution_bezahlt ? (Number(m.kaution_betrag) || 0) : 0,
+      verwahrform: '',
       zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
     });
     setShowForm(true);
@@ -172,8 +173,19 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
                   <input type="date" value={form.mietende} onChange={e => setForm({...form, mietende: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
                 </div>
               </div>
-              <div><label className="block text-xs font-semibold text-gray-600 mb-1">Vereinbarter Kautionsbetrag (€)</label>
-                <input type="number" value={form.vereinbartBetrag} onChange={e => setForm({...form, vereinbartBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Vereinbarter Kautionsbetrag (€)</label>
+                  <input type="number" value={form.vereinbartBetrag} onChange={e => setForm({...form, vereinbartBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                </div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Verwahrform</label>
+                  <select value={form.verwahrform || ''} onChange={e => setForm({...form, verwahrform: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                    <option value="">– auswählen –</option>
+                    <option value="kautionskonto">Kautionskonto</option>
+                    <option value="buergschaft">Bürgschaft</option>
+                    <option value="barkaution">Barkaution</option>
+                    <option value="sparbuch">Verpfändetes Sparbuch</option>
+                  </select>
+                </div>
               </div>
               <div className="border-t pt-3">
                 <label className="flex items-center gap-2 cursor-pointer mb-2">

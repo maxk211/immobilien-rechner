@@ -226,6 +226,18 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         )}
       </div>
 
+      {/* Fälligkeitstag der Miete — Grundlage für "verspätet" und die spätere Erinnerung "Miete offen" */}
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <span>Miete ist fällig zum</span>
+        <input
+          type="number" min={1} max={28}
+          value={params.mieteFaelligkeitstag ?? 3}
+          onChange={e => updateParams({ ...params, mieteFaelligkeitstag: Math.min(28, Math.max(1, parseInt(e.target.value) || 1)) })}
+          className="w-14 px-2 py-1 text-center border border-gray-300 rounded-lg text-sm font-semibold text-gray-700"
+        />
+        <span>. des Monats</span>
+      </div>
+
       {/* Übersicht Forderungen */}
       {offenAnzahl > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-4">

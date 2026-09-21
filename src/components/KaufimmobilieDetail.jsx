@@ -242,6 +242,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
       }
     ],
     geschaetzterWert: initialWert,
+    // Datum der letzten Marktwert-Pflege — wird automatisch gesetzt, sobald der
+    // qm-Preis oder Gesamtwert geändert wird (siehe handleQmPreisChange/
+    // handleGesamtwertChange). Grundlage für die spätere "Marktwert veraltet"-Erinnerung.
+    geschaetzterWertDatum: immobilie.geschaetzterWertDatum || null,
+    // Fälligkeitstag der Miete — Grundlage für "verspätet"/"Miete offen"-Erkennung,
+    // war bisher hart auf den 5. codiert (siehe MieteinnahmenTracker).
+    mieteFaelligkeitstag: immobilie.mieteFaelligkeitstag ?? 3,
     mietModus: immobilie.mietModus || 'automatisch',
     mietHistorie: immobilie.mietHistorie || {},
     mietEingaenge: immobilie.mietEingaenge || [],
@@ -295,13 +302,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     const flaeche = params.wohnflaeche || immobilie.wohnflaeche || 80;
     if (numValue > 0 && flaeche > 0) {
       const neuerWert = Math.round(numValue * flaeche);
-      updateParams({...params, geschaetzterWert: neuerWert});
+      updateParams({...params, geschaetzterWert: neuerWert, geschaetzterWertDatum: new Date().toISOString().split('T')[0]});
     }
   };
 
   const handleGesamtwertChange = (value) => {
     const numValue = parseFloat(value) || 0;
-    updateParams({...params, geschaetzterWert: numValue});
+    updateParams({...params, geschaetzterWert: numValue, geschaetzterWertDatum: new Date().toISOString().split('T')[0]});
     const flaeche = params.wohnflaeche || immobilie.wohnflaeche || 80;
     if (numValue > 0 && flaeche > 0) {
       setQmPreis(Math.round(numValue / flaeche).toString());
@@ -714,6 +721,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <Search size={14}/> Preis bei Homeday recherchieren
                   </a>
                   <p className="text-xs text-gray-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {params.geschaetzterWertDatum
+                      ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}`
+                      : 'Noch nie aktualisiert'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1265,13 +1277,39 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         </div>
                         {idx > 0 && <button onClick={() => deletePhase(phase.id)} className="text-red-400 hover:text-red-600 text-sm">Entfernen</button>}
                       </div>
-                      {/* Kreditinstitut */}
+                      {/* Bank: Kreditinstitut, Darlehensnummer, Ansprechpartner mit Kontakt */}
                       <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1"><Landmark size={12} className='inline mr-1'/>Kreditinstitut / Bank</label>
-                        <input type="text" value={phase.kreditinstitut || ''}
-                          placeholder="z.B. PSD Bank, Deutsche Bank …"
-                          onChange={e => updatePhase(phase.id, { kreditinstitut: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white" />
+                        <label className="block text-xs font-semibold text-slate-600 mb-2"><Landmark size={12} className='inline mr-1'/>Bank</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] text-slate-500 mb-0.5">Kreditinstitut</label>
+                            <input type="text" value={phase.kreditinstitut || ''}
+                              placeholder="z.B. PSD Bank, Deutsche Bank …"
+                              onChange={e => updatePhase(phase.id, { kreditinstitut: e.target.value })}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white" />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-slate-500 mb-0.5">Darlehensnummer</label>
+                            <input type="text" value={phase.darlehensnummer || ''}
+                              placeholder="z.B. 1234567890"
+                              onChange={e => updatePhase(phase.id, { darlehensnummer: e.target.value })}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white" />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-slate-500 mb-0.5">Ansprechpartner</label>
+                            <input type="text" value={phase.ansprechpartner || ''}
+                              placeholder="Name des Beraters"
+                              onChange={e => updatePhase(phase.id, { ansprechpartner: e.target.value })}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white" />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-slate-500 mb-0.5">Kontakt (Telefon/E-Mail)</label>
+                            <input type="text" value={phase.ansprechpartnerKontakt || ''}
+                              placeholder="z.B. 089 12345 oder max@bank.de"
+                              onChange={e => updatePhase(phase.id, { ansprechpartnerKontakt: e.target.value })}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white" />
+                          </div>
+                        </div>
                       </div>
 
                       {idx === 0 && (
@@ -1368,6 +1406,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">€</span>
                               </div>
+                              <div className="flex items-center gap-1 mt-1">
+                                <input type="number" min={0} max={100} step={1} value={phase.sondertilgungErlaubtProzent || ''}
+                                  placeholder="lt. Vertrag"
+                                  onChange={e => updatePhase(phase.id, { sondertilgungErlaubtProzent: e.target.value === '' ? null : parseFloat(e.target.value) })}
+                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-right text-xs" />
+                                <span className="text-[10px] text-gray-400 whitespace-nowrap">% erlaubt/Jahr</span>
+                              </div>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 bg-blue-50 rounded-xl text-center text-sm">
@@ -1437,6 +1482,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                                   onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">€</span>
+                              </div>
+                              <div className="flex items-center gap-1 mt-1">
+                                <input type="number" min={0} max={100} step={1} value={phase.sondertilgungErlaubtProzent || ''}
+                                  placeholder="lt. Vertrag"
+                                  onChange={e => updatePhase(phase.id, { sondertilgungErlaubtProzent: e.target.value === '' ? null : parseFloat(e.target.value) })}
+                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-right text-xs" />
+                                <span className="text-[10px] text-gray-400 whitespace-nowrap">% erlaubt/Jahr</span>
                               </div>
                             </div>
                           </div>
