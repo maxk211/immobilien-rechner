@@ -376,11 +376,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const anteilFaktor = isGbR ? (params.userAnteil ?? 100) / 100 : 1;
   const anteil = (v) => Math.round(v * anteilFaktor);
 
-  // Vermieter-Aufgaben, gefiltert auf diese Immobilie (bereits rot→gelb→grün sortiert)
+  // Vermieter-Aufgaben, gefiltert auf diese Immobilie (bereits rot→gelb→grün sortiert) —
+  // gerendert im Cockpit-Block "Jetzt dran" (Abschnitt 3.2) und als Badge im Kopf.
   const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
-  const naechsteAufgabe = eigeneAufgaben.find(t => t.priority !== 'gruen') || eigeneAufgaben[0] || null;
 
-  // Cashflow-Ampel: ist die Miete für den aktuellen Monat schon verbucht?
+  // Erwartete Monatsmiete — Basis für Cockpit-Mieteingänge-Grid und 1-Klick-Abhaken.
   // Nutzt dieselbe Status-Logik wie der Mieteinnahmen-Tab (berechneMietStatusFuerMonat),
   // damit hier nie ein anderer Status als dort angezeigt wird (z.B. bei Teilzahlungen).
   const heute = new Date();
@@ -389,21 +389,21 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const erwarteterMietBetrag = params.dauerauftrag
     ? (params.dauerauftragBetrag || getAktuelleMiete(params) || 0)
     : getAktuelleMiete(params) + nkVomMieterAmpel;
-  const mieteStatusAktuellerMonat = berechneMietStatusFuerMonat(
-    params.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, erwarteterMietBetrag, params.dauerauftrag
-  );
-  const mieteAktuellerMonatEintrag = mieteStatusAktuellerMonat.zahlungen[mieteStatusAktuellerMonat.zahlungen.length - 1] || null;
 
-  // Ein-Klick Abhaken direkt aus der Übersicht — spart den Umweg über den Mieteinnahmen-Tab.
+  // Ein-Klick Abhaken direkt aus dem Cockpit — spart den Umweg über den Mieteinnahmen-Tab.
   // Speichert sofort (kein zusätzlicher "Speichern"-Klick nötig, wie bei jeder anderen Änderung hier).
-  const handleMieteAbhaken = () => {
-    const heuteISO = new Date().toISOString().split('T')[0];
-    const neuerEingang = { id: Date.now(), datum: heuteISO, betrag: erwarteterMietBetrag, typ: 'kaltmiete', notiz: '' };
+  // Generalisiert auf beliebigen Monat/Jahr, damit auch das 12-Monats-Grid im Cockpit
+  // (Abschnitt 3.2) jeden einzelnen Monat direkt abhaken kann, nicht nur den aktuellen.
+  const handleMieteAbhakenFuerMonat = (jahr, monatNr, betrag) => {
+    const tagImMonat = jahr === heute.getFullYear() && monatNr === heute.getMonth() + 1 ? heute.getDate() : 1;
+    const datumISO = new Date(jahr, monatNr - 1, tagImMonat).toISOString().split('T')[0];
+    const neuerEingang = { id: Date.now(), datum: datumISO, betrag, typ: 'kaltmiete', notiz: '' };
     const neueParams = { ...params, mietEingaenge: [...(params.mietEingaenge || []), neuerEingang] };
     setParams(neueParams);
     const gesamtEK = (neueParams.ekFuerNebenkosten || 0) + (neueParams.ekFuerKaufpreis || 0);
     onSave({ ...immobilie, ...neueParams, eigenkapital: gesamtEK });
   };
+  const handleMieteAbhaken = () => handleMieteAbhakenFuerMonat(heute.getFullYear(), heute.getMonth() + 1, erwarteterMietBetrag);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:flex-row sm:items-center sm:justify-center sm:p-4">
@@ -426,8 +426,19 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   )}
                   {params.aktiv === false && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500/60 text-white">
-                      Aufgegeben {params.aufgabedatum ? new Date(params.aufgabedatum).toLocaleDateString('de-DE') : ''}
+                      Verkauft/abgegeben {params.aufgabedatum ? new Date(params.aufgabedatum).toLocaleDateString('de-DE') : ''}
                     </span>
+                  )}
+                  {params.aktiv !== false && eigeneAufgaben.length > 0 && (
+                    <button onClick={() => setActiveTab('uebersicht')}
+                      title={`${eigeneAufgaben.length} offene${eigeneAufgaben.length === 1 ? 'r Punkt' : ' Punkte'}`}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full text-white flex items-center gap-1 ${
+                        eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/80'
+                        : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/80'
+                        : 'bg-emerald-500/70'
+                      }`}>
+                      {eigeneAufgaben.length} offen
+                    </button>
                   )}
                 </div>
                 <h2 className="text-lg sm:text-2xl font-black text-white truncate">{immobilie.name}</h2>
@@ -639,155 +650,208 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               resetKey=activeTab setzt die Boundary automatisch zurück wenn
               der User auf einen anderen Tab wechselt */}
           <TabErrorBoundary resetKey={activeTab}>
-          {activeTab === 'uebersicht' && (
-            <div className="space-y-5">
-              {/* Nächster wichtiger Termin + Cashflow-Ampel — Tagesgeschäft zuerst,
-                  bevor Marktwert/Vermögenswerte kommen. */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {naechsteAufgabe ? (
-                  <button
-                    onClick={() => setActiveTab(naechsteAufgabe.targetTab)}
-                    className={`text-left rounded-2xl p-4 border transition-colors ${
-                      naechsteAufgabe.priority === 'rot' ? 'bg-red-50 border-red-200 hover:bg-red-100'
-                      : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
-                      : 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`w-2 h-2 rounded-full ${
-                        naechsteAufgabe.priority === 'rot' ? 'bg-red-500' : naechsteAufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-emerald-500'
-                      }`} />
-                      <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Nächster wichtiger Punkt</span>
-                    </div>
-                    <div className="font-semibold text-gray-800 text-sm leading-snug">{naechsteAufgabe.titel}</div>
-                    {eigeneAufgaben.length > 1 && (
-                      <div className="text-xs text-gray-400 mt-1">+ {eigeneAufgaben.length - 1} weitere offene Punkt{eigeneAufgaben.length - 1 !== 1 ? 'e' : ''}</div>
-                    )}
-                  </button>
-                ) : (
-                  <div className="rounded-2xl p-4 border bg-emerald-50 border-emerald-200 flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-emerald-500"/>
-                    <span className="text-sm font-semibold text-emerald-700">Keine offenen Punkte — alles erledigt</span>
-                  </div>
-                )}
+          {activeTab === 'uebersicht' && (() => {
+            // Objekt-Cockpit (Abschnitt 3.2 UX-Umbau): ersetzt die alte Übersicht.
+            // Reine Lese- + 1-Klick-Handlungsseite, keine Eingabefelder außer dem
+            // Mieteingänge-Grid (siehe Leitsatz 2 im PDF). qm-Preis-Eingabe ist nach
+            // Objekt·Stammdaten gewandert (siehe unten, activeTab === 'stammdaten').
+            const MONATSNAMEN = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+            const jahrCockpit = heute.getFullYear();
+            const kaufjahrCockpit = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : jahrCockpit;
+            const kaufmonatCockpit = params.kaufdatum ? new Date(params.kaufdatum).getMonth() + 1 : 1;
 
-                {aktiveMieterKaufobjekt && (
-                  <div className={`rounded-2xl p-4 border ${
-                    mieteStatusAktuellerMonat.status === 'dauerauftrag' || mieteStatusAktuellerMonat.status === 'bezahlt' ? 'bg-emerald-50 border-emerald-200'
-                    : mieteStatusAktuellerMonat.status === 'teilweise' ? 'bg-amber-50 border-amber-200'
-                    : 'bg-red-50 border-red-200'
-                  }`}>
-                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
-                      Miete {heute.toLocaleDateString('de-DE', { month: 'long' })}
-                    </div>
-                    {mieteStatusAktuellerMonat.status === 'dauerauftrag' ? (
-                      <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
-                        <Zap size={16}/> Automatisch per Dauerauftrag
-                      </div>
-                    ) : mieteStatusAktuellerMonat.status === 'bezahlt' ? (
-                      <div>
-                        <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
-                          <CheckCircle2 size={16}/> {formatCurrency(mieteStatusAktuellerMonat.summe)} eingegangen
-                        </div>
-                        {mieteAktuellerMonatEintrag && (
-                          <div className="text-xs text-gray-400 mt-0.5">am {new Date(mieteAktuellerMonatEintrag.datum).toLocaleDateString('de-DE')}</div>
-                        )}
-                      </div>
-                    ) : mieteStatusAktuellerMonat.status === 'teilweise' ? (
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="font-semibold text-sm text-amber-700 flex items-center gap-1.5">
-                          ~ {formatCurrency(mieteStatusAktuellerMonat.summe)} von {formatCurrency(erwarteterMietBetrag)}
+            const monatlicheEinnahmen = getAktuelleMiete(params) + nkVomMieterAmpel + (ergebnis.stellplatzMonatsMiete || 0);
+            const monatlicherBetrieb = getAktuellerWert(params, 'instandhaltung') + getAktuellerWert(params, 'verwaltung')
+              + getAktuellerWert(params, 'hausgeld') + getAktuellerWert(params, 'strom') + getAktuellerWert(params, 'internet')
+              + getAktuellerWert(params, 'nebenkosten');
+            const monatlicheRateCockpit = ergebnis.monatlicheRate || 0;
+            const monatlichesErgebnis = ergebnis.cashflowMonatlich || 0;
+
+            // Finanzierungs-Kurzfassung — "ca."-Schätzung für Tilgungstempo/Schuldenfreiheit,
+            // exakte Berechnung inkl. Sondertilgungen bleibt im Finanzierung-Tab.
+            const ersteAktivePhase = params.finanzierungsphasen?.[0];
+            let zinsbindungBisText = null;
+            if (ersteAktivePhase && ersteAktivePhase.darlehensTyp !== 'endfaellig') {
+              const startDatum = ersteAktivePhase.kreditStartDatum || params.kaufdatum;
+              if (startDatum) {
+                const ablauf = new Date(startDatum);
+                ablauf.setFullYear(ablauf.getFullYear() + (ersteAktivePhase.zinsbindung || 10));
+                zinsbindungBisText = ablauf.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+              }
+            }
+            const jaehrlicheZinsen = (ergebnis.effRestschuld || 0) * (ergebnis.effZinssatz || 0) / 100;
+            const jaehrlicheTilgung = Math.max(0, (monatlicheRateCockpit * 12) - jaehrlicheZinsen);
+            const schuldenfreiCaText = (jaehrlicheTilgung > 0 && ergebnis.effRestschuld > 0)
+              ? `ca. ${jahrCockpit + Math.round(ergebnis.effRestschuld / jaehrlicheTilgung)}`
+              : null;
+            const tilgungsfortschrittProzent = (ergebnis.fremdkapital || 0) > 0
+              ? Math.max(0, Math.min(100, 100 - ((ergebnis.effRestschuld || 0) / ergebnis.fremdkapital) * 100))
+              : 0;
+
+            const nettoEK = aktuellerWert - (ergebnis.effRestschuld || 0);
+            const aktiverMieter = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
+
+            return (
+            <div className="space-y-4">
+              {/* Jetzt dran — Abschnitt 3.2 + 5: je 1 Zeile + 1 Aktionsbutton,
+                  Leerzustand ist eine grüne Zeile statt einer leeren Box. */}
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Jetzt dran</p>
+                </div>
+                {eigeneAufgaben.length === 0 ? (
+                  <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50">
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0"/>
+                    <span className="text-sm font-semibold text-emerald-700">Alles im grünen Bereich — keine offenen Punkte</span>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {eigeneAufgaben.map(aufgabe => (
+                      <div key={aufgabe.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${
+                          aufgabe.priority === 'rot' ? 'bg-red-500' : aufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-emerald-500'
+                        }`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-gray-800 truncate">{aufgabe.titel}</div>
+                          {aufgabe.sub && <div className="text-xs text-gray-400 truncate">{aufgabe.sub}</div>}
                         </div>
                         <button
-                          onClick={handleMieteAbhaken}
-                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
+                          onClick={() => setActiveTab(aufgabe.targetTab)}
+                          className="px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors"
                         >
-                          <Check size={12}/> Rest erhalten ({formatCurrency(Math.max(0, erwarteterMietBetrag - mieteStatusAktuellerMonat.summe))})
+                          Ansehen
                         </button>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="font-semibold text-sm text-red-600 flex items-center gap-1.5">
-                          <AlertTriangle size={16}/> Noch nicht verbucht
-                        </div>
-                        <button
-                          onClick={handleMieteAbhaken}
-                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
-                        >
-                          <Check size={12}/> Erhalten ({formatCurrency(erwarteterMietBetrag)})
-                        </button>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Marktwert — Wertsteigerung selbst steht jetzt oben im KPI-Strip
-                  neben Brutto/Netto/EK-Rendite, kein separates Chart mehr hier. */}
-              <div>
-                <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
-                  <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Aktueller Marktwert</h3>
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={qmPreis}
-                        onChange={(e) => handleQmPreisChange(e.target.value)}
-                        className="w-32 px-3 py-2 text-base sm:text-lg font-bold text-indigo-600 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
-                        placeholder="4000"
-                      />
-                      <span className="text-sm font-bold text-indigo-600">€/m²</span>
-                      <span className="text-gray-400">×</span>
-                      <span className="text-sm text-gray-600">{params.wohnflaeche} m²</span>
-                      <span className="text-gray-400">=</span>
-                    </div>
+              {/* Mieteingänge — 12 Monatsfelder für das laufende Jahr, Klick bucht direkt */}
+              {aktiveMieterKaufobjekt && (
+                <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Mieteingänge {jahrCockpit}</p>
+                    <button onClick={() => setActiveTab('mieteinnahmen')} className="text-xs font-semibold text-indigo-600 hover:underline">Alle ansehen →</button>
                   </div>
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {stellplatzWert > 0 ? 'Wohnungswert' : 'Berechneter Gesamtwert'}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={params.geschaetzterWert || ''}
-                        onChange={(e) => handleGesamtwertChange(e.target.value)}
-                        className="w-40 px-3 py-2 text-base sm:text-xl font-bold text-indigo-600 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
-                        placeholder="350000"
-                      />
-                      <span className="text-xl font-bold text-indigo-600">€</span>
+                  <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
+                    {MONATSNAMEN.map((name, idx) => {
+                      const monatNr = idx + 1;
+                      const istVorKauf = jahrCockpit === kaufjahrCockpit && monatNr < kaufmonatCockpit;
+                      const istZukunft = monatNr > (heute.getMonth() + 1);
+                      if (istVorKauf || istZukunft) {
+                        return <div key={monatNr} className="rounded-lg border border-dashed border-gray-200 py-2 text-center text-[10px] text-gray-300">{name}</div>;
+                      }
+                      const statusMonat = berechneMietStatusFuerMonat(params.mietEingaenge, jahrCockpit, monatNr, erwarteterMietBetrag, params.dauerauftrag).status;
+                      const istOk = statusMonat === 'bezahlt' || statusMonat === 'dauerauftrag';
+                      return (
+                        <button key={monatNr}
+                          onClick={() => { if (!istOk) handleMieteAbhakenFuerMonat(jahrCockpit, monatNr, erwarteterMietBetrag); }}
+                          title={istOk ? 'Eingegangen' : statusMonat === 'teilweise' ? 'Teilweise eingegangen — klicken zum Ergänzen' : 'Noch offen — klicken zum Abhaken'}
+                          className={`rounded-lg py-2 text-center text-[10px] font-bold transition-colors ${
+                            istOk ? 'bg-emerald-100 text-emerald-700'
+                            : statusMonat === 'teilweise' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                            : 'bg-red-50 text-red-500 hover:bg-red-100'
+                          }`}>
+                          {name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Cashflow pro Monat */}
+                  <button onClick={() => setActiveTab('cashflow')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Cashflow pro Monat</p>
+                      <span className="text-xs text-indigo-600 font-semibold">Details →</span>
                     </div>
-                    {stellplatzWert > 0 && (
-                      <div className="mt-2 text-xs text-gray-500 space-y-0.5">
-                        <div className="flex items-center gap-1">
-                          <span className="text-gray-400">+ {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(stellplatzWert)}</span>
-                          <span className="text-gray-400">Stellplatz (Kaufpreis)</span>
-                        </div>
-                        <div className="flex items-center gap-1 font-semibold text-indigo-600">
-                          <span>= {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(aktuellerWert)}</span>
-                          <span className="font-normal text-gray-500">Gesamtwert</span>
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div><div className="text-[10px] text-gray-400">Einnahmen</div><div className="text-sm font-bold text-emerald-600">{formatCurrency(monatlicheEinnahmen)}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Betrieb</div><div className="text-sm font-bold text-red-500">-{formatCurrency(monatlicherBetrieb)}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Kreditrate</div><div className="text-sm font-bold text-red-500">-{formatCurrency(monatlicheRateCockpit)}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Ergebnis</div><div className={`text-base font-black ${monatlichesErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{monatlichesErgebnis >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis)}</div></div>
+                    </div>
+                  </button>
+
+                  {/* Wert & Eigenkapital */}
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold text-indigo-700 uppercase tracking-wide">Wert & Eigenkapital</p>
+                      <button onClick={() => setActiveTab('stammdaten')} className="text-xs font-semibold text-indigo-600 hover:underline">Wert aktualisieren →</button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                      <div><div className="text-[10px] text-gray-400">Marktwert</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(aktuellerWert)}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Kaufpreis</div><div className="text-sm font-bold text-gray-600">{formatCurrency(params.kaufpreis)}</div></div>
+                      <div>
+                        <div className="text-[10px] text-gray-400">Wertsteigerung</div>
+                        <div className={`text-sm font-bold ${wertsteigerungSeitKauf && wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {wertsteigerungSeitKauf ? `${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}${wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %` : '—'}
                         </div>
                       </div>
-                    )}
+                      <div><div className="text-[10px] text-gray-400">Netto-EK</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(nettoEK)}</div></div>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-2">
+                      {params.geschaetzterWertDatum ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}` : 'Marktwert noch nie aktualisiert'}
+                    </p>
                   </div>
-                  <a
-                    href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-                  >
-                    <Search size={14}/> Preis bei Homeday recherchieren
-                  </a>
-                  <p className="text-xs text-gray-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {params.geschaetzterWertDatum
-                      ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}`
-                      : 'Noch nie aktualisiert'}
-                  </p>
+
+                  {/* Mieter-Karte */}
+                  {aktiverMieter && (
+                    <button onClick={() => setActiveTab('mieter')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><User size={12}/> Mieter</p>
+                        <span className="text-xs text-indigo-600 font-semibold">Details →</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div><div className="text-[10px] text-gray-400">Name</div><div className="text-sm font-semibold text-gray-800 truncate">{aktiverMieter.name}</div></div>
+                        <div><div className="text-[10px] text-gray-400">Mietbeginn</div><div className="text-sm text-gray-700">{aktiverMieter.mietbeginn ? new Date(aktiverMieter.mietbeginn).toLocaleDateString('de-DE') : '—'}</div></div>
+                        <div><div className="text-[10px] text-gray-400">Kaltmiete</div><div className="text-sm text-gray-700">{formatCurrency(getAktuelleMiete(params))}</div></div>
+                        {params.vermietungsmodell === 'kaltmiete_nk' && (
+                          <div><div className="text-[10px] text-gray-400">Nebenkosten-VZ</div><div className="text-sm text-gray-700">{formatCurrency(params.nebenkostenVomMieter || 0)}</div></div>
+                        )}
+                        <div><div className="text-[10px] text-gray-400">Kaution</div><div className="text-sm text-gray-700">{aktiverMieter.kaution_betrag ? formatCurrency(aktiverMieter.kaution_betrag) : '—'}</div></div>
+                        <div><div className="text-[10px] text-gray-400">Letzte Erhöhung</div><div className="text-sm text-gray-700">{aktiverMieter.letzte_mieterhoehung ? new Date(aktiverMieter.letzte_mieterhoehung).toLocaleDateString('de-DE') : '—'}</div></div>
+                      </div>
+                    </button>
+                  )}
                 </div>
+
+                {/* Finanzierung — rechte Spalte */}
+                {(ergebnis.fremdkapital || 0) > 0 && (
+                  <button onClick={() => setActiveTab('finanzierung')} className="text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors h-fit">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Finanzierung</p>
+                      <span className="text-xs text-indigo-600 font-semibold">Öffnen →</span>
+                    </div>
+                    <div className="space-y-2.5">
+                      <div>
+                        <div className="text-[10px] text-gray-400">Restschuld</div>
+                        <div className="text-lg font-black text-gray-800">{formatCurrency(ergebnis.effRestschuld || 0)}</div>
+                        <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                          <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${tilgungsfortschrittProzent}%` }} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="text-[10px] text-gray-400 block">Zins</span><span className="font-semibold">{(ergebnis.effZinssatz || 0).toFixed(2)} %</span></div>
+                        <div><span className="text-[10px] text-gray-400 block">Rate</span><span className="font-semibold">{formatCurrency(monatlicheRateCockpit)}</span></div>
+                      </div>
+                      {zinsbindungBisText && (
+                        <div><span className="text-[10px] text-gray-400 block">Zinsbindung bis</span><span className="font-semibold text-sm">{zinsbindungBisText}</span></div>
+                      )}
+                      {schuldenfreiCaText && (
+                        <div><span className="text-[10px] text-gray-400 block">Schuldenfrei</span><span className="font-semibold text-sm">{schuldenfreiCaText}</span></div>
+                      )}
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'stammdaten' && (
             <div className="space-y-5">
@@ -837,6 +901,69 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Marktwert — Abschnitt 3.2/3.9: qm-Preis-Eingabe ist von der alten Übersicht
+                  hierher gewandert, ins Cockpit gehört nur noch die Kurzfassung (nur lesen). */}
+              <div className="bg-indigo-50 border border-indigo-100 p-4 sm:p-5 rounded-2xl">
+                <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Kauf & Wert</h3>
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                      type="number"
+                      value={qmPreis}
+                      onChange={(e) => handleQmPreisChange(e.target.value)}
+                      className="w-32 px-3 py-2 text-base sm:text-lg font-bold text-indigo-600 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                      placeholder="4000"
+                    />
+                    <span className="text-sm font-bold text-indigo-600">€/m²</span>
+                    <span className="text-gray-400">×</span>
+                    <span className="text-sm text-gray-600">{params.wohnflaeche} m²</span>
+                    <span className="text-gray-400">=</span>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {stellplatzWert > 0 ? 'Wohnungswert' : 'Berechneter Gesamtwert'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={params.geschaetzterWert || ''}
+                      onChange={(e) => handleGesamtwertChange(e.target.value)}
+                      className="w-40 px-3 py-2 text-base sm:text-xl font-bold text-indigo-600 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                      placeholder="350000"
+                    />
+                    <span className="text-xl font-bold text-indigo-600">€</span>
+                  </div>
+                  {stellplatzWert > 0 && (
+                    <div className="mt-2 text-xs text-gray-500 space-y-0.5">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-400">+ {formatCurrency(stellplatzWert)}</span>
+                        <span className="text-gray-400">Stellplatz (Kaufpreis)</span>
+                      </div>
+                      <div className="flex items-center gap-1 font-semibold text-indigo-600">
+                        <span>= {formatCurrency(aktuellerWert)}</span>
+                        <span className="font-normal text-gray-500">Gesamtwert</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <a
+                  href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                >
+                  <Search size={14}/> Preis bei Homeday recherchieren
+                </a>
+                <p className="text-xs text-gray-500 mt-2">Trage den qm-Preis von Homeday ein → Gesamtwert wird automatisch berechnet.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {params.geschaetzterWertDatum
+                    ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}`
+                    : 'Noch nie aktualisiert'}
+                </p>
               </div>
 
               {/* Stellplatz */}

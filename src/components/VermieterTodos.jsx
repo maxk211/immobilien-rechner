@@ -4,6 +4,7 @@ import {
   Key, TrendingUp, CalendarDays, AlertTriangle, Building2, ScrollText,
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
+import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 
 const PRIORITAET = { rot: 0, gelb: 1, gruen: 2 };
 
@@ -57,34 +58,41 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     });
   });
 
-  // ── 2. Miete ausstehend (ab dem 5. des Monats warnen) ─────────────────────
-  if (heute.getDate() >= 5) {
-    portfolio.forEach(immo => {
-      if (immo.immobilienTyp === 'mietimmobilie') return;
-      const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
-      if (aktiveMieter.length === 0) return;
+  // ── 2. Miete ausstehend (ab dem Fälligkeitstag warnen) ────────────────────
+  // Abschnitt 7.1: nutzt jetzt dieselbe berechneMietStatusFuerMonat()-Funktion wie
+  // Mieteinnahmen-Tab und Cockpit-Ampel — vorher zählte hier bereits eine
+  // Teilzahlung als "verbucht", was zum gemeldeten Widerspruch führte.
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie') return;
+    const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
+    if (aktiveMieter.length === 0) return;
 
-      const eingaenge = immo.mietEingaenge || [];
-      const bezahlt = eingaenge.some(e => {
-        const d = new Date(e.datum);
-        return d.getFullYear() === aktuellesJahr && (d.getMonth() + 1) === aktuellerMonat;
+    const faelligkeitstag = immo.mieteFaelligkeitstag ?? 3;
+    if (heute.getDate() < faelligkeitstag) return;
+
+    const nkVomMieter = immo.vermietungsmodell === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) : 0;
+    const erwarteterBetrag = immo.dauerauftrag
+      ? (immo.dauerauftragBetrag || getAktuelleMiete(immo) || 0)
+      : getAktuelleMiete(immo) + nkVomMieter;
+    const { status } = berechneMietStatusFuerMonat(immo.mietEingaenge, aktuellesJahr, aktuellerMonat, erwarteterBetrag, immo.dauerauftrag);
+
+    if (status === 'offen' || status === 'teilweise' || status === 'nicht_bezahlt') {
+      const tag = heute.getDate();
+      const tageUeberfaellig = tag - faelligkeitstag;
+      todos.push({
+        id: `miete-ausstehend-${immo.id}`,
+        priority: status === 'nicht_bezahlt' || tageUeberfaellig >= 10 ? 'rot' : 'gelb',
+        icon: <TrendingDown size={16} />,
+        titel: status === 'teilweise'
+          ? `Mieteingang ${aktuellerMonat}/${aktuellesJahr} nur teilweise verbucht`
+          : `Mieteingang ${aktuellerMonat}/${aktuellesJahr} noch nicht verbucht`,
+        sub: immo.name || immo.adresse || 'Immobilie',
+        immoId: immo.id,
+        badge: tageUeberfaellig >= 10 ? `${tag}. des Monats` : 'Prüfen',
+        targetTab: 'mieteinnahmen',
       });
-
-      if (!bezahlt) {
-        const tag = heute.getDate();
-        todos.push({
-          id: `miete-ausstehend-${immo.id}`,
-          priority: tag >= 15 ? 'rot' : 'gelb',
-          icon: <TrendingDown size={16} />,
-          titel: `Mieteingang ${aktuellerMonat}/${aktuellesJahr} noch nicht verbucht`,
-          sub: immo.name || immo.adresse || 'Immobilie',
-          immoId: immo.id,
-          badge: tag >= 15 ? `${tag}. des Monats` : 'Prüfen',
-          targetTab: 'mieteinnahmen',
-        });
-      }
-    });
-  }
+    }
+  });
 
   // ── 3. NK-Abrechnung fehlt (ab März für das Vorjahr) ─────────────────────
   if (heute.getMonth() >= 2) { // März = Index 2
