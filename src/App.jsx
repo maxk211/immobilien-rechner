@@ -1327,24 +1327,24 @@ function App() {
                   onClick={handleSelbstauskunft}
                   className="hidden sm:flex px-3 py-2 bg-white border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-50 items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
                 >
-                  <ClipboardList size={16} /> Selbstauskunft
+                  <ClipboardList size={16} /> Selbstauskunft für die Bank
                 </button>
-                <button
-                  onClick={handleExport}
-                  className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors"
-                >
-                  <Upload size={16} /> Export
-                </button>
+                {/* Abschnitt 6: Export + Steuer-Export sind ein Button mit Auswahl im Dialog geworden */}
                 <div className="relative group hidden sm:block">
-                  <button className="px-3 py-2 bg-white border border-gray-200 text-emerald-700 rounded-xl hover:bg-emerald-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
-                    <BarChart3 size={16} /> Steuer-Export
+                  <button className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
+                    <Upload size={16} /> Exportieren
                   </button>
-                  <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                  <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                    <button onClick={handleExport}
+                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 text-gray-700 border-b border-gray-100 flex items-center gap-1.5">
+                      <Upload size={13} /> Alle Daten (JSON)
+                    </button>
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Steuerexport (Anlage V)</p>
                     {[...Array(5)].map((_, i) => {
                       const year = new Date().getFullYear() - i;
                       return (
                         <button key={year} onClick={() => handleSteuerExport(year)}
-                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-emerald-50 text-gray-700 border-b border-gray-100 last:border-0">
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-50 text-emerald-700 last:pb-2.5">
                           {year}
                         </button>
                       );
@@ -1360,14 +1360,15 @@ function App() {
                   <button className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm shadow-sm font-semibold">
                     ⋯ Mehr
                   </button>
-                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
-                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold flex items-center gap-1.5"><ClipboardList size={15} /> Selbstauskunft</button>
+                  <div className="absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
+                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold flex items-center gap-1.5"><ClipboardList size={15} /> Selbstauskunft für die Bank</button>
                     <button onClick={handleExport} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5"><Upload size={15} /> Daten exportieren</button>
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide border-t border-gray-100">Steuerexport (Anlage V)</p>
                     {[...Array(3)].map((_, i) => {
                       const year = new Date().getFullYear() - i;
                       return (
                         <button key={year} onClick={() => handleSteuerExport(year)} className="w-full text-left px-4 py-3 text-sm text-emerald-700 hover:bg-emerald-50 border-b border-gray-100 last:border-0 flex items-center gap-1.5">
-                          <BarChart3 size={15} /> Steuer {year}
+                          <BarChart3 size={15} /> {year}
                         </button>
                       );
                     })}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from '../utils/miete.js';
 import MieterDashboard from './MieterDashboard';
@@ -198,6 +198,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState(() => initialTab || 'uebersicht');
+  // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben.
+  const scrollContainerRef = useRef(null);
+  useEffect(() => { scrollContainerRef.current?.scrollTo(0, 0); }, [activeTab]);
 
   const updateParams = (newParams) => {
     setParams(prev => ({ ...prev, ...newParams }));
@@ -321,7 +324,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
           {/* Mieteingänge Tab */}
           {activeTab === 'mieteingaenge' && (() => {
             // Angepasste params für MieteinnahmenTracker:

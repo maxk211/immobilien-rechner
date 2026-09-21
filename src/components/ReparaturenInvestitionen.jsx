@@ -246,6 +246,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
                   <span className="font-semibold text-orange-600">{formatCurrency(inv.betrag)}</span>
                   <button
                     onClick={() => handleDelete(inv.id)}
+                    title="Eintrag löschen"
                     className="text-red-400 hover:text-red-600"
                   >
                     <X size={14} />

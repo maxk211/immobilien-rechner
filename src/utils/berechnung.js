@@ -416,9 +416,13 @@ export const berechneRendite = (params) => {
   const cashflowVorSteuern = nettoEinnahmen - jahresannuitaet;
   const cashOnCash = gesamtEK > 0 ? (cashflowVorSteuern / gesamtEK) * 100 : 0;
 
-  const eigenkapitalRendite = gesamtEK > 0 ? ((nettoEinnahmen + (kaufpreis * wertsteigerung / 100)) / gesamtEK) * 100 : 0;
+  // Abschnitt 7.5: bei 0€ Eigenkapital ist die EK-Rendite nicht 0%, sondern nicht
+  // definiert (Division durch 0) — nur bei echtem 0-EK-Fall wird null zurückgegeben,
+  // damit die UI "n. v." statt eines irreführenden "0,00%" in Rot anzeigen kann.
+  const eigenkapitalRenditeRoh = gesamtEK > 0 ? ((nettoEinnahmen + (kaufpreis * wertsteigerung / 100)) / gesamtEK) * 100 : 0;
+  const eigenkapitalRendite = gesamtEK > 0 ? eigenkapitalRenditeRoh : null;
 
-  const leverageEffekt = eigenkapitalRendite - nettorendite;
+  const leverageEffekt = eigenkapitalRenditeRoh - nettorendite;
 
   // Entwicklung über Zeit — phasenbewusst
   // Precompute phase-timeline damit im Loop kein quadratischer Aufwand entsteht

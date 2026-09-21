@@ -1031,51 +1031,70 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 {/* Vermietungsmodell — nur für Einzel-Kaufimmobilie: bei MFH wird die Miete pro
                     Wohnung erfasst, ein Modell auf Gebäudeebene wird von den Berechnungen
                     (berechneMtlCashflow etc.) bewusst nicht berücksichtigt (siehe berechnung.js) */}
-                {formData.immobilienTyp !== 'mehrfamilienhaus' && (
-                <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <label className="block text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1"><Home size={14}/>Vermietungsmodell</label>
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    {[
-                      { value: 'kaltmiete', label: 'Kaltmiete', desc: 'Mieter zahlt nur Kaltmiete' },
-                      { value: 'kaltmiete_nk', label: 'Kaltmiete + NK', desc: 'Mieter zahlt NK-Vorauszahlung' },
-                      { value: 'warmmiete', label: 'Warmmiete', desc: 'Inklusivmiete, alles drin' },
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => handleChange('vermietungsmodell', opt.value)}
-                        className={`p-2 rounded-lg border-2 text-xs transition-all text-left ${
-                          formData.vermietungsmodell === opt.value
-                            ? 'border-indigo-500 bg-white text-indigo-700 font-semibold'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="font-semibold mb-0.5">{opt.label}</div>
-                        <div className="text-gray-400">{opt.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                  {formData.vermietungsmodell === 'kaltmiete' && (
-                    <p className="text-xs text-blue-600 flex items-center gap-1"><ClipboardList size={12}/>Betriebskosten werden via Nebenkostenabrechnung auf Mieter umgelegt (cashflow-neutral)</p>
-                  )}
-                  {formData.vermietungsmodell === 'kaltmiete_nk' && (
-                    <div>
-                      <p className="text-xs text-blue-600 mb-2 flex items-center gap-1"><ClipboardList size={12}/>Mieter zahlt NK-Vorauszahlung direkt an dich</p>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">NK-Vorauszahlung vom Mieter (€/Monat)</label>
-                      <input
-                        type="number"
-                        value={formData.nebenkostenVomMieter || 0}
-                        onChange={(e) => handleChange('nebenkostenVomMieter', numInp(e.target.value))}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
-                        placeholder="z.B. 200"
-                      />
+                {formData.immobilienTyp !== 'mehrfamilienhaus' && (() => {
+                  // Abschnitt 6.2: statt Fachbegriffen/Abkürzungen eine direkte Frage mit
+                  // Rechenbeispiel aus den echten (bereits eingegebenen) Objektwerten.
+                  const kalt = Number(formData.kaltmiete) || 0;
+                  const nkVz = Number(formData.nebenkostenVomMieter) || 120;
+                  // 'kaltmiete' ist bei diesem Formular das einzige Mietbasis-Feld — bei Modell
+                  // "Pauschalmiete" trägt es bereits die Warmmiete (siehe Label-Umschaltung oben).
+                  const warm = formData.vermietungsmodell === 'warmmiete' && kalt > 0 ? kalt : 0;
+                  const VERMIETUNGS_OPTIONEN = [
+                    {
+                      value: 'kaltmiete_nk', label: 'Miete + Nebenkosten', badge: 'Normalfall',
+                      erklaerung: 'Der Mieter zahlt Kaltmiete plus eine monatliche Nebenkosten-Vorauszahlung. Einmal im Jahr rechnest du ab.',
+                      beispiel: kalt > 0 ? `${formatCurrency(kalt)} + ${formatCurrency(nkVz)} = ${formatCurrency(kalt + nkVz)}` : `z.B. 478 € + 120 € = 598 €`,
+                    },
+                    {
+                      value: 'kaltmiete', label: 'Nur Kaltmiete', badge: null,
+                      erklaerung: 'Der Mieter zahlt nur die Miete. Hausgeld und Betriebskosten trägst du und holst sie über die Jahresabrechnung zurück.',
+                      beispiel: kalt > 0 ? formatCurrency(kalt) : 'z.B. 478 €',
+                    },
+                    {
+                      value: 'warmmiete', label: 'Pauschalmiete, alles drin', badge: null,
+                      erklaerung: 'Ein einziger Betrag, keine Jahresabrechnung.',
+                      beispiel: warm > 0 ? formatCurrency(warm) : 'z.B. 598 €',
+                    },
+                  ];
+                  return (
+                  <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <label className="block text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1"><Home size={14}/>Was überweist dein Mieter jeden Monat?</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                      {VERMIETUNGS_OPTIONEN.map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => handleChange('vermietungsmodell', opt.value)}
+                          className={`p-3 rounded-lg border-2 text-xs transition-all text-left ${
+                            formData.vermietungsmodell === opt.value
+                              ? 'border-indigo-500 bg-white text-indigo-700'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="font-semibold">{opt.label}</span>
+                            {opt.badge && <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">{opt.badge}</span>}
+                          </div>
+                          <div className="text-gray-500 mb-1.5">{opt.erklaerung}</div>
+                          <div className="font-mono text-[11px] text-gray-400">{opt.beispiel}</div>
+                        </button>
+                      ))}
                     </div>
-                  )}
-                  {formData.vermietungsmodell === 'warmmiete' && (
-                    <p className="text-xs text-blue-600 flex items-center gap-1"><ClipboardList size={12}/>Vermieter trägt alle Betriebskosten (Hausgeld, Strom etc.) aus der Warmmiete</p>
-                  )}
-                </div>
-                )}
+                    {formData.vermietungsmodell === 'kaltmiete_nk' && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Nebenkosten-Vorauszahlung vom Mieter (€/Monat)</label>
+                        <input
+                          type="number"
+                          value={formData.nebenkostenVomMieter || 0}
+                          onChange={(e) => handleChange('nebenkostenVomMieter', numInp(e.target.value))}
+                          className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                          placeholder="z.B. 200"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  );
+                })()}
               </div>
             )}
 

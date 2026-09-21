@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Home, TrendingUp, TrendingDown, CalendarDays, Receipt, Building2, Wallet, X, Info } from 'lucide-react';
 import { getAktuellerWert } from '../utils/miete.js';
+import { formatCurrency } from '../utils/format.js';
 
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
@@ -70,33 +71,53 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
 
       {modus === 'automatisch' ? (
         <div className="space-y-3">
-          {/* Vermietungsmodell */}
+          {/* Vermietungsmodell — Abschnitt 6.2: Frage statt Fachbegriff, Rechenbeispiel
+              aus den echten (bereits erfassten) Objektwerten statt Abkürzungen. */}
+          {(() => {
+            const kalt = Number(params.kaltmiete) || 0;
+            const nkVz = Number(params.nebenkostenVomMieter) || 120;
+            const aktuellesModell = params.vermietungsmodell || 'kaltmiete';
+            const VERMIETUNGS_OPTIONEN = [
+              {
+                value: 'kaltmiete_nk', label: 'Miete + Nebenkosten', badge: 'Normalfall',
+                erklaerung: 'Kaltmiete plus monatliche Nebenkosten-Vorauszahlung. Einmal im Jahr rechnest du ab.',
+                beispiel: kalt > 0 ? `${formatCurrency(kalt)} + ${formatCurrency(nkVz)} = ${formatCurrency(kalt + nkVz)}` : 'z.B. 478 € + 120 € = 598 €',
+              },
+              {
+                value: 'kaltmiete', label: 'Nur Kaltmiete', badge: null,
+                erklaerung: 'Hausgeld und Betriebskosten trägst du und holst sie über die Jahresabrechnung zurück.',
+                beispiel: aktuellesModell !== 'warmmiete' && kalt > 0 ? formatCurrency(kalt) : 'z.B. 478 €',
+              },
+              {
+                value: 'warmmiete', label: 'Pauschalmiete, alles drin', badge: null,
+                erklaerung: 'Ein einziger Betrag, keine Jahresabrechnung.',
+                beispiel: aktuellesModell === 'warmmiete' && kalt > 0 ? formatCurrency(kalt) : 'z.B. 598 €',
+              },
+            ];
+            return (
           <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
-            <p className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1"><Home size={12} /> Vermietungsmodell</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { value: 'kaltmiete', label: 'Kaltmiete', desc: 'NK via Abrechnung' },
-                { value: 'kaltmiete_nk', label: 'Kaltmiete + NK', desc: 'Mieter zahlt NK-VZ' },
-                { value: 'warmmiete', label: 'Warmmiete', desc: 'Inklusivmiete' },
-              ].map(opt => (
+            <p className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1"><Home size={12} /> Was überweist dein Mieter jeden Monat?</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+              {VERMIETUNGS_OPTIONEN.map(opt => (
                 <button key={opt.value} type="button"
                   onClick={() => updateParams({ ...params, vermietungsmodell: opt.value })}
-                  className={`p-1.5 rounded-lg border-2 text-xs transition-all text-left ${
-                    (params.vermietungsmodell || 'kaltmiete') === opt.value
-                      ? 'border-indigo-500 bg-white text-indigo-700 font-semibold'
+                  className={`p-2 rounded-lg border-2 text-xs transition-all text-left ${
+                    aktuellesModell === opt.value
+                      ? 'border-indigo-500 bg-white text-indigo-700'
                       : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                   }`}>
-                  <div className="font-semibold">{opt.label}</div>
-                  <div className="text-gray-400 text-[10px]">{opt.desc}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold">{opt.label}</span>
+                    {opt.badge && <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-bold">{opt.badge}</span>}
+                  </div>
+                  <div className="text-gray-400 text-[10px] mt-0.5">{opt.erklaerung}</div>
+                  <div className="font-mono text-[10px] text-gray-400 mt-1">{opt.beispiel}</div>
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-indigo-600 mt-1.5">
-              {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete' ? 'Betriebskosten via NK-Abrechnung auf Mieter umgelegt'
-                : (params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? 'Mieter zahlt Nebenkostenvorauszahlung direkt an dich'
-                : 'Vermieter zahlt alle Betriebskosten aus der Warmmiete'}
-            </p>
           </div>
+            );
+          })()}
 
           {/* Einnahmen */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -106,7 +127,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             <div className="divide-y divide-gray-100 px-4">
               {[
                 { label: (params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete (Basis)' : 'Kaltmiete (Basis)', key: 'kaltmiete', unit: '€', step: 25, hint: 'Monatliche Grundmiete' },
-                ...((params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? [{ label: 'NK-Vorauszahlung (Mieter)', key: 'nebenkostenVomMieter', unit: '€', step: 10, hint: 'Monatliche NK-Vorauszahlung' }] : []),
+                ...((params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? [{ label: 'Nebenkosten-Vorauszahlung (Mieter)', key: 'nebenkostenVomMieter', unit: '€', step: 10, hint: 'Monatliche Nebenkosten-Vorauszahlung' }] : []),
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between py-2.5">
                   <div>
@@ -176,6 +197,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                             const neu = (params.mietAnpassungen || []).filter((_, i) => i !== anp.originalIdx);
                             updateParams({ ...params, mietAnpassungen: neu });
                           }}
+                          title="Anpassung löschen"
                           className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"><X size={12} /></button>
                       </div>
                     ))}
@@ -191,8 +213,8 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             </div>
             <div className="divide-y divide-gray-100 px-4">
               {[
-                { label: 'Instandhaltung', key: 'instandhaltung', unit: '€', step: 10, hint: 'Rücklagen für Reparaturen & Instandhaltung' },
-                { label: 'Verwaltung', key: 'verwaltung', unit: '€', step: 5, hint: 'Hausverwaltung, Buchführung etc.' },
+                { label: 'Rücklage für Reparaturen', key: 'instandhaltung', unit: '€', step: 10, hint: 'Rücklagen für Reparaturen & Instandhaltung' },
+                { label: 'Hausverwaltung', key: 'verwaltung', unit: '€', step: 5, hint: 'Hausverwaltung, Buchführung etc.' },
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between py-2.5">
                   <div>
@@ -219,7 +241,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             </div>
             <div className="divide-y divide-gray-100 px-4">
               {[
-                { label: 'WEG / Hausgeld', key: 'hausgeld', unit: '€', step: 10, hint: 'Monatliches Hausgeld an die WEG' },
+                { label: 'Hausgeld an die WEG', key: 'hausgeld', unit: '€', step: 10, hint: 'Monatliches Hausgeld an die WEG' },
                 { label: 'Strom', key: 'strom', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
                 { label: 'Internet', key: 'internet', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
                 { label: 'Sonstige Nebenkosten', key: 'nebenkosten', unit: '€', step: 10, hint: 'Versicherungen, Grundsteuer anteilig etc.' },
@@ -246,9 +268,9 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               analog zu den Mietanpassungen oben (statt starr pro Kalenderjahr). */}
           {(() => {
             const COST_FELDER = [
-              { key: 'instandhaltung', label: 'Instandhaltung' },
-              { key: 'verwaltung', label: 'Verwaltung' },
-              { key: 'hausgeld', label: 'WEG / Hausgeld' },
+              { key: 'instandhaltung', label: 'Rücklage für Reparaturen' },
+              { key: 'verwaltung', label: 'Hausverwaltung' },
+              { key: 'hausgeld', label: 'Hausgeld an die WEG' },
               { key: 'strom', label: 'Strom' },
               { key: 'internet', label: 'Internet' },
               { key: 'nebenkosten', label: 'Sonstige NK' },
@@ -327,7 +349,8 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                                 {istKuenftig && <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded shrink-0">Künftig</span>}
                               </div>
                               <button type="button" onClick={() => removeAnpassung(anp.originalIdx)}
-                                className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"><X size={12} /></button>
+                                title="Anpassung löschen"
+                          className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"><X size={12} /></button>
                             </div>
                             <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                               {COST_FELDER.map(item => (
@@ -356,12 +379,12 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
         <div>
           {/* Vermietungsmodell auch im manuellen Modus */}
           <div className="mb-3 bg-blue-50 p-2.5 rounded-lg border border-blue-100">
-            <p className="text-[10px] font-semibold text-blue-800 mb-1.5 flex items-center gap-1"><Home size={12} /> Vermietungsmodell</p>
+            <p className="text-[10px] font-semibold text-blue-800 mb-1.5 flex items-center gap-1"><Home size={12} /> Was überweist dein Mieter jeden Monat?</p>
             <div className="flex gap-1.5">
               {[
-                { value: 'kaltmiete', label: 'Kaltmiete' },
-                { value: 'kaltmiete_nk', label: '+ NK' },
-                { value: 'warmmiete', label: 'Warmmiete' },
+                { value: 'kaltmiete_nk', label: 'Miete + NK' },
+                { value: 'kaltmiete', label: 'Nur Kaltmiete' },
+                { value: 'warmmiete', label: 'Pauschal, alles drin' },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -427,7 +450,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       </div>
                       {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' && (
                         <div className="flex items-center justify-between bg-green-50 p-2 rounded">
-                          <label className="text-sm text-gray-700">NK-Vorauszahlung Mieter</label>
+                          <label className="text-sm text-gray-700">Nebenkosten-Vorauszahlung Mieter</label>
                           <div className="flex items-center gap-1">
                             <input
                               type="number"
@@ -447,7 +470,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                     <div className="text-xs font-semibold text-red-700 mb-2 flex items-center gap-1"><TrendingDown size={12} /> Kosten (Vermieter)</div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <label className="text-xs text-gray-600">Instandhaltung</label>
+                        <label className="text-xs text-gray-600">Rücklage für Reparaturen</label>
                         <div className="flex items-center gap-1">
                           <input
                             type="number"
@@ -459,7 +482,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                         </div>
                       </div>
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <label className="text-xs text-gray-600">Verwaltung</label>
+                        <label className="text-xs text-gray-600">Hausverwaltung</label>
                         <div className="flex items-center gap-1">
                           <input
                             type="number"
@@ -554,7 +577,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                               </div>
                               {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' && (
                                 <div className="flex items-center justify-between bg-green-50 p-2 rounded">
-                                  <label className="text-sm text-green-800 flex items-center gap-1"><Wallet size={12} /> NK-Vorauszahlung</label>
+                                  <label className="text-sm text-green-800 flex items-center gap-1"><Wallet size={12} /> Nebenkosten-Vorauszahlung</label>
                                   <div className="flex items-center gap-1">
                                     <input
                                       type="number"

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite, berechneWertsteigerungSeitKauf } from '../utils/berechnung.js';
@@ -141,7 +141,7 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
 // ─── Kostenkategorien je Wohneinheit ─────────────────────────────────────────
 const KOSTEN_FELDER = [
   { key: 'hausverwaltung', label: 'Hausverwaltung',           icon: Building2, farbe: 'blue'   },
-  { key: 'instandhaltung', label: 'Instandhaltungsrücklage',  icon: Wrench,    farbe: 'orange' },
+  { key: 'instandhaltung', label: 'Rücklage für Reparaturen',  icon: Wrench,    farbe: 'orange' },
   { key: 'grundsteuer',    label: 'Grundsteuer (Anteil)',      icon: Landmark,  farbe: 'purple' },
   { key: 'versicherung',   label: 'Versicherung (Anteil)',     icon: Shield,    farbe: 'teal'   },
   { key: 'strom',          label: 'Strom / Heizung (Anteil)', icon: Zap,       farbe: 'yellow' },
@@ -168,6 +168,9 @@ const MehrfamilienhausDetail = ({
   const [activeTab, setActiveTab] = useState(() =>
     initialTab ? (MFH_TAB_MAP[initialTab] ?? initialTab) : 'wohnungen'
   );
+  // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben.
+  const scrollContainerRef = useRef(null);
+  useEffect(() => { scrollContainerRef.current?.scrollTo(0, 0); }, [activeTab]);
   const [params, setParams] = useState(immobilie);
   const [hasChanges, setHasChanges] = useState(false);
   const [cfWE, setCfWE] = useState('gesamt');       // aktive WE im Cashflow-Tab
@@ -390,7 +393,7 @@ const MehrfamilienhausDetail = ({
     },
     { id: 'vermietung', icon: <Users size={13}/>,      label: 'Vermietung', first: 'mieteinnahmen',
       subs: [
-        { id: 'mieteinnahmen', label: 'Einnahmen' },
+        { id: 'mieteinnahmen', label: 'Mieteingänge' },
         { id: 'mieter',        label: aktiveMieterAnzahl > 0 ? `Mieter (${aktiveMieterAnzahl})` : 'Mieter' },
         { id: 'nkabrechnung',  label: 'NK-Abrechnung' },
         { id: 'kaution',       label: kautionOffenAnzahl > 0 ? `Kaution (${kautionOffenAnzahl})` : 'Kaution' },
@@ -482,7 +485,10 @@ const MehrfamilienhausDetail = ({
                   </div>
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
                     <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
-                    <div className="text-base sm:text-xl font-black text-amber-700">{fmtKPI(ergebnis.eigenkapitalRendite)}</div>
+                    {/* Abschnitt 7.5: kein EK erfasst → "n. v." in Grau statt irreführender "0,00%" */}
+                    <div className={`text-base sm:text-xl font-black ${ergebnis.eigenkapitalRendite == null ? 'text-gray-400' : 'text-amber-700'}`}>
+                      {ergebnis.eigenkapitalRendite == null ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite)}
+                    </div>
                   </div>
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
                     <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
@@ -506,7 +512,7 @@ const MehrfamilienhausDetail = ({
         </div>
 
         {/* Tab-Inhalt */}
-        <div className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
 
           {/* ── Tab-Navigation ───────────────────────────────────────────────── */}
           <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-4 pb-2 mb-4 border-b border-slate-100">
@@ -759,10 +765,10 @@ const MehrfamilienhausDetail = ({
                           <td className="py-2 px-3 text-gray-600 truncate max-w-[120px]">{w.mieterName || <span className="text-red-400">Kein Mieter</span>}</td>
                           <td className="py-2 px-2 text-center">
                             {belegt
-                              ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700"><Check size={12}/></span>
+                              ? <span title="Vermietet" className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700"><Check size={12}/></span>
                               : hatteJeMieter(w)
-                                ? <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600"><Circle size={12}/></span>
-                                : <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-400">—</span>
+                                ? <span title="Leerstand" className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600"><Circle size={12}/></span>
+                                : <span title="Noch nie vermietet" className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-400">—</span>
                             }
                           </td>
                         </tr>

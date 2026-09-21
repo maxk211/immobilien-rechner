@@ -275,9 +275,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               {/* BETRIEBSKOSTEN */}
               <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Bewirtschaftungskosten</td></tr>
               <CfZeile label="Nebenkosten" color="red" monat={a(monat.nk)} jahr={a(monat.nk * 12)} hideZero />
-              <CfZeile label="Instandhaltung" color="red" monat={a(monat.inst)} jahr={a(monat.inst * 12)} hideZero />
-              <CfZeile label="Verwaltung" color="red" monat={a(monat.verw)} jahr={a(monat.verw * 12)} hideZero />
-              <CfZeile label="Hausgeld / WEG" color="red" monat={a(monat.hg)} jahr={a(monat.hg * 12)} hideZero />
+              <CfZeile label="Rücklage für Reparaturen" color="red" monat={a(monat.inst)} jahr={a(monat.inst * 12)} hideZero />
+              <CfZeile label="Hausverwaltung" color="red" monat={a(monat.verw)} jahr={a(monat.verw * 12)} hideZero />
+              <CfZeile label="Hausgeld an die WEG" color="red" monat={a(monat.hg)} jahr={a(monat.hg * 12)} hideZero />
               <CfZeile label="Strom" color="red" monat={a(monat.strom)} jahr={a(monat.strom * 12)} hideZero />
               <CfZeile label="Internet" color="red" monat={a(monat.internet)} jahr={a(monat.internet * 12)} hideZero />
               <CfZeile label="Σ Betrieb" color="red" bold separator
