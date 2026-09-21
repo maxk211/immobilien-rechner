@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite, berechneWertsteigerungSeitKauf } from '../utils/berechnung.js';
+import { berechneMietStatusFuerMonat } from '../utils/miete.js';
 import CashflowUebersicht from './CashflowUebersicht';
 import BausparManager from './BausparManager';
 import Steuerberechnung from './Steuerberechnung';
@@ -194,12 +195,15 @@ const MehrfamilienhausDetail = ({
   const naechsteAufgabe = eigeneAufgaben.find(t => t.priority !== 'gruen') || eigeneAufgaben[0] || null;
 
   // Cashflow-Ampel: wie viele der belegten Wohnungen haben diesen Monat schon Miete verbucht?
+  // Nutzt berechneMietStatusFuerMonat (utils/miete.js) — dieselbe Funktion wie der
+  // Mieteinnahmen-Tab und die Kaufimmobilien-Ampel, damit eine Teilzahlung hier nicht
+  // fälschlich als "eingegangen" zählt. MFH-Wohnungen laufen nie über Dauerauftrag.
   const heute = new Date();
   const belegteWohnungenListe = wohnungen.filter(w => w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()));
-  const wohnungenMitMieteImMonat = belegteWohnungenListe.filter(w => (w.mietEingaenge || []).some(e => {
-    const d = new Date(e.datum);
-    return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1);
-  })).length;
+  const wohnungenMitMieteImMonat = belegteWohnungenListe.filter(w => {
+    const status = berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, Number(w.kaltmiete) || 0, false).status;
+    return status === 'bezahlt';
+  }).length;
   const alleMietenEingegangen = belegteWohnungenListe.length > 0 && wohnungenMitMieteImMonat === belegteWohnungenListe.length;
 
   // Ein-Klick Abhaken pro Wohnung direkt aus der Übersicht — kein Umweg über den
@@ -673,27 +677,36 @@ const MehrfamilienhausDetail = ({
                   <div className="divide-y divide-gray-50">
                     {belegteWohnungenListe.map((w) => {
                       const wIdx = wohnungen.indexOf(w);
-                      const eintrag = (w.mietEingaenge || []).find(e => {
-                        const d = new Date(e.datum);
-                        return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1) && e.typ !== 'ausnahme';
-                      }) || null;
+                      const erwartet = Number(w.kaltmiete) || 0;
+                      const mietStatus = berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, erwartet, false);
+                      const eintrag = mietStatus.zahlungen[mietStatus.zahlungen.length - 1] || null;
                       return (
                         <div key={w.id || wIdx} className="flex items-center justify-between gap-3 px-4 py-2.5">
                           <div className="min-w-0">
                             <div className="text-sm font-semibold text-gray-800 truncate">{w.name || `WE ${wIdx + 1}`}</div>
                             <div className="text-xs text-gray-400 truncate">{w.mieterName}</div>
                           </div>
-                          {eintrag ? (
+                          {mietStatus.status === 'bezahlt' ? (
                             <div className="text-right shrink-0">
-                              <div className="text-sm font-semibold text-emerald-600 flex items-center gap-1 justify-end"><CheckCircle2 size={14}/> {formatCurrency(eintrag.betrag)}</div>
-                              <div className="text-[10px] text-gray-400">{new Date(eintrag.datum).toLocaleDateString('de-DE')}</div>
+                              <div className="text-sm font-semibold text-emerald-600 flex items-center gap-1 justify-end"><CheckCircle2 size={14}/> {formatCurrency(mietStatus.summe)}</div>
+                              {eintrag && <div className="text-[10px] text-gray-400">{new Date(eintrag.datum).toLocaleDateString('de-DE')}</div>}
+                            </div>
+                          ) : mietStatus.status === 'teilweise' ? (
+                            <div className="text-right shrink-0 flex items-center gap-2">
+                              <span className="text-xs font-semibold text-amber-600">~ {formatCurrency(mietStatus.summe)} von {formatCurrency(erwartet)}</span>
+                              <button
+                                onClick={() => handleWohnungMieteAbhaken(wIdx)}
+                                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
+                              >
+                                <Check size={12}/> Rest ({formatCurrency(Math.max(0, erwartet - mietStatus.summe))})
+                              </button>
                             </div>
                           ) : (
                             <button
                               onClick={() => handleWohnungMieteAbhaken(wIdx)}
                               className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
                             >
-                              <Check size={12}/> Erhalten ({formatCurrency(Number(w.kaltmiete) || 0)})
+                              <Check size={12}/> Erhalten ({formatCurrency(erwartet)})
                             </button>
                           )}
                         </div>

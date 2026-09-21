@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete, getAktuellerWert } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuellerWert, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRendite } from '../utils/berechnung.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
@@ -347,16 +347,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const naechsteAufgabe = eigeneAufgaben.find(t => t.priority !== 'gruen') || eigeneAufgaben[0] || null;
 
   // Cashflow-Ampel: ist die Miete für den aktuellen Monat schon verbucht?
+  // Nutzt dieselbe Status-Logik wie der Mieteinnahmen-Tab (berechneMietStatusFuerMonat),
+  // damit hier nie ein anderer Status als dort angezeigt wird (z.B. bei Teilzahlungen).
   const heute = new Date();
   const aktiveMieterKaufobjekt = mieterListe.some(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
-  const mieteAktuellerMonatEintrag = (params.mietEingaenge || []).find(e => {
-    const d = new Date(e.datum);
-    return d.getFullYear() === heute.getFullYear() && (d.getMonth() + 1) === (heute.getMonth() + 1) && e.typ !== 'ausnahme';
-  }) || null;
   const nkVomMieterAmpel = params.vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
   const erwarteterMietBetrag = params.dauerauftrag
     ? (params.dauerauftragBetrag || getAktuelleMiete(params) || 0)
     : getAktuelleMiete(params) + nkVomMieterAmpel;
+  const mieteStatusAktuellerMonat = berechneMietStatusFuerMonat(
+    params.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, erwarteterMietBetrag, params.dauerauftrag
+  );
+  const mieteAktuellerMonatEintrag = mieteStatusAktuellerMonat.zahlungen[mieteStatusAktuellerMonat.zahlungen.length - 1] || null;
 
   // Ein-Klick Abhaken direkt aus der Übersicht — spart den Umweg über den Mieteinnahmen-Tab.
   // Speichert sofort (kein zusätzlicher "Speichern"-Klick nötig, wie bei jeder anderen Änderung hier).
@@ -606,21 +608,37 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
                 {aktiveMieterKaufobjekt && (
                   <div className={`rounded-2xl p-4 border ${
-                    params.dauerauftrag || mieteAktuellerMonatEintrag ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                    mieteStatusAktuellerMonat.status === 'dauerauftrag' || mieteStatusAktuellerMonat.status === 'bezahlt' ? 'bg-emerald-50 border-emerald-200'
+                    : mieteStatusAktuellerMonat.status === 'teilweise' ? 'bg-amber-50 border-amber-200'
+                    : 'bg-red-50 border-red-200'
                   }`}>
                     <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
                       Miete {heute.toLocaleDateString('de-DE', { month: 'long' })}
                     </div>
-                    {params.dauerauftrag ? (
+                    {mieteStatusAktuellerMonat.status === 'dauerauftrag' ? (
                       <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
                         <Zap size={16}/> Automatisch per Dauerauftrag
                       </div>
-                    ) : mieteAktuellerMonatEintrag ? (
+                    ) : mieteStatusAktuellerMonat.status === 'bezahlt' ? (
                       <div>
                         <div className="font-semibold text-sm flex items-center gap-1.5 text-emerald-700">
-                          <CheckCircle2 size={16}/> {formatCurrency(mieteAktuellerMonatEintrag.betrag)} eingegangen
+                          <CheckCircle2 size={16}/> {formatCurrency(mieteStatusAktuellerMonat.summe)} eingegangen
                         </div>
-                        <div className="text-xs text-gray-400 mt-0.5">am {new Date(mieteAktuellerMonatEintrag.datum).toLocaleDateString('de-DE')}</div>
+                        {mieteAktuellerMonatEintrag && (
+                          <div className="text-xs text-gray-400 mt-0.5">am {new Date(mieteAktuellerMonatEintrag.datum).toLocaleDateString('de-DE')}</div>
+                        )}
+                      </div>
+                    ) : mieteStatusAktuellerMonat.status === 'teilweise' ? (
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="font-semibold text-sm text-amber-700 flex items-center gap-1.5">
+                          ~ {formatCurrency(mieteStatusAktuellerMonat.summe)} von {formatCurrency(erwarteterMietBetrag)}
+                        </div>
+                        <button
+                          onClick={handleMieteAbhaken}
+                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1"
+                        >
+                          <Check size={12}/> Rest erhalten ({formatCurrency(Math.max(0, erwarteterMietBetrag - mieteStatusAktuellerMonat.summe))})
+                        </button>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between gap-2 flex-wrap">
