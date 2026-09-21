@@ -193,9 +193,9 @@ const MehrfamilienhausDetail = ({
   const belegtWE        = wohnungen.filter(w => w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date())).length;
   const leerstandWE     = wohnungen.filter(w => hatteJeMieter(w) && !(w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()))).length;
 
-  // Vermieter-Aufgaben, gefiltert auf diese Immobilie (bereits rot→gelb→grün sortiert)
+  // Vermieter-Aufgaben, gefiltert auf diese Immobilie (bereits rot→gelb→grau sortiert)
   const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
-  const naechsteAufgabe = eigeneAufgaben.find(t => t.priority !== 'gruen') || eigeneAufgaben[0] || null;
+  const naechsteAufgabe = eigeneAufgaben.find(t => t.priority !== 'grau') || eigeneAufgaben[0] || null;
 
   // Cashflow-Ampel: wie viele der belegten Wohnungen haben diesen Monat schon Miete verbucht?
   // Nutzt berechneMietStatusFuerMonat (utils/miete.js) — dieselbe Funktion wie der

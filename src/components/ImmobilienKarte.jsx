@@ -40,10 +40,11 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
     ? aktuellerWert - restschuldInfo.restschuld
     : null;
 
-  // Vermieter-Aufgaben, die genau diese Immobilie betreffen (bereits rot→gelb→grün sortiert)
+  // Vermieter-Aufgaben, die genau diese Immobilie betreffen (bereits rot→gelb→grau sortiert)
   const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
   const aufgabenRot = eigeneAufgaben.filter(t => t.priority === 'rot').length;
-  const aufgabenOffen = eigeneAufgaben.filter(t => t.priority !== 'gruen').length;
+  // Alle Einträge sind offene Punkte — auch 'grau' (informativ, aber unerledigt) zählt mit.
+  const aufgabenOffen = eigeneAufgaben.length;
 
   return (
     <div

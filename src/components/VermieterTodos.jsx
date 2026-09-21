@@ -6,10 +6,14 @@ import {
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 
-const PRIORITAET = { rot: 0, gelb: 1, gruen: 2 };
+// Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
+// "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
+// Punkte. "grau" nach PDF-Vorlage für rein informative Hinweise ohne Frist-Druck.
+const PRIORITAET = { rot: 0, gelb: 1, grau: 2 };
 
 // Exportiert, damit Portfolio-Kacheln und die Immobilien-Übersicht dieselbe
 // Aufgaben-Logik nutzen können (gefiltert auf immoId) statt sie zu duplizieren.
+// Jede Erinnerung trägt laut Abschnitt 5 Objektbezug/Kategorie/Text/Stufe/1 Aktion.
 export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   const todos = [];
   const heute = new Date();
@@ -40,19 +44,21 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       const ablauf = new Date(startDatum);
       ablauf.setFullYear(ablauf.getFullYear() + (phase.zinsbindung || 10));
       const monate = (ablauf - heute) / (1000 * 60 * 60 * 24 * 30.44);
-      if (monate > 18 || monate < -6) return;
+      // Abschnitt 5, Regel 2: <24 Monate → gelb, <12 Monate → rot.
+      if (monate > 24 || monate < -6) return;
 
       const abgelaufen = monate < 0;
       todos.push({
         id: `zinsbindung-${immo.id}-${idx}`,
-        priority: abgelaufen || monate <= 6 ? 'rot' : 'gelb',
+        priority: abgelaufen || monate < 12 ? 'rot' : 'gelb',
         icon: <Landmark size={16} />,
+        kategorie: 'Finanzierung',
         titel: abgelaufen
           ? 'Zinsbindung bereits abgelaufen!'
           : `Zinsbindung läuft in ${Math.ceil(monate)} Monaten ab`,
         sub: immo.name || immo.adresse || 'Immobilie',
         immoId: immo.id,
-        badge: abgelaufen ? 'Dringend' : monate <= 3 ? 'Kritisch' : 'Bald',
+        badge: abgelaufen ? 'Dringend' : monate < 12 ? 'Kritisch' : 'Bald',
         targetTab: 'finanzierung',
       });
     });
@@ -83,6 +89,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         id: `miete-ausstehend-${immo.id}`,
         priority: status === 'nicht_bezahlt' || tageUeberfaellig >= 10 ? 'rot' : 'gelb',
         icon: <TrendingDown size={16} />,
+        kategorie: 'Miete',
         titel: status === 'teilweise'
           ? `Mieteingang ${aktuellerMonat}/${aktuellesJahr} nur teilweise verbucht`
           : `Mieteingang ${aktuellerMonat}/${aktuellesJahr} noch nicht verbucht`,
@@ -111,6 +118,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           id: `nk-abrechnung-${immo.id}`,
           priority: heute.getMonth() >= 5 ? 'rot' : 'gelb', // Ab Juni rot
           icon: <ClipboardList size={16} />,
+          kategorie: 'Steuer',
           titel: `NK-Abrechnung ${letztesJahr} noch ausstehend`,
           sub: immo.name || immo.adresse || 'Immobilie',
           immoId: immo.id,
@@ -134,10 +142,29 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       id: `kaution-${mieter.id}`,
       priority: wochenSeitAuszug >= 6 ? 'rot' : 'gelb',
       icon: <Key size={16} />,
+      kategorie: 'Mieter',
       titel: 'Kaution noch nicht zurückgegeben',
       sub: `${mieter.name} · ${formatCurrency(mieter.kaution_betrag)}`,
       immoId: mieter.immobilie_id,
       badge: wochenSeitAuszug >= 6 ? 'Überfällig' : 'Offen',
+      targetTab: 'kaution',
+    });
+  });
+
+  // ── 4b. Kaution fehlt (aktiver Mieter, kein Betrag hinterlegt) — Abschnitt 5,
+  // Regel 5, Stufe grau: reine Datenpflege-Erinnerung, keine Frist. ────────────
+  mieterListe.forEach(mieter => {
+    if (mieter.aktiv === false) return;
+    if (mieter.kaution_betrag && mieter.kaution_betrag > 0) return;
+    todos.push({
+      id: `kaution-fehlt-${mieter.id}`,
+      priority: 'grau',
+      icon: <Key size={16} />,
+      kategorie: 'Mieter',
+      titel: 'Keine Kaution hinterlegt',
+      sub: mieter.name,
+      immoId: mieter.immobilie_id,
+      badge: 'Eintragen',
       targetTab: 'kaution',
     });
   });
@@ -167,8 +194,9 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     if (monate >= 15) {
       todos.push({
         id: `mieterhoehung-${immo.id}`,
-        priority: 'gruen',
+        priority: 'gelb',
         icon: <TrendingUp size={16} />,
+        kategorie: 'Mieter',
         titel: `Mieterhöhung möglich`,
         sub: `${immo.name || immo.adresse} · ${Math.floor(monate)} Monate seit letzter Anpassung`,
         immoId: immo.id,
@@ -196,6 +224,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           id: `mieterhoehung-datum-${mieter.id}`,
           priority: 'gelb',
           icon: <ScrollText size={16} />,
+          kategorie: 'Mieter',
           titel: 'Letzte Mieterhöhung nicht hinterlegt',
           sub: `${mieter.name} · ${immo.name || immo.adresse} — Datum für 3-Jahres-Kappungsgrenze fehlt`,
           immoId: immo.id,
@@ -213,8 +242,9 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           // 3 Jahre überschritten → Mieterhöhung jetzt möglich
           todos.push({
             id: `mieterhoehung-3j-${mieter.id}`,
-            priority: 'gruen',
+            priority: 'gelb',
             icon: <TrendingUp size={16} />,
+            kategorie: 'Mieter',
             titel: '3-Jahres-Mieterhöhung möglich',
             sub: `${mieter.name} · ${immoName} · letzte Erhöhung: ${letzte.toLocaleDateString('de-DE')}`,
             immoId: immo.id,
@@ -225,8 +255,9 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           // Vorwarnung 3 Monate vorher
           todos.push({
             id: `mieterhoehung-3j-warnung-${mieter.id}`,
-            priority: 'gruen',
+            priority: 'gelb',
             icon: <CalendarDays size={16} />,
+            kategorie: 'Mieter',
             titel: `Mieterhöhungs-Fenster öffnet in ${Math.ceil(monateVerbleibend)} Monat${Math.ceil(monateVerbleibend) !== 1 ? 'en' : ''}`,
             sub: `${mieter.name} · ${immoName} · möglich ab ${naechsteMoeglich.toLocaleDateString('de-DE')} — jetzt Schreiben vorbereiten`,
             immoId: immo.id,
@@ -248,6 +279,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         id: `leerstand-${immo.id}`,
         priority: 'gelb',
         icon: <Building2 size={16} />,
+        kategorie: 'Mieter',
         titel: 'Immobilie steht leer',
         sub: immo.name || immo.adresse || 'Immobilie',
         immoId: immo.id,
@@ -268,6 +300,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         id: `vertragsende-${mieter.id}`,
         priority: monate <= 1 ? 'rot' : 'gelb',
         icon: <CalendarDays size={16} />,
+        kategorie: 'Mieter',
         titel: `Mietvertrag läuft in ${Math.ceil(monate)} Monat${monate > 1 ? 'en' : ''} aus`,
         sub: `${mieter.name}`,
         immoId: mieter.immobilie_id,
@@ -308,6 +341,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         id: `regel15-${immo.id}`,
         priority: 'rot',
         icon: <AlertTriangle size={16} />,
+        kategorie: 'Steuer',
         titel: '15%-Grenze überschritten! Steuerlicher Verlust droht',
         sub: `${immo.name || immo.adresse} · ${Math.round(prozent)}% der Grenze (${formatCurrency(relevantKosten)} / ${formatCurrency(grenze)})`,
         immoId: immo.id,
@@ -319,6 +353,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         id: `regel15-${immo.id}`,
         priority: 'gelb',
         icon: <AlertTriangle size={16} />,
+        kategorie: 'Steuer',
         titel: `15%-Regel: ${Math.round(prozent)}% der Grenze — noch ${formatCurrency(grenze - relevantKosten)} Spielraum`,
         sub: `${immo.name || immo.adresse} · 3-Jahres-Fenster läuft noch ${monate} Monate`,
         immoId: immo.id,
@@ -328,14 +363,66 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     }
   });
 
-  // Sortieren: rot → gelb → grün
+  // ── 9. Marktwert veraltet (>12 Monate nicht aktualisiert) ──────────────────
+  // Abschnitt 5, Stufe grau: rein informativ, keine Frist — betrifft nur Objekte,
+  // für die überhaupt ein geschätzter Marktwert gepflegt wird.
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie') return;
+    if (!immo.aktiv) return;
+    if (!immo.geschaetzterWert || immo.geschaetzterWert <= 0) return;
+
+    const zuletzt = immo.geschaetzterWertDatum ? new Date(immo.geschaetzterWertDatum) : null;
+    const monateSeitUpdate = zuletzt ? (heute - zuletzt) / (1000 * 60 * 60 * 24 * 30.44) : 999;
+    if (monateSeitUpdate < 12) return;
+
+    todos.push({
+      id: `marktwert-veraltet-${immo.id}`,
+      priority: 'grau',
+      icon: <TrendingUp size={16} />,
+      kategorie: 'Finanzierung',
+      titel: zuletzt ? 'Marktwert seit über 12 Monaten nicht aktualisiert' : 'Marktwert noch nie aktualisiert',
+      sub: immo.name || immo.adresse || 'Immobilie',
+      immoId: immo.id,
+      badge: 'Prüfen',
+      targetTab: 'stammdaten',
+    });
+  });
+
+  // ── 10. Sondertilgung ungenutzt (nach 1. November) ──────────────────────────
+  // Abschnitt 5, Stufe grau: erinnert daran, eine erlaubte, aber im laufenden Jahr
+  // noch nicht genutzte Sondertilgungsquote nicht verfallen zu lassen.
+  if (heute.getMonth() >= 10) { // ab November
+    portfolio.forEach(immo => {
+      if (immo.immobilienTyp === 'mietimmobilie') return;
+      if (!immo.aktiv) return;
+      const phasen = immo.finanzierungsphasen || [];
+      const aktivePhase = phasen[phasen.length - 1];
+      if (!aktivePhase) return;
+      if (!aktivePhase.sondertilgungErlaubtProzent || aktivePhase.sondertilgungErlaubtProzent <= 0) return;
+      if (aktivePhase.sondertilgungJaehrlich > 0) return; // wird bereits genutzt
+
+      todos.push({
+        id: `sondertilgung-ungenutzt-${immo.id}`,
+        priority: 'grau',
+        icon: <Landmark size={16} />,
+        kategorie: 'Finanzierung',
+        titel: `Sondertilgung (${aktivePhase.sondertilgungErlaubtProzent}% erlaubt) dieses Jahr noch nicht genutzt`,
+        sub: immo.name || immo.adresse || 'Immobilie',
+        immoId: immo.id,
+        badge: 'Prüfen',
+        targetTab: 'finanzierung',
+      });
+    });
+  }
+
+  // Sortieren: rot → gelb → grau
   return todos.sort((a, b) => PRIORITAET[a.priority] - PRIORITAET[b.priority]);
 }
 
 export const PRIORITY_STYLE = {
   rot: { dot: 'bg-red-500', badge: 'bg-red-100 text-red-700', row: 'border-red-100 hover:bg-red-50' },
   gelb: { dot: 'bg-amber-400', badge: 'bg-amber-100 text-amber-700', row: 'border-amber-100 hover:bg-amber-50' },
-  gruen: { dot: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700', row: 'border-emerald-100 hover:bg-emerald-50' },
+  grau: { dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600', row: 'border-gray-100 hover:bg-gray-50' },
 };
 
 const LS_AKTIV_KEY = 'vermieter-todos-aktiv';
@@ -363,7 +450,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
 
   const anzahlRot = todos.filter(t => t.priority === 'rot').length;
   const anzahlGelb = todos.filter(t => t.priority === 'gelb').length;
-  const anzahlGruen = todos.filter(t => t.priority === 'gruen').length;
+  const anzahlGrau = todos.filter(t => t.priority === 'grau').length;
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
@@ -387,9 +474,9 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                   {anzahlGelb} offen
                 </span>
               )}
-              {anzahlGruen > 0 && (
-                <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                  {anzahlGruen} Hinweis
+              {anzahlGrau > 0 && (
+                <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {anzahlGrau} Hinweis
                 </span>
               )}
             </div>
