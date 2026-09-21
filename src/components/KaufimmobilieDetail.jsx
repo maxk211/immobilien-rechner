@@ -435,7 +435,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       className={`text-xs font-semibold px-2 py-0.5 rounded-full text-white flex items-center gap-1 ${
                         eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/80'
                         : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/80'
-                        : 'bg-emerald-500/70'
+                        : 'bg-gray-400/80'
                       }`}>
                       {eigeneAufgaben.length} offen
                     </button>
@@ -709,7 +709,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     {eigeneAufgaben.map(aufgabe => (
                       <div key={aufgabe.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${
-                          aufgabe.priority === 'rot' ? 'bg-red-500' : aufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-emerald-500'
+                          aufgabe.priority === 'rot' ? 'bg-red-500' : aufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-gray-400'
                         }`} />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold text-gray-800 truncate">{aufgabe.titel}</div>

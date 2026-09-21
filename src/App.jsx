@@ -40,7 +40,8 @@ import ImmobilienFormular from './components/ImmobilienFormular';
 import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
 import PortfolioZiele from './components/PortfolioZiele';
-import { generiereAufgaben } from './components/VermieterTodos';
+import VermieterTodos, { generiereAufgaben } from './components/VermieterTodos';
+import MieteingaengeMonat from './components/MieteingaengeMonat';
 import ErsteSchritte from './components/ErsteSchritte';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
@@ -269,6 +270,22 @@ function App() {
       setSyncStatus('error');
       toast.error('Fehler beim Speichern: ' + error.message);
       return null;
+    }
+  };
+
+  // Für den Dashboard-Block "Mieteingänge des aktuellen Monats" (MieteingaengeMonat.jsx) —
+  // bucht direkt aus dem Dashboard heraus, ohne die Objekt-Detailansicht zu öffnen.
+  const handleQuickBuchen = async (immoId, felder) => {
+    const immo = portfolio.find(i => i.id === immoId);
+    if (!immo) return;
+    try {
+      const saved = await saveImmobilie({ ...immo, ...felder, id: immoId });
+      setPortfolio(prev => prev.map(i => i.id === immoId ? saved : i));
+      if (selectedImmobilie?.id === immoId) setSelectedImmobilie(saved);
+      toast.success('Miete gebucht ✓');
+    } catch (error) {
+      console.error('Fehler beim Buchen:', error);
+      toast.error('Fehler beim Buchen: ' + error.message);
     }
   };
 
@@ -1304,6 +1321,24 @@ function App() {
       <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
         <PortfolioOverview portfolio={portfolio} />
         <ErsteSchritte portfolio={portfolio} mieterListe={mieterListe} />
+
+        {/* Abschnitt 3.1: "Was steht an" — aggregierte Vermieter-Aufgaben über das
+            gesamte aktive Portfolio, klickbar direkt zum passenden Objekt-Tab. */}
+        <VermieterTodos
+          portfolio={aktiveImmobilien}
+          mieterListe={mieterListe}
+          nkAbrechnungen={nkAbrechnungen}
+          onSelectImmobilie={(immo, tab) => { setSelectedImmobilie(immo); setInitialTab(tab); }}
+        />
+
+        {/* Abschnitt 3.1: "Mieteingänge des aktuellen Monats" — eine Kachel pro
+            aktivem Objekt mit Mieter(n), direkt aus dem Dashboard verbuchbar. */}
+        <MieteingaengeMonat
+          portfolio={aktiveImmobilien}
+          mieterListe={mieterListe}
+          onBuchen={handleQuickBuchen}
+          onOpenImmobilie={(immo, tab) => { setSelectedImmobilie(immo); setInitialTab(tab); }}
+        />
 
         {/* Navigation & Actions Bar */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
