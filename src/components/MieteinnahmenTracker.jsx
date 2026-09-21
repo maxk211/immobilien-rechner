@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Zap, Check, X, ChevronUp, ChevronDown, User, FileText, TrendingDown, Wallet, Info } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete } from '../utils/miete.js';
+import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import ZahlungErfassenForm from './ZahlungErfassenForm';
 import NKAbrechnungModal from './NKAbrechnungModal';
 
@@ -99,38 +99,25 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
     setAusnahmeForm({ typ: 'verspaetet', betrag: '', notiz: '' });
   };
 
-  // Monatsberechnung
+  // Monatsberechnung — Status kommt aus der zentralen, überall gleichen
+  // berechneMietStatusFuerMonat (utils/miete.js). Nur vor_kauf/zukunft sind
+  // hier tracker-spezifisch und werden davor abgefangen.
   const monatsUebersicht = MONATE.map(m => {
     // Monate vor dem Kaufdatum im Kaufjahr überspringen
     const istVorKauf = filterJahr === kaufjahr && m.nr < kaufmonat;
-
-    const monatEingaenge = mietEingaenge.filter(e => {
-      const d = new Date(e.datum);
-      return d.getFullYear() === filterJahr && (d.getMonth() + 1) === m.nr;
-    });
-    const ausnahmen = monatEingaenge.filter(e => e.typ === 'ausnahme');
-    const zahlungen = monatEingaenge.filter(e => e.typ !== 'ausnahme');
-    const summe = zahlungen.reduce((s, e) => s + (parseFloat(e.betrag) || 0), 0);
     const istZukunft = filterJahr > aktuellesJahr || (filterJahr === aktuellesJahr && m.nr > aktuellerMonat);
     // Historisch korrekte Miete für diesen Monat
     const erwartetFuerMonat = getMieteForMonat(filterJahr, m.nr);
 
+    const { status: berechneterStatus, summe, zahlungen, ausnahmen } =
+      berechneMietStatusFuerMonat(mietEingaenge, filterJahr, m.nr, erwartetFuerMonat, isDauerauftrag);
+    const monatEingaenge = [...zahlungen, ...ausnahmen];
+
     let status;
-    if (istVorKauf) {
-      status = 'vor_kauf';
-    } else if (istZukunft) {
-      status = 'zukunft';
-    } else if (ausnahmen.some(e => e.ausnahmeTyp === 'nicht_bezahlt')) {
-      status = 'nicht_bezahlt';
-    } else if (isDauerauftrag && ausnahmen.length === 0) {
-      status = 'dauerauftrag'; // auto-bezahlt
-    } else if (summe >= erwartetFuerMonat && summe > 0) {
-      status = 'bezahlt';
-    } else if (summe > 0) {
-      status = 'teilweise';
-    } else {
-      status = 'offen';
-    }
+    if (istVorKauf) status = 'vor_kauf';
+    else if (istZukunft) status = 'zukunft';
+    else status = berechneterStatus;
+
     const verspaetet = ausnahmen.some(e => e.ausnahmeTyp === 'verspaetet') ||
       zahlungen.some(e => new Date(e.datum).getDate() > 5);
 
@@ -168,17 +155,12 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
     while (d <= heute) {
       const monatKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
       const forderungBetrag = getMieteForMonat(d.getFullYear(), d.getMonth()+1);
-      // Zahlungen die diesem Monat zugeordnet sind
-      const zahlungen = mietEingaenge.filter(e => {
-        const emonat = e.monat || `${new Date(e.datum).getFullYear()}-${String(new Date(e.datum).getMonth()+1).padStart(2,'0')}`;
-        return emonat === monatKey && e.typ !== 'ausnahme';
-      });
-      const eingegangen = zahlungen.reduce((s,e) => s + (parseFloat(e.betrag)||0), 0);
+      // Status/Summe über die zentrale Funktion — dieselbe Logik wie monatsUebersicht
+      // und die Cockpit-Ampel. "beglichen" statt "bezahlt" ist hier nur ein Label-Alias.
+      const { status: kernStatus, summe: eingegangen, zahlungen } =
+        berechneMietStatusFuerMonat(mietEingaenge, d.getFullYear(), d.getMonth()+1, forderungBetrag, isDauerauftrag);
+      const status = kernStatus === 'bezahlt' ? 'beglichen' : kernStatus;
       const differenz = eingegangen - forderungBetrag;
-      let status = 'offen';
-      if (eingegangen >= forderungBetrag && eingegangen > 0) status = 'beglichen';
-      else if (eingegangen > 0) status = 'teilweise';
-      else if (isDauerauftrag) status = 'dauerauftrag';
       liste.push({ monatKey, jahr: d.getFullYear(), monat: d.getMonth()+1, forderungBetrag, eingegangen, differenz, status, zahlungen });
       d = new Date(d.getFullYear(), d.getMonth()+1, 1);
     }
@@ -187,11 +169,13 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
 
   const MONATE_NAMEN = ['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 
-  // Offene Forderungen: komplett offen + Restbetrag bei Teilzahlungen
+  // Offene Forderungen: komplett offen + Restbetrag bei Teilzahlungen.
+  // 'nicht_bezahlt' (explizite Ausnahme) zählt seit der Vereinheitlichung mit
+  // berechneMietStatusFuerMonat ebenfalls als offen.
   const offenGesamt = forderungen
-    .filter(f => f.status === 'offen' || f.status === 'teilweise')
+    .filter(f => f.status === 'offen' || f.status === 'teilweise' || f.status === 'nicht_bezahlt')
     .reduce((s, f) => s + Math.max(0, f.forderungBetrag - f.eingegangen), 0);
-  const offenAnzahl = forderungen.filter(f => f.status === 'offen' || f.status === 'teilweise').length;
+  const offenAnzahl = forderungen.filter(f => f.status === 'offen' || f.status === 'teilweise' || f.status === 'nicht_bezahlt').length;
   const jahresForderungen = forderungen.filter(f => f.jahr === filterJahr);
   const jahresEinnahmen = jahresForderungen.reduce((s,f) => s + (f.status === 'dauerauftrag' ? f.forderungBetrag : f.eingegangen), 0);
   // Jahressumme aufgeteilt nach Kalt und NK
