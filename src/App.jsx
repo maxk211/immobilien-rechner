@@ -45,7 +45,7 @@ import MieteingaengeMonat from './components/MieteingaengeMonat';
 import ErsteSchritte from './components/ErsteSchritte';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
-import LaunchAnnouncement from './components/LaunchAnnouncement';
+import WillkommenModal from './components/WillkommenModal';
 import TrialCountdownBanner from './components/TrialCountdownBanner';
 import { useSubscription } from './hooks/useSubscription';
 
@@ -81,7 +81,8 @@ function App() {
     [portfolio, mieterListe, nkAbrechnungen]
   );
   const [showChangelog, setShowChangelog] = useState(false);
-  const [showLaunchAnnouncement, setShowLaunchAnnouncement] = useState(false);
+  const [showWillkommen, setShowWillkommen] = useState(false);
+  const [portfolioLoaded, setPortfolioLoaded] = useState(false);
   const [showSelbstauskunftModal, setShowSelbstauskunftModal] = useState(false);
   const [selbstauskunftDaten, setSelbstauskunftDaten] = useState(() => {
     try {
@@ -120,15 +121,20 @@ function App() {
   // Changelog-Auto-Popup vorerst deaktiviert (Launch-Announcement hat Vorrang).
   // Die Komponente bleibt erhalten, falls sie später wieder aktiviert werden soll.
 
-  // Launch-Announcement einmalig beim ersten Login anzeigen
+  // Willkommens-Popup für echte Erstnutzer: erst zeigen, wenn das Portfolio
+  // geladen ist UND tatsächlich leer ist — so taucht es bei Bestandskunden
+  // (auch auf einem neuen Gerät/Browser ohne den alten Flag) nicht mehr auf.
+  // Ergänzend weiterhin ein Dismiss-Flag, damit es nach dem Schließen nicht
+  // erneut erscheint, selbst wenn das Portfolio zwischenzeitlich leer bleibt.
   useEffect(() => {
+    if (!portfolioLoaded) return;
     try {
-      const seenLaunch = localStorage.getItem('launchAnnouncementSeen');
-      if (!seenLaunch) {
-        setShowLaunchAnnouncement(true);
+      const seenWelcome = localStorage.getItem('renditlyWelcomeSeen') || localStorage.getItem('launchAnnouncementSeen');
+      if (!seenWelcome && portfolio.length === 0) {
+        setShowWillkommen(true);
       }
     } catch(e) { /* localStorage nicht verfügbar */ }
-  }, []);
+  }, [portfolioLoaded, portfolio.length]);
 
   // Auth State überwachen
   useEffect(() => {
@@ -156,6 +162,7 @@ function App() {
       setPortfolio([]);
       setMieterListe([]);
       setNkAbrechnungen([]);
+      setPortfolioLoaded(false);
     }
   }, [session]);
 
@@ -166,6 +173,7 @@ function App() {
       const data = await loadImmobilien();
       setPortfolio(data);
       setSyncStatus('idle');
+      setPortfolioLoaded(true);
     } catch (error) {
       console.error('Fehler beim Laden:', error);
       setSyncStatus('error');
@@ -1226,17 +1234,17 @@ function App() {
           trialDaysLeft={trialDaysLeft}
         />
       )}
-      {/* Launch-Announcement Popup — hat Vorrang vor dem Changelog */}
-      {showLaunchAnnouncement && (
-        <LaunchAnnouncement
+      {/* Willkommens-Popup — hat Vorrang vor dem Changelog */}
+      {showWillkommen && (
+        <WillkommenModal
           onClose={() => {
-            try { localStorage.setItem('launchAnnouncementSeen', '1'); } catch(e) {}
-            setShowLaunchAnnouncement(false);
+            try { localStorage.setItem('renditlyWelcomeSeen', '1'); } catch(e) {}
+            setShowWillkommen(false);
           }}
         />
       )}
       {/* Changelog Popup */}
-      {showChangelog && !showLaunchAnnouncement && (
+      {showChangelog && !showWillkommen && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-start gap-3 mb-4">

@@ -167,8 +167,16 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
       {zaehler.length === 0 && !neuerZaehlerTyp && (
         <div className="text-center py-12 text-gray-400">
           <div className="flex justify-center mb-3"><Gauge size={40} className="text-gray-300" /></div>
-          <div className="font-medium">Noch keine Zähler angelegt</div>
-          <div className="text-sm mt-1">Füge oben einen Strom-, Wasser- oder Heizungszähler hinzu</div>
+          <div className="font-medium text-gray-600">Noch keine Zähler angelegt</div>
+          <div className="text-sm mt-1">Erfasse Strom-, Wasser- oder Heizungszähler, um Verbrauch und Ablesungen zu verfolgen</div>
+          <div className="flex justify-center gap-2 mt-4">
+            {ZAEHLER_TYPEN.map(t => (
+              <button key={t.id} onClick={() => { setNeuerZaehlerTyp(t.id); setNeuerZaehlerForm({ bezeichnung: '', zaehlernummer: '', einheit: t.einheit }); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-colors">
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

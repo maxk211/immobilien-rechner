@@ -1,6 +1,11 @@
-import { Rocket, Sparkles, Gift } from 'lucide-react';
+import { Home, Sparkles, Gift } from 'lucide-react';
 
-const LaunchAnnouncement = ({ onClose }) => (
+// Phase 7a (UX-Umbau): Ersetzt das alte LaunchAnnouncement ("Wir sind live!").
+// Das war auf den Produktstart gemünzt und lief pro Browser einmalig — bei
+// jedem neuen Gerät/Browser desselben Bestandskunden wäre es wieder
+// aufgetaucht. Jetzt: echte Erstnutzer-Begrüßung, an ein leeres Portfolio
+// gekoppelt (siehe App.jsx), nicht an einen "schon mal gesehen"-Flag allein.
+const WillkommenModal = ({ onClose }) => (
   <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
     <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
       {/* Header */}
@@ -9,13 +14,13 @@ const LaunchAnnouncement = ({ onClose }) => (
         <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-white/10 rounded-full"></div>
         <div className="relative">
           <div className="w-16 h-16 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20">
-            <Rocket size={30} className="text-white" />
+            <Home size={30} className="text-white" />
           </div>
           <div className="inline-flex items-center gap-1.5 bg-white/15 border border-white/25 rounded-full px-3 py-1 text-xs font-semibold text-white mb-3">
-            <Sparkles size={12} /> Wir sind live!
+            <Sparkles size={12} /> Willkommen
           </div>
           <h2 className="text-2xl font-black text-white leading-tight">
-            renditly ist gestartet 🚀
+            Schön, dass du da bist 👋
           </h2>
         </div>
       </div>
@@ -23,9 +28,10 @@ const LaunchAnnouncement = ({ onClose }) => (
       {/* Body */}
       <div className="px-6 py-6">
         <p className="text-gray-600 text-sm leading-relaxed mb-5">
-          Schön, dass du von Anfang an dabei bist! Als einer der ersten Nutzer bekommst du
-          <strong className="text-gray-900"> vollen Zugriff auf alle Features</strong> — Portfolio-Tracking,
-          Rendite- und Cashflow-Berechnung, Steuer-Export und mehr.
+          renditly begleitet dich bei deinem Immobilienportfolio —
+          <strong className="text-gray-900"> Rendite- und Cashflow-Berechnung, Mietverwaltung,
+          Steuer-Export</strong> und Erinnerungen, wenn etwas ansteht. Leg direkt deine erste
+          Immobilie an, den Rest erklären wir dir unterwegs.
         </p>
 
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
@@ -51,4 +57,4 @@ const LaunchAnnouncement = ({ onClose }) => (
   </div>
 );
 
-export default LaunchAnnouncement;
+export default WillkommenModal;

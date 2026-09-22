@@ -4,6 +4,7 @@ import { getXLSX } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
 import { getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
+import InfoHint from './InfoHint';
 
 const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilFaktor = 1 }) => {
   const aktuellesJahr = new Date().getFullYear();
@@ -664,7 +665,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
       {/* AfA Einstellungen */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-1"><TrendingDown size={14}/> AfA-Einstellungen</h4>
+        <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-1"><TrendingDown size={14}/> AfA-Einstellungen <InfoHint text="AfA = Absetzung für Abnutzung. Der jährliche Wertverlust des Gebäudes (nicht des Grundstücks), den du steuerlich als Kosten geltend machen kannst — ein reiner Recheneffekt, kein tatsächlicher Geldabfluss." /></h4>
 
         {/* Gebäudeanteil */}
         <div className="mb-4 pb-4 border-b border-gray-100">

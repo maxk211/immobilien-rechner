@@ -78,7 +78,18 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
           <div className="flex justify-center mb-3">
             <Users size={48} className="text-gray-300" />
           </div>
-          <p className="text-gray-500">{filter === 'inaktiv' ? 'Keine ausgezogenen Mieter.' : 'Noch keine Mieter angelegt.'}</p>
+          <p className="text-gray-500 font-semibold">{filter === 'inaktiv' ? 'Keine ausgezogenen Mieter' : 'Noch keine Mieter angelegt'}</p>
+          {filter !== 'inaktiv' && (
+            <>
+              <p className="text-gray-400 text-sm mt-1">Erfasse deinen ersten Mieter mit Kontaktdaten, Miete und Vertragsbeginn.</p>
+              <button
+                onClick={() => { setEditData(null); setShowForm(true); }}
+                className="mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700"
+              >
+                + Mieter hinzufügen
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

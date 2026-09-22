@@ -165,7 +165,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 >
                   <div className="flex justify-center mb-1"><Home size={20}/></div>
                   <div className="font-semibold text-sm">Kaufimmobilie</div>
-                  <div className="hidden sm:block text-xs text-gray-500">Eigene Immobilie vermieten</div>
+                  <div className="text-[11px] sm:text-xs text-gray-500 leading-tight mt-0.5">Eigene Immobilie vermieten</div>
                 </button>
                 <button
                   type="button"
@@ -178,7 +178,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 >
                   <div className="flex justify-center mb-1"><Building2 size={20}/></div>
                   <div className="font-semibold text-sm">Mehrfamilien&shy;haus</div>
-                  <div className="hidden sm:block text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
+                  <div className="text-[11px] sm:text-xs text-gray-500 leading-tight mt-0.5">Mehrere Wohnungen verwalten</div>
                 </button>
                 <button
                   type="button"
@@ -191,7 +191,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 >
                   <div className="flex justify-center mb-1"><ArrowLeftRight size={20}/></div>
                   <div className="font-semibold text-sm">Mietimmobilie</div>
-                  <div className="hidden sm:block text-xs text-gray-500">Arbitrage: Anmieten &amp; Untervermieten</div>
+                  <div className="text-[11px] sm:text-xs text-gray-500 leading-tight mt-0.5">Arbitrage: Anmieten &amp; Untervermieten</div>
                 </button>
               </div>
             </div>
@@ -396,7 +396,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 >
                   <div className="flex justify-center mb-1"><Home size={20}/></div>
                   <div className="font-semibold text-sm">Kaufimmobilie</div>
-                  <div className="hidden sm:block text-xs text-gray-500">Eigene Immobilie vermieten</div>
+                  <div className="text-[11px] sm:text-xs text-gray-500 leading-tight mt-0.5">Eigene Immobilie vermieten</div>
                 </button>
                 <button
                   type="button"
@@ -409,7 +409,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 >
                   <div className="flex justify-center mb-1"><Building2 size={20}/></div>
                   <div className="font-semibold text-sm">Mehrfamilien&shy;haus</div>
-                  <div className="hidden sm:block text-xs text-gray-500">Mehrere Wohnungen verwalten</div>
+                  <div className="text-[11px] sm:text-xs text-gray-500 leading-tight mt-0.5">Mehrere Wohnungen verwalten</div>
                 </button>
                 <button
                   type="button"
@@ -422,7 +422,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 >
                   <div className="flex justify-center mb-1"><ArrowLeftRight size={20}/></div>
                   <div className="font-semibold text-sm">Mietimmobilie</div>
-                  <div className="hidden sm:block text-xs text-gray-500">Arbitrage: Anmieten & Untervermieten</div>
+                  <div className="text-[11px] sm:text-xs text-gray-500 leading-tight mt-0.5">Arbitrage: Anmieten & Untervermieten</div>
                 </button>
               </div>
             </div>
