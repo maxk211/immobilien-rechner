@@ -562,26 +562,25 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             // aktiv genutzten Bereichen zu stehen — reduziert die gefühlte Komplexität
             // für Nutzer mit z.B. nur einer Wohnung ohne Bausparvertrag/Mieter.
             const HAT_DATEN = {
-              bauspar:      (params.bausparvertraege || []).length > 0,
               mieter:       aktiveMieterAnzahl > 0,
               nkabrechnung: (nkAbrechnungen || []).length > 0,
-              kaution:      (params.kautionen || []).length > 0,
             };
             // Abschnitt 7.4: dezent zurückgestufte Sub-Tabs waren ohne Erklärung
             // ausgegraut — Tooltip nennt den Grund statt den Nutzer raten zu lassen.
             const LEER_HINWEIS = {
-              bauspar:      'Noch kein Bausparvertrag hinterlegt',
               mieter:       'Noch kein aktiver Mieter hinterlegt',
               nkabrechnung: 'Noch keine Nebenkostenabrechnung erstellt',
-              kaution:      'Noch keine Kaution erfasst',
             };
+            // Abschnitt 2 (Navigation alt/neu): 4 Haupt-Reiter × max. 3 Unter-Reiter.
+            // 'Übersicht' → 'Cockpit' (Reiter-Umbenennung aus Abschnitt 6), Bauspar
+            // wandert als Block in Finanzierung (Abschnitt 3.4), Kaution als Block
+            // in Mieter (Abschnitt 3.7) — beide sind ab hier keine eigenen Subtabs mehr.
             const GRUPPEN = [
-              { id: 'uebersicht', icon: <BarChart3 size={13}/>, label: 'Übersicht',  first: 'uebersicht', subs: null },
-              { id: 'finanzen',   icon: <Wallet size={13}/>,    label: 'Finanzen',    first: 'cashflow',
+              { id: 'uebersicht', icon: <BarChart3 size={13}/>, label: 'Cockpit',  first: 'uebersicht', subs: null },
+              { id: 'finanzen',   icon: <Wallet size={13}/>,    label: 'Zahlen',    first: 'cashflow',
                 subs: [
                   { id: 'cashflow',    label: 'Cashflow' },
                   { id: 'finanzierung',label: 'Finanzierung' },
-                  { id: 'bauspar',     label: 'Bauspar' },
                   { id: 'steuern',     label: 'Steuern' },
                 ]
               },
@@ -589,8 +588,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 subs: [
                   { id: 'mieteinnahmen', label: 'Mieteingänge' },
                   { id: 'mieter',        label: aktiveMieterAnzahl > 0 ? `Mieter (${aktiveMieterAnzahl})` : 'Mieter' },
-                  { id: 'nkabrechnung',  label: 'NK-Abrechnung' },
-                  { id: 'kaution',       label: 'Kaution' },
+                  { id: 'nkabrechnung',  label: 'Nebenkosten' },
                 ]
               },
               { id: 'objekt', icon: <Wrench size={13}/>,       label: 'Objekt', first: 'stammdaten',
@@ -1209,6 +1207,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             const gesamtEK = ekFuerNebenkosten + ekFuerKaufpreis;
             const berechneterKredit = Math.max(0, gesamtinvestition - gesamtEK);
             const kreditbetrag = params.finanzierungsbetrag ?? berechneterKredit;
+            // Abschnitt 3.4: Warnung, wenn ein Teil der Gesamtinvestition weder als
+            // Eigenkapital noch über den (ggf. manuell gekappten) Kredit abgebildet
+            // ist — sonst bleibt dieser Anteil "unsichtbar" und die EK-Rendite wirkt
+            // besser, als sie ist (siehe PDF-Beispiel: 8.700 € nirgends abgebildet).
+            const unfinanzierterBetrag = Math.max(0, gesamtinvestition - gesamtEK - kreditbetrag);
 
             const finanzierungsphasen = params.finanzierungsphasen || [{
               id: 1, name: 'Erstfinanzierung', darlehensTyp: 'annuitaet',
@@ -1320,6 +1323,27 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
             return (
               <div className="space-y-5">
+
+                {/* Gesamtinvestition — Abschnitt 3.4: neue Karte oben, mit Warnung
+                    falls ein Teil (typischerweise die Kaufnebenkosten) weder als
+                    Eigenkapital noch über den Kredit finanziert ist. */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><Wallet size={14}/> Gesamtinvestition</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    <div><div className="text-xs text-gray-400 mb-0.5">Kaufpreis</div><div className="font-bold text-gray-800">{formatCurrency(params.kaufpreis)}</div></div>
+                    <div><div className="text-xs text-gray-400 mb-0.5">Kaufnebenkosten</div><div className="font-bold text-gray-800">{formatCurrency(kaufnebenkostenAbsolut)}</div></div>
+                    <div><div className="text-xs text-gray-400 mb-0.5">Eigenkapital</div><div className="font-bold text-green-700">{formatCurrency(gesamtEK)}</div></div>
+                    <div><div className="text-xs text-gray-400 mb-0.5">Summe</div><div className="font-bold text-indigo-700">{formatCurrency(gesamtinvestition)}</div></div>
+                  </div>
+                  {unfinanzierterBetrag > 1 && (
+                    <div className="mt-4 -mx-5 -mb-5 px-5 py-3 bg-orange-50 border-t border-orange-200 rounded-b-2xl">
+                      <p className="text-xs text-orange-700 flex items-start gap-1.5">
+                        <AlertTriangle size={13} className="shrink-0 mt-0.5"/>
+                        <span><strong>{formatCurrency(unfinanzierterBetrag)}</strong> sind weder als Eigenkapital hinterlegt noch über den Kredit finanziert. Dadurch wirkt die EK-Rendite besser, als sie tatsächlich ist — Kreditbetrag unten prüfen.</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Kaufnebenkosten */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
@@ -1734,13 +1758,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   + Anschlussfinanzierung hinzufügen
                 </button>
 
+                {/* Abschnitt 3.4: Bausparvertrag als eigener Block innerhalb von
+                    Finanzierung statt eigenem Subtab — sichtbar bleibt er zusätzlich
+                    im Cashflow (die Sparrate fließt dort automatisch als Zeile ein),
+                    editierbar ist er nur hier. */}
+                <div className="pt-2 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-700 mb-3">Bausparvertrag</h3>
+                  <BausparManager params={params} updateParams={updateParams} />
+                </div>
+
               </div>
             );
           })()}
-
-          {activeTab === 'bauspar' && (
-            <BausparManager params={params} updateParams={updateParams} />
-          )}
 
           {activeTab === 'mieteinnahmen' && (
             <MieteinnahmenTracker
@@ -1766,6 +1795,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 immobilie={immobilie}
                 investitionen={params.investitionen}
                 anteilFaktor={anteilFaktor}
+                onOpenFinanzierung={() => setActiveTab('finanzierung')}
               />
             </>
           )}
@@ -1794,14 +1824,6 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               params={params}
               updateParams={updateParams}
               immobilie={immobilie}
-              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
-            />
-          )}
-
-          {activeTab === 'kaution' && (
-            <KautionsManager
-              params={params}
-              updateParams={updateParams}
               mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
             />
           )}
@@ -1844,6 +1866,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
                 }}
               />
+
+              {/* Abschnitt 3.7: Kaution als Block auf der Mieter-Seite statt als
+                  eigener Unter-Reiter. */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <h3 className="text-sm font-bold text-gray-700 mb-3">Kaution</h3>
+                <KautionsManager
+                  params={params}
+                  updateParams={updateParams}
+                  mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+                />
+              </div>
             </>
           )}
 
