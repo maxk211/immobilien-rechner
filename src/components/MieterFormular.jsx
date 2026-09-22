@@ -8,6 +8,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
+import InfoHint from './InfoHint';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 
 const MIETER_DOK_TYPEN = ['Mietvertrag', 'Personalausweis', 'Selbstauskunft', 'Bonitätsnachweis', 'SCHUFA-Auskunft', 'Übergabeprotokoll', 'Kautionsquittung', 'Sonstiges'];
@@ -521,7 +522,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {/* Letzte formale Mieterhöhung */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-sm font-semibold text-amber-800 mb-1 flex items-center gap-1.5"><ScrollText size={14} /> Letzte Mieterhöhung nach § 558 BGB</p>
-                <p className="text-xs text-amber-600 mb-3">Datum der letzten formalen Mieterhöhung (Grundlage für 3-Jahres-Kappungsgrenze)</p>
+                <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">Datum der letzten formalen Mieterhöhung (Grundlage für 3-Jahres-Kappungsgrenze) <InfoHint text="Begrenzt die Mieterhöhung auf die ortsübliche Vergleichsmiete: maximal 20% innerhalb von 3 Jahren, in Gebieten mit angespanntem Wohnungsmarkt maximal 15%." /></p>
                 <input type="date" value={form.letzteMieterhoehung}
                   onChange={e => setForm({ ...form, letzteMieterhoehung: e.target.value })}
                   className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-base sm:text-sm bg-white" />

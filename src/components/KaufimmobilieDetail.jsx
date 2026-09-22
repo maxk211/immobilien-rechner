@@ -16,6 +16,7 @@ import BausparManager from './BausparManager';
 import MieteinnahmenTracker from './MieteinnahmenTracker';
 import NKAbrechnungTab from './NKAbrechnungTab';
 import KautionsManager from './KautionsManager';
+import InfoHint from './InfoHint';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 import {
   BarChart3, Wallet, Users, Wrench, Home, Landmark, MapPin, AlertTriangle,
@@ -1038,7 +1039,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
               {/* WEG & Verwaltung — Abschnitt 3.9 */}
               <div id="objekt-weg" className="bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-2xl">
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 sm:mb-4">WEG & Verwaltung</h3>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 sm:mb-4 flex items-center gap-1.5">WEG & Verwaltung <InfoHint text="WEG = Wohnungseigentümergemeinschaft. Bei Eigentumswohnungen verwaltet sie das gemeinsame Eigentum (z.B. Dach, Treppenhaus) und beschließt über Instandhaltung und Hausgeld." /></h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Hausverwaltung</label>
@@ -1069,7 +1070,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Miteigentumsanteil</label>
+                    <label className="text-sm text-gray-600 mb-1 flex items-center gap-1">Miteigentumsanteil <InfoHint text="Rechnerischer Anteil an der Gesamtimmobilie (z.B. „45,32/1000“), meist aus der Teilungserklärung. Bestimmt u.a. den Kostenanteil am Hausgeld und das Stimmgewicht in der WEG." /></label>
                     <input
                       type="text"
                       value={params.miteigentumsanteil || ''}
@@ -1765,7 +1766,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               <p className="text-[10px] text-indigo-500 mt-0.5">Leer = aus Zinssatz + Tilgung berechnet</p>
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-500 mb-1">Zinsbindung</label>
+                              <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Zinsbindung <InfoHint text="Zeitraum, für den der Sollzins festgeschrieben ist. Danach ist für die Restschuld eine Anschlussfinanzierung zu aktuellen Konditionen nötig." /></label>
                               <div className="flex items-center gap-1">
                                 <input type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
                                   onChange={e => updatePhase(phase.id, { zinsbindung: parseInt(e.target.value) || 10 })}
@@ -1774,7 +1775,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               </div>
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-500 mb-1">Sondertilgung/Jahr</label>
+                              <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Sondertilgung/Jahr <InfoHint text="Zusätzliche freiwillige Tilgung außer der Rate, die die Restschuld schneller reduziert. Viele Banken erlauben nur einen bestimmten Prozentsatz der Darlehenssumme pro Jahr — siehe Kreditvertrag." /></label>
                               <div className="flex items-center gap-1">
                                 <input type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
                                   onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
@@ -1842,7 +1843,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               </div>
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-500 mb-1">Zinsbindung</label>
+                              <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Zinsbindung <InfoHint text="Zeitraum, für den der Sollzins festgeschrieben ist. Danach ist für die Restschuld eine Anschlussfinanzierung zu aktuellen Konditionen nötig." /></label>
                               <div className="flex items-center gap-1">
                                 <input type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
                                   onChange={e => updatePhase(phase.id, { zinsbindung: parseInt(e.target.value) || 10 })}
@@ -1851,7 +1852,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               </div>
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-500 mb-1">Sondertilgung/Jahr</label>
+                              <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Sondertilgung/Jahr <InfoHint text="Zusätzliche freiwillige Tilgung außer der Rate, die die Restschuld schneller reduziert. Viele Banken erlauben nur einen bestimmten Prozentsatz der Darlehenssumme pro Jahr — siehe Kreditvertrag." /></label>
                               <div className="flex items-center gap-1">
                                 <input type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
                                   onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}

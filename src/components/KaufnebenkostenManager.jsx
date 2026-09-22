@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
+import InfoHint from './InfoHint';
 
 const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
   const [modus, setModus] = useState(params.kaufnebenkostenModus || 'prozent'); // 'prozent' oder 'manuell'
@@ -111,7 +112,7 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
       ) : (
         <div>
           <div className="mb-3">
-            <label className="block text-xs text-gray-600 mb-1">Bundesland (für Grunderwerbsteuer)</label>
+            <label className="text-xs text-gray-600 mb-1 flex items-center gap-1">Bundesland (für Grunderwerbsteuer) <InfoHint text="Einmalige Steuer beim Eigentumswechsel, die vom Bundesland festgelegt wird — aktuell zwischen 3,5% (z.B. Bayern) und 6,5% (mehrere Bundesländer) des Kaufpreises." /></label>
             <select
               value={bundesland}
               onChange={(e) => handleBundeslandChange(e.target.value)}

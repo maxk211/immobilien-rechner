@@ -228,8 +228,18 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
       {/* Liste */}
       <div className="overflow-y-auto">
         {investitionen.length === 0 ? (
-          <div className="text-center text-gray-400 py-4 text-sm">
-            Noch keine Reparaturen oder Investitionen erfasst
+          <div className="text-center py-8">
+            <div className="flex justify-center mb-2"><Wrench size={32} className="text-gray-300" /></div>
+            <p className="text-gray-600 font-semibold text-sm">Noch keine Reparaturen oder Investitionen erfasst</p>
+            <p className="text-gray-400 text-xs mt-1">Trage Ausgaben ein, um die 15%-Regel im Blick zu behalten und die AfA-Bemessungsgrundlage korrekt zu führen</p>
+            {!showForm && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700"
+              >
+                + Hinzufügen
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
