@@ -414,44 +414,6 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           </div>
         )}
 
-        {/* Persönlicher Steuersatz */}
-        <div className="mb-4">
-          <label className="block text-sm text-gray-600 mb-1">Persönlicher Steuersatz</label>
-          <div className="flex items-center gap-2">
-            <input type="range" min="0" max="45" value={steuersatz}
-              onChange={(e) => updateSteuerParams({ steuersatz: parseInt(e.target.value) })}
-              className="flex-1" />
-            <span className="w-12 text-right font-semibold">{steuersatz}%</span>
-          </div>
-        </div>
-
-        {/* Zusätzliche Werbungskosten für Anlage V */}
-        <div className="border-t border-gray-100 pt-4">
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Weitere Werbungskosten (Anlage V)</div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Landmark size={12}/> Grundsteuer / Monat</label>
-              <div className="flex items-center gap-1">
-                <input type="number" min="0" step="5" value={grundsteuerMonat}
-                  onChange={(e) => updateSteuerParams({ grundsteuerMonat: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><ShieldCheck size={12}/> Versicherungen / Monat</label>
-              <div className="flex items-center gap-1">
-                <input type="number" min="0" step="5" value={versicherungMonat}
-                  onChange={(e) => updateSteuerParams({ versicherungMonat: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
-            </div>
-          </div>
-          <div className="text-[10px] text-gray-400 mt-2">
-            Hausgeld, Verwaltung und Instandhaltungsrücklage werden aus den Immobilien-Stammdaten übernommen.
-          </div>
-        </div>
       </div>
 
       {/* ── Anlage V Formular-Ansicht ─────────────────────────────────────── */}
@@ -650,6 +612,53 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         )}
         <div className="mt-3 p-2 bg-purple-50 rounded text-xs text-purple-700">
           <Lightbulb size={12} className="inline mr-1"/> <strong>Tilgung verbessert Vermögen, senkt aber nicht die Steuer.</strong> Nur Zinsen sind absetzbar.
+        </div>
+      </div>
+
+      {/* Abschnitt 3.5: "Einstellungen für diese Berechnung" ganz unten, nach dem
+          Ergebnis — Steuersatz/Grundsteuer/Abschreibung/Fahrtkosten werden einmal
+          im Jahr angefasst, standen bisher aber über dem Ergebnis. */}
+      <div className="pt-2">
+        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Einstellungen für diese Berechnung</h3>
+      </div>
+
+      {/* Steuersatz + weitere Werbungskosten */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="mb-4">
+          <label className="block text-sm text-gray-600 mb-1">Persönlicher Steuersatz</label>
+          <div className="flex items-center gap-2">
+            <input type="range" min="0" max="45" value={steuersatz}
+              onChange={(e) => updateSteuerParams({ steuersatz: parseInt(e.target.value) })}
+              className="flex-1" />
+            <span className="w-12 text-right font-semibold">{steuersatz}%</span>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 pt-4">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Weitere Werbungskosten (Anlage V)</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Landmark size={12}/> Grundsteuer / Monat</label>
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" step="5" value={grundsteuerMonat}
+                  onChange={(e) => updateSteuerParams({ grundsteuerMonat: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><ShieldCheck size={12}/> Versicherungen / Monat</label>
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" step="5" value={versicherungMonat}
+                  onChange={(e) => updateSteuerParams({ versicherungMonat: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
+                <span className="text-xs text-gray-500">€</span>
+              </div>
+            </div>
+          </div>
+          <div className="text-[10px] text-gray-400 mt-2">
+            Hausgeld, Verwaltung und Instandhaltungsrücklage werden aus den Immobilien-Stammdaten übernommen.
+          </div>
         </div>
       </div>
 

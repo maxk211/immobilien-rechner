@@ -31,7 +31,7 @@ function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = fa
 }
 
 // ── Hauptkomponente ──────────────────────────────────────────────────────────
-const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], anteilFaktor = 1 }) => {
+const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], anteilFaktor = 1, onOpenFinanzierung }) => {
   const [tab, setTab] = useState('aktuell'); // 'aktuell' | 'verlauf'
 
   const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
@@ -117,6 +117,15 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       sp, spAnzahl: sp?.anzahl || 1,
     };
   }, [params, kreditDetails, aktuellesJahr]);
+
+  // ── Jahreszahlen für die Ergebnisleiste (Abschnitt 3.3) — exakte Zinssummen,
+  // nicht × 12. Auf Komponentenebene statt in einer IIFE im JSX, damit die
+  // Ergebnisleiste oben unabhängig vom aktiven Unter-Tab (aktuell/verlauf)
+  // gerendert werden kann. ────────────────────────────────────────────────────
+  const jZinsenJahr = jahresKredit?.zinsen ?? monat.zinsen * 12;
+  const jGesamtJahr = jahresKredit?.gesamt ?? monat.kreditrate * 12;
+  const vorTilgungJahr = a(monat.gesamtEinnahmen) * 12 - a(monat.gesamtBetrieb) * 12 - a(jZinsenJahr) - a(monat.bauspar) * 12;
+  const nachTilgungJahr = a(monat.gesamtEinnahmen) * 12 - a(monat.gesamtBetrieb) * 12 - a(jGesamtJahr) - a(monat.bauspar) * 12;
 
   // ── Jahresverlaufsdaten ────────────────────────────────────────────────────
   const verlaufDaten = useMemo(() => {
@@ -243,6 +252,67 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         </div>
       </div>
 
+      {/* Abschnitt 3.3: Ergebnisleiste oben, unabhängig vom Unter-Tab sichtbar —
+          "Cashflow nach Tilgung" groß, davor "vor Tilgung". Echtes CSS-Sticky
+          (bleibt beim Scrollen fixiert) ist hier bewusst nicht umgesetzt: die
+          Tab-Leiste in KaufimmobilieDetail ist bereits sticky top-0 in
+          demselben Scroll-Container, ein zweites sticky-Element ohne exakten
+          Pixel-Offset würde dahinter verschwinden oder überlappen — das lässt
+          sich ohne visuelle Prüfung nicht sicher einstellen.
+          Reihenfolge weiter unten identisch, nur nicht mehr dupliziert. */}
+      <div className="px-4 pt-4 space-y-2">
+        <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.vorTilgung >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+          <div>
+            <div className="font-bold text-sm text-gray-800">Cashflow vor Tilgung</div>
+            <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Zinsen{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
+          </div>
+          <div className="text-right">
+            <div className={`text-xl font-black ${monat.vorTilgung >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {monat.vorTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.vorTilgung))}
+              <span className="text-xs font-normal text-gray-400">/Mo</span>
+            </div>
+            <div className={`text-sm font-semibold ${vorTilgungJahr >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {vorTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(vorTilgungJahr))}
+              <span className="text-xs font-normal text-gray-400">/Jahr</span>
+            </div>
+          </div>
+        </div>
+
+        <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.nachTilgung >= 0 ? 'bg-emerald-100 border-emerald-300' : 'bg-red-100 border-red-300'}`}>
+          <div>
+            <div className="font-bold text-sm text-gray-800">Cashflow nach Tilgung</div>
+            <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Kreditrate{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
+          </div>
+          <div className="text-right">
+            <div className={`text-xl font-black ${monat.nachTilgung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+              {monat.nachTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.nachTilgung))}
+              <span className="text-xs font-normal text-gray-400">/Mo</span>
+            </div>
+            <div className={`text-sm font-semibold ${nachTilgungJahr >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+              {nachTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(nachTilgungJahr))}
+              <span className="text-xs font-normal text-gray-400">/Jahr</span>
+            </div>
+          </div>
+        </div>
+
+        {/* "Aus der Finanzierung" — schreibgeschützte Kurzfassung mit Link zum
+            Finanzierungs-Tab, damit Zins/Tilgung/Bauspar nur an einer Stelle
+            editierbar sind ("eine Wahrheit pro Zahl"). */}
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+            <span className="font-bold text-indigo-700 flex items-center gap-1"><Landmark size={12}/> Aus der Finanzierung</span>
+            <span>Zins <strong className="text-gray-800">{formatCurrency(a(monat.zinsen))}</strong>/Mo</span>
+            <span>Tilgung <strong className="text-gray-800">{formatCurrency(a(monat.tilgung))}</strong>/Mo</span>
+            {monat.bauspar > 0 && <span>Bausparrate <strong className="text-gray-800">{formatCurrency(a(monat.bauspar))}</strong>/Mo</span>}
+          </div>
+          {onOpenFinanzierung && (
+            <button onClick={onOpenFinanzierung} className="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline whitespace-nowrap">
+              Öffnen ›
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* ── TAB: Aktuelles Jahr ─────────────────────────────────────────────── */}
       {tab === 'aktuell' && (
         <div className="p-4">
@@ -300,62 +370,6 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               )}
             </tbody>
           </table>
-
-          {/* Cashflow-Ergebnis-Block */}
-          <div className="mt-4 space-y-2">
-            {(() => {
-              // Jahreszahlen mit exakten Zinssummen (nicht × 12)
-              const jZinsen = jahresKredit?.zinsen ?? monat.zinsen * 12;
-              const jGesamt = jahresKredit?.gesamt ?? monat.kreditrate * 12;
-              const vorTilgungJahr = a(monat.gesamtEinnahmen) * 12
-                - a(monat.gesamtBetrieb) * 12
-                - a(jZinsen)
-                - a(monat.bauspar) * 12;
-              const nachTilgungJahr = a(monat.gesamtEinnahmen) * 12
-                - a(monat.gesamtBetrieb) * 12
-                - a(jGesamt)
-                - a(monat.bauspar) * 12;
-              return (
-                <>
-                  {/* Cashflow vor Tilgung */}
-                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.vorTilgung >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                    <div>
-                      <div className="font-bold text-sm text-gray-800">Cashflow vor Tilgung</div>
-                      <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Zinsen{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-xl font-black ${monat.vorTilgung >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {monat.vorTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.vorTilgung))}
-                        <span className="text-xs font-normal text-gray-400">/Mo</span>
-                      </div>
-                      <div className={`text-sm font-semibold ${vorTilgungJahr >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {vorTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(vorTilgungJahr))}
-                        <span className="text-xs font-normal text-gray-400">/Jahr</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cashflow nach Tilgung */}
-                  <div className={`rounded-xl border px-4 py-3 flex justify-between items-center ${monat.nachTilgung >= 0 ? 'bg-emerald-100 border-emerald-300' : 'bg-red-100 border-red-300'}`}>
-                    <div>
-                      <div className="font-bold text-sm text-gray-800">Cashflow nach Tilgung</div>
-                      <div className="text-[11px] text-gray-500">Einnahmen − Betrieb − Kreditrate{monat.bauspar > 0 ? ' − Bauspar' : ''}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-xl font-black ${monat.nachTilgung >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                        {monat.nachTilgung >= 0 ? '+' : ''}{formatCurrency(a(monat.nachTilgung))}
-                        <span className="text-xs font-normal text-gray-400">/Mo</span>
-                      </div>
-                      <div className={`text-sm font-semibold ${nachTilgungJahr >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                        {nachTilgungJahr >= 0 ? '+' : ''}{formatCurrency(Math.abs(nachTilgungJahr))}
-                        <span className="text-xs font-normal text-gray-400">/Jahr</span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
 
           {/* Info zu Tilgung */}
           <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-indigo-700">

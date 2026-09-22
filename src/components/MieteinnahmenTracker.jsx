@@ -188,6 +188,31 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
   }, 0);
   const jahresNKEingegangen = nkVomMieter > 0 ? jahresEinnahmen - jahresKalt : 0;
 
+  // Abschnitt 3.6: Kopfzeile mit eingegangen/erwartet/offen für das gewählte Jahr —
+  // "eingegangen" behandelt Dauerauftrag-Monate wie jahresEinnahmen als voll erwartet
+  // beglichen (konsistent mit dem Rest der Seite).
+  const jahresErwartet = jahresForderungen.reduce((s, f) => {
+    if (f.status === 'vor_kauf' || f.status === 'zukunft') return s;
+    return s + f.forderungBetrag;
+  }, 0);
+  const jahresOffenBetrag = Math.max(0, jahresErwartet - jahresEinnahmen);
+
+  // Abschnitt 3.6: überfällige Monate stehen immer oben und farbig hervorgehoben,
+  // unabhängig von der chronologischen Sortierung (die sonst neueste zuerst zeigt).
+  const jahresListe = forderungen.filter(f => f.jahr === filterJahr);
+  const istUeberfaellig = (f) => f.status === 'offen' || f.status === 'teilweise' || f.status === 'nicht_bezahlt';
+  const sortierteJahresListe = [
+    ...jahresListe.filter(istUeberfaellig),
+    ...jahresListe.filter(f => !istUeberfaellig(f)),
+  ];
+
+  // "Zahlung erfassen" in der Kopfzeile — öffnet die Detailansicht des jüngsten
+  // Monats im gewählten Jahr (dort liegt bereits das ZahlungErfassenForm).
+  const zahlungErfassenOeffnen = () => {
+    const ziel = sortierteJahresListe[0];
+    if (ziel) setDetailMonat(ziel.monatKey);
+  };
+
   return (
     <div className="space-y-5">
       {/* Dauerauftrag-Einstellung */}
@@ -238,42 +263,58 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         <span>. des Monats</span>
       </div>
 
-      {/* Übersicht Forderungen */}
-      {offenAnzahl > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-4">
-          <div className="text-3xl font-black text-red-500">{offenAnzahl}</div>
-          <div className="flex-1">
-            <div className="font-bold text-red-700">
-              {forderungen.filter(f => f.status === 'offen').length > 0 && forderungen.filter(f => f.status === 'teilweise').length > 0
-                ? `${forderungen.filter(f => f.status === 'offen').length} offen, ${forderungen.filter(f => f.status === 'teilweise').length} teilbezahlt`
-                : forderungen.filter(f => f.status === 'offen').length > 0
-                  ? `${offenAnzahl} offene Forderung${offenAnzahl !== 1 ? 'en' : ''}`
-                  : `${offenAnzahl} Forderung${offenAnzahl !== 1 ? 'en' : ''} teilbezahlt`}
-            </div>
-            <div className="text-sm text-red-600">Ausstehend gesamt: <strong>{formatCurrency(offenGesamt)}</strong></div>
+      {/* Jahresauswahl */}
+      <div className="flex gap-1">
+        {jahre.map(j => (
+          <button key={j} onClick={() => setFilterJahr(j)}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+            {j}
+          </button>
+        ))}
+      </div>
+
+      {/* Abschnitt 3.6: Kopfzeile — eingegangen / erwartet / offen für {filterJahr}
+          plus direkter Zugang zu "Zahlung erfassen". */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-4">
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Eingegangen</div>
+            <div className="text-lg font-black text-emerald-600">{formatCurrency(jahresEinnahmen)}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Erwartet</div>
+            <div className="text-lg font-black text-gray-700">{formatCurrency(jahresErwartet)}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Offen</div>
+            <div className={`text-lg font-black ${jahresOffenBetrag > 0 ? 'text-red-500' : 'text-gray-300'}`}>{formatCurrency(jahresOffenBetrag)}</div>
           </div>
         </div>
-      )}
-
-      {/* Jahresauswahl + KPI */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-1">
-          {jahre.map(j => (
-            <button key={j} onClick={() => setFilterJahr(j)}
-              className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-              {j}
+        {nkVomMieter > 0 && (
+          <div className="text-center text-xs text-gray-400 mt-2">
+            davon Kaltmiete: <span className="font-semibold text-gray-600">{formatCurrency(jahresKalt)}</span>
+            {' · '}NK: <span className="font-semibold text-gray-600">{formatCurrency(jahresNKEingegangen)}</span>
+          </div>
+        )}
+        {offenAnzahl > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-xs text-red-600 font-semibold">
+              {offenAnzahl} offene Forderung{offenAnzahl !== 1 ? 'en' : ''} im gesamten Portfolio-Zeitraum dieses Objekts — {formatCurrency(offenGesamt)} ausstehend
+            </span>
+            <button onClick={zahlungErfassenOeffnen}
+              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors shrink-0">
+              Zahlung erfassen
             </button>
-          ))}
-        </div>
-        <div className="text-right text-sm text-gray-500">
-          <span>Einnahmen {filterJahr}: <span className="font-bold text-indigo-700">{formatCurrency(jahresEinnahmen)}</span></span>
-          {nkVomMieter > 0 && (
-            <div className="text-xs text-gray-400 mt-0.5">
-              davon Kaltmiete: <span className="font-semibold text-gray-600">{formatCurrency(jahresKalt)}</span>
-              {' · '}NK: <span className="font-semibold text-gray-600">{formatCurrency(jahresNKEingegangen)}</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+        {offenAnzahl === 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+            <button onClick={zahlungErfassenOeffnen}
+              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+              Zahlung erfassen
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Hinweis: Verlaufshistorie optional */}
@@ -287,21 +328,24 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         {/* Header */}
         <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wide">
           <div className="col-span-3">Monat</div>
-          <div className="col-span-3 text-right">Forderung</div>
+          <div className="col-span-3 text-right">Soll</div>
           <div className="col-span-3 text-right">Eingegangen</div>
           <div className="col-span-2 text-center">Status</div>
           <div className="col-span-1"></div>
         </div>
 
-        {forderungen.filter(f => f.jahr === filterJahr).map((f, idx) => {
+        {sortierteJahresListe.map((f, idx) => {
           const isExpanded = detailMonat === f.monatKey;
+          const ueberfaellig = istUeberfaellig(f);
           return (
-            <div key={f.monatKey} className={`border-b border-gray-100 last:border-0 ${isExpanded ? 'bg-blue-50' : ''}`}>
+            <div key={f.monatKey} className={`border-b border-gray-100 last:border-0 ${isExpanded ? 'bg-blue-50' : ueberfaellig ? 'border-l-4 border-l-red-400 bg-red-50/40' : ''}`}>
               <div className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
-                {/* Monat */}
+                {/* Monat mit Fälligkeitsdatum (Abschnitt 3.6) */}
                 <div className="col-span-3">
                   <div className="font-semibold text-gray-800 text-sm">{MONATE_NAMEN[f.monat]}</div>
-                  <div className="text-xs text-gray-400">{f.jahr}</div>
+                  <div className="text-xs text-gray-400">
+                    fällig {String(params.mieteFaelligkeitstag ?? 3).padStart(2, '0')}.{String(f.monat).padStart(2, '0')}.{f.jahr}
+                  </div>
                 </div>
                 {/* Forderung */}
                 <div className="col-span-3 text-right">
@@ -413,7 +457,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
           );
         })}
 
-        {forderungen.filter(f => f.jahr === filterJahr).length === 0 && (
+        {sortierteJahresListe.length === 0 && (
           <div className="px-4 py-8 text-center text-gray-400 text-sm">
             Kein Kaufdatum hinterlegt oder keine Monate in diesem Jahr.
           </div>

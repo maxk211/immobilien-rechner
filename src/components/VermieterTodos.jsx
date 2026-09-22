@@ -129,6 +129,15 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     });
   }
 
+  // Abschnitt 3.7: Kaution ist bei Kaufimmobilien/Mietimmobilien ein Block im
+  // Mieter-Tab (kein eigener Subtab mehr), bei Mehrfamilienhäusern (mehrere
+  // Wohnungen) bleibt Kaution vorerst ein eigener Subtab — deshalb hier je
+  // nach Objekttyp unterschiedliches targetTab.
+  const kautionZielTab = (mieterId) => {
+    const immo = portfolio.find(i => i.id === mieterListe.find(m => m.id === mieterId)?.immobilie_id);
+    return immo?.immobilienTyp === 'mehrfamilienhaus' ? 'kaution' : 'mieter';
+  };
+
   // ── 4. Kaution nicht zurückgegeben ────────────────────────────────────────
   mieterListe.forEach(mieter => {
     if (mieter.aktiv !== false) return; // Nur ausgezogene
@@ -147,7 +156,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       sub: `${mieter.name} · ${formatCurrency(mieter.kaution_betrag)}`,
       immoId: mieter.immobilie_id,
       badge: wochenSeitAuszug >= 6 ? 'Überfällig' : 'Offen',
-      targetTab: 'kaution',
+      targetTab: kautionZielTab(mieter.id),
     });
   });
 
@@ -165,7 +174,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       sub: mieter.name,
       immoId: mieter.immobilie_id,
       badge: 'Eintragen',
-      targetTab: 'kaution',
+      targetTab: kautionZielTab(mieter.id),
     });
   });
 
