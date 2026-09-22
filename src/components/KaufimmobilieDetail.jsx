@@ -187,6 +187,12 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
+// Abschnitt 3.9: die vier ehemaligen Objekt-Subtabs sind jetzt Abschnitte einer
+// einzigen Seite mit Sprungleiste. Diese IDs bleiben als interne Deep-Link-Ziele
+// gültig (z.B. VermieterTodos targetTab 'investitionen'), lösen aber alle
+// dieselbe zusammengeführte Objekt-Seite aus und scrollen zum passenden Anker.
+const OBJEKT_TAB_IDS = ['stammdaten', 'investitionen', 'zaehler', 'dokumente'];
+
 const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [] }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
@@ -293,7 +299,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben —
   // Inhalt konnte mitten in einer langen Ansicht (z.B. Finanzierung) hängen bleiben.
   const scrollContainerRef = useRef(null);
-  useEffect(() => { scrollContainerRef.current?.scrollTo(0, 0); }, [activeTab]);
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo(0, 0);
+    // Abschnitt 3.9: Deep-Links auf einzelne Objekt-Abschnitte (z.B. aus den
+    // Vermieter-Aufgaben, targetTab 'investitionen'/'zaehler'/'dokumente') springen
+    // zusätzlich zum passenden Anker innerhalb der zusammengeführten Objekt-Seite.
+    if (OBJEKT_TAB_IDS.includes(activeTab) && activeTab !== 'stammdaten') {
+      requestAnimationFrame(() => {
+        document.getElementById(`objekt-${activeTab}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [activeTab]);
 
   // Abschnitt 6 + 7.2: "Aufgeben" hieß missverständlich wie "Aufgaben" (To-dos) und war
   // optisch gleichrangig neben "Bearbeiten" — jetzt "Verkauft oder abgegeben" im
@@ -591,17 +607,16 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   { id: 'nkabrechnung',  label: 'Nebenkosten' },
                 ]
               },
-              { id: 'objekt', icon: <Wrench size={13}/>,       label: 'Objekt', first: 'stammdaten',
-                subs: [
-                  { id: 'stammdaten',    label: 'Stammdaten' },
-                  { id: 'investitionen', label: 'Investitionen' },
-                  { id: 'zaehler',       label: 'Zähler' },
-                  { id: 'dokumente',     icon: <FileText size={11}/>, label: 'Dokumente' },
-                ]
-              },
+              // Abschnitt 3.9: Objekt ist jetzt eine einzige Seite mit Sprungleiste
+              // statt vier Unter-Reitern — OBJEKT_TAB_IDS weiter unten sind nur noch
+              // interne Deep-Link-Ziele (z.B. aus den Vermieter-Aufgaben), keine
+              // sichtbaren Subtabs mehr.
+              { id: 'objekt', icon: <Wrench size={13}/>,       label: 'Objekt', first: 'stammdaten', subs: null },
             ];
             const aktiveGruppe = GRUPPEN.find(g =>
-              g.id === 'uebersicht' ? activeTab === 'uebersicht' : g.subs?.some(s => s.id === activeTab)
+              g.id === 'uebersicht' ? activeTab === 'uebersicht'
+              : g.id === 'objekt' ? OBJEKT_TAB_IDS.includes(activeTab)
+              : g.subs?.some(s => s.id === activeTab)
             ) || GRUPPEN[0];
 
             return (
@@ -851,9 +866,33 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             );
           })()}
 
-          {activeTab === 'stammdaten' && (
+          {OBJEKT_TAB_IDS.includes(activeTab) && (
             <div className="space-y-5">
+              {/* Abschnitt 3.9: Sprungleiste statt vier Unter-Reitern — die Seite ist
+                  jetzt eine einzige zusammenhängende Ansicht, diese Chips scrollen
+                  nur innerhalb der Seite (kein Tab-Wechsel, kein Re-Mount). */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+                {[
+                  ['objekt-stammdaten', 'Stammdaten'],
+                  ['objekt-kaufwert', 'Kauf & Wert'],
+                  ['objekt-weg', 'WEG & Verwaltung'],
+                  ['objekt-investitionen', 'Investitionen'],
+                  ['objekt-zaehler', 'Zähler'],
+                  ['objekt-dokumente', 'Dokumente'],
+                  ['objekt-eigentum', 'Eigentum & Prognose'],
+                ].map(([anchorId, label]) => (
+                  <button
+                    key={anchorId}
+                    onClick={() => document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors whitespace-nowrap"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               {/* Objektdetails */}
+              <div id="objekt-stammdaten" />
               <div className="bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-2xl">
                 <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 sm:mb-4">Objektdetails</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -898,12 +937,45 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       max={new Date().getFullYear()}
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Objektart</label>
+                    <select
+                      value={params.objektart || 'eigentumswohnung'}
+                      onChange={(e) => updateParams({...params, objektart: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    >
+                      <option value="eigentumswohnung">Eigentumswohnung</option>
+                      <option value="einfamilienhaus">Einfamilienhaus</option>
+                      <option value="doppelhaushälfte">Doppelhaushälfte</option>
+                      <option value="reihenhaus">Reihenhaus</option>
+                      <option value="grundstück">Grundstück</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Etage</label>
+                    <input
+                      type="text"
+                      value={params.etage || ''}
+                      onChange={(e) => updateParams({...params, etage: e.target.value})}
+                      placeholder="z.B. 2. OG"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Energieausweis gültig bis</label>
+                    <input
+                      type="date"
+                      value={params.energieausweisGueltigBis || ''}
+                      onChange={(e) => updateParams({...params, energieausweisGueltigBis: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Marktwert — Abschnitt 3.2/3.9: qm-Preis-Eingabe ist von der alten Übersicht
                   hierher gewandert, ins Cockpit gehört nur noch die Kurzfassung (nur lesen). */}
-              <div className="bg-indigo-50 border border-indigo-100 p-4 sm:p-5 rounded-2xl">
+              <div id="objekt-kaufwert" className="bg-indigo-50 border border-indigo-100 p-4 sm:p-5 rounded-2xl">
                 <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Kauf & Wert</h3>
                 <div className="mb-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
@@ -962,6 +1034,60 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}`
                     : 'Noch nie aktualisiert'}
                 </p>
+              </div>
+
+              {/* WEG & Verwaltung — Abschnitt 3.9 */}
+              <div id="objekt-weg" className="bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-2xl">
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 sm:mb-4">WEG & Verwaltung</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Hausverwaltung</label>
+                    <input
+                      type="text"
+                      value={params.hausverwaltungName || ''}
+                      onChange={(e) => updateParams({...params, hausverwaltungName: e.target.value})}
+                      placeholder="Name der Verwaltung"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Ansprechpartner</label>
+                    <input
+                      type="text"
+                      value={params.hausverwaltungAnsprechpartner || ''}
+                      onChange={(e) => updateParams({...params, hausverwaltungAnsprechpartner: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Kontakt (Telefon / E-Mail)</label>
+                    <input
+                      type="text"
+                      value={params.hausverwaltungKontakt || ''}
+                      onChange={(e) => updateParams({...params, hausverwaltungKontakt: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Miteigentumsanteil</label>
+                    <input
+                      type="text"
+                      value={params.miteigentumsanteil || ''}
+                      onChange={(e) => updateParams({...params, miteigentumsanteil: e.target.value})}
+                      placeholder="z.B. 45,32/1000"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Nächste Eigentümerversammlung</label>
+                    <input
+                      type="date"
+                      value={params.naechsteEigentuemerversammlung || ''}
+                      onChange={(e) => updateParams({...params, naechsteEigentuemerversammlung: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Stellplatz */}
@@ -1082,6 +1208,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 );
               })()}
 
+              {/* Eigentum & Prognose — Abschnitt 3.9: Eigentumsform (allein/GbR) und
+                  angenommene Wertsteigerung gehören inhaltlich zusammen. */}
+              <h3 id="objekt-eigentum" className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2">Eigentum & Prognose</h3>
+
               {/* Prognose */}
               <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Prognose</h3>
@@ -1195,6 +1325,42 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {params.eigentumsform === 'allein' && (
                   <p className="text-sm text-gray-400">Du bist alleiniger Eigentümer. Alle Werte gelten zu 100%.</p>
                 )}
+              </div>
+
+              {/* Investitionen — Abschnitt 3.9: jetzt Abschnitt dieser Seite statt
+                  eigener Unter-Reiter. */}
+              <div id="objekt-investitionen">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Investitionen</h3>
+                <ReparaturenInvestitionen
+                  immobilie={{...immobilie, investitionen: params.investitionen}}
+                  onUpdate={(updated) => {
+                    updateParams({...params, investitionen: updated.investitionen});
+                  }}
+                />
+              </div>
+
+              {/* Zähler */}
+              <div id="objekt-zaehler">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Zähler</h3>
+                <ZaehlerVerwaltung
+                  params={params}
+                  updateParams={(neu) => updateParams(neu)}
+                />
+              </div>
+
+              {/* Dokumente */}
+              <div id="objekt-dokumente">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Dokumente</h3>
+                <DokumenteTab
+                  immobilie={immobilie}
+                  dokumente={params.dokumente || []}
+                  onDokumentUpdate={async (neueDokumente) => {
+                    const updated = { ...params, dokumente: neueDokumente };
+                    updateParams(updated);
+                    await onSave(updated);
+                    setHasChanges(false);
+                  }}
+                />
               </div>
             </div>
           )}
@@ -1810,15 +1976,6 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             />
           )}
 
-          {activeTab === 'investitionen' && (
-            <ReparaturenInvestitionen
-              immobilie={{...immobilie, investitionen: params.investitionen}}
-              onUpdate={(updated) => {
-                updateParams({...params, investitionen: updated.investitionen});
-              }}
-            />
-          )}
-
           {activeTab === 'nkabrechnung' && (
             <NKAbrechnungTab
               params={params}
@@ -1915,25 +2072,6 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             />
           )}
 
-          {activeTab === 'zaehler' && (
-            <ZaehlerVerwaltung
-              params={params}
-              updateParams={(neu) => updateParams(neu)}
-            />
-          )}
-
-          {activeTab === 'dokumente' && (
-            <DokumenteTab
-              immobilie={immobilie}
-              dokumente={params.dokumente || []}
-              onDokumentUpdate={async (neueDokumente) => {
-                const updated = { ...params, dokumente: neueDokumente };
-                updateParams(updated);
-                await onSave(updated);
-                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
-              }}
-            />
-          )}
           </TabErrorBoundary>
         </div>
       </div>

@@ -1,8 +1,16 @@
 import { useState } from 'react';
-import { Receipt, Lightbulb, FileText, Wallet, TrendingDown } from 'lucide-react';
+import { Receipt, Lightbulb, FileText, Wallet, TrendingDown, AlertTriangle, Mail } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { NK_KOSTENPOSITIONEN_DEFAULTS } from '../constants/index.js';
 import NKAbrechnungForm from './NKAbrechnungForm';
+import { erstelleMieterschreiben } from '../utils/mieterschreiben.js';
+
+// Abschnitt 3.8: Status einer Abrechnung — Ablauf offen → in Arbeit → verschickt.
+const STATUS_OPTIONEN = [
+  { value: 'offen', label: 'Offen', badge: 'bg-red-100 text-red-700' },
+  { value: 'in_arbeit', label: 'In Arbeit', badge: 'bg-amber-100 text-amber-700' },
+  { value: 'verschickt', label: 'Verschickt', badge: 'bg-emerald-100 text-emerald-700' },
+];
 
 const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) => {
   const aktuellesJahr = new Date().getFullYear();
@@ -22,7 +30,7 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
     if (abrechnung.id && nkAbrechnungen.find(a => a.id === abrechnung.id)) {
       updated = nkAbrechnungen.map(a => a.id === abrechnung.id ? abrechnung : a);
     } else {
-      updated = [...nkAbrechnungen, { ...abrechnung, id: Date.now(), typ: 'nk_abrechnung_detail', erstellt: new Date().toISOString() }];
+      updated = [...nkAbrechnungen, { ...abrechnung, id: Date.now(), typ: 'nk_abrechnung_detail', erstellt: new Date().toISOString(), status: abrechnung.status || 'offen' }];
     }
     updateParams({ ...params, nkAbrechnungen: updated });
     setShowForm(false);
@@ -31,6 +39,23 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
 
   const deleteAbrechnung = (id) => {
     updateParams({ ...params, nkAbrechnungen: nkAbrechnungen.filter(a => a.id !== id) });
+  };
+
+  const setStatus = (id, status) => {
+    updateParams({ ...params, nkAbrechnungen: nkAbrechnungen.map(a => a.id === id ? { ...a, status } : a) });
+  };
+
+  const [pdfLaeuft, setPdfLaeuft] = useState(null); // id der Abrechnung, für die gerade ein PDF gebaut wird
+
+  const mieterschreibenErstellen = async (abr) => {
+    setPdfLaeuft(abr.id);
+    try {
+      await erstelleMieterschreiben(abr, immobilie);
+      // Nach dem Versand-Schreiben ist die Abrechnung typischerweise "verschickt"
+      if ((abr.status || 'offen') !== 'verschickt') setStatus(abr.id, 'verschickt');
+    } finally {
+      setPdfLaeuft(null);
+    }
   };
 
   // Neue leere Abrechnung — Mietername vorbefüllen, wenn eindeutig ein aktiver Mieter vorhanden ist
@@ -43,7 +68,14 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
     vorauszahlungen: vorauszahlungenGesamt,
     kostenpositionen: NK_KOSTENPOSITIONEN_DEFAULTS.map(pos => ({ ...pos, gesamtkosten: 0, mieteranteil: 100 })),
     notizen: '',
+    status: 'offen',
   };
+
+  // Abschnitt 3.8: Fristhinweis oben, wenn die Abrechnung des Vorjahres fehlt.
+  const letztesJahr = aktuellesJahr - 1;
+  const vorjahresAbrechnungFehlt = aktiveMieter.length > 0 &&
+    !nkAbrechnungen.some(a => a.typ === 'nk_abrechnung_detail' && a.abrechnungsjahr === letztesJahr);
+  const nachFristStichtag = new Date() > new Date(aktuellesJahr, 9, 1); // 1. Oktober
 
   const jahre = [];
   const kaufjahr = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : aktuellesJahr - 3;
@@ -79,6 +111,21 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
         </div>
       </div>
 
+      {/* Fristhinweis: Abrechnung des Vorjahres fehlt */}
+      {vorjahresAbrechnungFehlt && (
+        <div className={`rounded-2xl p-4 text-sm border flex items-start gap-2 ${nachFristStichtag ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+          <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+          <div>
+            <div className="font-semibold">NK-Abrechnung {letztesJahr} steht noch aus</div>
+            <div className="mt-0.5 text-xs opacity-90">
+              {nachFristStichtag
+                ? `Die übliche Frist (1. Oktober) ist bereits verstrichen — die Abrechnung sollte zeitnah erstellt werden.`
+                : `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Übliche Frist: 1. Oktober ${aktuellesJahr}.`}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* NK-Vorauszahlungen Info */}
       {nkVomMieter > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm">
@@ -106,14 +153,26 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
             const gesamtkosten = (abr.kostenpositionen || []).reduce((s, k) => s + (k.gesamtkosten * (k.mieteranteil / 100) || 0), 0);
             const saldo = (abr.vorauszahlungen || 0) - gesamtkosten;
             const istErstattung = saldo > 0;
+            const status = abr.status || 'offen';
+            const statusOpt = STATUS_OPTIONEN.find(s => s.value === status) || STATUS_OPTIONEN[0];
             return (
               <div key={abr.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
                   <div>
                     <div className="font-bold text-gray-800">NK-Abrechnung {abr.abrechnungsjahr}</div>
-                    {abr.mieterName && <div className="text-sm text-gray-500">Mieter: {abr.mieterName}</div>}
+                    <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                      <div>Zeitraum: 01.01.–31.12.{abr.abrechnungsjahr}</div>
+                      {abr.mieterName && <div>Mieter: {abr.mieterName}</div>}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(abr.id, e.target.value)}
+                      className={`text-xs font-semibold rounded-lg px-2 py-1 border-0 cursor-pointer ${statusOpt.badge}`}
+                    >
+                      {STATUS_OPTIONEN.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
                     <button onClick={() => { setEditAbrechnung(abr); setShowForm(true); }} className="text-indigo-500 hover:text-indigo-700 text-xs font-semibold">Bearbeiten</button>
                     <button onClick={() => deleteAbrechnung(abr.id)} className="text-red-400 hover:text-red-600 text-xs">Löschen</button>
                   </div>
@@ -146,6 +205,13 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
                   </div>
                 </div>
                 {abr.notizen && <p className="text-xs text-gray-500 mt-2">{abr.notizen}</p>}
+                <button
+                  onClick={() => mieterschreibenErstellen(abr)}
+                  disabled={pdfLaeuft === abr.id}
+                  className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors disabled:opacity-50"
+                >
+                  <Mail size={14} /> {pdfLaeuft === abr.id ? 'Wird erstellt…' : 'Mieterschreiben erstellen (PDF)'}
+                </button>
               </div>
             );
           })}
