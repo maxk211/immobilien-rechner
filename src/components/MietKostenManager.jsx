@@ -75,23 +75,29 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               aus den echten (bereits erfassten) Objektwerten statt Abkürzungen. */}
           {(() => {
             const kalt = Number(params.kaltmiete) || 0;
-            const nkVz = Number(params.nebenkostenVomMieter) || 120;
+            // Kein erfundener Beispielwert: ohne hinterlegte NK-Vorauszahlung wird
+            // das Beispiel nicht mit einer ausgedachten Zahl "ausgerechnet".
+            const nkVz = Number(params.nebenkostenVomMieter) || 0;
             const aktuellesModell = params.vermietungsmodell || 'kaltmiete';
             const VERMIETUNGS_OPTIONEN = [
               {
                 value: 'kaltmiete_nk', label: 'Miete + Nebenkosten', badge: 'Normalfall',
                 erklaerung: 'Kaltmiete plus monatliche Nebenkosten-Vorauszahlung. Einmal im Jahr rechnest du ab.',
-                beispiel: kalt > 0 ? `${formatCurrency(kalt)} + ${formatCurrency(nkVz)} = ${formatCurrency(kalt + nkVz)}` : 'z.B. 478 € + 120 € = 598 €',
+                beispiel: kalt > 0 && nkVz > 0
+                  ? `${formatCurrency(kalt)} + ${formatCurrency(nkVz)} = ${formatCurrency(kalt + nkVz)} Überweisung`
+                  : kalt > 0 ? `${formatCurrency(kalt)} + Nebenkosten-Vorauszahlung` : 'Kaltmiete + Nebenkosten-Vorauszahlung',
               },
               {
                 value: 'kaltmiete', label: 'Nur Kaltmiete', badge: null,
                 erklaerung: 'Hausgeld und Betriebskosten trägst du und holst sie über die Jahresabrechnung zurück.',
-                beispiel: aktuellesModell !== 'warmmiete' && kalt > 0 ? formatCurrency(kalt) : 'z.B. 478 €',
+                beispiel: aktuellesModell !== 'warmmiete' && kalt > 0 ? `${formatCurrency(kalt)} Überweisung` : 'nur die Kaltmiete',
               },
               {
                 value: 'warmmiete', label: 'Pauschalmiete, alles drin', badge: null,
                 erklaerung: 'Ein einziger Betrag, keine Jahresabrechnung.',
-                beispiel: aktuellesModell === 'warmmiete' && kalt > 0 ? formatCurrency(kalt) : 'z.B. 598 €',
+                beispiel: aktuellesModell === 'warmmiete' && kalt > 0
+                  ? `${formatCurrency(kalt)} Überweisung`
+                  : kalt > 0 && nkVz > 0 ? `${formatCurrency(kalt + nkVz)} Überweisung` : 'ein fester Gesamtbetrag',
               },
             ];
             return (
@@ -122,7 +128,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
           {/* Einnahmen */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><TrendingUp size={12} /> Einnahmen</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><TrendingUp size={12} /> Was reinkommt</p>
             </div>
             <div className="divide-y divide-gray-100 px-4">
               {[
@@ -139,6 +145,64 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       value={params[item.key] ?? 0}
                       onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
                       step={item.step || 1} min={0} max={item.max || 99999}
+                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
+                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Vermieterkosten */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Receipt size={12} /> Was du zahlst</p>
+            </div>
+            <div className="divide-y divide-gray-100 px-4">
+              {[
+                { label: 'Rücklage für Reparaturen', key: 'instandhaltung', unit: '€', step: 10, hint: 'Rücklagen für Reparaturen & Instandhaltung' },
+                { label: 'Hausverwaltung', key: 'verwaltung', unit: '€', step: 5, hint: 'Hausverwaltung, Buchführung etc.' },
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
+                    <div className="text-[10px] text-gray-400">{item.hint}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input type="number"
+                      value={params[item.key] ?? 0}
+                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
+                      step={item.step || 1} min={0} max={9999}
+                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
+                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* WEG & Betriebskosten */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Building2 size={12} /> Was du zahlst · Hausgeld & Betrieb</p>
+            </div>
+            <div className="divide-y divide-gray-100 px-4">
+              {[
+                { label: 'Hausgeld an die WEG', key: 'hausgeld', unit: '€', step: 10, hint: 'Monatliches Hausgeld an die WEG' },
+                { label: 'Strom', key: 'strom', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
+                { label: 'Internet', key: 'internet', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
+                { label: 'Sonstige Nebenkosten', key: 'nebenkosten', unit: '€', step: 10, hint: 'Versicherungen, Grundsteuer anteilig etc.' },
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
+                    <div className="text-[10px] text-gray-400">{item.hint}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input type="number"
+                      value={params[item.key] ?? 0}
+                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
+                      step={item.step || 1} min={0} max={9999}
                       className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
                     <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
                   </div>
@@ -203,64 +267,6 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                     ))}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Vermieterkosten */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Receipt size={12} /> Vermieterkosten</p>
-            </div>
-            <div className="divide-y divide-gray-100 px-4">
-              {[
-                { label: 'Rücklage für Reparaturen', key: 'instandhaltung', unit: '€', step: 10, hint: 'Rücklagen für Reparaturen & Instandhaltung' },
-                { label: 'Hausverwaltung', key: 'verwaltung', unit: '€', step: 5, hint: 'Hausverwaltung, Buchführung etc.' },
-              ].map(item => (
-                <div key={item.key} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
-                    <div className="text-[10px] text-gray-400">{item.hint}</div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <input type="number"
-                      value={params[item.key] ?? 0}
-                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
-                      step={item.step || 1} min={0} max={9999}
-                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
-                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* WEG & Betriebskosten */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Building2 size={12} /> WEG & Betriebskosten</p>
-            </div>
-            <div className="divide-y divide-gray-100 px-4">
-              {[
-                { label: 'Hausgeld an die WEG', key: 'hausgeld', unit: '€', step: 10, hint: 'Monatliches Hausgeld an die WEG' },
-                { label: 'Strom', key: 'strom', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
-                { label: 'Internet', key: 'internet', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
-                { label: 'Sonstige Nebenkosten', key: 'nebenkosten', unit: '€', step: 10, hint: 'Versicherungen, Grundsteuer anteilig etc.' },
-              ].map(item => (
-                <div key={item.key} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
-                    <div className="text-[10px] text-gray-400">{item.hint}</div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <input type="number"
-                      value={params[item.key] ?? 0}
-                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
-                      step={item.step || 1} min={0} max={9999}
-                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
-                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -494,7 +500,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                         </div>
                       </div>
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <label className="text-xs text-gray-600">Hausgeld</label>
+                        <label className="text-xs text-gray-600">Hausgeld an die WEG</label>
                         <div className="flex items-center gap-1">
                           <input
                             type="number"
@@ -612,7 +618,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                                 />
                               </div>
                               <div className="bg-gray-50 p-2 rounded">
-                                <label className="text-gray-500 block mb-1">Hausgeld</label>
+                                <label className="text-gray-500 block mb-1">Hausgeld an die WEG</label>
                                 <input
                                   type="number"
                                   value={getWertFuerZeitraum(jahr, idx, 'hausgeld')}

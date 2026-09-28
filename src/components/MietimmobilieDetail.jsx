@@ -174,15 +174,15 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
 
 const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab }) => {
   const [params, setParams] = useState({
-    eigeneWarmmiete: immobilie.eigeneWarmmiete || 1500,
-    anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 3,
-    untermieteProZimmer: immobilie.untermieteProZimmer || 600,
+    eigeneWarmmiete: immobilie.eigeneWarmmiete || 0,
+    anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 0,
+    untermieteProZimmer: immobilie.untermieteProZimmer || 0,
     // Aufgeschlüsselte Kosten für Steuerberater
     arbitrageStrom: immobilie.arbitrageStrom || 0,
     arbitrageInternet: immobilie.arbitrageInternet || 0,
     arbitrageGEZ: immobilie.arbitrageGEZ ?? 18.36,
-    wohnflaeche: immobilie.wohnflaeche || 80,
-    zimmer: immobilie.zimmer || 4,
+    wohnflaeche: immobilie.wohnflaeche || '',
+    zimmer: immobilie.zimmer || '',
     mietvertragStart: immobilie.mietvertragStart || '',
     mietvertragEnde: immobilie.mietvertragEnde || '',
     name: immobilie.name || '',
@@ -195,6 +195,8 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     dauerauftrag: immobilie.dauerauftrag || false,
     dauerauftragBetrag: immobilie.dauerauftragBetrag || 0,
     dokumente: immobilie.dokumente || [],
+    mieteFaelligkeitstag: immobilie.mieteFaelligkeitstag ?? 3,
+    nkAbrechnungen: immobilie.nkAbrechnungen || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState(() => initialTab || 'uebersicht');

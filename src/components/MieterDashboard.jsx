@@ -8,7 +8,7 @@ import MieterFormular from './MieterFormular';
 import MieterAuszug from './MieterAuszug';
 import NKAbrechnungListe from './NKAbrechnungListe';
 
-const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate, onMieterhoeungClick, onMietanpassungFuerImmobilie, onMieteingaengeClick }) => {
+const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate, onMieterhoeungClick, onMietanpassungFuerImmobilie, onMieteingaengeClick, onNebenkostenClick }) => {
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [showAuszug, setShowAuszug] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -128,7 +128,19 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                       <span className="flex items-center gap-1"><Home size={14} /> {getImmobilieName(mieter.immobilie_id)}</span>
                       {mieter.zimmer_bezeichnung && <span className="flex items-center gap-1"><MapPin size={14} /> {mieter.zimmer_bezeichnung}</span>}
                       {mieter.mietbeginn && <span className="flex items-center gap-1"><CalendarDays size={14} /> seit {new Date(mieter.mietbeginn).toLocaleDateString('de-DE')}</span>}
-                      {mieter.kaltmiete && <span className="flex items-center gap-1"><Banknote size={14} /> {Number(mieter.kaltmiete).toLocaleString('de-DE')} €/Mon</span>}
+                      {mieter.kaltmiete && <span className="flex items-center gap-1"><Banknote size={14} /> {Number(mieter.kaltmiete).toLocaleString('de-DE')} € kalt</span>}
+                      {/* Abschnitt 3.7: NK-Vorauszahlung, Gesamtüberweisung, Befristung, Mietvertrag-PDF */}
+                      {Number(mieter.nk_vorauszahlung) > 0 && <span className="flex items-center gap-1">+ {Number(mieter.nk_vorauszahlung).toLocaleString('de-DE')} € NK-Vorauszahlung</span>}
+                      {(() => {
+                        const gesamt = Number(mieter.gesamtueberweisung) || ((Number(mieter.kaltmiete) || 0) + (Number(mieter.nk_vorauszahlung) || 0));
+                        return gesamt > 0 && Number(mieter.nk_vorauszahlung) > 0
+                          ? <span className="flex items-center gap-1 font-semibold text-gray-700">= {gesamt.toLocaleString('de-DE')} € Überweisung</span>
+                          : null;
+                      })()}
+                      {mieter.vertragstyp === 'befristet' && <span className="flex items-center gap-1"><CalendarDays size={14} /> befristet{mieter.mietende ? ` bis ${new Date(mieter.mietende).toLocaleDateString('de-DE')}` : ''}</span>}
+                      {immobilieDokumente.some(d => d.mieterId === mieter.id && d.typ === 'Mietvertrag') && (
+                        <span className="flex items-center gap-1 text-emerald-600"><FileText size={14} /> Mietvertrag (PDF)</span>
+                      )}
                       {mieter.email && <span className="flex items-center gap-1"><Mail size={14} /> {mieter.email}</span>}
                       {mieter.telefon && <span className="flex items-center gap-1"><Phone size={14} /> {mieter.telefon}</span>}
                     </div>
@@ -184,10 +196,14 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                       </button>
                     )}
                     <button
-                      onClick={() => setExpandedNK(expandedNK === mieter.id ? null : mieter.id)}
+                      // Gegencheck 2: "Nebenkosten abrechnen" führt auf die Nebenkosten-Seite
+                      // (dort liegen Abrechnungen, Fristhinweis und Erinnerung). Die alte
+                      // Mieter-eigene NK-Liste ist ein zweites, davon getrenntes System —
+                      // nur noch als Fallback, wenn keine Nebenkosten-Seite existiert.
+                      onClick={() => onNebenkostenClick ? onNebenkostenClick(mieter) : setExpandedNK(expandedNK === mieter.id ? null : mieter.id)}
                       className={`px-3 py-1.5 text-xs border rounded-lg flex items-center gap-1 ${expandedNK === mieter.id ? 'bg-teal-600 text-white border-teal-600' : 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'}`}
                     >
-                      <FileText size={14} /> NK {(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length > 0 ? `(${(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length})` : ''}
+                      <FileText size={14} /> {onNebenkostenClick ? 'Nebenkosten abrechnen' : <>NK {(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length > 0 ? `(${(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length})` : ''}</>}
                     </button>
                     {onMieteingaengeClick && (
                       <button

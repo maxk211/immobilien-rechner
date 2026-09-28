@@ -23,20 +23,23 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
     immobilienTyp: 'kaufimmobilie', // NEU: kaufimmobilie oder mietimmobilie
     objektart: 'eigentumswohnung',
     zustand: 'gut',
-    wohnflaeche: 80,
-    grundstueck: 0,
-    zimmer: 3,
-    baujahr: 2000,
-    stockwerk: 1,
-    energieeffizienz: 'C',
+    // Gegencheck 2: keine "blanko" Beispielwerte mehr — leere Felder bleiben leer
+    // (vorher wurden z.B. 80 m², 3 Zimmer, Baujahr 2000, 300.000 € Kaufpreis
+    // gespeichert, wenn man das Feld nicht angefasst hat).
+    wohnflaeche: '',
+    grundstueck: '',
+    zimmer: '',
+    baujahr: '',
+    stockwerk: '',
+    energieeffizienz: '',
     balkon: false,
     garage: false,
     keller: false,
-    kaufpreis: 300000,
-    eigenkapital: 60000,
+    kaufpreis: '',
+    eigenkapital: '',
     geschenkt: false,               // Immobilie als Schenkung erhalten (kein Kaufpreis, kein Kredit)
     vollEigenfinanziert: false,     // 100 % aus eigenen Mitteln, kein Fremdkapital
-    kaltmiete: 1000,
+    kaltmiete: '',
     vermietungsmodell: 'kaltmiete', // 'kaltmiete', 'kaltmiete_nk', 'warmmiete'
     nebenkostenVomMieter: 0,        // Monatliche NK-Vorauszahlung vom Mieter
     kaufdatum: '',
@@ -47,9 +50,9 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
     finanzierungsModus: 'berechnet', // 'berechnet' oder 'festRate'
     monatlicherBetrag: null,
     // Mietimmobilie / Arbitrage spezifische Felder
-    eigeneWarmmiete: 1500,        // Was man selbst zahlt (warm)
-    anzahlZimmerVermietet: 3,     // Anzahl Zimmer die untervermietet werden
-    untermieteProZimmer: 600,     // Warmmiete pro Zimmer von Untermietern
+    eigeneWarmmiete: '',          // Was man selbst zahlt (warm)
+    anzahlZimmerVermietet: '',    // Anzahl Zimmer die untervermietet werden
+    untermieteProZimmer: '',      // Warmmiete pro Zimmer von Untermietern
     // Aufgeschlüsselte Kosten für Steuerberater
     arbitrageStrom: 0,            // Stromkosten monatlich
     arbitrageInternet: 0,         // Internetkosten monatlich
@@ -589,15 +592,16 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Baujahr</label>
-                    <input type="number" value={formData.baujahr} onChange={(e) => handleChange('baujahr', intInp(e.target.value, 2000))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
+                    <input type="number" value={formData.baujahr ?? ''} onChange={(e) => handleChange('baujahr', intInp(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Grundstück (m²)</label>
-                    <input type="number" value={formData.grundstueck} onChange={(e) => handleChange('grundstueck', numInp(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
+                    <input type="number" value={formData.grundstueck ?? ''} onChange={(e) => handleChange('grundstueck', numInp(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Energieeffizienz</label>
-                    <select value={formData.energieeffizienz} onChange={(e) => handleChange('energieeffizienz', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm">
+                    <select value={formData.energieeffizienz ?? ''} onChange={(e) => handleChange('energieeffizienz', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-base sm:text-sm">
+                      <option value="">nicht angegeben</option>
                       {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (<option key={e} value={e}>{e}</option>))}
                     </select>
                   </div>
@@ -643,7 +647,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Wohnfläche (m²)</label>
                     <input
                       type="number"
-                      value={formData.wohnflaeche}
+                      value={formData.wohnflaeche ?? ''}
                       onChange={(e) => handleChange('wohnflaeche', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -652,7 +656,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Grundstück (m²)</label>
                     <input
                       type="number"
-                      value={formData.grundstueck}
+                      value={formData.grundstueck ?? ''}
                       onChange={(e) => handleChange('grundstueck', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -661,7 +665,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Zimmer</label>
                     <input
                       type="number"
-                      value={formData.zimmer}
+                      value={formData.zimmer ?? ''}
                       onChange={(e) => handleChange('zimmer', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -670,8 +674,8 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Baujahr</label>
                     <input
                       type="number"
-                      value={formData.baujahr}
-                      onChange={(e) => handleChange('baujahr', intInp(e.target.value, 2000))}
+                      value={formData.baujahr ?? ''}
+                      onChange={(e) => handleChange('baujahr', intInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
@@ -679,7 +683,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Stockwerk</label>
                     <input
                       type="number"
-                      value={formData.stockwerk}
+                      value={formData.stockwerk ?? ''}
                       onChange={(e) => handleChange('stockwerk', intInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -687,10 +691,11 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Energieeffizienz</label>
                     <select
-                      value={formData.energieeffizienz}
+                      value={formData.energieeffizienz ?? ''}
                       onChange={(e) => handleChange('energieeffizienz', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     >
+                      <option value="">nicht angegeben</option>
                       {['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(e => (
                         <option key={e} value={e}>{e}</option>
                       ))}
@@ -739,7 +744,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Wohnfläche (m²)</label>
                     <input
                       type="number"
-                      value={formData.wohnflaeche}
+                      value={formData.wohnflaeche ?? ''}
                       onChange={(e) => handleChange('wohnflaeche', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -748,7 +753,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Gesamtzahl Zimmer</label>
                     <input
                       type="number"
-                      value={formData.zimmer}
+                      value={formData.zimmer ?? ''}
                       onChange={(e) => handleChange('zimmer', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -838,7 +843,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     </label>
                     <input
                       type="number"
-                      value={formData.kaufpreis}
+                      value={formData.kaufpreis ?? ''}
                       onChange={(e) => {
                         const v = numInp(e.target.value);
                         handleChange('kaufpreis', v);
@@ -852,7 +857,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Eigenkapital (€)</label>
                     <input
                       type="number"
-                      value={formData.eigenkapital}
+                      value={formData.eigenkapital ?? ''}
                       onChange={(e) => handleChange('eigenkapital', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -1020,7 +1025,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     </label>
                     <input
                       type="number"
-                      value={formData.kaltmiete}
+                      value={formData.kaltmiete ?? ''}
                       onChange={(e) => handleChange('kaltmiete', numInp(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
@@ -1035,7 +1040,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                   // Abschnitt 6.2: statt Fachbegriffen/Abkürzungen eine direkte Frage mit
                   // Rechenbeispiel aus den echten (bereits eingegebenen) Objektwerten.
                   const kalt = Number(formData.kaltmiete) || 0;
-                  const nkVz = Number(formData.nebenkostenVomMieter) || 120;
+                  const nkVz = Number(formData.nebenkostenVomMieter) || 0; // kein erfundener Beispielwert
                   // 'kaltmiete' ist bei diesem Formular das einzige Mietbasis-Feld — bei Modell
                   // "Pauschalmiete" trägt es bereits die Warmmiete (siehe Label-Umschaltung oben).
                   const warm = formData.vermietungsmodell === 'warmmiete' && kalt > 0 ? kalt : 0;
@@ -1043,17 +1048,17 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                     {
                       value: 'kaltmiete_nk', label: 'Miete + Nebenkosten', badge: 'Normalfall',
                       erklaerung: 'Der Mieter zahlt Kaltmiete plus eine monatliche Nebenkosten-Vorauszahlung. Einmal im Jahr rechnest du ab.',
-                      beispiel: kalt > 0 ? `${formatCurrency(kalt)} + ${formatCurrency(nkVz)} = ${formatCurrency(kalt + nkVz)}` : `z.B. 478 € + 120 € = 598 €`,
+                      beispiel: kalt > 0 && nkVz > 0 ? `${formatCurrency(kalt)} + ${formatCurrency(nkVz)} = ${formatCurrency(kalt + nkVz)} Überweisung` : kalt > 0 ? `${formatCurrency(kalt)} + Nebenkosten-Vorauszahlung` : 'Kaltmiete + Nebenkosten-Vorauszahlung',
                     },
                     {
                       value: 'kaltmiete', label: 'Nur Kaltmiete', badge: null,
                       erklaerung: 'Der Mieter zahlt nur die Miete. Hausgeld und Betriebskosten trägst du und holst sie über die Jahresabrechnung zurück.',
-                      beispiel: kalt > 0 ? formatCurrency(kalt) : 'z.B. 478 €',
+                      beispiel: kalt > 0 ? `${formatCurrency(kalt)} Überweisung` : 'nur die Kaltmiete',
                     },
                     {
                       value: 'warmmiete', label: 'Pauschalmiete, alles drin', badge: null,
                       erklaerung: 'Ein einziger Betrag, keine Jahresabrechnung.',
-                      beispiel: warm > 0 ? formatCurrency(warm) : 'z.B. 598 €',
+                      beispiel: warm > 0 ? `${formatCurrency(warm)} Überweisung` : 'ein fester Gesamtbetrag',
                     },
                   ];
                   return (
@@ -1337,7 +1342,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Eigene Warmmiete (€/Monat)</label>
                       <input
                         type="number"
-                        value={formData.eigeneWarmmiete}
+                        value={formData.eigeneWarmmiete ?? ''}
                         onChange={(e) => handleChange('eigeneWarmmiete', numInp(e.target.value))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                         placeholder="z.B. 1500"
@@ -1353,7 +1358,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Vermietete Zimmer</label>
                         <input
                           type="number"
-                          value={formData.anzahlZimmerVermietet}
+                          value={formData.anzahlZimmerVermietet ?? ''}
                           onChange={(e) => handleChange('anzahlZimmerVermietet', intInp(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                           min="0"
@@ -1364,7 +1369,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Miete pro Zimmer (€)</label>
                         <input
                           type="number"
-                          value={formData.untermieteProZimmer}
+                          value={formData.untermieteProZimmer ?? ''}
                           onChange={(e) => handleChange('untermieteProZimmer', numInp(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                           placeholder="z.B. 600"
@@ -1517,7 +1522,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                 } : {};
                 // 100 % Eigenkapital: kein Kredit — Eigenkapital = Kaufpreis
                 const ekAggregat = (formData.vollEigenfinanziert && !formData.geschenkt) ? {
-                  eigenkapital: formData.kaufpreis,
+                  eigenkapital: toN(formData.kaufpreis),
                 } : {};
                 // Numerische Felder normalisieren: '' → Fallback-Zahl
                 const datenZumSpeichern = {
@@ -1533,7 +1538,7 @@ const ImmobilienFormular = ({ onSave, onClose, onOpenDetail, initialData }) => {
                   wohnflaeche:            toN(formData.wohnflaeche),
                   grundstueck:            toN(formData.grundstueck),
                   zimmer:                 toN(formData.zimmer),
-                  baujahr:                toN(formData.baujahr, 2000),
+                  baujahr:                formData.baujahr === '' || formData.baujahr == null ? null : toN(formData.baujahr, null),
                   stockwerk:              toN(formData.stockwerk),
                   geschaetzterWert:       toN(formData.geschaetzterWert),
                   userAnteil:             toN(formData.userAnteil, 100),

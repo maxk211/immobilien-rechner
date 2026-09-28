@@ -443,12 +443,27 @@ export const PRIORITY_STYLE = {
 
 const LS_AKTIV_KEY = 'vermieter-todos-aktiv';
 
+// Genau eine Aktion pro Erinnerung (Abschnitt 5), beschriftet nach Ziel-Route
+const AKTION_LABEL = {
+  mieteinnahmen: 'Miete buchen',
+  finanzierung: 'Konditionen prüfen',
+  nkabrechnung: 'Abrechnen',
+  mieter: 'Mieter öffnen',
+  kaution: 'Kaution eintragen',
+  stammdaten: 'Wert aktualisieren',
+  investitionen: 'Investitionen prüfen',
+};
+
 const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSelectImmobilie }) => {
   const [collapsed, setCollapsed] = useState(false);
+  // Gegencheck 2: "Was steht an" ist laut Abschnitt 3.1 ein fester Dashboard-
+  // Block — standardmäßig AN, nur wer ihn bewusst ausschaltet, sieht ihn aus.
   const [aktiv, setAktiv] = useState(() => {
-    try { return localStorage.getItem(LS_AKTIV_KEY) === 'true'; }
-    catch { return false; }
+    try { return localStorage.getItem(LS_AKTIV_KEY) !== 'false'; }
+    catch { return true; }
   });
+  // Abschnitt 3.1: filterbar nach Miete, Finanzierung, Mieter, Steuer
+  const [kategorieFilter, setKategorieFilter] = useState('alle');
 
   const toggleAktiv = (e) => {
     e.stopPropagation();
@@ -464,6 +479,9 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
     [portfolio, mieterListe, nkAbrechnungen, aktiv]
   );
 
+  const KATEGORIEN = ['Miete', 'Finanzierung', 'Mieter', 'Steuer'];
+  const gefilterteTodos = kategorieFilter === 'alle' ? todos : todos.filter(t => t.kategorie === kategorieFilter);
+
   const anzahlRot = todos.filter(t => t.priority === 'rot').length;
   const anzahlGelb = todos.filter(t => t.priority === 'gelb').length;
   const anzahlGrau = todos.filter(t => t.priority === 'grau').length;
@@ -477,7 +495,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <CheckCircle2 size={18} className={aktiv ? 'text-emerald-500' : 'text-gray-300'} />
-          <span className={`font-bold ${aktiv ? 'text-gray-800' : 'text-gray-400'}`}>Vermieter-Aufgaben</span>
+          <span className={`font-bold ${aktiv ? 'text-gray-800' : 'text-gray-400'}`}>Was steht an</span>
           {aktiv && todos.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
               {anzahlRot > 0 && (
@@ -521,6 +539,21 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
       {/* Content — nur wenn aktiv und nicht collapsed */}
       {aktiv && !collapsed && (
         <div className="border-t border-gray-100">
+          {todos.length > 0 && (
+            <div className="flex gap-1.5 px-5 py-2.5 overflow-x-auto border-b border-gray-50">
+              {['alle', ...KATEGORIEN].map(k => {
+                const anzahl = k === 'alle' ? todos.length : todos.filter(t => t.kategorie === k).length;
+                return (
+                  <button key={k} onClick={() => setKategorieFilter(k)}
+                    className={`text-xs px-2.5 py-1 rounded-full font-semibold whitespace-nowrap transition-colors ${
+                      kategorieFilter === k ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}>
+                    {k === 'alle' ? 'Alle' : k} <span className="opacity-70">{anzahl}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {todos.length === 0 ? (
             <div className="text-center py-10 px-5">
               <div className="flex justify-center mb-3">
@@ -531,20 +564,24 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {todos.map(todo => {
+              {gefilterteTodos.length === 0 && (
+                <div className="px-5 py-4 text-sm text-gray-400">In dieser Kategorie ist nichts offen.</div>
+              )}
+              {gefilterteTodos.map(todo => {
                 const style = PRIORITY_STYLE[todo.priority];
                 const immo = portfolio.find(i => i.id === todo.immoId);
                 return (
                   <div
                     key={todo.id}
-                    onClick={() => immo && onSelectImmobilie && onSelectImmobilie(immo, todo.targetTab)}
-                    className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row} ${immo && onSelectImmobilie ? 'cursor-pointer' : ''}`}
+                    className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row}`}
                   >
                     <div className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${style.dot}`} />
                     <div className="flex-shrink-0 w-7 flex items-center justify-center text-gray-500">
                       {todo.icon}
                     </div>
                     <div className="flex-1 min-w-0">
+                      {/* Abschnitt 3.1: jede Zeile nennt Objektname + Sachverhalt */}
+                      <div className="text-[11px] font-semibold text-gray-500 truncate">{immo ? (immo.name || immo.adresse || 'Immobilie') : ''}{todo.kategorie ? ` · ${todo.kategorie}` : ''}</div>
                       <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
                       <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
                     </div>
@@ -552,7 +589,11 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                       {todo.badge}
                     </div>
                     {immo && onSelectImmobilie && (
-                      <div className="flex-shrink-0 text-gray-300 text-sm">›</div>
+                      <button
+                        onClick={() => onSelectImmobilie(immo, todo.targetTab)}
+                        className="flex-shrink-0 px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg transition-colors">
+                        {AKTION_LABEL[todo.targetTab] || 'Öffnen'}
+                      </button>
                     )}
                   </div>
                 );

@@ -16,9 +16,11 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
   const aktUntermiete = getAktuelleUntermiete(params);
 
   // Anteil vermieteter Zimmer
-  const zimmerGesamt = params.zimmer || 1;
-  const zimmerVermietet = params.anzahlZimmerVermietet || 0;
-  const anteil = zimmerGesamt > 0 ? zimmerVermietet / zimmerGesamt : 0;
+  // Ohne Gesamt-Zimmerzahl wird kein erfundener Wert angenommen: dann gilt
+  // die vermietete Fläche als ganze Wohnung (Anteil 100 %), nie mehr als 100 %.
+  const zimmerVermietet = Number(params.anzahlZimmerVermietet) || 0;
+  const zimmerGesamt = Number(params.zimmer) || zimmerVermietet;
+  const anteil = zimmerGesamt > 0 ? Math.min(1, zimmerVermietet / zimmerGesamt) : 0;
 
   // Jahreszahlen
   const mietvertragStart = params.mietvertragStart ? new Date(params.mietvertragStart) : null;

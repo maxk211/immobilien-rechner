@@ -30,6 +30,16 @@ export async function loadImmobilien() {
 const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt', 'afa_modus', 'afa_degressiv_wechseljahr'];
 // Felder aus Migration 006 — noch nicht bei allen Usern vorhanden
 const MIGRATION_FIELDS_006 = ['kredit_laeuft_bereits', 'aktuelle_restschuld', 'kredit_monatsrate', 'zinsbindung_bis'];
+// Felder aus Migration 012 — gebündelte Zusatzdaten (JSONB)
+const MIGRATION_FIELDS_012 = ['zusatzdaten'];
+// Gegencheck 2: diese Felder wurden bisher nie in die Datenbank geschrieben und
+// gingen nach dem Speichern verloren. Sie liegen jetzt in immobilien.zusatzdaten.
+const ZUSATZ_KEYS = [
+  'nkAbrechnungen', 'kautionen', 'mieteFaelligkeitstag', 'geschaetzterWertDatum',
+  'etage', 'energieausweisGueltigBis', 'heizungsart',
+  'hausverwaltungName', 'hausverwaltungAnsprechpartner', 'hausverwaltungKontakt',
+  'miteigentumsanteil', 'naechsteEigentuemerversammlung', 'mietModus',
+];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
@@ -72,6 +82,8 @@ export async function saveImmobilie(immobilie) {
       // Stufe 1: Nur Migration-006-Felder weglassen (wohnungen etc. bleiben erhalten)
       const fallback1 = { ...dbData };
       MIGRATION_FIELDS_006.forEach(f => delete fallback1[f]);
+      MIGRATION_FIELDS_012.forEach(f => delete fallback1[f]);
+      console.warn('Spalte fehlt in der Datenbank — bitte Migrationen 006/012 ausführen. Zusatzdaten werden sonst nicht gespeichert.');
       try {
         return await doSave(fallback1);
       } catch (e2) {
@@ -193,6 +205,10 @@ function dbToApp(db) {
     aktuelleRestschuld: db.aktuelle_restschuld || 0,
     kreditMonatsrate: db.kredit_monatsrate || 0,
     zinsbindungBis: db.zinsbindung_bis || null,
+    // Migration 012: Zusatzdaten (nur bekannte Schlüssel übernehmen)
+    ...Object.fromEntries(
+      Object.entries(db.zusatzdaten || {}).filter(([k]) => ZUSATZ_KEYS.includes(k))
+    ),
   };
 }
 
@@ -283,6 +299,9 @@ function appToDb(app) {
     aktuelle_restschuld: app.aktuelleRestschuld || 0,
     kredit_monatsrate: app.kreditMonatsrate || 0,
     zinsbindung_bis: app.zinsbindungBis || null,
+    zusatzdaten: Object.fromEntries(
+      ZUSATZ_KEYS.filter(k => app[k] !== undefined).map(k => [k, app[k]])
+    ),
   };
 }
 

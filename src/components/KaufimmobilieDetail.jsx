@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 // ─── Dokumente-Tab ────────────────────────────────────────────────────────────
-const DOK_TYPEN = ['Kaufvertrag', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
+const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
 
 const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   const [uploading, setUploading] = useState(false);
@@ -208,9 +208,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     kaufpreis: immobilie.kaufpreis,
     kaufdatum: immobilie.kaufdatum || '',
     // Objektdetails
-    wohnflaeche: immobilie.wohnflaeche || 80,
-    zimmer: immobilie.zimmer || 3,
-    baujahr: immobilie.baujahr || 2000,
+    // Gegencheck 2: keine Blanko-Werte (vorher 80 m² / 3 Zimmer / Baujahr 2000,
+    // die beim nächsten Speichern mit in die Datenbank geschrieben wurden).
+    wohnflaeche: immobilie.wohnflaeche || '',
+    zimmer: immobilie.zimmer || '',
+    baujahr: immobilie.baujahr || '',
     // Neue EK-Aufteilung
     ekFuerNebenkosten: initEkFuerNebenkosten,
     ekFuerKaufpreis: initEkFuerKaufpreis,
@@ -296,6 +298,20 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
       istVermietet: true,
     },
     dokumente: immobilie.dokumente || [],
+    // Gegencheck 2: Zusatzdaten (seit Migration 012 dauerhaft gespeichert) —
+    // müssen hier aus der Immobilie übernommen werden, sonst zeigt die Oberfläche
+    // nach dem Neuladen leere Felder, obwohl die Daten gespeichert sind.
+    nkAbrechnungen: immobilie.nkAbrechnungen || [],
+    kautionen: immobilie.kautionen || [],
+    etage: immobilie.etage || '',
+    energieausweisGueltigBis: immobilie.energieausweisGueltigBis || '',
+    heizungsart: immobilie.heizungsart || '',
+    keller: immobilie.keller || false,
+    hausverwaltungName: immobilie.hausverwaltungName || '',
+    hausverwaltungAnsprechpartner: immobilie.hausverwaltungAnsprechpartner || '',
+    hausverwaltungKontakt: immobilie.hausverwaltungKontakt || '',
+    miteigentumsanteil: immobilie.miteigentumsanteil || '',
+    naechsteEigentuemerversammlung: immobilie.naechsteEigentuemerversammlung || '',
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -347,7 +363,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const handleQmPreisChange = (value) => {
     setQmPreis(value);
     const numValue = parseFloat(value) || 0;
-    const flaeche = params.wohnflaeche || immobilie.wohnflaeche || 80;
+    const flaeche = Number(params.wohnflaeche || immobilie.wohnflaeche) || 0;
     if (numValue > 0 && flaeche > 0) {
       const neuerWert = Math.round(numValue * flaeche);
       updateParams({...params, geschaetzterWert: neuerWert, geschaetzterWertDatum: new Date().toISOString().split('T')[0]});
@@ -357,7 +373,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const handleGesamtwertChange = (value) => {
     const numValue = parseFloat(value) || 0;
     updateParams({...params, geschaetzterWert: numValue, geschaetzterWertDatum: new Date().toISOString().split('T')[0]});
-    const flaeche = params.wohnflaeche || immobilie.wohnflaeche || 80;
+    const flaeche = Number(params.wohnflaeche || immobilie.wohnflaeche) || 0;
     if (numValue > 0 && flaeche > 0) {
       setQmPreis(Math.round(numValue / flaeche).toString());
     }
@@ -466,6 +482,16 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {(immobilie.plz || immobilie.adresse) && (
                   <p className="text-slate-300 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.plz} {immobilie.adresse}</p>
                 )}
+                {/* Abschnitt 3.2: Eckdaten im Kopf — nur tatsächlich erfasste Werte */}
+                {(() => {
+                  const eckdaten = [
+                    params.wohnflaeche ? `${params.wohnflaeche} m²` : null,
+                    params.zimmer ? `${params.zimmer} Zimmer` : null,
+                    params.baujahr ? `Baujahr ${params.baujahr}` : null,
+                    params.kaufdatum ? `gekauft ${new Date(params.kaufdatum).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null,
+                  ].filter(Boolean);
+                  return eckdaten.length > 0 ? <p className="text-slate-400 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
+                })()}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
                 {params.aktiv === false ? (
@@ -872,11 +898,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           })()}
 
           {OBJEKT_TAB_IDS.includes(activeTab) && (
-            <div className="space-y-5">
-              {/* Abschnitt 3.9: Sprungleiste statt vier Unter-Reitern — die Seite ist
-                  jetzt eine einzige zusammenhängende Ansicht, diese Chips scrollen
-                  nur innerhalb der Seite (kein Tab-Wechsel, kein Re-Mount). */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+            <div className="lg:flex lg:gap-6 lg:items-start">
+              {/* Abschnitt 3.9: Sprungleiste LINKS (Desktop) statt vier Unter-Reitern —
+                  mobil als horizontale Chip-Leiste oben. Scrollt nur innerhalb der Seite. */}
+              <nav className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 mb-5 lg:mb-0 lg:w-48 lg:shrink-0 lg:sticky lg:top-36 lg:self-start">
                 {[
                   ['objekt-stammdaten', 'Stammdaten'],
                   ['objekt-kaufwert', 'Kauf & Wert'],
@@ -889,12 +914,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <button
                     key={anchorId}
                     onClick={() => document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors whitespace-nowrap"
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors whitespace-nowrap lg:text-left"
                   >
                     {label}
                   </button>
                 ))}
-              </div>
+              </nav>
+              <div className="flex-1 min-w-0 space-y-5">
 
               {/* Objektdetails */}
               <div id="objekt-stammdaten" />
@@ -936,7 +962,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <input
                       type="number"
                       value={params.baujahr}
-                      onChange={(e) => updateParams({...params, baujahr: parseInt(e.target.value) || 2000})}
+                      onChange={(e) => updateParams({...params, baujahr: e.target.value === '' ? '' : (parseInt(e.target.value) || '')})}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-right text-base sm:text-sm"
                       min={1800}
                       max={new Date().getFullYear()}
@@ -975,6 +1001,28 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm"
                     />
                   </div>
+                  {/* Abschnitt 3.9: Heizungsart + Keller fehlten in den Stammdaten */}
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Heizungsart</label>
+                    <select
+                      value={params.heizungsart || ''}
+                      onChange={(e) => updateParams({...params, heizungsart: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm bg-white"
+                    >
+                      <option value="">nicht angegeben</option>
+                      {['Gas', 'Öl', 'Fernwärme', 'Wärmepumpe', 'Pellets/Holz', 'Elektro/Nachtspeicher', 'Sonstige'].map(h => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-end pb-2">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                      <input type="checkbox" checked={!!params.keller}
+                        onChange={(e) => updateParams({...params, keller: e.target.checked})}
+                        className="w-4 h-4 accent-indigo-600" />
+                      Keller vorhanden
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -982,6 +1030,22 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   hierher gewandert, ins Cockpit gehört nur noch die Kurzfassung (nur lesen). */}
               <div id="objekt-kaufwert" className="bg-indigo-50 border border-indigo-100 p-4 sm:p-5 rounded-2xl">
                 <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Kauf & Wert</h3>
+                {/* Abschnitt 3.9: Kaufdatum + Kaufpreis gehören in diesen Abschnitt */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Kaufdatum</label>
+                    <input type="date" value={params.kaufdatum || ''}
+                      onChange={(e) => updateParams({...params, kaufdatum: e.target.value})}
+                      className="w-full px-3 py-2 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Kaufpreis</label>
+                    <div className="px-3 py-2 border border-indigo-100 rounded-lg text-base sm:text-sm bg-white/60 font-semibold text-gray-800">
+                      {params.kaufpreis ? formatCurrency(params.kaufpreis) : '—'}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Änderung über „Bearbeiten“ (wirkt auf die Finanzierung)</p>
+                  </div>
+                </div>
                 <div className="mb-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -994,7 +1058,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     />
                     <span className="text-sm font-bold text-indigo-600">€/m²</span>
                     <span className="text-gray-400">×</span>
-                    <span className="text-sm text-gray-600">{params.wohnflaeche} m²</span>
+                    <span className="text-sm text-gray-600">{params.wohnflaeche ? `${params.wohnflaeche} m²` : 'Wohnfläche fehlt (Stammdaten)'}</span>
                     <span className="text-gray-400">=</span>
                   </div>
                 </div>
@@ -1213,6 +1277,42 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 );
               })()}
 
+              {/* Investitionen — Abschnitt 3.9: jetzt Abschnitt dieser Seite statt
+                  eigener Unter-Reiter. */}
+              <div id="objekt-investitionen">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Investitionen</h3>
+                <ReparaturenInvestitionen
+                  immobilie={{...immobilie, investitionen: params.investitionen}}
+                  onUpdate={(updated) => {
+                    updateParams({...params, investitionen: updated.investitionen});
+                  }}
+                />
+              </div>
+
+              {/* Zähler */}
+              <div id="objekt-zaehler">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Zähler</h3>
+                <ZaehlerVerwaltung
+                  params={params}
+                  updateParams={(neu) => updateParams(neu)}
+                />
+              </div>
+
+              {/* Dokumente */}
+              <div id="objekt-dokumente">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Dokumente</h3>
+                <DokumenteTab
+                  immobilie={immobilie}
+                  dokumente={params.dokumente || []}
+                  onDokumentUpdate={async (neueDokumente) => {
+                    const updated = { ...params, dokumente: neueDokumente };
+                    updateParams(updated);
+                    await onSave(updated);
+                    setHasChanges(false);
+                  }}
+                />
+              </div>
+
               {/* Eigentum & Prognose — Abschnitt 3.9: Eigentumsform (allein/GbR) und
                   angenommene Wertsteigerung gehören inhaltlich zusammen. */}
               <h3 id="objekt-eigentum" className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2">Eigentum & Prognose</h3>
@@ -1332,40 +1432,6 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 )}
               </div>
 
-              {/* Investitionen — Abschnitt 3.9: jetzt Abschnitt dieser Seite statt
-                  eigener Unter-Reiter. */}
-              <div id="objekt-investitionen">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Investitionen</h3>
-                <ReparaturenInvestitionen
-                  immobilie={{...immobilie, investitionen: params.investitionen}}
-                  onUpdate={(updated) => {
-                    updateParams({...params, investitionen: updated.investitionen});
-                  }}
-                />
-              </div>
-
-              {/* Zähler */}
-              <div id="objekt-zaehler">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Zähler</h3>
-                <ZaehlerVerwaltung
-                  params={params}
-                  updateParams={(neu) => updateParams(neu)}
-                />
-              </div>
-
-              {/* Dokumente */}
-              <div id="objekt-dokumente">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Dokumente</h3>
-                <DokumenteTab
-                  immobilie={immobilie}
-                  dokumente={params.dokumente || []}
-                  onDokumentUpdate={async (neueDokumente) => {
-                    const updated = { ...params, dokumente: neueDokumente };
-                    updateParams(updated);
-                    await onSave(updated);
-                    setHasChanges(false);
-                  }}
-                />
               </div>
             </div>
           )}
@@ -1494,21 +1560,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               if (finanzierungsphasen.length <= 1) return;
               updateParams({ ...params, finanzierungsphasen: finanzierungsphasen.filter(p => p.id !== id) });
             };
-            // Weiteres, unabhängiges Darlehen (z.B. separater Modernisierungskredit) —
-            // im Unterschied zur Anschlussfinanzierung wird hier KEINE Restschuld aus der
-            // Vorphase übernommen (restschuldOverride: 0), da es sich um eine eigenständige
-            // Finanzierung handelt. Nutzt dieselbe geprüfte Berechnungslogik wie jede andere Phase.
-            const addWeiteresDarlehen = () => {
-              updateParams({ ...params, finanzierungsphasen: [...finanzierungsphasen, {
-                id: Date.now(), name: `Weiteres Darlehen ${finanzierungsphasen.length}`,
-                darlehensTyp: 'annuitaet',
-                sollzinssatz: 4, anfangstilgung: 2,
-                monatlicherBetrag: null, zinsbindung: 10,
-                monatlicheTilgung: null, tilgungssatz: 2, laufzeit: 10,
-                sondertilgungJaehrlich: 0,
-                restschuldOverride: 0,
-              }] });
-            };
+            // Hinweis (Gegencheck 2): Ein "weiteres Darlehen" (parallel laufend) ist
+            // bewusst NICHT als Button vorhanden. Die Rechenlogik kennt nur
+            // nacheinander laufende Phasen — ein paralleles Darlehen als Phase
+            // angehängt würde erst nach Ablauf der Zinsbindung beginnen, seine Rate
+            // fehlte im heutigen Cashflow und die Zinsbindungs-Erinnerung des
+            // Hauptdarlehens würde unterdrückt. Braucht eine Erweiterung der
+            // Berechnung (siehe Bericht an den Nutzer).
 
             return (
               <div className="space-y-5">
@@ -1965,17 +2023,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   })}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button onClick={addPhase}
-                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
-                    + Anschlussfinanzierung hinzufügen
-                  </button>
-                  <button onClick={addWeiteresDarlehen}
-                    title="Für ein zusätzliches, eigenständiges Darlehen (z.B. separater Modernisierungskredit) — nicht für die Fortführung nach Ablauf der Zinsbindung."
-                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
-                    + Weiteres Darlehen hinzufügen
-                  </button>
-                </div>
+                <button onClick={addPhase}
+                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
+                  + Anschlussfinanzierung planen
+                </button>
 
                 {/* Abschnitt 3.4: Bausparvertrag als eigener Block innerhalb von
                     Finanzierung statt eigenem Subtab — sichtbar bleibt er zusätzlich
@@ -2000,23 +2051,30 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           )}
 
           {activeTab === 'cashflow' && (
-            <>
-              <MietKostenManager
-                params={params}
-                updateParams={updateParams}
-                immobilie={immobilie}
-                hasChanges={hasChanges}
-                setHasChanges={setHasChanges}
-              />
-              <CashflowUebersicht
-                params={params}
-                ergebnis={ergebnis}
-                immobilie={immobilie}
-                investitionen={params.investitionen}
-                anteilFaktor={anteilFaktor}
-                onOpenFinanzierung={() => setActiveTab('finanzierung')}
-              />
-            </>
+            // Abschnitt 3.3 + Leitsatz 1 (Gegencheck 2): Ergebnisse stehen über bzw.
+            // neben den Eingaben, nie darunter. Mobil: Ergebnis zuerst. Desktop:
+            // Eingaben links, Ergebnisleiste + Rechenweg rechts daneben.
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+              <div className="order-1 lg:order-2 lg:col-span-2">
+                <CashflowUebersicht
+                  params={params}
+                  ergebnis={ergebnis}
+                  immobilie={immobilie}
+                  investitionen={params.investitionen}
+                  anteilFaktor={anteilFaktor}
+                  onOpenFinanzierung={() => setActiveTab('finanzierung')}
+                />
+              </div>
+              <div className="order-2 lg:order-1 lg:col-span-3">
+                <MietKostenManager
+                  params={params}
+                  updateParams={updateParams}
+                  immobilie={immobilie}
+                  hasChanges={hasChanges}
+                  setHasChanges={setHasChanges}
+                />
+              </div>
+            </div>
           )}
 
           {activeTab === 'steuern' && (
@@ -2066,6 +2124,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 }}
                 onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
                 onMieteingaengeClick={() => setActiveTab('mieteinnahmen')}
+                onNebenkostenClick={() => setActiveTab('nkabrechnung')}
                 onMietanpassungFuerImmobilie={async ({ datum, kaltmiete }) => {
                   // Zieht eine im Mieter-Tab erfasste Mietanpassung in die
                   // Immobilie-level mietAnpassungen nach, damit die Forderung im
