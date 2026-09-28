@@ -56,7 +56,10 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1">
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1"
+                title={isMietimmobilie ? 'Mietimmobilie (Arbitrage: anmieten & untervermieten)' : isMFH ? 'Mehrfamilienhaus' : 'Kaufimmobilie'}
+              >
                 {isMietimmobilie
                   ? <><ArrowLeftRight size={12}/>Arbitrage</>
                   : isMFH
@@ -74,16 +77,16 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
               {immobilie.name || 'Unbenannte Immobilie'}
             </h3>
             {(immobilie.plz || immobilie.adresse) && (
-              <p className="text-white/70 text-xs mt-0.5 truncate flex items-center gap-1">
+              <p className="text-white/70 text-xs mt-0.5 truncate flex items-center gap-1" title="Adresse">
                 <MapPin size={12}/>{immobilie.plz} {immobilie.adresse}
               </p>
             )}
             {!isMFH && (
               <p className="text-white/80 text-xs mt-1 truncate font-medium flex items-center gap-1">
                 {aktiverMieter
-                  ? <><User size={14} className="text-white/70"/>{aktiverMieter.name}</>
+                  ? <span className="flex items-center gap-1" title="Aktueller Mieter"><User size={14} className="text-white/70"/>{aktiverMieter.name}</span>
                   : hatteJeMieterEinzel
-                    ? <span className="text-white/50 flex items-center gap-1"><CircleDot size={12} className="text-red-300"/> Leerstand</span>
+                    ? <span className="text-white/50 flex items-center gap-1" title="Aktuell kein Mieter"><CircleDot size={12} className="text-red-300"/> Leerstand</span>
                     : null
                 }
               </p>
@@ -100,8 +103,8 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
                 : <CheckCircle2 size={14} className="text-white/30"/>
               }
               {aufgabenOffen > 0 && (
-                <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[10px] font-bold text-white leading-none ${aufgabenRot > 0 ? 'bg-red-500' : 'bg-amber-400'}`}>
-                  {aufgabenOffen}
+                <span className={`absolute -top-1 -right-4 min-w-[16px] h-4 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold text-white leading-none whitespace-nowrap ${aufgabenRot > 0 ? 'bg-red-500' : 'bg-amber-400'}`}>
+                  {aufgabenOffen} offen
                 </span>
               )}
             </button>
@@ -211,8 +214,9 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
             <button
               onClick={(e) => { e.stopPropagation(); setMfhExpanded(v => !v); }}
               className="w-full flex items-center justify-between text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+              title={mfhExpanded ? 'Mieterliste einklappen' : 'Mieterliste aufklappen'}
             >
-              <span className="flex items-center gap-1"><Users size={14}/>Mieter ({mfhWohnungen.filter(w => w.mieterName && !w.mietende).length}/{mfhWohnungen.length} vermietet)</span>
+              <span className="flex items-center gap-1" title="Vermietungsstand"><Users size={14}/>Mieter ({mfhWohnungen.filter(w => w.mieterName && !w.mietende).length}/{mfhWohnungen.length} vermietet)</span>
               <span className="text-gray-400">{mfhExpanded ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
             </button>
             {mfhExpanded && (

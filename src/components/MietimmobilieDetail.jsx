@@ -308,7 +308,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           <div className="overflow-x-auto flex-shrink-0">
             <div className="flex gap-1 bg-slate-100 p-1 min-w-max">
               {[
-                { id: 'uebersicht',   icon: <BarChart3 size={13}/>, label: 'Übersicht' },
+                { id: 'uebersicht',   icon: <BarChart3 size={13}/>, label: 'Cockpit' },
                 { id: 'mieteingaenge',icon: <TrendingUp size={13}/>, label: 'Eingänge' },
                 { id: 'cashflow',     icon: <TrendingUp size={13}/>, label: 'Cashflow' },
                 { id: 'steuern',      icon: <Receipt size={13}/>, label: 'Steuern' },
@@ -415,6 +415,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               nkAbrechnungen={nkAbrechnungen}
               onSaveNK={onSaveNK}
               onDeleteNK={onDeleteNK}
+              onMieteingaengeClick={() => setActiveTab('mieteingaenge')}
             />
           )}
           {activeTab === 'uebersicht' && <>

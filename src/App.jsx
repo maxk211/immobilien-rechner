@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X, MoreVertical } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
@@ -83,6 +83,12 @@ function App() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showWillkommen, setShowWillkommen] = useState(false);
   const [portfolioLoaded, setPortfolioLoaded] = useState(false);
+  // Phase 8a (Gegencheck-Nachzug): Toolbar entrümpelt — nur "Neue Immobilie"
+  // bleibt sichtbarer Primärbutton, der Rest wandert in ein Überlaufmenü.
+  // Export/Steuer-Export bekommen einen echten Auswahl-Dialog statt Hover-Dropdown.
+  const [showToolbarMenu, setShowToolbarMenu] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportSteuerJahr, setExportSteuerJahr] = useState(new Date().getFullYear() - 1);
   const [showSelbstauskunftModal, setShowSelbstauskunftModal] = useState(false);
   const [selbstauskunftDaten, setSelbstauskunftDaten] = useState(() => {
     try {
@@ -135,6 +141,23 @@ function App() {
       }
     } catch(e) { /* localStorage nicht verfügbar */ }
   }, [portfolioLoaded, portfolio.length]);
+
+  // Toolbar-Überlaufmenü: Escape/Klick-daneben schließen (gleiches Muster wie
+  // das "Verkauft oder abgegeben"-Menü in KaufimmobilieDetail.jsx)
+  const toolbarMenuRef = useRef(null);
+  useEffect(() => {
+    if (!showToolbarMenu) return;
+    const onKeyDown = (e) => { if (e.key === 'Escape') setShowToolbarMenu(false); };
+    const onClickOutside = (e) => {
+      if (toolbarMenuRef.current && !toolbarMenuRef.current.contains(e.target)) setShowToolbarMenu(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onClickOutside);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onClickOutside);
+    };
+  }, [showToolbarMenu]);
 
   // Auth State überwachen
   useEffect(() => {
@@ -871,7 +894,7 @@ function App() {
         ['Mieteinnahmen', gesamtEinnahmen.toFixed(2), 'Kaltmiete (Summe aller Kaufimmobilien)'],
         ['', '', ''],
         ['  Schuldzinsen', (-sumSchuldzinsen).toFixed(2), 'Fremdkapitalzinsen'],
-        ['  Instandhaltung', (-sumInstandhaltung).toFixed(2), 'Rücklagen & lfd. Instandhaltung'],
+        ['  Rücklage für Reparaturen', (-sumInstandhaltung).toFixed(2), 'Rücklagen & lfd. Instandhaltung'],
         ['  Verwaltungskosten', (-sumVerwaltung).toFixed(2), 'Hausverwaltung'],
         ['  Hausgeld / WEG', (-sumHausgeld).toFixed(2), 'Monatliches Hausgeld'],
         ['  Strom', (-sumStrom).toFixed(2), 'Stromkosten (Vermieter)'],
@@ -912,7 +935,7 @@ function App() {
     if (kaufimmobilien.length > 0) {
       const detailHeader = [
         'Immobilie', 'Adresse', 'Kaufpreis €', 'Kaltmiete/Jahr €',
-        'Schuldzinsen €', 'Instandhaltung €', 'Verwaltung €',
+        'Schuldzinsen €', 'Rücklage für Reparaturen €', 'Verwaltung €',
         'Hausgeld €', 'Strom €', 'Internet €', 'Fahrtkosten €',
         'Erhaltungsaufwand €', 'Summe Werbungskosten €', 'Ergebnis €',
         'Hinweis'
@@ -1361,74 +1384,42 @@ function App() {
             </button>
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons — Abschnitt 3.1: Toolbar entrümpelt, nur "Neue Immobilie"
+              bleibt sichtbarer Primärbutton. Selbstauskunft/Export/Import/Kalkulation
+              wandern in ein einziges Überlaufmenü (identisch auf Mobile & Desktop,
+              klick- statt hover-basiert — funktioniert auch per Touch). */}
           <div className="flex flex-wrap gap-2">
-            {/* Desktop: alle Buttons sichtbar */}
             {portfolio.length > 0 && (
-              <>
+              <div className="relative" ref={toolbarMenuRef}>
                 <button
-                  onClick={handleSelbstauskunft}
-                  className="hidden sm:flex px-3 py-2 bg-white border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-50 items-center gap-1.5 text-sm shadow-sm transition-colors font-semibold"
+                  onClick={() => setShowToolbarMenu(v => !v)}
+                  className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors"
+                  aria-label="Weitere Aktionen"
                 >
-                  <ClipboardList size={16} /> Selbstauskunft für die Bank
+                  <MoreVertical size={16} />
                 </button>
-                {/* Abschnitt 6: Export + Steuer-Export sind ein Button mit Auswahl im Dialog geworden */}
-                <div className="relative group hidden sm:block">
-                  <button className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors">
-                    <Upload size={16} /> Exportieren
-                  </button>
-                  <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                    <button onClick={handleExport}
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 text-gray-700 border-b border-gray-100 flex items-center gap-1.5">
-                      <Upload size={13} /> Alle Daten (JSON)
+                {showToolbarMenu && (
+                  <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                    <button onClick={() => { handleSelbstauskunft(); setShowToolbarMenu(false); }}
+                      className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold flex items-center gap-1.5">
+                      <ClipboardList size={15} /> Selbstauskunft für die Bank
                     </button>
-                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Steuerexport (Anlage V)</p>
-                    {[...Array(5)].map((_, i) => {
-                      const year = new Date().getFullYear() - i;
-                      return (
-                        <button key={year} onClick={() => handleSteuerExport(year)}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-50 text-emerald-700 last:pb-2.5">
-                          {year}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <label className="hidden sm:flex px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 items-center gap-1.5 text-sm shadow-sm transition-colors cursor-pointer">
-                  <Download size={16} /> Import
-                  <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-                </label>
-                {/* Mobile: Mehr-Menü */}
-                <div className="relative group sm:hidden">
-                  <button className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm shadow-sm font-semibold">
-                    ⋯ Mehr
-                  </button>
-                  <div className="absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
-                    <button onClick={handleSelbstauskunft} className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold flex items-center gap-1.5"><ClipboardList size={15} /> Selbstauskunft für die Bank</button>
-                    <button onClick={handleExport} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5"><Upload size={15} /> Daten exportieren</button>
-                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide border-t border-gray-100">Steuerexport (Anlage V)</p>
-                    {[...Array(3)].map((_, i) => {
-                      const year = new Date().getFullYear() - i;
-                      return (
-                        <button key={year} onClick={() => handleSteuerExport(year)} className="w-full text-left px-4 py-3 text-sm text-emerald-700 hover:bg-emerald-50 border-b border-gray-100 last:border-0 flex items-center gap-1.5">
-                          <BarChart3 size={15} /> {year}
-                        </button>
-                      );
-                    })}
-                    <label className="w-full flex items-center gap-1.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    <button onClick={() => { setShowExportDialog(true); setShowToolbarMenu(false); }}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5">
+                      <Upload size={15} /> Exportieren…
+                    </button>
+                    <label className="w-full flex items-center gap-1.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
                       <Download size={15} /> Import
-                      <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                      <input type="file" accept=".json" onChange={(e) => { handleImport(e); setShowToolbarMenu(false); }} className="hidden" />
                     </label>
+                    <button onClick={() => { setShowKalkulation(true); setShowToolbarMenu(false); }}
+                      className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
+                      <Calculator size={15} /> Kalkulation
+                    </button>
                   </div>
-                </div>
-              </>
+                )}
+              </div>
             )}
-            <button
-              onClick={() => setShowKalkulation(true)}
-              className="hidden sm:flex px-3 py-2 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl hover:bg-violet-100 items-center gap-1.5 text-sm shadow-sm transition-colors"
-            >
-              <Calculator size={16} /> Kalkulation
-            </button>
             <button
               onClick={() => canAddImmo ? setShowForm(true) : setShowUpgradeModal(true)}
               className="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
@@ -1437,6 +1428,39 @@ function App() {
             </button>
           </div>
         </div>
+
+        {/* Export-Dialog — Abschnitt 6: Export und Steuer-Export als ein Button
+            mit Auswahl im Dialog, statt zwei getrennter Aktionen. */}
+        {showExportDialog && (
+          <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowExportDialog(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-800 flex items-center gap-1.5"><Upload size={16} /> Exportieren</h3>
+                <button onClick={() => setShowExportDialog(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              </div>
+              <button onClick={() => { handleExport(); setShowExportDialog(false); }}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-left text-sm font-semibold text-gray-700 hover:bg-gray-100 flex items-center gap-2 mb-4">
+                <Upload size={15} /> Alle Daten als JSON
+              </button>
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Steuerexport (Anlage V)</p>
+                <div className="flex items-center gap-2">
+                  <select value={exportSteuerJahr} onChange={(e) => setExportSteuerJahr(Number(e.target.value))}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    {[...Array(6)].map((_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return <option key={year} value={year}>{year}</option>;
+                    })}
+                  </select>
+                  <button onClick={() => { handleSteuerExport(exportSteuerJahr); setShowExportDialog(false); }}
+                    className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 flex items-center gap-1.5 flex-shrink-0">
+                    <BarChart3 size={15} /> Export
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeView === 'portfolio' && (portfolio.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 sm:p-16 text-center shadow-sm border border-gray-200">

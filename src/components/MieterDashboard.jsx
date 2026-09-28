@@ -2,13 +2,13 @@ import { useState } from 'react';
 import {
   Users, AlertTriangle, Home, MapPin, CalendarDays, Mail, Phone,
   TrendingUp, FileText, Pencil, Trash2, DoorOpen, Undo2, CheckCircle2,
-  Banknote,
+  Banknote, Receipt,
 } from 'lucide-react';
 import MieterFormular from './MieterFormular';
 import MieterAuszug from './MieterAuszug';
 import NKAbrechnungListe from './NKAbrechnungListe';
 
-const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate, onMieterhoeungClick, onMietanpassungFuerImmobilie }) => {
+const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate, onMieterhoeungClick, onMietanpassungFuerImmobilie, onMieteingaengeClick }) => {
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [showAuszug, setShowAuszug] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -95,6 +95,22 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
         <div className="space-y-3">
           {anzeigedMieter.map(mieter => {
             const kautionStatus = !mieter.kaution_betrag ? 'keine' : mieter.kaution_bezahlt ? 'bezahlt' : 'offen';
+            // Abschnitt Phase 8f: Frühere-Mieter-Ansicht — Leerstandszeit bis zum
+            // Einzug des Nachfolgers (gleiche Immobilie + gleiches Zimmer, falls
+            // erfasst) bzw. bis heute, wenn noch nicht neu vermietet.
+            let leerstand = null;
+            if (mieter.aktiv === false && mieter.auszugsdatum) {
+              const auszug = new Date(mieter.auszugsdatum);
+              const nachfolger = mieterListe
+                .filter(m => m.id !== mieter.id
+                  && m.immobilie_id === mieter.immobilie_id
+                  && (!mieter.zimmer_bezeichnung || m.zimmer_bezeichnung === mieter.zimmer_bezeichnung)
+                  && m.mietbeginn && new Date(m.mietbeginn) >= auszug)
+                .sort((a, b) => new Date(a.mietbeginn) - new Date(b.mietbeginn))[0];
+              const bis = nachfolger ? new Date(nachfolger.mietbeginn) : new Date();
+              const tage = Math.max(0, Math.round((bis - auszug) / (1000 * 60 * 60 * 24)));
+              leerstand = { tage, nachfolgerName: nachfolger?.name || null, laeuftNoch: !nachfolger };
+            }
             return (
               <div key={mieter.id} className={`bg-white rounded-xl shadow p-4 border-l-4 ${mieter.aktiv === false ? 'border-gray-300 opacity-70' : mieter.mahnstufe > 0 ? 'border-orange-400' : 'border-indigo-400'}`}>
                 <div className="flex flex-wrap justify-between items-start gap-3">
@@ -116,9 +132,34 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                       {mieter.email && <span className="flex items-center gap-1"><Mail size={14} /> {mieter.email}</span>}
                       {mieter.telefon && <span className="flex items-center gap-1"><Phone size={14} /> {mieter.telefon}</span>}
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      {/* Kaution Badge */}
-                      {mieter.kaution_betrag > 0 && (
+                    {/* Frühere-Mieter-Info: Auszugsdatum + Leerstandszeit bis Nachvermietung */}
+                    {mieter.aktiv === false && mieter.auszugsdatum && (
+                      <div className="text-sm text-gray-500 flex flex-wrap gap-3 mt-1">
+                        <span className="flex items-center gap-1"><DoorOpen size={14} /> ausgezogen {new Date(mieter.auszugsdatum).toLocaleDateString('de-DE')}</span>
+                        {leerstand && (
+                          <span className={`flex items-center gap-1 ${leerstand.laeuftNoch && leerstand.tage > 60 ? 'text-red-600 font-semibold' : leerstand.tage > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+                            <CalendarDays size={14} />
+                            {leerstand.tage === 0
+                              ? 'nahtlos nachvermietet'
+                              : leerstand.laeuftNoch
+                                ? `${leerstand.tage} Tage Leerstand (bis heute)`
+                                : `${leerstand.tage} Tage Leerstand → ${leerstand.nachfolgerName}`}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {/* Kautionsabrechnung Badge für frühere Mieter */}
+                      {mieter.aktiv === false && mieter.kaution_betrag > 0 && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${mieter.kaution_zurueck ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-700'}`}>
+                          {mieter.kaution_zurueck
+                            ? <><CheckCircle2 size={12} /> Kautionsabrechnung erledigt{mieter.kaution_abzug > 0 ? ` (${Number(mieter.kaution_abzug).toLocaleString('de-DE')} € Abzug)` : ''}</>
+                            : <><AlertTriangle size={12} /> Kautionsabrechnung offen</>
+                          }
+                        </span>
+                      )}
+                      {/* Kaution Badge (aktive Mieter — für ausgezogene siehe Kautionsabrechnung-Badge oben) */}
+                      {mieter.aktiv !== false && mieter.kaution_betrag > 0 && (
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${
                           mieter.kaution_zurueck ? 'bg-gray-100 text-gray-500' :
                           kautionStatus === 'bezahlt' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -148,6 +189,14 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
                     >
                       <FileText size={14} /> NK {(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length > 0 ? `(${(nkAbrechnungen||[]).filter(a=>a.mieter_id===mieter.id).length})` : ''}
                     </button>
+                    {onMieteingaengeClick && (
+                      <button
+                        onClick={() => onMieteingaengeClick(mieter)}
+                        className="px-3 py-1.5 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 font-semibold flex items-center gap-1"
+                      >
+                        <Receipt size={14} /> Mieteingänge ansehen
+                      </button>
+                    )}
                     {mieter.aktiv !== false && (
                       <button
                         onClick={() => { setSelectedMieter(mieter); setShowAuszug(true); }}

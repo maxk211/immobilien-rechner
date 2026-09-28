@@ -11,7 +11,9 @@ const BausparManager = ({ params, updateParams }) => {
   const addVertrag = () => {
     const neuer = {
       id: Date.now(),
+      bausparkasse: '',
       vertragsnummer: '',
+      bausparsumme: 0,
       aktuellerSparbetrag: 0,
       monatlicheSparrate: 0,
       gesicherterZinssatz: 0,
@@ -70,14 +72,23 @@ const BausparManager = ({ params, updateParams }) => {
                     <div>
                       <input
                         type="text"
-                        value={v.vertragsnummer}
-                        onChange={e => updateVertrag(v.id, 'vertragsnummer', e.target.value)}
-                        placeholder="Vertragsnummer / Bezeichnung"
+                        value={v.bausparkasse || ''}
+                        onChange={e => updateVertrag(v.id, 'bausparkasse', e.target.value)}
+                        placeholder="Bausparkasse (z.B. Schwäbisch Hall)"
                         className="text-base font-bold text-gray-800 border-0 border-b-2 border-dashed border-gray-200 focus:border-indigo-400 outline-none bg-transparent w-64"
                       />
-                      {istZuteilungsreif && (
-                        <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5"><Check size={10} /> Zuteilungsreif</span>
-                      )}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <input
+                          type="text"
+                          value={v.vertragsnummer}
+                          onChange={e => updateVertrag(v.id, 'vertragsnummer', e.target.value)}
+                          placeholder="Vertragsnummer / Bezeichnung"
+                          className="text-xs text-gray-500 border-0 border-b border-dashed border-gray-200 focus:border-indigo-400 outline-none bg-transparent w-48"
+                        />
+                        {istZuteilungsreif && (
+                          <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5"><Check size={10} /> Zuteilungsreif</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <button onClick={() => deleteVertrag(v.id)} className="text-red-400 hover:text-red-600 text-sm font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1">
@@ -87,6 +98,21 @@ const BausparManager = ({ params, updateParams }) => {
 
                 {/* Felder */}
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><Building2 size={12} /> Bausparsumme (Vertragssumme)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={v.bausparsumme || ''}
+                        onChange={e => updateVertrag(v.id, 'bausparsumme', e.target.value)}
+                        placeholder="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-right focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                      />
+                      <span className="text-sm text-gray-400 shrink-0">€</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">Zielsumme aus Spar- + Darlehensanteil</p>
+                  </div>
+
                   <div>
                     <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><Wallet size={12} /> Aktueller Sparbetrag</label>
                     <div className="flex items-center gap-2">

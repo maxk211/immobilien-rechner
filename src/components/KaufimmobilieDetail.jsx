@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 // ─── Dokumente-Tab ────────────────────────────────────────────────────────────
-const DOK_TYPEN = ['Kaufvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
+const DOK_TYPEN = ['Kaufvertrag', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
 
 const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   const [uploading, setUploading] = useState(false);
@@ -1390,7 +1390,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
             const berechnePhase = (phase, startKredit) => {
               const monatszins = (phase.sollzinssatz || 0) / 100 / 12;
-              const typ = phase.darlehensTyp || 'annuitaet';
+              // KfW- und Bauspardarlehen laufen rechnerisch wie ein Annuitätendarlehen
+              // (konstante Rate über die Zinsbindung) — keine eigene, ungeprüfte
+              // Förder-/Bauspar-Zinsformel, um keine falschen Zahlen zu riskieren.
+              const typ = ['kfw', 'bauspardarlehen'].includes(phase.darlehensTyp) ? 'annuitaet' : (phase.darlehensTyp || 'annuitaet');
 
               if (typ === 'annuitaet') {
                 const rate = phase.monatlicherBetrag > 0
@@ -1486,6 +1489,21 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             const deletePhase = (id) => {
               if (finanzierungsphasen.length <= 1) return;
               updateParams({ ...params, finanzierungsphasen: finanzierungsphasen.filter(p => p.id !== id) });
+            };
+            // Weiteres, unabhängiges Darlehen (z.B. separater Modernisierungskredit) —
+            // im Unterschied zur Anschlussfinanzierung wird hier KEINE Restschuld aus der
+            // Vorphase übernommen (restschuldOverride: 0), da es sich um eine eigenständige
+            // Finanzierung handelt. Nutzt dieselbe geprüfte Berechnungslogik wie jede andere Phase.
+            const addWeiteresDarlehen = () => {
+              updateParams({ ...params, finanzierungsphasen: [...finanzierungsphasen, {
+                id: Date.now(), name: `Weiteres Darlehen ${finanzierungsphasen.length}`,
+                darlehensTyp: 'annuitaet',
+                sollzinssatz: 4, anfangstilgung: 2,
+                monatlicherBetrag: null, zinsbindung: 10,
+                monatlicheTilgung: null, tilgungssatz: 2, laufzeit: 10,
+                sondertilgungJaehrlich: 0,
+                restschuldOverride: 0,
+              }] });
             };
 
             return (
@@ -1607,8 +1625,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {/* Finanzierungsphasen */}
                 <div className="space-y-4">
                   {phasenMitBerechnung.map((phase, idx) => {
-                    const typ = phase.darlehensTyp || 'annuitaet';
-                    const typLabels = { annuitaet: 'Annuitätendarlehen', tilgung: 'Tilgungsdarlehen', endfaellig: 'Endfälliges Darlehen' };
+                    // KfW/Bauspardarlehen nutzen für die Eingabefelder und Berechnung
+                    // dieselbe Annuitäten-Logik — siehe Kommentar in berechnePhase().
+                    const typ = ['kfw', 'bauspardarlehen'].includes(phase.darlehensTyp) ? 'annuitaet' : (phase.darlehensTyp || 'annuitaet');
+                    const typLabels = { annuitaet: 'Annuitätendarlehen', tilgung: 'Tilgungsdarlehen', endfaellig: 'Endfälliges Darlehen', kfw: 'KfW-Darlehen', bauspardarlehen: 'Bauspardarlehen' };
                     const pStartDatum = idx === 0
                       ? (phase.kreditStartDatum || params.kaufdatum)
                       : null;
@@ -1678,6 +1698,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               onChange={e => updatePhase(phase.id, { ansprechpartner: e.target.value })}
                               className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white" />
                           </div>
+                          <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-1">
+                            <span className="text-[11px] text-slate-400">Darlehensvertrag als PDF hinterlegen</span>
+                            <button type="button" onClick={() => setActiveTab('dokumente')}
+                              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 flex-shrink-0">
+                              <FileText size={11} /> In Dokumente hochladen →
+                            </button>
+                          </div>
                           <div>
                             <label className="block text-[11px] text-slate-500 mb-0.5">Kontakt (Telefon/E-Mail)</label>
                             <input type="text" value={phase.ansprechpartnerKontakt || ''}
@@ -1688,9 +1715,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         </div>
                       </div>
 
+                      {/* Auszahlungsdatum nur für die erste Phase als editierbares Feld:
+                          spätere Phasen (Anschlussfinanzierungen) werden intern nur
+                          jahresgenau verkettet (aktuellesStartjahr += Laufzeit der
+                          Vorphase), nicht datumsgenau. Ein Auszahlungsdatum-Feld für
+                          Folgephasen anzubieten, ohne dass es in die Berechnung
+                          einfließt, wäre ein totes Feld — potenziell verwirrender als
+                          gar keins. Eine datumsgenaue Verkettung wäre ein größerer,
+                          hier nicht sicher verifizierbarer Umbau der Zins-/Tilgungs-
+                          kette und daher bewusst nicht mit angefasst. */}
                       {idx === 0 && (
                         <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                          <label className="block text-xs font-semibold text-slate-600 mb-1"><CalendarDays size={12} className='inline mr-1'/>Kreditstartdatum <span className="font-normal text-slate-400">(falls abweichend vom Kaufdatum)</span></label>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1"><CalendarDays size={12} className='inline mr-1'/>Auszahlungsdatum <span className="font-normal text-slate-400">(Kreditstart, falls abweichend vom Kaufdatum)</span></label>
                           <div className="flex items-center gap-2">
                             <input type="date" value={phase.kreditStartDatum || ''}
                               placeholder={params.kaufdatum || ''}
@@ -1710,11 +1746,16 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         {Object.entries(typLabels).map(([val, label]) => (
                           <button key={val} type="button"
                             onClick={() => updatePhase(phase.id, { darlehensTyp: val })}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${typ === val ? 'border-indigo-500 bg-blue-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${(phase.darlehensTyp || 'annuitaet') === val ? 'border-indigo-500 bg-blue-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
                             {label}
                           </button>
                         ))}
                       </div>
+                      {(phase.darlehensTyp === 'kfw' || phase.darlehensTyp === 'bauspardarlehen') && (
+                        <p className="text-[11px] text-gray-400 -mt-2 mb-4">
+                          Rechnet wie ein Annuitätendarlehen (konstante Rate) — {phase.darlehensTyp === 'kfw' ? 'für Förderkonditionen im Detail bitte den Darlehensvertrag prüfen.' : 'nach Zuteilung entsprechen die Konditionen dem Bausparvertrag.'}
+                        </p>
+                      )}
 
                       {idx > 0 && (
                         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
@@ -1920,10 +1961,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   })}
                 </div>
 
-                <button onClick={addPhase}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
-                  + Anschlussfinanzierung hinzufügen
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button onClick={addPhase}
+                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
+                    + Anschlussfinanzierung hinzufügen
+                  </button>
+                  <button onClick={addWeiteresDarlehen}
+                    title="Für ein zusätzliches, eigenständiges Darlehen (z.B. separater Modernisierungskredit) — nicht für die Fortführung nach Ablauf der Zinsbindung."
+                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
+                    + Weiteres Darlehen hinzufügen
+                  </button>
+                </div>
 
                 {/* Abschnitt 3.4: Bausparvertrag als eigener Block innerhalb von
                     Finanzierung statt eigenem Subtab — sichtbar bleibt er zusätzlich
@@ -2013,6 +2061,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
                 }}
                 onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
+                onMieteingaengeClick={() => setActiveTab('mieteinnahmen')}
                 onMietanpassungFuerImmobilie={async ({ datum, kaltmiete }) => {
                   // Zieht eine im Mieter-Tab erfasste Mietanpassung in die
                   // Immobilie-level mietAnpassungen nach, damit die Forderung im
