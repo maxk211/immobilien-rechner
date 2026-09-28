@@ -795,7 +795,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             </div>
           </div>
           <div className="text-[10px] text-gray-400 mt-2">
-            Hausgeld, Verwaltung und Instandhaltungsrücklage werden aus den Immobilien-Stammdaten übernommen.
+            Hausgeld an die WEG, Hausverwaltung und Rücklage für Reparaturen werden aus Zahlen · Cashflow übernommen.
           </div>
         </div>
 

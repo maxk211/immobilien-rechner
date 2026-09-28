@@ -1770,6 +1770,7 @@ const MehrfamilienhausDetail = ({
                 setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
               }}
               onMieteingaengeClick={() => setActiveTab('mieteinnahmen')}
+                onNebenkostenClick={() => setActiveTab('nkabrechnung')}
             />
           )}
 

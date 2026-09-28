@@ -119,7 +119,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
     else status = berechneterStatus;
 
     const verspaetet = ausnahmen.some(e => e.ausnahmeTyp === 'verspaetet') ||
-      zahlungen.some(e => new Date(e.datum).getDate() > 5);
+      zahlungen.some(e => new Date(e.datum).getDate() > (params.mieteFaelligkeitstag ?? 3)); // Fälligkeitstag statt fest 5.
 
     return { ...m, monatEingaenge, ausnahmen, zahlungen, summe, status, verspaetet, istZukunft, istVorKauf, erwartetFuerMonat };
   });
@@ -327,12 +327,13 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+          {/* Abschnitt 3.6: Monat, Notiz, Soll, Eingegangen, Status, Aktion */}
           <div className="col-span-2">Monat</div>
+          <div className="col-span-3">Notiz</div>
           <div className="col-span-2 text-right">Soll</div>
           <div className="col-span-2 text-right">Eingegangen</div>
           <div className="col-span-2 text-center">Status</div>
-          <div className="col-span-3">Notiz</div>
-          <div className="col-span-1"></div>
+          <div className="col-span-1 text-right">Aktion</div>
         </div>
 
         {sortierteJahresListe.map((f, idx) => {
@@ -347,6 +348,19 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                   <div className="text-xs text-gray-400">
                     fällig {String(params.mieteFaelligkeitstag ?? 3).padStart(2, '0')}.{String(f.monat).padStart(2, '0')}.{f.jahr}
                   </div>
+                </div>
+                {/* Notiz: bisher nur in der ausgeklappten Detailansicht sichtbar —
+                    jetzt als eigene Spalte direkt in der Monatszeile (Abschnitt 8g). */}
+                <div className="col-span-3 min-w-0">
+                  {(() => {
+                    const notizen = (f.zahlungen || []).map(z => z.notiz).filter(Boolean);
+                    if (notizen.length === 0) return <span className="text-xs text-gray-300">—</span>;
+                    return (
+                      <span className="text-xs text-gray-500 truncate block" title={notizen.join(' · ')}>
+                        {notizen.join(' · ')}
+                      </span>
+                    );
+                  })()}
                 </div>
                 {/* Forderung */}
                 <div className="col-span-2 text-right">
@@ -382,19 +396,6 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                   {f.status === 'dauerauftrag' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600 inline-flex items-center gap-0.5"><Zap size={10} /> Auto</span>}
                   {f.status === 'teilweise' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">~ Teilweise</span>}
                   {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 inline-flex items-center gap-0.5"><X size={10} /> Offen</span>}
-                </div>
-                {/* Notiz: bisher nur in der ausgeklappten Detailansicht sichtbar —
-                    jetzt als eigene Spalte direkt in der Monatszeile (Abschnitt 8g). */}
-                <div className="col-span-3 min-w-0">
-                  {(() => {
-                    const notizen = (f.zahlungen || []).map(z => z.notiz).filter(Boolean);
-                    if (notizen.length === 0) return <span className="text-xs text-gray-300">—</span>;
-                    return (
-                      <span className="text-xs text-gray-500 truncate block" title={notizen.join(' · ')}>
-                        {notizen.join(' · ')}
-                      </span>
-                    );
-                  })()}
                 </div>
                 {/* Actions */}
                 <div className="col-span-1 flex justify-end items-center gap-1">

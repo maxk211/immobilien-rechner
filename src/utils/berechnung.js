@@ -53,7 +53,8 @@ export const schaetzeImmobilienwert = (immobilie) => {
   if (immobilie.garage) preisProQm *= 1.04;
   if (immobilie.keller) preisProQm *= 1.02;
 
-  const geschaetzterWert = Math.round(preisProQm * (immobilie.wohnflaeche || 80));
+  // Ohne Wohnfläche keine Schätzung (vorher: stillschweigend 80 m² angenommen)
+  const geschaetzterWert = Math.round(preisProQm * (Number(immobilie.wohnflaeche) || 0));
 
   // Konfidenzbereich basierend auf Genauigkeit
   let konfidenz = 0.15;

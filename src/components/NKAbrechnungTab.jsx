@@ -84,7 +84,7 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
   // — das deckt sowohl komplett fehlend als auch vorhanden-aber-noch-nicht-
   // verschickt (offen/in Arbeit) ab, nicht nur den Fall "gar kein Datensatz".
   const letztesJahr = aktuellesJahr - 1;
-  const vorjahresAbrechnung = nkAbrechnungen.find(a => a.typ === 'nk_abrechnung_detail' && a.abrechnungsjahr === letztesJahr);
+  const vorjahresAbrechnung = nkAbrechnungen.find(a => a.typ === 'nk_abrechnung_detail' && parseInt(a.abrechnungsjahr) === letztesJahr);
   const vorjahresAbrechnungOffen = aktiveMieter.length > 0 &&
     (!vorjahresAbrechnung || (vorjahresAbrechnung.status || 'offen') !== 'verschickt');
   const nachFristStichtag = new Date() > new Date(aktuellesJahr, 9, 1); // 1. Oktober
@@ -132,9 +132,12 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
             <div className="font-semibold">NK-Abrechnung {letztesJahr} steht noch aus</div>
             <div className="mt-0.5 text-xs opacity-90">
               {!vorjahresAbrechnung
+                // Gesetzliche Frist § 556 Abs. 3 BGB: Zugang beim Mieter bis 12 Monate
+                // nach Ende des Abrechnungszeitraums (Kalenderjahr → 31.12. Folgejahr).
+                // Der 1. Oktober ist nur der Erinnerungs-Stichtag aus dem Konzept.
                 ? (nachFristStichtag
-                    ? `Die übliche Frist (1. Oktober) ist bereits verstrichen — die Abrechnung sollte zeitnah erstellt werden.`
-                    : `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Übliche Frist: 1. Oktober ${aktuellesJahr}.`)
+                    ? `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Die gesetzliche Frist endet am 31.12.${aktuellesJahr} — danach sind Nachforderungen in der Regel ausgeschlossen.`
+                    : `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Gesetzliche Frist: 31.12.${aktuellesJahr}.`)
                 : `Für ${letztesJahr} liegt bereits eine Abrechnung vor, sie wurde aber noch nicht verschickt (Status: ${vorjahresAbrechnung.status === 'in_arbeit' ? 'In Arbeit' : 'Offen'}).`}
             </div>
           </div>
