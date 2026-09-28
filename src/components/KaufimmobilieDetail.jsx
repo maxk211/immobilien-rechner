@@ -220,8 +220,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     laufzeit: immobilie.laufzeit ?? 25,
     kaltmiete: immobilie.kaltmiete,
     nebenkosten: immobilie.nebenkosten ?? 0,
-    instandhaltung: immobilie.instandhaltung ?? 100,
-    verwaltung: immobilie.verwaltung ?? 30,
+    // Kein geschätzter Standardwert mehr — vorher wurden hier 100€/30€
+    // "blanko" (also ohne dass der Nutzer sie je eingegeben hat) als
+    // Instandhaltung/Verwaltung hinterlegt. Fehlt ein Wert, ist er jetzt
+    // schlicht 0 — genau wie bei Hausgeld, Strom, Internet, Nebenkosten.
+    instandhaltung: immobilie.instandhaltung ?? 0,
+    verwaltung: immobilie.verwaltung ?? 0,
     hausgeld: immobilie.hausgeld ?? 0,
     strom: immobilie.strom ?? 0,
     internet: immobilie.internet ?? 0,
