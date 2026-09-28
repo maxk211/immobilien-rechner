@@ -354,6 +354,8 @@ export async function saveMieter(mieter) {
     mietbeginn: mieter.mietbeginn || null,
     mietende: mieter.mietende || null,
     kaltmiete: mieter.kaltmiete || null,
+    nk_vorauszahlung: mieter.nkVorauszahlung || null,
+    gesamtueberweisung: mieter.gesamtueberweisung || null,
     kaution_betrag: mieter.kautionBetrag || null,
     kaution_bezahlt: mieter.kautionBezahlt || false,
     kaution_bezahlt_am: mieter.kautionBezahltAm || null,

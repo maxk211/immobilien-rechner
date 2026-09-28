@@ -35,6 +35,8 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
     mietbeginn: mieter?.mietbeginn || '',
     mietende: mieter?.mietende || '',
     kaltmiete: mieter?.kaltmiete || '',
+    nkVorauszahlung: mieter?.nk_vorauszahlung ?? mieter?.nkVorauszahlung ?? '',
+    gesamtueberweisung: mieter?.gesamtueberweisung || '',
     kautionBetrag: mieter?.kaution_betrag || '',
     kautionBezahlt: mieter?.kaution_bezahlt || false,
     kautionBezahltAm: mieter?.kaution_bezahlt_am || '',
@@ -400,6 +402,22 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                       <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-3 text-center text-xs text-gray-400">
                         €/m² erscheint wenn Kaltmiete + Fläche bekannt
                       </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Nebenkosten-Vorauszahlung (€/Mon.)</label>
+                    <input type="number" value={form.nkVorauszahlung}
+                      onChange={e => setForm({...form, nkVorauszahlung: parseFloat(e.target.value) || ''})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">Gesamtüberweisung (€/Mon.) <InfoHint text="Der Betrag, den der Mieter tatsächlich monatlich überweist — üblicherweise Kaltmiete + NK-Vorauszahlung. Zum Abgleich mit dem Kontoauszug." /></label>
+                    <input type="number" value={form.gesamtueberweisung}
+                      onChange={e => setForm({...form, gesamtueberweisung: parseFloat(e.target.value) || ''})}
+                      placeholder={(kaltmieteNum + (parseFloat(form.nkVorauszahlung) || 0)) > 0 ? String(kaltmieteNum + (parseFloat(form.nkVorauszahlung) || 0)) : '0'}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
+                    {!form.gesamtueberweisung && (kaltmieteNum > 0 || parseFloat(form.nkVorauszahlung) > 0) && (
+                      <p className="text-[11px] text-gray-400 mt-1">Standard: Kaltmiete + NK-Vorauszahlung = {formatCurrency(kaltmieteNum + (parseFloat(form.nkVorauszahlung) || 0))}</p>
                     )}
                   </div>
                 </div>

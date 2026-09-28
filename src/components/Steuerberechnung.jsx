@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ClipboardList, Landmark, Hammer, Building2, BarChart3, Wrench, RefreshCw, Package, AlertTriangle, ShieldCheck, Lightbulb, TrendingDown, TrendingUp, Car, Download, X } from 'lucide-react';
-import { getXLSX } from '../utils/lazyLibs.js';
+import { getXLSX, getJsPDF } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
 import { getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
@@ -359,6 +359,99 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     XLSX.writeFile(wb, `Anlage_V_${immoName.replace(/[^a-z0-9]/gi, '_')}_${selectedJahr}.xlsx`);
   };
 
+  // ── Anlage V PDF-Export (ausgewähltes Jahr) ───────────────────────────────
+  // Nutzt dieselbe Datengrundlage wie der Excel-Export (selectedDaten), nur als
+  // druckfertiges PDF-Formular — analog zum bestehenden Mieterschreiben-PDF
+  // (gleiche jsPDF+autoTable-Pipeline, kein neuer Berechnungscode).
+  const exportAnlageVPdf = async () => {
+    if (!selectedDaten) return;
+    const jsPDF = await getJsPDF();
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const d = selectedDaten;
+    const immoName = params.name || params.adresse || 'Immobilie';
+
+    pdf.setFontSize(16);
+    pdf.setTextColor(30, 41, 59);
+    pdf.text('Anlage V — Einkünfte aus Vermietung und Verpachtung', 105, 18, { align: 'center' });
+    pdf.setFontSize(11);
+    pdf.setTextColor(80, 80, 80);
+    pdf.text(`${immoName} · Steuerjahr ${selectedJahr}`, 105, 25, { align: 'center' });
+    pdf.setFontSize(8);
+    pdf.setTextColor(140, 140, 140);
+    pdf.text(`Erstellt am ${new Date().toLocaleDateString('de-DE')} · vereinfachte Berechnung, ersetzt keine Steuerberatung`, 105, 31, { align: 'center' });
+
+    pdf.autoTable({
+      startY: 38,
+      head: [['A. Einnahmen', 'Zeile', 'Betrag']],
+      body: [
+        ['Mieteinnahmen (Kaltmiete)', 'Z. 4–5', `${formatCurrency(a(d.einnahmen))}`],
+        ...(d.nkEinnahmen > 0 ? [['Nebenkosten vom Mieter', 'Z. 6', `${formatCurrency(a(d.nkEinnahmen))}`]] : []),
+      ],
+      foot: [['Summe Einnahmen', '', formatCurrency(a(d.gesamtEinnahmen))]],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [21, 128, 61] },
+      footStyles: { fillColor: [220, 252, 231], textColor: [22, 101, 52], fontStyle: 'bold' },
+      columnStyles: { 2: { halign: 'right' } },
+      margin: { left: 14, right: 14 },
+    });
+
+    const werbungskostenRows = [
+      ['Schuldzinsen', 'Z. 9', d.zinsen],
+      [`AfA Gebäude (${d.gueltigerAfaSatz}%)`, 'Z. 13', d.afa],
+      ...(d.investitionenSofort > 0 ? [['Erhaltungsaufwand (einmalig)', 'Z. 33', d.investitionenSofort]] : []),
+      ...(d.instandhaltung > 0 ? [['Erhaltungsaufwand (laufend)', 'Z. 33', d.instandhaltung]] : []),
+      ...(d.grundsteuer > 0 ? [['Grundsteuer', 'Z. 34', d.grundsteuer]] : []),
+      ...(d.versicherung > 0 ? [['Versicherungen', 'Z. 35', d.versicherung]] : []),
+      ...(d.hausgeld > 0 ? [['Hausgeld / WEG', 'Z. 36', d.hausgeld]] : []),
+      ...(d.verwaltung > 0 ? [['Verwaltungskosten', 'Z. 37', d.verwaltung]] : []),
+      ...(d.fahrtkosten > 0 ? [['Fahrtkosten (§ 9 Abs. 1)', 'Z. 40', d.fahrtkosten]] : []),
+      ...(d.nebenkosten > 0 ? [['Sonstige Betriebskosten', 'Z. 50', d.nebenkosten]] : []),
+    ].map(([label, zeile, betrag]) => [label, zeile, formatCurrency(a(betrag))]);
+
+    pdf.autoTable({
+      startY: pdf.lastAutoTable.finalY + 8,
+      head: [['B. Werbungskosten', 'Zeile', 'Betrag']],
+      body: werbungskostenRows,
+      foot: [['Summe Werbungskosten', 'Z. 53', formatCurrency(a(d.absetzbareKosten))]],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [185, 28, 28] },
+      footStyles: { fillColor: [254, 226, 226], textColor: [153, 27, 27], fontStyle: 'bold' },
+      columnStyles: { 2: { halign: 'right' } },
+      margin: { left: 14, right: 14 },
+    });
+
+    pdf.autoTable({
+      startY: pdf.lastAutoTable.finalY + 8,
+      head: [['C. Ergebnis', 'Zeile', 'Betrag']],
+      body: [
+        [d.zuVersteuern < 0 ? 'Verlust aus V+V' : 'Überschuss aus V+V', 'Z. 54', formatCurrency(Math.abs(a(d.zuVersteuern)))],
+        [`Steuereffekt bei ${steuersatz}% Steuersatz`, 'Info', `${d.steuerEffekt > 0 ? '−' : '+'}${formatCurrency(Math.abs(a(d.steuerEffekt)))}`],
+      ],
+      styles: { fontSize: 9, fontStyle: 'bold' },
+      headStyles: { fillColor: [30, 41, 59] },
+      columnStyles: { 2: { halign: 'right' } },
+      margin: { left: 14, right: 14 },
+    });
+
+    if (fahrtenSelectedJahr.length > 0) {
+      pdf.autoTable({
+        startY: pdf.lastAutoTable.finalY + 8,
+        head: [['D. Fahrtennachweis', 'km', 'Betrag']],
+        body: fahrtenSelectedJahr.map(f => [
+          `${new Date(f.datum).toLocaleDateString('de-DE')} – ${f.grund || 'Ohne Grund'}`,
+          `${f.km * 2} km`,
+          formatCurrency(f.km * 2 * kmPauschale),
+        ]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [79, 70, 229] },
+        columnStyles: { 2: { halign: 'right' } },
+        margin: { left: 14, right: 14 },
+      });
+    }
+
+    pdf.save(`Anlage_V_${immoName.replace(/[^a-z0-9]/gi, '_')}_${selectedJahr}.pdf`);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header mit Jahresauswahl */}
@@ -417,6 +510,40 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
       </div>
 
+      {/* Abschnitt 8e: 3 Kopf-Karten — schneller Überblick vor dem Detail-Formular.
+          Reine Anzeige derselben selectedDaten-Werte, keine neue Berechnung. */}
+      {selectedDaten && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className={`rounded-2xl border p-4 ${selectedDaten.zuVersteuern < 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'}`}>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Einkünfte aus Vermietung</div>
+            <div className={`text-xl font-black ${selectedDaten.zuVersteuern < 0 ? 'text-emerald-700' : 'text-gray-800'}`}>
+              {selectedDaten.zuVersteuern < 0 ? '−' : '+'}{formatCurrency(Math.abs(a(selectedDaten.zuVersteuern)))}
+            </div>
+            <div className="text-[11px] text-gray-400 mt-0.5">{selectedDaten.zuVersteuern < 0 ? 'Verlust (Z. 54)' : 'Überschuss (Z. 54)'} · {selectedJahr}</div>
+          </div>
+          <div className={`rounded-2xl border p-4 ${selectedDaten.steuerEffekt > 0 ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Wirkung auf die Steuer</div>
+            <div className={`text-xl font-black ${selectedDaten.steuerEffekt > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+              {selectedDaten.steuerEffekt > 0 ? '−' : '+'}{formatCurrency(Math.abs(a(selectedDaten.steuerEffekt)))}
+            </div>
+            <div className="text-[11px] text-gray-400 mt-0.5">bei {steuersatz}% Steuersatz</div>
+          </div>
+          <div className="rounded-2xl border bg-white border-gray-200 p-4">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Exporte</div>
+            <div className="flex flex-col gap-1.5">
+              <button onClick={exportAnlageV}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all">
+                <Download size={12} /> Excel
+              </button>
+              <button onClick={exportAnlageVPdf}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-lg transition-all">
+                <Download size={12} /> PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Anlage V Formular-Ansicht ─────────────────────────────────────── */}
       {selectedDaten && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -426,12 +553,20 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               <div className="font-bold text-sm flex items-center gap-1"><ClipboardList size={14}/> Anlage V — Einkünfte aus Vermietung und Verpachtung</div>
               <div className="text-slate-400 text-xs mt-0.5">Steuerjahr {selectedJahr} · §21 EStG</div>
             </div>
-            <button
-              onClick={exportAnlageV}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all"
-            >
-              <Download size={13} className="inline mr-1"/> Excel-Export
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={exportAnlageV}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all"
+              >
+                <Download size={13} className="inline mr-1"/> Excel-Export
+              </button>
+              <button
+                onClick={exportAnlageVPdf}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white text-xs font-bold rounded-lg transition-all"
+              >
+                <Download size={13} className="inline mr-1"/> PDF-Export
+              </button>
+            </div>
           </div>
 
           {isGbR && (
@@ -623,7 +758,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Einstellungen für diese Berechnung</h3>
       </div>
 
-      {/* Steuersatz + weitere Werbungskosten */}
+      {/* Phase 8e: die früher 3 separaten Karten (Steuersatz/Werbungskosten,
+          AfA-Einstellungen, Fahrtkosten) sind hier zu EINER Karte mit internen,
+          durch Trennlinien abgesetzten Abschnitten zusammengeführt. */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="mb-4">
           <label className="block text-sm text-gray-600 mb-1">Persönlicher Steuersatz</label>
@@ -661,10 +798,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             Hausgeld, Verwaltung und Instandhaltungsrücklage werden aus den Immobilien-Stammdaten übernommen.
           </div>
         </div>
-      </div>
 
-      {/* AfA Einstellungen */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        {/* AfA Einstellungen */}
+        <div className="border-t border-gray-100 pt-4 mt-4">
         <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-1"><TrendingDown size={14}/> AfA-Einstellungen <InfoHint text="AfA = Absetzung für Abnutzung. Der jährliche Wertverlust des Gebäudes (nicht des Grundstücks), den du steuerlich als Kosten geltend machen kannst — ein reiner Recheneffekt, kein tatsächlicher Geldabfluss." /></h4>
 
         {/* Gebäudeanteil */}
@@ -959,10 +1095,10 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             : <><Lightbulb size={12} className="inline mr-1"/><strong>AfA ist ein Recheneffekt, kein Geldabfluss.</strong> Standard: 2% (50 J.) | vor 1925: 2,5% (40 J.) | nach 2022: 3% (33 J.){afaAnpassungen.length > 0 && <span className="block mt-0.5 text-violet-700">Bei Restnutzungsdauergutachten: RND eingeben → AfA-Satz wird automatisch berechnet (100 ÷ RND).</span>}</>
           }
         </div>
-      </div>
+        </div>
 
-      {/* Fahrtkosten */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        {/* Fahrtkosten */}
+        <div className="border-t border-gray-100 pt-4 mt-4">
         <div className="flex justify-between items-center mb-3">
           <h4 className="font-semibold text-gray-800 flex items-center gap-1"><Car size={14}/> Fahrtkosten {selectedJahr}</h4>
           <div className="flex bg-gray-100 rounded-lg p-1">
@@ -1065,6 +1201,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Hinweise */}

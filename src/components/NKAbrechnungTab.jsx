@@ -25,17 +25,26 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
   const nkVomMieter = params.nebenkostenVomMieter || 0;
   const vorauszahlungenGesamt = nkVomMieter * 12;
 
+  // Speichert nur — schließt den Assistenten NICHT. Der 4-Schritte-Ablauf
+  // (Zeitraum → Kosten → Ergebnis → Mieterschreiben) speichert beim Übergang
+  // von "Ergebnis prüfen" zu "Mieterschreiben erstellen" und bleibt offen,
+  // damit Schritt 4 direkt im Anschluss nutzbar ist. Schließen passiert erst
+  // über onCancel ("Abbrechen" oder "Fertig" in Schritt 4).
   const saveAbrechnung = (abrechnung) => {
     let updated;
+    let gespeichert;
     if (abrechnung.id && nkAbrechnungen.find(a => a.id === abrechnung.id)) {
+      gespeichert = abrechnung;
       updated = nkAbrechnungen.map(a => a.id === abrechnung.id ? abrechnung : a);
     } else {
-      updated = [...nkAbrechnungen, { ...abrechnung, id: Date.now(), typ: 'nk_abrechnung_detail', erstellt: new Date().toISOString(), status: abrechnung.status || 'offen' }];
+      gespeichert = { ...abrechnung, id: Date.now(), typ: 'nk_abrechnung_detail', erstellt: new Date().toISOString(), status: abrechnung.status || 'offen' };
+      updated = [...nkAbrechnungen, gespeichert];
     }
     updateParams({ ...params, nkAbrechnungen: updated });
-    setShowForm(false);
-    setEditAbrechnung(null);
+    return gespeichert; // Assistent braucht die (neu vergebene) id für den nächsten Schritt
   };
+
+  const schliesseForm = () => { setShowForm(false); setEditAbrechnung(null); };
 
   const deleteAbrechnung = (id) => {
     updateParams({ ...params, nkAbrechnungen: nkAbrechnungen.filter(a => a.id !== id) });
@@ -71,10 +80,13 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
     status: 'offen',
   };
 
-  // Abschnitt 3.8: Fristhinweis oben, wenn die Abrechnung des Vorjahres fehlt.
+  // Abschnitt 3.8: Fristhinweis oben, wenn die Abrechnung des Vorjahres "offen ist"
+  // — das deckt sowohl komplett fehlend als auch vorhanden-aber-noch-nicht-
+  // verschickt (offen/in Arbeit) ab, nicht nur den Fall "gar kein Datensatz".
   const letztesJahr = aktuellesJahr - 1;
-  const vorjahresAbrechnungFehlt = aktiveMieter.length > 0 &&
-    !nkAbrechnungen.some(a => a.typ === 'nk_abrechnung_detail' && a.abrechnungsjahr === letztesJahr);
+  const vorjahresAbrechnung = nkAbrechnungen.find(a => a.typ === 'nk_abrechnung_detail' && a.abrechnungsjahr === letztesJahr);
+  const vorjahresAbrechnungOffen = aktiveMieter.length > 0 &&
+    (!vorjahresAbrechnung || (vorjahresAbrechnung.status || 'offen') !== 'verschickt');
   const nachFristStichtag = new Date() > new Date(aktuellesJahr, 9, 1); // 1. Oktober
 
   const jahre = [];
@@ -83,7 +95,7 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
 
   if (showForm) {
     const abr = editAbrechnung || neueAbrechnung;
-    return <NKAbrechnungForm abrechnung={abr} onSave={saveAbrechnung} onCancel={() => { setShowForm(false); setEditAbrechnung(null); }} mieterListe={mieterListe} />;
+    return <NKAbrechnungForm abrechnung={abr} onSave={saveAbrechnung} onCancel={schliesseForm} mieterListe={mieterListe} immobilie={immobilie} />;
   }
 
   return (
@@ -111,16 +123,19 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
         </div>
       </div>
 
-      {/* Fristhinweis: Abrechnung des Vorjahres fehlt */}
-      {vorjahresAbrechnungFehlt && (
+      {/* Fristhinweis: Abrechnung des Vorjahres ist offen — fehlt komplett ODER
+          existiert bereits, ist aber noch nicht verschickt (offen/in Arbeit). */}
+      {vorjahresAbrechnungOffen && (
         <div className={`rounded-2xl p-4 text-sm border flex items-start gap-2 ${nachFristStichtag ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
           <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
           <div>
             <div className="font-semibold">NK-Abrechnung {letztesJahr} steht noch aus</div>
             <div className="mt-0.5 text-xs opacity-90">
-              {nachFristStichtag
-                ? `Die übliche Frist (1. Oktober) ist bereits verstrichen — die Abrechnung sollte zeitnah erstellt werden.`
-                : `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Übliche Frist: 1. Oktober ${aktuellesJahr}.`}
+              {!vorjahresAbrechnung
+                ? (nachFristStichtag
+                    ? `Die übliche Frist (1. Oktober) ist bereits verstrichen — die Abrechnung sollte zeitnah erstellt werden.`
+                    : `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Übliche Frist: 1. Oktober ${aktuellesJahr}.`)
+                : `Für ${letztesJahr} liegt bereits eine Abrechnung vor, sie wurde aber noch nicht verschickt (Status: ${vorjahresAbrechnung.status === 'in_arbeit' ? 'In Arbeit' : 'Offen'}).`}
             </div>
           </div>
         </div>

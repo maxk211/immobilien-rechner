@@ -127,7 +127,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             <div className="divide-y divide-gray-100 px-4">
               {[
                 { label: (params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete (Basis)' : 'Kaltmiete (Basis)', key: 'kaltmiete', unit: '€', step: 25, hint: 'Monatliche Grundmiete' },
-                ...((params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? [{ label: 'Nebenkosten-Vorauszahlung (Mieter)', key: 'nebenkostenVomMieter', unit: '€', step: 10, hint: 'Monatliche Nebenkosten-Vorauszahlung' }] : []),
+                ...((params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? [{ label: 'Nebenkosten-Vorauszahlung', key: 'nebenkostenVomMieter', unit: '€', step: 10, hint: 'Monatliche Nebenkosten-Vorauszahlung' }] : []),
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between py-2.5">
                   <div>
@@ -450,7 +450,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       </div>
                       {(params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' && (
                         <div className="flex items-center justify-between bg-green-50 p-2 rounded">
-                          <label className="text-sm text-gray-700">Nebenkosten-Vorauszahlung Mieter</label>
+                          <label className="text-sm text-gray-700">Nebenkosten-Vorauszahlung</label>
                           <div className="flex items-center gap-1">
                             <input
                               type="number"

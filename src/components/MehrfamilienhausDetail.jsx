@@ -382,7 +382,7 @@ const MehrfamilienhausDetail = ({
   // ── Tab-Gruppen ─────────────────────────────────────────────────────────────
   const GRUPPEN = [
     { id: 'wohnungen',  icon: <Building2 size={13}/>, label: 'Wohnungen', first: 'wohnungen', subs: null },
-    { id: 'uebersicht', icon: <BarChart3 size={13}/>,  label: 'Übersicht', first: 'uebersicht', subs: null },
+    { id: 'uebersicht', icon: <BarChart3 size={13}/>,  label: 'Cockpit', first: 'uebersicht', subs: null },
     { id: 'finanzen',   icon: <Wallet size={13}/>,     label: 'Finanzen',  first: 'cashflow',
       subs: [
         { id: 'cashflow',     label: 'Cashflow' },
@@ -1769,6 +1769,7 @@ const MehrfamilienhausDetail = ({
                 await onSave({ ...updated, wohnungen });
                 setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
               }}
+              onMieteingaengeClick={() => setActiveTab('mieteinnahmen')}
             />
           )}
 

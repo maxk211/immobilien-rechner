@@ -101,28 +101,35 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     }
   });
 
-  // ── 3. NK-Abrechnung fehlt (ab März für das Vorjahr) ─────────────────────
-  if (heute.getMonth() >= 2) { // März = Index 2
+  // ── 3. Nebenkostenabrechnung fehlt (PDF Abschnitt 5): Vorjahr ohne
+  // Abrechnung UND heute nach dem 1. Oktober → gelb. Einstufig, kein Rot.
+  // Korrektur (Gegencheck): vorher wurden März/Juni-Schwellen benutzt und
+  // gegen das globale, DB-gestützte Shape-B-nkAbrechnungen-Array geprüft
+  // (Felder immobilie_id/immobilieName, die dort gar nicht existieren) —
+  // die eigentlichen Abrechnungen liegen aber pro Objekt in
+  // immo.nkAbrechnungen (Shape A, siehe NKAbrechnungTab.jsx). Der Parameter
+  // nkAbrechnungen (global) wird hier bewusst nicht mehr verwendet.
+  const nachNKFrist = heute > new Date(aktuellesJahr, 9, 1); // 1. Oktober
+  if (nachNKFrist) {
     portfolio.forEach(immo => {
       if (immo.immobilienTyp === 'mietimmobilie') return;
       const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
       if (aktiveMieter.length === 0) return;
 
-      const hatAbrechnung = (nkAbrechnungen || []).some(nk =>
-        (nk.immobilie_id === immo.id || nk.immobilieName === (immo.name || immo.adresse)) &&
-        parseInt(nk.abrechnungsjahr) === letztesJahr
+      const hatAbrechnung = (immo.nkAbrechnungen || []).some(nk =>
+        nk.typ === 'nk_abrechnung_detail' && parseInt(nk.abrechnungsjahr) === letztesJahr
       );
 
       if (!hatAbrechnung) {
         todos.push({
           id: `nk-abrechnung-${immo.id}`,
-          priority: heute.getMonth() >= 5 ? 'rot' : 'gelb', // Ab Juni rot
+          priority: 'gelb',
           icon: <ClipboardList size={16} />,
           kategorie: 'Steuer',
           titel: `NK-Abrechnung ${letztesJahr} noch ausstehend`,
           sub: immo.name || immo.adresse || 'Immobilie',
           immoId: immo.id,
-          badge: heute.getMonth() >= 5 ? 'Überfällig' : 'Offen',
+          badge: 'Offen',
           targetTab: 'nkabrechnung',
         });
       }
