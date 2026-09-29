@@ -79,6 +79,16 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
         </div>
       </div>
 
+      {/* Teil 3, 9: Der Abschluss-Dialog wird automatisch vorgeschlagen, sobald die Zinsbindung ausläuft */}
+      {!abbezahlt && aktivIstLetzte && aktiv.ende && monateBisZb != null && monateBisZb < 1 && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-sm text-red-800">
+            <strong>Die Zinsbindung {monateBisZb < 0 ? `ist am ${ttmmjjjj(aktiv.ende)} ausgelaufen` : `läuft am ${ttmmjjjj(aktiv.ende)} aus`}.</strong> Wie geht es mit dem Darlehen weiter — abbezahlt oder Anschlussfinanzierung?
+          </div>
+          <button onClick={() => setAbschlussIdx(aktiv.idx)} className="px-3 py-2 text-sm font-bold rounded-xl bg-gray-900 text-white hover:bg-gray-700 shrink-0">Jetzt festlegen</button>
+        </div>
+      )}
+
       {/* Phasen-Zeitstrahl — nur bei mehreren Phasen */}
       {v.phasen.length > 1 && (
         <div className="bg-white border border-gray-200 rounded-2xl p-4">

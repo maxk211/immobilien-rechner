@@ -746,8 +746,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             const schuldenfreiCaText = verlaufCockpit?.abbezahltHeute ? 'bereits' : verlaufCockpit?.schuldenfrei ? `ca. ${verlaufCockpit.schuldenfrei.getFullYear()}` : (jaehrlicheTilgung > 0 && rsHeuteCockpit > 0)
               ? `ca. ${jahrCockpit + Math.round(rsHeuteCockpit / jaehrlicheTilgung)}`
               : null;
-            const tilgungsfortschrittProzent = (ergebnis.fremdkapital || 0) > 0
-              ? Math.max(0, Math.min(100, 100 - (rsHeuteCockpit / ergebnis.fremdkapital) * 100))
+            const darlehenAnfang = verlaufCockpit ? verlaufCockpit.fk : (ergebnis.fremdkapital || 0);
+            const tilgungsfortschrittProzent = darlehenAnfang > 0
+              ? Math.max(0, Math.min(100, 100 - (rsHeuteCockpit / darlehenAnfang) * 100))
               : 0;
 
             const nettoEK = aktuellerWert - rsHeuteCockpit;
@@ -795,13 +796,24 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Mieteingänge {jahrCockpit}</p>
                     <button onClick={() => setActiveTab('mieteinnahmen')} className="text-xs font-semibold text-indigo-600 hover:underline">Alle ansehen →</button>
                   </div>
+                  {(() => {
+                    const bisMonat = heute.getMonth() + 1;
+                    const abMonat = jahrCockpit === kaufjahrCockpit ? kaufmonatCockpit : 1;
+                    let ein = 0, soll = 0;
+                    for (let m = abMonat; m <= bisMonat; m++) {
+                      const st = berechneMietStatusFuerMonat(params.mietEingaenge, jahrCockpit, m, erwarteterMietBetrag, params.dauerauftrag);
+                      soll += erwarteterMietBetrag;
+                      ein += st.status === 'dauerauftrag' ? erwarteterMietBetrag : st.summe;
+                    }
+                    return <p className="text-xs text-gray-500 -mt-2 mb-2">{formatCurrency(ein)} von {formatCurrency(soll)} eingegangen</p>;
+                  })()}
                   <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
                     {MONATSNAMEN.map((name, idx) => {
                       const monatNr = idx + 1;
                       const istVorKauf = jahrCockpit === kaufjahrCockpit && monatNr < kaufmonatCockpit;
                       const istZukunft = monatNr > (heute.getMonth() + 1);
                       if (istVorKauf || istZukunft) {
-                        return <div key={monatNr} className="rounded-lg border border-dashed border-gray-200 py-2 text-center text-[10px] text-gray-300">{name}</div>;
+                        return <div key={monatNr} className="rounded-lg border border-dashed border-gray-200 py-1.5 text-center text-[10px] text-gray-300">{name}{istZukunft && !istVorKauf && <div className="text-[9px]">{formatCurrency(erwarteterMietBetrag)}</div>}</div>;
                       }
                       const statusMonat = berechneMietStatusFuerMonat(params.mietEingaenge, jahrCockpit, monatNr, erwarteterMietBetrag, params.dauerauftrag).status;
                       const istOk = statusMonat === 'bezahlt' || statusMonat === 'dauerauftrag';
@@ -819,6 +831,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       );
                     })}
                   </div>
+                  <p className="text-[10px] text-gray-400 mt-2">Monat anklicken = abhaken. Dauerauftrag hinterlegt? Dann hakt renditly automatisch ab.</p>
                 </div>
               )}
 
@@ -918,6 +931,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
                           <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${tilgungsfortschrittProzent}%` }} />
                         </div>
+                        {darlehenAnfang > 0 && <div className="text-[10px] text-gray-400 mt-0.5">{formatCurrency(Math.max(0, darlehenAnfang - rsHeuteCockpit))} von {formatCurrency(darlehenAnfang)} getilgt</div>}
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div><span className="text-[10px] text-gray-400 block">Zins</span><span className="font-semibold">{(ergebnis.effZinssatz || 0).toFixed(2)} %</span></div>
