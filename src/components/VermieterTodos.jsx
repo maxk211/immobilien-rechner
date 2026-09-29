@@ -7,6 +7,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
 import { darlehensVerlauf } from '../utils/darlehen.js';
+import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
 
 // Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
 // "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
@@ -453,6 +454,25 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   }
 
   // Sortieren: rot → gelb → grau
+  // ── Plausibilitätsprüfung (Teil 3, Abschnitt 8): "X Zahlen prüfen" ab 1 Widerspruch
+  // oder mehr als 2 gelben Hinweisen. Nur Kaufimmobilien.
+  portfolio.forEach(immo => {
+    const hinweise = pruefeImmobilie(immo, { portfolio, mieter: mieterListe, heute });
+    if (!brauchtErinnerung(hinweise)) return;
+    const z = zaehle(hinweise);
+    todos.push({
+      id: `plausi-${immo.id}`,
+      priority: z.rot > 0 ? 'rot' : 'gelb',
+      icon: <AlertTriangle size={16} />,
+      kategorie: 'Daten',
+      titel: `${z.rot + z.gelb} Zahlen prüfen${z.rot > 0 ? ` · ${z.rot} ${z.rot === 1 ? 'Widerspruch' : 'Widersprüche'}` : ''}`,
+      sub: immo.name || immo.adresse || 'Immobilie',
+      immoId: immo.id,
+      badge: 'Prüfen',
+      targetTab: 'pruefen',
+    });
+  });
+
   return todos.sort((a, b) => PRIORITAET[a.priority] - PRIORITAET[b.priority]);
 }
 
@@ -466,6 +486,7 @@ const LS_AKTIV_KEY = 'vermieter-todos-aktiv';
 
 // Genau eine Aktion pro Erinnerung (Abschnitt 5), beschriftet nach Ziel-Route
 const AKTION_LABEL = {
+  pruefen: 'Zahlen prüfen',
   mieteinnahmen: 'Miete buchen',
   finanzierung: 'Konditionen prüfen',
   nkabrechnung: 'Abrechnen',
@@ -500,7 +521,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
     [portfolio, mieterListe, nkAbrechnungen, aktiv]
   );
 
-  const KATEGORIEN = ['Miete', 'Finanzierung', 'Mieter', 'Steuer'];
+  const KATEGORIEN = ['Miete', 'Finanzierung', 'Mieter', 'Steuer', 'Daten'];
   const gefilterteTodos = kategorieFilter === 'alle' ? todos : todos.filter(t => t.kategorie === kategorieFilter);
 
   const anzahlRot = todos.filter(t => t.priority === 'rot').length;

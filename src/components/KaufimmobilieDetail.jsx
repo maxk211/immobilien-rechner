@@ -5,6 +5,8 @@ import { getAktuelleMiete, getAktuellerWert, berechneMietStatusFuerMonat } from 
 import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur, berechneMtlCashflow } from '../utils/berechnung.js';
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import FinanzierungsReiter from './FinanzierungsReiter';
+import PlausiPruefung from './PlausiPruefung';
+import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
 import MieterhoeungModal from './MieterhoeungModal';
@@ -325,10 +327,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     kontofuehrung: immobilie.kontofuehrung || 0,
     weitereKostenAktiv: immobilie.weitereKostenAktiv ?? null,
     weitereKostenChips: immobilie.weitereKostenChips || [],
+    plausiBestaetigt: immobilie.plausiBestaetigt || {},
+    feldHerkunft: immobilie.feldHerkunft || {},
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
-  const [activeTab, setActiveTab] = useState(() => initialTab || 'uebersicht');
+  const [activeTab, setActiveTab] = useState(() => (initialTab === 'pruefen' ? 'uebersicht' : initialTab) || 'uebersicht');
+  const [showPlausi, setShowPlausi] = useState(initialTab === 'pruefen');
   const [mieterhoeungMieter, setMieterhoeungMieter] = useState(null); // Mieterhöhungs-Modal
   const [finanzDetailsOffen, setFinanzDetailsOffen] = useState(false);
   // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben —
@@ -373,6 +378,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     setParams(newParams);
     setHasChanges(true);
   };
+  // Phase G: Korrekturen/Bestätigungen aus der Plausibilitätsprüfung sofort speichern
+  const speichereSofort = (neu) => {
+    setParams(neu);
+    const gesamtEK = (neu.ekFuerNebenkosten || 0) + (neu.ekFuerKaufpreis || 0);
+    onSave({ ...immobilie, ...neu, eigenkapital: gesamtEK });
+  };
+  const plausiHinweise = useMemo(
+    () => pruefeImmobilie({ ...immobilie, ...params }, { portfolio, mieter: mieterListe }),
+    [params, portfolio, mieterListe] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const plausiZahl = zaehle(plausiHinweise);
 
   const handleQmPreisChange = (value) => {
     setQmPreis(value);
@@ -738,7 +754,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             <div className="space-y-4">
               {/* Jetzt dran — je Aufgabe die passende Handlung (Teil 1) */}
               <JetztDran
-                aufgaben={eigeneAufgaben}
+                zusatz={brauchtErinnerung(plausiHinweise) ? (
+                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${plausiZahl.rot > 0 ? 'bg-red-500' : 'bg-amber-400'}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-gray-800 truncate">{plausiZahl.rot + plausiZahl.gelb} Zahlen prüfen</div>
+                      <div className="text-xs text-gray-400 truncate">{plausiZahl.rot > 0 ? `${plausiZahl.rot} ${plausiZahl.rot === 1 ? 'Widerspruch' : 'Widersprüche'} · ` : ''}Auffällige Werte kurz bestätigen oder korrigieren</div>
+                    </div>
+                    <button onClick={() => setShowPlausi(true)} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-900 text-white hover:bg-gray-700 shrink-0">Prüfen</button>
+                  </div>
+                ) : null}
+                aufgaben={eigeneAufgaben.filter(a => !String(a.id).startsWith('plausi-'))}
                 handler={{
                   onOeffnen: (tab) => setActiveTab(tab),
                   onEingegangen: () => handleMieteAbhaken(),
@@ -752,6 +778,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   onDurchrechnen: () => setMieterhoeungMieter(aktiverMieter || {}),
                 }}
               />
+
+              {!brauchtErinnerung(plausiHinweise) && plausiHinweise.length > 0 && (
+                <button onClick={() => setShowPlausi(true)} className="text-xs text-gray-500 hover:text-indigo-700 -mt-2">
+                  Datenqualität: {plausiHinweise.length} Hinweis{plausiHinweise.length !== 1 ? 'e' : ''} ansehen →
+                </button>
+              )}
 
               {/* Mieteingänge — 12 Monatsfelder für das laufende Jahr, Klick bucht direkt */}
               {aktiveMieterKaufobjekt && (
@@ -2138,7 +2170,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   immobilie={immobilie}
                   hasChanges={hasChanges}
                   setHasChanges={setHasChanges}
-                />
+                 plausi={plausiHinweise} />
               </div>
             </div>
           )}
@@ -2239,6 +2271,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 />
               </div>
             </div>
+          )}
+
+          {showPlausi && (
+            <PlausiPruefung hinweise={plausiHinweise} params={params} updateParams={speichereSofort} onClose={() => setShowPlausi(false)} />
           )}
 
           {/* Mieterhöhungs-Modal — auch ohne Mieter-Datensatz (mieterhoeungMieter === {} oder echter Mieter) */}

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Home, TrendingUp, TrendingDown, CalendarDays, Receipt, Building2, Wallet, X, Info } from 'lucide-react';
 import { getAktuellerWert } from '../utils/miete.js';
 import { formatCurrency } from '../utils/format.js';
+import { PlausiFeldHinweis } from './PlausiPruefung';
 
-const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges }) => {
+const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges, plausi = [] }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
   const [ansicht, setAnsicht] = useState('jahr'); // 'jahr' oder 'monat'
   const [mietHistorie, setMietHistorie] = useState(immobilie.mietHistorie || {});
@@ -135,6 +136,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                 <div className="min-w-0">
                   <div className="text-sm text-gray-800 font-medium">{label}</div>
                   {hint && <div className="text-[10px] text-gray-400">{hint}</div>}
+                  {PlausiFeldHinweis({ hinweise: plausi, feld, params, updateParams })}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <input type="number" min={0} step={step}
@@ -170,7 +172,8 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
           {(() => {
             const modell = params.vermietungsmodell || 'kaltmiete';
             const hausgeld = Number(params.hausgeld) || 0;
-            const setFeld = (feld, v, nullbar = false) => updateParams({ ...params, [feld]: v === '' ? (nullbar ? null : 0) : (parseFloat(v) || 0) });
+            const setFeld = (feld, v, nullbar = false) => updateParams({ ...params, [feld]: v === '' ? (nullbar ? null : 0) : (parseFloat(v) || 0),
+              ...(feld === 'hausgeldNichtUmlagefaehig' ? { feldHerkunft: { ...(params.feldHerkunft || {}), hausgeldNichtUmlagefaehig: 'manuell' } } : {}) });
             const input = (feld, nullbar = false, step = 5) => (
               <div className="flex items-center gap-1.5 shrink-0">
                 <input type="number" min={0} step={step}
@@ -187,6 +190,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                   <div className={`text-sm font-medium ${opts.labelKlasse || 'text-gray-800'}`}>{label}</div>
                   {hint && <div className="text-[10px] text-gray-400">{hint}</div>}
                   {opts.extra}
+                  {PlausiFeldHinweis({ hinweise: plausi, feld, params, updateParams })}
                 </div>
                 {input(feld, opts.nullbar, opts.step)}
               </div>
@@ -216,7 +220,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                 {
                   nullbar: true, klasse: 'pl-4 -mx-4 pr-4 bg-indigo-50/60 border-l-4 border-l-indigo-400', labelKlasse: 'text-indigo-800',
                   extra: (params.hausgeldNichtUmlagefaehig == null || params.hausgeldNichtUmlagefaehig === '') && (
-                    <button type="button" onClick={() => updateParams({ ...params, hausgeldNichtUmlagefaehig: Math.round(hausgeld * 0.35) })}
+                    <button type="button" onClick={() => updateParams({ ...params, hausgeldNichtUmlagefaehig: Math.round(hausgeld * 0.35), feldHerkunft: { ...(params.feldHerkunft || {}), hausgeldNichtUmlagefaehig: 'geschaetzt' } })}
                       className="mt-1 text-[11px] font-semibold text-indigo-700 hover:underline">
                       Mit 35 % schätzen ({formatCurrency(Math.round(hausgeld * 0.35))})
                     </button>
