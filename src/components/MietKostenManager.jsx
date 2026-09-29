@@ -3,6 +3,7 @@ import { Home, TrendingUp, TrendingDown, CalendarDays, Receipt, Building2, Walle
 import { getAktuellerWert } from '../utils/miete.js';
 import { formatCurrency } from '../utils/format.js';
 import { PlausiFeldHinweis } from './PlausiPruefung';
+import KostenZahler from './KostenZahler';
 
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges, plausi = [] }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
@@ -200,7 +201,9 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               ['instandhaltung', 'Eigene Rücklage für Reparaturen', 'Zusätzlich zur WEG-Rücklage, für Sondereigentum wie Bad oder Heizung'],
               ['versicherungMonat', 'Versicherungen', 'Nur was nicht schon im Hausgeld steckt'],
             ];
-            const CHIPS = [['strom', 'Strom'], ['internet', 'Internet'], ['kontofuehrung', 'Kontoführung'], ['nebenkosten', 'Eigene Position']];
+            const CHIPS = [['strom', 'Strom'], ['heizung', 'Heizung'], ['internet', 'Internet'], ['rundfunk', 'Rundfunkbeitrag'], ['kontofuehrung', 'Kontoführung'], ['nebenkosten', 'Eigene Position']];
+            // Positionen, bei denen der Mieter/die Firma direkt zahlen kann (Wer zahlt? mit Datum)
+            const MIT_ZAHLER = ['strom', 'heizung', 'internet', 'rundfunk', 'nebenkosten'];
             const weitereWerte = [...WEITERE.map(w => w[0]), ...CHIPS.map(c => c[0])].map(k => Number(params[k]) || 0);
             const hatWeitere = weitereWerte.some(v => v > 0);
             const weitereAn = params.weitereKostenAktiv === true || hatWeitere;
@@ -265,7 +268,9 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                     ))}
                   </div>
                   {CHIPS.filter(([k]) => chipAn(k)).map(([k, l]) => (
-                    <div key={k}>{zeile(l, k === 'nebenkosten' ? 'Eigene laufende Kosten, die oben nicht vorkommen' : 'Wenn du das für die Wohnung trägst', k)}</div>
+                    <div key={k}>{zeile(l, k === 'nebenkosten' ? 'Eigene laufende Kosten, die oben nicht vorkommen' : 'Monatsbetrag für die Wohnung', k, {
+                      extra: MIT_ZAHLER.includes(k) ? <KostenZahler params={params} feld={k} onChange={(kz) => updateParams({ ...params, kostenZahler: kz })} /> : null,
+                    })}</div>
                   ))}
                 </div>
               )}
@@ -343,6 +348,8 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               { key: 'hausgeld', label: 'Hausgeld an die WEG' },
               { key: 'strom', label: 'Strom' },
               { key: 'internet', label: 'Internet' },
+              { key: 'heizung', label: 'Heizung' },
+              { key: 'rundfunk', label: 'Rundfunk' },
               { key: 'nebenkosten', label: 'Eigene Position' },
             ];
             const hatKostenFeld = (entry) => COST_FELDER.some(f => entry[f.key] != null);

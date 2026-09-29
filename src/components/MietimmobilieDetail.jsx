@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import KostenZahler from './KostenZahler';
 import JetztDran from './JetztDran';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, berechneMietStatusFuerMonat } from '../utils/miete.js';
+import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, berechneMietStatusFuerMonat, arbitrageZusatzkosten, arbitrageKostenText } from '../utils/miete.js';
 import ObjektUeberlaufMenu from './ObjektUeberlaufMenu';
 import { DetailNavigation, ZurueckZumCockpit, KennzahlenZeile } from './DetailNavigation';
 import MieterDashboard from './MieterDashboard';
@@ -184,6 +185,8 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     arbitrageStrom: immobilie.arbitrageStrom || 0,
     arbitrageInternet: immobilie.arbitrageInternet || 0,
     arbitrageSonstige: immobilie.arbitrageSonstige || 0,
+    arbitrageHeizung: immobilie.arbitrageHeizung || 0,
+    kostenZahler: immobilie.kostenZahler || {},
     arbitrageGEZ: immobilie.arbitrageGEZ ?? 18.36,
     wohnflaeche: immobilie.wohnflaeche || '',
     zimmer: immobilie.zimmer || '',
@@ -234,7 +237,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
   // Berechnungen — wenn Vertrag beendet: laufender Cashflow = 0
   const einnahmen = vertragsBeendet ? 0 : params.anzahlZimmerVermietet * aktUntermiete;
-  const zusatzkosten = vertragsBeendet ? 0 : (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0);
+  const zusatzkosten = vertragsBeendet ? 0 : arbitrageZusatzkosten(params);
   const ausgaben = vertragsBeendet ? 0 : aktWarmmiete + zusatzkosten;
   const monatsCashflow = einnahmen - ausgaben;
   const jahresCashflow = monatsCashflow * 12;
@@ -410,11 +413,13 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
                 <MieteinnahmenTracker
                   params={trackerParams}
-                  updateParams={(neu) => updateParams({
-                    mietEingaenge: neu.mietEingaenge,
-                    dauerauftrag: neu.dauerauftrag,
-                    dauerauftragBetrag: neu.dauerauftragBetrag,
-                  })}
+                  updateParams={(neu) => {
+                    // Mieteingänge sofort speichern — rückwirkendes Abhaken soll nicht an
+                    // einem vergessenen "Speichern" scheitern
+                    const upd = { mietEingaenge: neu.mietEingaenge, dauerauftrag: neu.dauerauftrag, dauerauftragBetrag: neu.dauerauftragBetrag };
+                    setParams(prev => ({ ...prev, ...upd }));
+                    onSave({ ...immobilie, ...params, ...upd });
+                  }}
                   immobilie={trackerImmo}
                   mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
                 />
@@ -446,7 +451,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <span className="text-sm text-gray-600">
                     Nebenkosten
                     <span className="text-xs text-gray-400 ml-2">
-                      Strom {formatCurrency(params.arbitrageStrom||0)} · Internet {formatCurrency(params.arbitrageInternet||0)} · GEZ {formatCurrency(params.arbitrageGEZ??18.36)}{(params.arbitrageSonstige || 0) > 0 ? ` · Weitere ${formatCurrency(params.arbitrageSonstige)}` : ''}
+                      {arbitrageKostenText(params, formatCurrency)}
                     </span>
                   </span>
                   <span className="text-sm font-bold text-red-500">−{formatCurrency(zusatzkosten)}</span>
@@ -510,51 +515,33 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1"><Settings size={14}/> Zusätzliche Kosten (für Steuerberater)</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1"><Zap size={11}/> Strom</label>
-                      <input
-                        type="number"
-                        value={params.arbitrageStrom || 0}
-                        onChange={(e) => updateParams({ arbitrageStrom: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1"><Globe size={11}/> Internet</label>
-                      <input
-                        type="number"
-                        value={params.arbitrageInternet || 0}
-                        onChange={(e) => updateParams({ arbitrageInternet: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1" title="z. B. Reinigung, Verschleiß, Verbrauchsmaterial">Weitere Kosten</label>
-                      <input
-                        type="number"
-                        value={params.arbitrageSonstige || 0}
-                        onChange={(e) => updateParams({ arbitrageSonstige: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">GEZ</label>
-                      <input
-                        type="number"
-                        value={params.arbitrageGEZ ?? 18.36}
-                        onChange={(e) => updateParams({ arbitrageGEZ: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                        placeholder="18.36"
-                      />
-                    </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"><Settings size={14}/> Zusätzliche Kosten</label>
+                  <p className="text-[11px] text-gray-500 mb-2">Pro Position: Betrag im Monat und wer ihn zahlt. Zahlt dein Untermieter oder die Firma direkt, zählt die Position nicht als deine Kosten — auch rückwirkend ab einem Datum.</p>
+                  <div className="space-y-2">
+                    {[
+                      ['arbitrageStrom', 'Strom', 0],
+                      ['arbitrageHeizung', 'Heizung (eigener Vertrag)', 0],
+                      ['arbitrageInternet', 'Internet', 0],
+                      ['arbitrageGEZ', 'Rundfunkbeitrag', 18.36],
+                      ['arbitrageSonstige', 'Weitere Kosten (z. B. Reinigung)', 0],
+                    ].map(([feld, label, std]) => (
+                      <div key={feld} className="bg-white rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <label className="text-xs font-semibold text-gray-700">{label}</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" min="0" step="0.01"
+                              value={feld === 'arbitrageGEZ' ? (params.arbitrageGEZ ?? std) : (params[feld] || 0)}
+                              onChange={(e) => updateParams({ [feld]: parseFloat(e.target.value) || 0 })}
+                              className="w-24 px-2 py-1 text-base sm:text-sm text-right border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" />
+                            <span className="text-xs text-gray-400">€</span>
+                          </div>
+                        </div>
+                        <KostenZahler params={params} feld={feld} onChange={(kz) => updateParams({ kostenZahler: kz })} />
+                      </div>
+                    ))}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Summe: <strong>{formatCurrency(zusatzkosten)}</strong>/Monat · <strong>{formatCurrency(zusatzkosten * 12)}</strong>/Jahr
+                    Deine Kosten heute: <strong>{formatCurrency(zusatzkosten)}</strong>/Monat · <strong>{formatCurrency(zusatzkosten * 12)}</strong>/Jahr
                   </p>
                 </div>
 

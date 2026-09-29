@@ -28,7 +28,7 @@ const LEER = {
   mietstatus: '', vermietungsmodell: 'kaltmiete_nk', kaltmiete: '', nkVz: '', mieterName: '', mieterSeit: '', faelligTag: 3,
   letzteErhoehung: '', nieErhoeht: false,
   hausgeld: '', nuHG: '', nuGeschaetzt: false, ruecklage: '', grundsteuerJahr: '', versicherung: '', sev: '',
-  chips: [], strom: '', internet: '', kontofuehrung: '', sonstige: '',
+  chips: [], strom: '', internet: '', kontofuehrung: '', sonstige: '', heizung: '', rundfunk: '',
   // Arbitrage
   eigeneWarmmiete: '', mietvertragEnde: '', zimmerVermietet: '', untermieteProZimmer: '', gez: false,
   gestartetAm: null,
@@ -133,6 +133,7 @@ export function baueImmobilie(d) {
     versicherungMonat: n(d.versicherung),
     verwaltung: n(d.sev),
     strom: chip('strom') ? n(d.strom) : 0, internet: chip('internet') ? n(d.internet) : 0,
+    heizung: chip('heizung') ? n(d.heizung) : 0, rundfunk: chip('rundfunk') ? n(d.rundfunk) : 0,
     kontofuehrung: chip('kontofuehrung') ? n(d.kontofuehrung) : 0, nebenkosten: chip('sonstige') ? n(d.sonstige) : 0,
     weitereKostenAktiv: n(d.ruecklage) > 0 || n(d.versicherung) > 0 || d.chips.length > 0,
     weitereKostenChips: d.chips.map(c => (c === 'sonstige' ? 'nebenkosten' : c)),
@@ -736,14 +737,14 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           {istMFH && <Feld label="Instandhaltungsrücklage"><input type="number" min="0" className={inputCls} value={d.ruecklage} onChange={e => set({ ruecklage: e.target.value })} /></Feld>}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {[['strom', 'Strom'], ['internet', 'Internet'], ['kontofuehrung', 'Kontoführung'], ['sonstige', 'Weitere Position']].map(([k, l]) => (
+          {[['strom', 'Strom'], ['heizung', 'Heizung'], ['internet', 'Internet'], ['rundfunk', 'Rundfunkbeitrag'], ['kontofuehrung', 'Kontoführung'], ['sonstige', 'Weitere Position']].map(([k, l]) => (
             <Pille key={k} aktiv={d.chips.includes(k)} onClick={() => set({ chips: d.chips.includes(k) ? d.chips.filter(c => c !== k) : [...d.chips, k] })}>{d.chips.includes(k) ? '✓ ' : '+ '}{l}</Pille>
           ))}
         </div>
         {d.chips.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {d.chips.map(k => (
-              <Feld key={k} label={{ strom: 'Strom', internet: 'Internet', kontofuehrung: 'Kontoführung', sonstige: 'Weitere Position' }[k]}>
+              <Feld key={k} label={{ strom: 'Strom', heizung: 'Heizung', internet: 'Internet', rundfunk: 'Rundfunkbeitrag', kontofuehrung: 'Kontoführung', sonstige: 'Weitere Position' }[k]}>
                 <input type="number" min="0" className={inputCls} value={d[k]} onChange={e => set({ [k]: e.target.value })} />
               </Feld>
             ))}

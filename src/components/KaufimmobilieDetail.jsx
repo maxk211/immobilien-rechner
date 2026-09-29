@@ -329,6 +329,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     weitereKostenChips: immobilie.weitereKostenChips || [],
     plausiBestaetigt: immobilie.plausiBestaetigt || {},
     feldHerkunft: immobilie.feldHerkunft || {},
+    kostenZahler: immobilie.kostenZahler || {},
+    heizung: immobilie.heizung || 0,
+    rundfunk: immobilie.rundfunk || 0,
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -2142,7 +2145,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           {activeTab === 'mieteinnahmen' && (
             <MieteinnahmenTracker
               params={params}
-              updateParams={updateParams}
+              updateParams={(neu) => (neu.mietEingaenge !== params.mietEingaenge || neu.nkAbrechnungen !== params.nkAbrechnungen ? speichereSofort(neu) : updateParams(neu))}
               immobilie={immobilie}
               mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false)}
             />
