@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { BarChart3, TrendingUp, Eye, CalendarDays } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, arbitrageKostenText } from '../utils/miete.js';
+import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, arbitrageZusatzkostenJahr, arbitrageKostenText } from '../utils/miete.js';
 
 const ArbitrageCashflow = ({ params }) => {
   const [tab, setTab] = useState('aktuell');
@@ -13,7 +13,11 @@ const ArbitrageCashflow = ({ params }) => {
   const zusatzkosten = arbitrageZusatzkosten(params);
   const ausgaben = aktWarmmiete + zusatzkosten;
   const monatsCF = einnahmen - ausgaben;
-  const jahresCF = monatsCF * 12;
+  // Jahresspalte: Zusatzkosten monatsgenau für das laufende Jahr (Wechsel bei "Wer zahlt?" zählen nur für ihre Monate)
+  const zusatzkostenJahr = arbitrageZusatzkostenJahr(params, new Date().getFullYear()) * 12;
+  const jahresCF = einnahmen * 12 - aktWarmmiete * 12 - zusatzkostenJahr;
+  // Prognose für kommende Jahre: heutiger Stand × 12 (heutige Zahler-Regelung gilt weiter)
+  const prognoseJahr = monatsCF * 12;
 
   const mietvertragStart = params.mietvertragStart ? new Date(params.mietvertragStart) : null;
   const vertragsende = params.mietvertragEnde ? new Date(params.mietvertragEnde) : null;
@@ -109,14 +113,14 @@ const ArbitrageCashflow = ({ params }) => {
                   <td className="py-2.5 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(aktWarmmiete)}</td>
                   <td className="py-2.5 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(aktWarmmiete * 12)}</td>
                 </tr>
-                {zusatzkosten > 0 && (
+                {(zusatzkosten > 0 || zusatzkostenJahr > 0) && (
                   <tr>
                     <td className="py-2.5 px-4 text-xs text-gray-600">
                       − Nebenkosten
                       <span className="text-gray-400 ml-1">({arbitrageKostenText(params, formatCurrency)})</span>
                     </td>
                     <td className="py-2.5 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(zusatzkosten)}</td>
-                    <td className="py-2.5 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(zusatzkosten * 12)}</td>
+                    <td className="py-2.5 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(zusatzkostenJahr)}</td>
                   </tr>
                 )}
                 <tr className="bg-gray-50 border-t border-gray-200">
@@ -218,10 +222,10 @@ const ArbitrageCashflow = ({ params }) => {
         <div className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[[1,'1 Jahr'],[2,'2 Jahre'],[3,'3 Jahre'],[5,'5 Jahre']].map(([mult, label]) => (
-              <div key={mult} className={`rounded-xl p-4 text-center border ${jahresCF >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+              <div key={mult} className={`rounded-xl p-4 text-center border ${prognoseJahr >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
                 <div className="text-xs text-gray-400 font-medium mb-1">{label}</div>
-                <div className={`text-lg font-black ${jahresCF >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {jahresCF >= 0 ? '+' : ''}{formatCurrency(jahresCF * mult)}
+                <div className={`text-lg font-black ${prognoseJahr >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {prognoseJahr >= 0 ? '+' : ''}{formatCurrency(prognoseJahr * mult)}
                 </div>
                 <div className="text-[10px] text-gray-400 mt-0.5">{formatCurrency(monatsCF)}/Mo.</div>
               </div>
@@ -234,7 +238,7 @@ const ArbitrageCashflow = ({ params }) => {
               <AreaChart
                 data={Array.from({ length: 6 }, (_, i) => ({
                   label: `Jahr ${i + 1}`,
-                  kumuliert: Math.round(jahresCF * (i + 1)),
+                  kumuliert: Math.round(prognoseJahr * (i + 1)),
                 }))}
                 margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>

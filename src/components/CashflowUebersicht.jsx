@@ -115,10 +115,15 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
   // nicht × 12. Auf Komponentenebene statt in einer IIFE im JSX, damit die
   // Ergebnisleiste oben unabhängig vom aktiven Unter-Tab (aktuell/verlauf)
   // gerendert werden kann. ────────────────────────────────────────────────────
+  // Jahreswerte des laufenden Jahres: Kosten monatsgenau (Kostenanpassungen und
+  // "Wer zahlt?"-Wechsel im Jahr), nicht einfach der heutige Monat × 12.
+  const ksJahr = useMemo(() => kostenStruktur(params, (f) => getJahresDurchschnittFuerFeld(params, aktuellesJahr, f), aktuellesJahr), [params, aktuellesJahr]);
+  const betriebJahr = ksJahr.bewirtschaftung * 12;
+  const einnahmenJahr = (monat.einnahmen + monat.stellplatz + ksJahr.nkImCashflow) * 12;
   const jZinsenJahr = jahresKredit?.zinsen ?? monat.zinsen * 12;
   const jGesamtJahr = jahresKredit?.gesamt ?? monat.kreditrate * 12;
-  const vorTilgungJahr = a(monat.gesamtEinnahmen) * 12 - a(monat.gesamtBetrieb) * 12 - a(jZinsenJahr) - a(monat.bauspar) * 12;
-  const nachTilgungJahr = a(monat.gesamtEinnahmen) * 12 - a(monat.gesamtBetrieb) * 12 - a(jGesamtJahr) - a(monat.bauspar) * 12;
+  const vorTilgungJahr = a(einnahmenJahr) - a(betriebJahr) - a(jZinsenJahr) - a(monat.bauspar) * 12;
+  const nachTilgungJahr = a(einnahmenJahr) - a(betriebJahr) - a(jGesamtJahr) - a(monat.bauspar) * 12;
 
   // ── Jahresverlaufsdaten ────────────────────────────────────────────────────
   const verlaufDaten = useMemo(() => {
@@ -297,9 +302,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
 
       {/* ── Rechenweg Monat / Jahr (UX-Paket Teil 2, Nachtrag) ───────────────── */}
       {(tab === 'monat' || tab === 'jahr') && (() => {
-        const ks = monat.ks;
-        const f = tab === 'monat' ? 1 : 12;
         const jz = tab === 'jahr';
+        const ks = jz ? ksJahr : monat.ks; // Jahr: monatsgenaue Summe des laufenden Jahres
+        const f = tab === 'monat' ? 1 : 12;
         const Z = ({ label, wert, color = 'red', einzug = false, bold = false, separator = false, plus = false, hideZero = false, gedimmt = false, jahrWert }) => {
           const v = jz && jahrWert != null ? jahrWert : wert * f;
           if (hideZero && !v) return null;
@@ -330,7 +335,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               {monat.nkVomMieter > 0 && (
                 <Z label={ks.nuBekannt ? 'Nebenkosten vom Mieter · läuft durch' : 'Nebenkosten vom Mieter'} color="green" plus gedimmt={ks.nuBekannt} wert={monat.nkVomMieter} />
               )}
-              <Z label="Einnahmen" color="green" plus bold separator wert={monat.gesamtEinnahmen} />
+              <Z label="Einnahmen" color="green" plus bold separator wert={monat.gesamtEinnahmen} jahrWert={einnahmenJahr} />
 
               {kopf('Ausgaben')}
               <Z label="Hausgeld an die WEG" wert={ks.hausgeld} hideZero gedimmt={ks.nuBekannt} />
@@ -348,7 +353,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               <Z label="Internet" wert={ks.weitere.internet} hideZero />
               <Z label="Kontoführung" wert={ks.weitere.kontofuehrung} hideZero />
               <Z label="Eigene Position" wert={ks.weitere.sonstige} hideZero />
-              <Z label="Ausgaben" bold separator wert={monat.gesamtBetrieb} />
+              <Z label="Ausgaben" bold separator wert={monat.gesamtBetrieb} jahrWert={betriebJahr} />
 
               {kopf('Finanzierung')}
               <Z label="Zinsen" wert={monat.zinsen} jahrWert={jahresKredit?.zinsen} />
