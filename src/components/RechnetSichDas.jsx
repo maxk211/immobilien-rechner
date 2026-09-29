@@ -8,6 +8,7 @@ import { portfolioMieteProQm } from '../utils/plausibilitaet.js';
 import { GREST_HISTORIE, grestSatz, bundeslandAusPlz } from '../config/grunderwerbsteuer.js';
 import { getJsPDF } from '../utils/lazyLibs.js';
 import { loadKalkulationen, saveKalkulation, deleteKalkulation } from '../supabaseClient';
+import { A_START, rechneArbitrage, grenzwerteArbitrage, arbitrageVorbelegung, arbitrageAusGespeichert, erstelleArbitragePdf, ArbitrageEingaben, ArbitrageUrteil } from './RechnetSichDasArbitrage';
 
 // "Rechnet sich das?" (UX-Paket Teil 3, Abschnitt 2): ein Objekt durchspielen, das dir noch
 // nicht gehört. Links die Annahmen, rechts das Urteil in einem Satz, Cashflow vor/nach Tilgung,
@@ -188,7 +189,10 @@ function Feld({ label, hint, children }) {
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-indigo-500';
 
 export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen }) {
+  const [modus, setModus] = useState('kauf'); // 'kauf' | 'arbitrage'
   const [e, setE] = useState(START);
+  const [a, setA] = useState(A_START);
+  const setArb = (u) => setA(x => ({ ...x, ...u }));
   const [mehr, setMehr] = useState(false);
   const [szenarien, setSzenarien] = useState([]);
   const [listeOffen, setListeOffen] = useState(false);
@@ -202,7 +206,9 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
   const g = useMemo(() => grenzwerte(e), [e]);
   const pf = useMemo(() => portfolioSchnitt(portfolio), [portfolio]);
   const pfQm = useMemo(() => portfolioMieteProQm(portfolio), [portfolio]);
-  const bereit = r.kp > 0 && r.kalt > 0;
+  const ra = useMemo(() => rechneArbitrage(a), [a]);
+  const istArb = modus === 'arbitrage';
+  const bereit = istArb ? (ra.einnahmen > 0 && n(a.eigeneWarmmiete) > 0) : (r.kp > 0 && r.kalt > 0);
   const blName = e.bundesland ? GREST_HISTORIE[e.bundesland]?.name : null;
 
   const urteil = !bereit ? null
@@ -215,9 +221,12 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
   const merken = async () => {
     const titel = name.trim() || `Szenario ${new Date().toLocaleDateString('de-DE')}`;
     try {
-      const saved = await saveKalkulation({ id: aktuellId || undefined, name: titel, typ: 'kauf', rsd: e,
-        // für ältere Ansichten lesbar mitspeichern
-        kaufpreis: n(e.kaufpreis), eigenkapital: n(e.eigenkapital), zinssatz: n(e.sollzins), tilgung: n(e.tilgung), kaltmiete: n(e.kaltmiete) });
+      const saved = await saveKalkulation(istArb
+        ? { id: aktuellId || undefined, name: titel, typ: 'arbitrage', rsdArb: a,
+            eigeneWarmmiete: n(a.eigeneWarmmiete), anzahlZimmer: n(a.zimmer), mietProZimmer: n(a.proZimmer) }
+        : { id: aktuellId || undefined, name: titel, typ: 'kauf', rsd: e,
+            // für ältere Ansichten lesbar mitspeichern
+            kaufpreis: n(e.kaufpreis), eigenkapital: n(e.eigenkapital), zinssatz: n(e.sollzins), tilgung: n(e.tilgung), kaltmiete: n(e.kaltmiete) });
       setAktuellId(saved.id); setName(saved.name);
       setSzenarien(prev => [saved, ...prev.filter(s => s.id !== saved.id)]);
       toast.success('Szenario gemerkt ✓');
@@ -236,9 +245,15 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
       <div className="bg-canvas w-full sm:max-w-6xl h-[95vh] sm:h-[92vh] rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         <div className="bg-white px-5 py-3 border-b border-gray-200 flex items-center justify-between gap-3">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">Vor dem Kauf durchrechnen</div>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">{istArb ? 'Vor dem Anmieten durchrechnen' : 'Vor dem Kauf durchrechnen'}</div>
             <div className="text-lg font-black text-gray-900 flex items-center gap-2"><Calculator size={18} /> Rechnet sich das?</div>
-            <div className="text-xs text-gray-500">Ein Objekt durchspielen, das dir noch nicht gehört. Nichts wird gespeichert, bis du es übernimmst.</div>
+            <div className="text-xs text-gray-500">{istArb ? 'Eine Wohnung durchspielen, die du anmieten und untervermieten willst.' : 'Ein Objekt durchspielen, das dir noch nicht gehört.'} Nichts wird gespeichert, bis du es übernimmst.</div>
+            <div className="flex gap-1.5 mt-2">
+              {[['kauf', 'Kaufen und vermieten'], ['arbitrage', 'Anmieten und untervermieten']].map(([k, l]) => (
+                <button key={k} type="button" onClick={() => { setModus(k); setAktuellId(null); }}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold border ${modus === k ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'}`}>{l}</button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-2 relative">
             <button onClick={() => setListeOffen(o => !o)} className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 flex items-center gap-1">
@@ -249,8 +264,13 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
                 {szenarien.length === 0 && <p className="p-3 text-xs text-gray-400">Noch keine Szenarien gemerkt.</p>}
                 {szenarien.map(s => (
                   <div key={s.id} className="flex items-center gap-2 px-3 py-2 border-b border-gray-50 hover:bg-gray-50">
-                    <button className="flex-1 text-left min-w-0" onClick={() => { setE(ausGespeichert(s)); setAktuellId(s.id); setName(s.name); setListeOffen(false); }}>
+                    <button className="flex-1 text-left min-w-0" onClick={() => {
+                      if (s.rsdArb || s.typ === 'arbitrage') { setModus('arbitrage'); setA(arbitrageAusGespeichert(s)); }
+                      else { setModus('kauf'); setE(ausGespeichert(s)); }
+                      setAktuellId(s.id); setName(s.name); setListeOffen(false);
+                    }}>
                       <div className="text-sm font-semibold text-gray-800 truncate">{s.name}</div>
+                      <div className="text-[10px] text-indigo-600">{s.rsdArb || s.typ === 'arbitrage' ? 'Anmieten und untervermieten' : 'Kaufen und vermieten'}</div>
                       <div className="text-[10px] text-gray-400">{s.savedAt ? new Date(s.savedAt).toLocaleDateString('de-DE') : ''}</div>
                     </button>
                     <button onClick={async () => { setSzenarien(p => p.filter(x => x.id !== s.id)); try { await deleteKalkulation(s.id); } catch { /* egal */ } }} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
@@ -263,6 +283,12 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
         </div>
 
         <div className="flex-1 overflow-y-auto">
+          {istArb ? (
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 p-5">
+              <div className="lg:col-span-2"><ArbitrageEingaben a={a} set={setArb} /></div>
+              <div className="lg:col-span-3"><ArbitrageUrteil a={a} portfolio={portfolio} /></div>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 p-5">
             {/* Annahmen */}
             <div className="lg:col-span-2 space-y-4">
@@ -374,6 +400,7 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
               )}
             </div>
           </div>
+          )}
         </div>
 
         <div className="bg-white px-5 py-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2">
@@ -381,10 +408,10 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
           <div className="flex flex-wrap items-center gap-2">
             <input className="px-3 py-1.5 border border-gray-200 rounded-lg text-base sm:text-sm w-44" placeholder="Name des Szenarios" value={name} onChange={x => setName(x.target.value)} />
             <button disabled={!bereit} onClick={merken} className="px-3 py-2 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:border-gray-500 disabled:opacity-40 flex items-center gap-1"><Bookmark size={14} /> Als Szenario merken</button>
-            <button disabled={!bereit} onClick={() => erstelleBankPdf(e, r, g, name)} className="px-3 py-2 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:border-gray-500 disabled:opacity-40 flex items-center gap-1"><FileDown size={14} /> Als PDF für die Bank</button>
+            <button disabled={!bereit} onClick={() => (istArb ? erstelleArbitragePdf(a, ra, grenzwerteArbitrage(a), name) : erstelleBankPdf(e, r, g, name))} className="px-3 py-2 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:border-gray-500 disabled:opacity-40 flex items-center gap-1"><FileDown size={14} /> {istArb ? 'Als PDF' : 'Als PDF für die Bank'}</button>
             {onUebernehmen && (
-              <button disabled={!bereit} onClick={() => onUebernehmen(alsWizardVorbelegung(e))} className="px-4 py-2 text-sm font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-40 flex items-center gap-1">
-                Gekauft — als Immobilie übernehmen <ArrowRight size={14} />
+              <button disabled={!bereit} onClick={() => onUebernehmen(istArb ? arbitrageVorbelegung(a) : alsWizardVorbelegung(e))} className="px-4 py-2 text-sm font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-40 flex items-center gap-1">
+                {istArb ? 'Angemietet — als Objekt übernehmen' : 'Gekauft — als Immobilie übernehmen'} <ArrowRight size={14} />
               </button>
             )}
           </div>
