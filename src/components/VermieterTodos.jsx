@@ -113,10 +113,9 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         priority: status === 'nicht_bezahlt' || tageUeberfaellig >= 10 ? 'rot' : 'gelb',
         icon: <TrendingDown size={16} />,
         kategorie: 'Miete',
-        titel: status === 'teilweise'
-          ? `Mieteingang ${aktuellerMonat}/${aktuellesJahr} nur teilweise verbucht`
-          : `Mieteingang ${aktuellerMonat}/${aktuellesJahr} noch nicht verbucht`,
+        titel: `Miete ${heute.toLocaleDateString('de-DE', { month: 'long' })} ${status === 'teilweise' ? 'nur teilweise da' : 'offen'} · ${formatCurrency(erwarteterBetrag)}${tageUeberfaellig > 0 ? ` · seit ${tageUeberfaellig} Tag${tageUeberfaellig !== 1 ? 'en' : ''}` : ''}`,
         sub: immo.name || immo.adresse || 'Immobilie',
+        buchen: { betrag: erwarteterBetrag, jahr: aktuellesJahr, monat: aktuellerMonat },
         immoId: immo.id,
         badge: tageUeberfaellig >= 10 ? `${tag}. des Monats` : 'Prüfen',
         targetTab: 'mieteinnahmen',
@@ -151,7 +150,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           priority: 'gelb',
           icon: <ClipboardList size={16} />,
           kategorie: 'Steuer',
-          titel: `NK-Abrechnung ${letztesJahr} noch ausstehend`,
+          titel: `Nebenkostenabrechnung ${letztesJahr} fehlt · Frist 31.12.${aktuellesJahr}`,
           sub: immo.name || immo.adresse || 'Immobilie',
           immoId: immo.id,
           badge: 'Offen',
@@ -204,38 +203,56 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     });
   });
 
-  // ── 5. Mieterhöhung möglich (≥15 Monate seit letzter Anpassung) ───────────
+  // ── 5. Mieterhöhung möglich (§ 558 BGB: frühestens 15 Monate nach der letzten
+  // Erhöhung bzw. dem Einzug wirksam) — mit Spielraum bis zur Kappungsgrenze
+  // (20 % in 3 Jahren; in angespannten Märkten 15 %) und Datum der letzten Anpassung.
+  const mieteAm = (immo, datum) => {
+    let m = Number(immo.kaltmiete) || 0;
+    [...(immo.mietAnpassungen || [])].filter(a => a.kaltmiete != null).sort((a, b) => new Date(a.datum) - new Date(b.datum))
+      .forEach(a => { if (new Date(a.datum) <= datum) m = Number(a.kaltmiete) || m; });
+    return m;
+  };
   portfolio.forEach(immo => {
-    if (immo.immobilienTyp === 'mietimmobilie') return;
+    if (immo.immobilienTyp === 'mietimmobilie' || immo.immobilienTyp === 'mehrfamilienhaus') return;
     const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
     if (aktiveMieter.length === 0) return;
+    // Ohne hinterlegtes Datum meldet Regel 5b "nicht hinterlegt" — hier nichts raten
+    if (aktiveMieter.some(m => !m.letzte_mieterhoehung)) return;
 
-    const anpassungen = immo.mietAnpassungen || [];
-    let letzteAnpassung = immo.kaufdatum ? new Date(immo.kaufdatum) : null;
-    anpassungen.forEach(a => {
-      const d = new Date(a.datum);
-      if (!letzteAnpassung || d > letzteAnpassung) letzteAnpassung = d;
-    });
-    // Mietbeginn aktiver Mieter als Untergrenze — ein neuer Mieter setzt die Uhr zurück
-    aktiveMieter.forEach(m => {
-      if (m.mietbeginn) {
-        const d = new Date(m.mietbeginn);
-        if (!letzteAnpassung || d > letzteAnpassung) letzteAnpassung = d;
-      }
-    });
-
-    if (!letzteAnpassung) return;
-    const monate = (heute - letzteAnpassung) / (1000 * 60 * 60 * 24 * 30.44);
+    let letzte = null;
+    const nimm = (d) => { if (d && !Number.isNaN(d.getTime()) && (!letzte || d > letzte)) letzte = d; };
+    (immo.mietAnpassungen || []).filter(a => a.kaltmiete != null).forEach(a => nimm(new Date(a.datum)));
+    aktiveMieter.forEach(m => { nimm(m.mietbeginn ? new Date(m.mietbeginn) : null); nimm(new Date(m.letzte_mieterhoehung)); });
+    nimm(gehoertSeit(immo));
+    if (!letzte) return;
+    const monate = (heute - letzte) / (1000 * 60 * 60 * 24 * 30.44);
+    const aktuell = getAktuelleMiete(immo);
+    const vor3 = new Date(heute); vor3.setFullYear(vor3.getFullYear() - 3);
+    const kappung = Math.max(0, Math.round(mieteAm(immo, vor3) * 1.2 - aktuell));
+    const mmjj = letzte.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' });
     if (monate >= 15) {
       todos.push({
         id: `mieterhoehung-${immo.id}`,
         priority: 'gelb',
         icon: <TrendingUp size={16} />,
         kategorie: 'Mieter',
-        titel: `Mieterhöhung möglich`,
-        sub: `${immo.name || immo.adresse} · ${Math.floor(monate)} Monate seit letzter Anpassung`,
+        titel: `Mieterhöhung möglich · Spielraum bis Kappungsgrenze ca. +${formatCurrency(kappung)}/Mo · letzte Anpassung ${mmjj}`,
+        sub: `${immo.name || immo.adresse} · Obergrenze ist auch die ortsübliche Vergleichsmiete (Mietspiegel)`,
         immoId: immo.id,
         badge: 'Möglich',
+        targetTab: 'mieter',
+      });
+    } else if (monate >= 12) {
+      const ab = new Date(letzte); ab.setMonth(ab.getMonth() + 15);
+      todos.push({
+        id: `mieterhoehung-bald-${immo.id}`,
+        priority: 'grau',
+        icon: <CalendarDays size={16} />,
+        kategorie: 'Mieter',
+        titel: `Mieterhöhung ab ${ab.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })} wirksam möglich — jetzt vorbereiten`,
+        sub: `${immo.name || immo.adresse} · letzte Anpassung ${mmjj}`,
+        immoId: immo.id,
+        badge: 'Vorbereiten',
         targetTab: 'mieter',
       });
     }
@@ -269,40 +286,6 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           badge: 'Eintragen',
           targetTab: 'mieter',
         });
-      } else {
-        const letzte = new Date(mieter.letzte_mieterhoehung);
-        const naechsteMoeglich = new Date(letzte);
-        naechsteMoeglich.setFullYear(naechsteMoeglich.getFullYear() + 3);
-        const monateVerbleibend = (naechsteMoeglich - heute) / (1000 * 60 * 60 * 24 * 30.44);
-        const immoName = immo.name || immo.adresse || 'Immobilie';
-
-        if (monateVerbleibend <= 0) {
-          // 3 Jahre überschritten → Mieterhöhung jetzt möglich
-          todos.push({
-            id: `mieterhoehung-3j-${mieter.id}`,
-            priority: 'gelb',
-            icon: <TrendingUp size={16} />,
-            kategorie: 'Mieter',
-            titel: '3-Jahres-Mieterhöhung möglich',
-            sub: `${mieter.name} · ${immoName} · letzte Erhöhung: ${letzte.toLocaleDateString('de-DE')}`,
-            immoId: immo.id,
-            badge: 'Jetzt möglich',
-            targetTab: 'mieter',
-          });
-        } else if (monateVerbleibend <= 3) {
-          // Vorwarnung 3 Monate vorher
-          todos.push({
-            id: `mieterhoehung-3j-warnung-${mieter.id}`,
-            priority: 'gelb',
-            icon: <CalendarDays size={16} />,
-            kategorie: 'Mieter',
-            titel: `Mieterhöhungs-Fenster öffnet in ${Math.ceil(monateVerbleibend)} Monat${Math.ceil(monateVerbleibend) !== 1 ? 'en' : ''}`,
-            sub: `${mieter.name} · ${immoName} · möglich ab ${naechsteMoeglich.toLocaleDateString('de-DE')} — jetzt Schreiben vorbereiten`,
-            immoId: immo.id,
-            badge: 'Vorbereiten',
-            targetTab: 'mieter',
-          });
-        }
       }
     });
   });
@@ -496,7 +479,8 @@ const AKTION_LABEL = {
   investitionen: 'Investitionen prüfen',
 };
 
-const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSelectImmobilie }) => {
+const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSelectImmobilie, onBuchen }) => {
+  const [offeneGruppen, setOffeneGruppen] = useState({});
   const [collapsed, setCollapsed] = useState(false);
   // Gegencheck 2: "Was steht an" ist laut Abschnitt 3.1 ein fester Dashboard-
   // Block — standardmäßig AN, nur wer ihn bewusst ausschaltet, sieht ihn aus.
@@ -609,37 +593,71 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
               {gefilterteTodos.length === 0 && (
                 <div className="px-5 py-4 text-sm text-gray-400">In dieser Kategorie ist nichts offen.</div>
               )}
-              {gefilterteTodos.map(todo => {
-                const style = PRIORITY_STYLE[todo.priority];
-                const immo = portfolio.find(i => i.id === todo.immoId);
-                return (
-                  <div
-                    key={todo.id}
-                    className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row}`}
-                  >
-                    <div className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${style.dot}`} />
-                    <div className="flex-shrink-0 w-7 flex items-center justify-center text-gray-500">
-                      {todo.icon}
+              {(() => {
+                // Gleicher Hinweis bei mehreren Objekten → eine Zeile "N Objekte" mit "Anzeigen"
+                const gruppen = [];
+                const index = {};
+                gefilterteTodos.forEach(t => {
+                  const key = t.buchen ? t.id : `${t.kategorie}|${t.titel}`;
+                  if (index[key] === undefined) { index[key] = gruppen.length; gruppen.push([t]); } else gruppen[index[key]].push(t);
+                });
+                const zeile = (todo, eingerueckt = false) => {
+                  const style = PRIORITY_STYLE[todo.priority];
+                  const immo = portfolio.find(i => i.id === todo.immoId);
+                  return (
+                    <div key={todo.id} className={`flex items-center gap-4 px-5 py-3.5 transition-all ${style.row} ${eingerueckt ? 'pl-12 bg-gray-50/60' : ''}`}>
+                      <div className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${style.dot}`} />
+                      <div className="flex-shrink-0 w-7 flex items-center justify-center text-gray-500">{todo.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        {/* Abschnitt 3.1: jede Zeile nennt Objektname + Sachverhalt */}
+                        <div className="text-[11px] font-semibold text-gray-500 truncate">{immo ? (immo.name || immo.adresse || 'Immobilie') : ''}{todo.kategorie ? ` · ${todo.kategorie}` : ''}</div>
+                        <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
+                        <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
+                      </div>
+                      {immo && todo.buchen && onBuchen ? (
+                        <button
+                          onClick={() => {
+                            const b = todo.buchen;
+                            const monatKey = `${b.jahr}-${String(b.monat).padStart(2, '0')}`;
+                            onBuchen(immo.id, { mietEingaenge: [...(immo.mietEingaenge || []), { id: Date.now(), monat: monatKey, datum: new Date().toISOString().slice(0, 10), betrag: b.betrag, typ: 'kaltmiete', notiz: '' }] });
+                          }}
+                          className="flex-shrink-0 px-3 py-1.5 bg-gray-900 hover:bg-gray-700 text-white text-xs font-bold rounded-lg transition-colors">
+                          Eingegangen
+                        </button>
+                      ) : immo && onSelectImmobilie && (
+                        <button
+                          onClick={() => onSelectImmobilie(immo, todo.targetTab)}
+                          className="flex-shrink-0 px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg transition-colors">
+                          {AKTION_LABEL[todo.targetTab] || 'Öffnen'}
+                        </button>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      {/* Abschnitt 3.1: jede Zeile nennt Objektname + Sachverhalt */}
-                      <div className="text-[11px] font-semibold text-gray-500 truncate">{immo ? (immo.name || immo.adresse || 'Immobilie') : ''}{todo.kategorie ? ` · ${todo.kategorie}` : ''}</div>
-                      <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
-                      <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
+                  );
+                };
+                return gruppen.map(g => {
+                  if (g.length === 1) return zeile(g[0]);
+                  const t = g[0];
+                  const key = `${t.kategorie}|${t.titel}`;
+                  const style = PRIORITY_STYLE[t.priority];
+                  return (
+                    <div key={key}>
+                      <div className={`flex items-center gap-4 px-5 py-3.5 ${style.row}`}>
+                        <div className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${style.dot}`} />
+                        <div className="flex-shrink-0 w-7 flex items-center justify-center text-gray-500">{t.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] font-semibold text-gray-500 truncate">{g.length} Objekte{t.kategorie ? ` · ${t.kategorie}` : ''}</div>
+                          <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{t.titel}</div>
+                        </div>
+                        <button onClick={() => setOffeneGruppen(o => ({ ...o, [key]: !o[key] }))}
+                          className="flex-shrink-0 px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg transition-colors">
+                          {offeneGruppen[key] ? 'Zuklappen' : 'Anzeigen'}
+                        </button>
+                      </div>
+                      {offeneGruppen[key] && g.map(x => zeile(x, true))}
                     </div>
-                    <div className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${style.badge}`}>
-                      {todo.badge}
-                    </div>
-                    {immo && onSelectImmobilie && (
-                      <button
-                        onClick={() => onSelectImmobilie(immo, todo.targetTab)}
-                        className="flex-shrink-0 px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg transition-colors">
-                        {AKTION_LABEL[todo.targetTab] || 'Öffnen'}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           )}
         </div>

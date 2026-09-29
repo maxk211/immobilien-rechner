@@ -44,6 +44,7 @@ import VermieterTodos, { generiereAufgaben } from './components/VermieterTodos';
 import MieteingaengeMonat from './components/MieteingaengeMonat';
 import { finanzierungsStatus } from './utils/finanzierung.js';
 import { getBeleihungsgrenze, setBeleihungsgrenze } from './utils/kapital.js';
+import { darlehensVerlauf, anschlussRate } from './utils/darlehen.js';
 import ErsteSchritte from './components/ErsteSchritte';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
@@ -578,7 +579,38 @@ function App() {
       tableLineWidth: 0.1,
       margin: { left: 14, right: 14 },
     });
-    y = pdf.lastAutoTable.finalY + 10;
+    y = pdf.lastAutoTable.finalY + 8;
+
+    // ── Zinsänderungsrisiko (Teil 3, 5.4): Anschlussrate bei 3 / 4 / 6 % ─────
+    const szenarioZeilen = portfolio.filter(i => i.aktiv !== false && i.immobilienTyp !== 'mietimmobilie').map(immo => {
+      const v = darlehensVerlauf(immo);
+      if (!v || v.abbezahltHeute) return null;
+      const p = v.phasen[v.phasen.length - 1];
+      if (!p.ende || p.typ === 'endfaellig' || p.restschuldBeiZinsbindung < 1) return null;
+      const t = p.anfangstilgung || 2;
+      const rs = p.restschuldBeiZinsbindung;
+      return [immo.name || immo.adresse || 'Immobilie', p.ende.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' }),
+        formatCurrency(rs), formatCurrency(p.rate), ...[3, 4, 6].map(z => formatCurrency(anschlussRate(rs, z, t)))];
+    }).filter(Boolean);
+    if (szenarioZeilen.length) {
+      if (y > H - 50) { pdf.addPage(); y = 20; }
+      pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...ORANGE);
+      pdf.text('Zinsänderungsrisiko — Anschlussrate nach Ende der Zinsbindung', 14, y);
+      y += 3;
+      pdf.autoTable({
+        startY: y,
+        head: [['Objekt', 'Zinsbindung bis', 'Restschuld dann', 'Rate heute', 'bei 3 %', 'bei 4 %', 'bei 6 %']],
+        body: szenarioZeilen,
+        styles: { fontSize: 7.5, cellPadding: 2 },
+        headStyles: { fillColor: ORANGE, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+        columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } },
+        margin: { left: 14, right: 14 },
+      });
+      y = pdf.lastAutoTable.finalY + 3;
+      pdf.setFontSize(6.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(120, 120, 120);
+      pdf.text('Neue Rate = Restschuld × (Zins + bisherige anfängliche Tilgung) ÷ 12. Annahmen, keine Zusage.', 14, y + 2);
+      y += 10;
+    }
 
     // ── Unterschrift ──────────────────────────────────────────────────────────
     if (y > H - 25) { pdf.addPage(); y = 20; }
@@ -1413,6 +1445,7 @@ function App() {
           mieterListe={mieterListe}
           nkAbrechnungen={nkAbrechnungen}
           onSelectImmobilie={(immo, tab) => { setSelectedImmobilie(immo); setInitialTab(tab); }}
+          onBuchen={handleQuickBuchen}
         />
 
         {/* Abschnitt 3.1: "Mieteingänge des aktuellen Monats" — eine Kachel pro

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import FinanzierungsReiter from './FinanzierungsReiter';
 import JetztDran from './JetztDran';
 import { WasDuHierTunKannst } from './MieterSeitenleiste';
 import { erstelleZahlungserinnerung } from '../utils/mahnung.js';
@@ -1361,6 +1362,9 @@ const MehrfamilienhausDetail = ({
 
             return (
               <div className="space-y-5">
+                {/* Teil 3: Finanzierungs-Reiter (Kopfleiste, Verlauf, Szenarien, Sondertilgung, Konditionen, Abschluss) */}
+                <FinanzierungsReiter params={params} updateParams={updateParams} marktwert={aktuellerWertMFH}
+                  cashflowNachTilgung={ergebnis.cashflowMonatlich || 0} />
                 {/* Abschnitt 3.4: Gesamtinvestition mit Warnung, wenn ein Teil weder als
                     Eigenkapital noch über den Kredit abgebildet ist */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
