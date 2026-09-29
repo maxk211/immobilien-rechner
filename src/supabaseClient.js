@@ -364,6 +364,13 @@ export async function saveMieter(mieter) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Nicht eingeloggt');
 
+  // Aufrufer übergeben teils DB-Datensätze (snake_case, z. B. Mieterhöhung/Mietanpassung)
+  // statt Formulardaten (camelCase). Fehlende camelCase-Felder aus snake_case übernehmen,
+  // damit beim Update nichts (Objekt-Zuordnung, Kaution, NK-VZ …) verloren geht.
+  const SNAKE = { immobilieId: 'immobilie_id', zimmerBezeichnung: 'zimmer_bezeichnung', nkVorauszahlung: 'nk_vorauszahlung', kautionBetrag: 'kaution_betrag', kautionBezahlt: 'kaution_bezahlt', kautionBezahltAm: 'kaution_bezahlt_am', kautionZurueck: 'kaution_zurueck', kautionZurueckAm: 'kaution_zurueck_am', kautionAbzug: 'kaution_abzug', kautionAbzugGrund: 'kaution_abzug_grund', zaehlerstandStrom: 'zaehlerstand_strom', zaehlerstandWasser: 'zaehlerstand_wasser', zaehlerstandHeizung: 'zaehlerstand_heizung', schlusselZurueck: 'schluessel_zurueck', zustandNotizen: 'zustand_notizen', letzteMahnungAm: 'letzte_mahnung_am', naechsteAnpassungDatum: 'naechste_anpassung_datum', mietanpassungenMieter: 'mietanpassungen_mieter', letzteMieterhoehung: 'letzte_mieterhoehung' };
+  mieter = { ...mieter };
+  Object.entries(SNAKE).forEach(([cm, db]) => { if (mieter[cm] === undefined && mieter[db] !== undefined) mieter[cm] = mieter[db]; });
+
   const dbData = {
     immobilie_id: mieter.immobilieId,
     name: mieter.name,

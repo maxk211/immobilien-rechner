@@ -13,6 +13,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
   const [selectedJahr, setSelectedJahr] = useState(aktuellesJahr);
   const [showEinmaleffekteHerausrechnen, setShowEinmaleffekteHerausrechnen] = useState(false);
   const [showFahrtForm, setShowFahrtForm] = useState(false);
+  const [showEinstellungen, setShowEinstellungen] = useState(false);
   const [neueFahrt, setNeueFahrt] = useState({
     datum: new Date().toISOString().split('T')[0],
     grund: '',
@@ -457,42 +458,22 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       {/* Header mit Jahresauswahl */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3 mb-4">
-          <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><ClipboardList size={18} /> Steuerberechnung</h3>
+          <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><ClipboardList size={18} /> Einkünfte aus Vermietung {selectedJahr}</h3>
           {isGbR && (
             <div className="mt-2 mb-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-700 font-medium flex items-center gap-1">
               <Landmark size={12} /> GbR: Steuerwerte zeigen Ihren {Math.round(anteilFaktor * 100)}%-Anteil
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Steuerjahr:</span>
-            <div className="flex flex-wrap gap-1">
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            Steuerjahr
+            <select value={selectedJahr} onChange={e => setSelectedJahr(parseInt(e.target.value))}
+              className="px-3 py-1.5 border border-gray-300 rounded-xl text-base sm:text-sm font-semibold text-gray-800 bg-white">
               {verfuegbareJahre.map(j => {
-                const jDaten = berechneJahresSteuer(j);
-                const isInvest = jDaten?.jahrTyp === 'investition';
-                const isFinanz = jDaten?.jahrTyp === 'finanzierung';
-                return (
-                  <button
-                    key={j}
-                    onClick={() => setSelectedJahr(j)}
-                    className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                      selectedJahr === j
-                        ? 'bg-indigo-600 text-white font-semibold'
-                        : isInvest
-                          ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                          : isFinanz
-                            ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title={isInvest ? 'Investitionsjahr' : isFinanz ? 'Finanzierungsstarkes Jahr' : 'Normales Jahr'}
-                  >
-                    {j}
-                    {isInvest && <Hammer size={10} className="inline ml-0.5" />}
-                    {isFinanz && <Building2 size={10} className="inline ml-0.5" />}
-                  </button>
-                );
+                const typ = berechneJahresSteuer(j)?.jahrTyp;
+                return <option key={j} value={j}>{j}{typ === 'investition' ? ' · Investitionsjahr' : typ === 'finanzierung' ? ' · Finanzierungsjahr' : ''}</option>;
               })}
-            </div>
-          </div>
+            </select>
+          </label>
         </div>
 
         {/* Jahr-Typ Badge */}
@@ -754,13 +735,21 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       {/* Abschnitt 3.5: "Einstellungen für diese Berechnung" ganz unten, nach dem
           Ergebnis — Steuersatz/Grundsteuer/Abschreibung/Fahrtkosten werden einmal
           im Jahr angefasst, standen bisher aber über dem Ergebnis. */}
-      <div className="pt-2">
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Einstellungen für diese Berechnung</h3>
-      </div>
+      <button type="button" onClick={() => setShowEinstellungen(v => !v)}
+        className="w-full text-left bg-white border border-gray-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 hover:border-gray-300 transition-colors">
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-gray-800">Einstellungen für diese Berechnung</div>
+          <div className="text-xs text-gray-500 truncate">
+            Nur anfassen, wenn sich etwas geändert hat · Steuersatz {steuersatz} % · Grundsteuer {formatCurrency(grundsteuerMonat)}/Monat
+          </div>
+        </div>
+        <span className="text-xs font-semibold text-indigo-600 shrink-0">{showEinstellungen ? 'Schließen' : 'Anpassen'}</span>
+      </button>
 
       {/* Phase 8e: die früher 3 separaten Karten (Steuersatz/Werbungskosten,
           AfA-Einstellungen, Fahrtkosten) sind hier zu EINER Karte mit internen,
           durch Trennlinien abgesetzten Abschnitten zusammengeführt. */}
+      {showEinstellungen && (
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="mb-4">
           <label className="block text-sm text-gray-600 mb-1">Persönlicher Steuersatz</label>
@@ -1203,6 +1192,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         )}
         </div>
       </div>
+      )}
 
       {/* Hinweise */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">

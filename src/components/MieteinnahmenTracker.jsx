@@ -263,11 +263,11 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         <span>. des Monats</span>
       </div>
 
-      {/* Jahresauswahl */}
-      <div className="flex gap-1">
+      {/* Jahres-Reiter (Teil 1): ganze Jahre inkl. dem kommenden */}
+      <div className="flex gap-2 overflow-x-auto">
         {jahre.map(j => (
-          <button key={j} onClick={() => setFilterJahr(j)}
-            className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          <button key={j} onClick={() => { setFilterJahr(j); setDetailMonat(null); }}
+            className={`px-4 py-1.5 text-sm font-semibold rounded-full border transition-colors ${filterJahr === j ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'}`}>
             {j}
           </button>
         ))}
@@ -317,11 +317,13 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
         )}
       </div>
 
-      {/* Hinweis: Verlaufshistorie optional */}
-      <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-700">
-        <Info size={14} className="shrink-0 mt-0.5" />
-        <span><strong>Hinweis:</strong> Die erwarteten Beträge basieren auf der aktuellen Kaltmiete. Eine Verlaufshistorie (Mietanpassungen) ist <strong>optional</strong> — nur für den Miete-Verlaufsgraph relevant, nicht für Berechnungen.</span>
-      </div>
+      {/* Soll pro Monat in Klartext */}
+      <p className="text-xs text-gray-500">
+        Soll pro Monat: {nkVomMieter > 0
+          ? <>{formatCurrency(aktuelleMiete || 0)} Miete + {formatCurrency(nkVomMieter)} Nebenkosten = <strong className="text-gray-700">{formatCurrency(erwarteterBetrag)}</strong></>
+          : <strong className="text-gray-700">{formatCurrency(erwarteterBetrag)}</strong>}
+        {' · '}Die Liste zeigt das ganze Jahr, überfällige Monate stehen immer oben.
+      </p>
 
       {/* Forderungs-Liste */}
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
@@ -391,38 +393,40 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
                   )}
                 </div>
                 {/* Status Badge */}
-                <div className="col-span-2 flex justify-center">
+                <div className="col-span-2 flex flex-col items-center">
                   {f.status === 'beglichen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 inline-flex items-center gap-0.5"><Check size={10} /> Beglichen</span>}
                   {f.status === 'dauerauftrag' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600 inline-flex items-center gap-0.5"><Zap size={10} /> Auto</span>}
                   {f.status === 'teilweise' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">~ Teilweise</span>}
                   {f.status === 'offen' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 inline-flex items-center gap-0.5"><X size={10} /> Offen</span>}
+                  {f.zahlungen?.length > 0 && (
+                    <span className="block text-[10px] text-gray-400 mt-0.5 text-center">gebucht {new Date(f.zahlungen[f.zahlungen.length - 1].datum).toLocaleDateString('de-DE')}</span>
+                  )}
                 </div>
-                {/* Actions */}
+                {/* Aktion (Teil 1): offen → "Eingegangen", sonst "Bearbeiten" */}
                 <div className="col-span-1 flex justify-end items-center gap-1">
-                  {/* Schnell-Abhaken: nur bei offenen/teilweisen Forderungen */}
-                  {(f.status === 'offen' || f.status === 'teilweise') && !isDauerauftrag && (
+                  {(f.status === 'offen' || f.status === 'teilweise') && !isDauerauftrag ? (
                     <button
                       onClick={() => {
                         const heute = new Date().toISOString().split('T')[0];
+                        const rest = Math.max(0, f.forderungBetrag - f.eingegangen);
                         saveEingaenge([...mietEingaenge, {
                           id: Date.now(), monat: f.monatKey,
-                          datum: heute, betrag: f.forderungBetrag, notiz: '', typ: 'kaltmiete'
+                          datum: heute, betrag: rest || f.forderungBetrag, notiz: '', typ: 'kaltmiete'
                         }]);
                       }}
-                      className="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors"
-                      title={`${formatCurrency(f.forderungBetrag)} als eingegangen markieren`}
+                      className="px-2.5 py-1 bg-gray-900 hover:bg-gray-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap"
+                      title={`${formatCurrency(Math.max(0, f.forderungBetrag - f.eingegangen))} als eingegangen buchen`}
                     >
-                      <Check size={12} />
+                      Eingegangen
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setDetailMonat(isExpanded ? null : f.monatKey)}
+                      className="px-2 py-1 text-xs font-semibold text-indigo-600 hover:underline whitespace-nowrap"
+                    >
+                      {isExpanded ? 'Schließen' : 'Bearbeiten'}
                     </button>
                   )}
-                  {/* Dropdown für Detailansicht / Korrektur */}
-                  <button
-                    onClick={() => setDetailMonat(isExpanded ? null : f.monatKey)}
-                    className="text-gray-300 hover:text-gray-500 text-sm leading-none px-1"
-                    title={isExpanded ? 'Schließen' : 'Details / Korrektur'}
-                  >
-                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </button>
                 </div>
               </div>
 
@@ -472,7 +476,26 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
           );
         })}
 
-        {sortierteJahresListe.length === 0 && (
+        {/* Kommende Monate des gewählten Jahres — geplant, noch nicht fällig */}
+        {MONATE.filter(m => {
+          const vorKauf = kaufDatumObj && (filterJahr < kaufjahr || (filterJahr === kaufjahr && m.nr < kaufmonat));
+          const zukunft = filterJahr > aktuellesJahr || (filterJahr === aktuellesJahr && m.nr > aktuellerMonat);
+          return zukunft && !vorKauf;
+        }).map(m => (
+          <div key={`plan-${m.nr}`} className="grid grid-cols-12 gap-2 px-4 py-3 items-center border-b border-gray-100 last:border-0 text-gray-400">
+            <div className="col-span-2">
+              <div className="font-semibold text-sm text-gray-500">{MONATE_NAMEN[m.nr]}</div>
+              <div className="text-xs">fällig {String(params.mieteFaelligkeitstag ?? 3).padStart(2, '0')}.{String(m.nr).padStart(2, '0')}.{filterJahr}</div>
+            </div>
+            <div className="col-span-3 text-xs">{isDauerauftrag ? 'Dauerauftrag hinterlegt — renditly hakt dann automatisch ab' : 'noch nicht fällig'}</div>
+            <div className="col-span-2 text-right text-sm font-semibold text-gray-500">{formatCurrency(getMieteForMonat(filterJahr, m.nr))}</div>
+            <div className="col-span-2 text-right text-sm">—</div>
+            <div className="col-span-2 flex justify-center"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">geplant</span></div>
+            <div className="col-span-1" />
+          </div>
+        ))}
+
+        {sortierteJahresListe.length === 0 && filterJahr <= aktuellesJahr && (
           <div className="px-4 py-8 text-center text-gray-400 text-sm">
             Kein Kaufdatum hinterlegt oder keine Monate in diesem Jahr.
           </div>

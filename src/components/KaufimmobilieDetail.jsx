@@ -6,6 +6,9 @@ import { berechneWertsteigerungSeitKauf, berechneRendite } from '../utils/berech
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
 import MieterhoeungModal from './MieterhoeungModal';
+import JetztDran from './JetztDran';
+import { MietanpassungenTabelle, WasDuHierTunKannst } from './MieterSeitenleiste';
+import { erstelleZahlungserinnerung } from '../utils/mahnung.js';
 import KaufnebenkostenManager from './KaufnebenkostenManager';
 import MietKostenManager from './MietKostenManager';
 import CashflowUebersicht from './CashflowUebersicht';
@@ -723,39 +726,22 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
             return (
             <div className="space-y-4">
-              {/* Jetzt dran — Abschnitt 3.2 + 5: je 1 Zeile + 1 Aktionsbutton,
-                  Leerzustand ist eine grüne Zeile statt einer leeren Box. */}
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Jetzt dran</p>
-                </div>
-                {eigeneAufgaben.length === 0 ? (
-                  <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50">
-                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0"/>
-                    <span className="text-sm font-semibold text-emerald-700">Alles im grünen Bereich — keine offenen Punkte</span>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-100">
-                    {eigeneAufgaben.map(aufgabe => (
-                      <div key={aufgabe.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${
-                          aufgabe.priority === 'rot' ? 'bg-red-500' : aufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-gray-400'
-                        }`} />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold text-gray-800 truncate">{aufgabe.titel}</div>
-                          {aufgabe.sub && <div className="text-xs text-gray-400 truncate">{aufgabe.sub}</div>}
-                        </div>
-                        <button
-                          onClick={() => setActiveTab(aufgabe.targetTab)}
-                          className="px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors"
-                        >
-                          Ansehen
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Jetzt dran — je Aufgabe die passende Handlung (Teil 1) */}
+              <JetztDran
+                aufgaben={eigeneAufgaben}
+                handler={{
+                  onOeffnen: (tab) => setActiveTab(tab),
+                  onEingegangen: () => handleMieteAbhaken(),
+                  onMahnen: () => erstelleZahlungserinnerung({
+                    mieterName: aktiverMieter?.name,
+                    objektAdresse: [params.adresse, params.plz].filter(Boolean).join(', '),
+                    monatLabel: heute.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
+                    betrag: erwarteterMietBetrag,
+                    faelligAm: new Date(heute.getFullYear(), heute.getMonth(), params.mieteFaelligkeitstag ?? 3),
+                  }),
+                  onDurchrechnen: () => setMieterhoeungMieter(aktiverMieter || {}),
+                }}
+              />
 
               {/* Mieteingänge — 12 Monatsfelder für das laufende Jahr, Klick bucht direkt */}
               {aktiveMieterKaufobjekt && (
@@ -843,10 +829,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
                   {/* Mieter-Karte */}
                   {aktiverMieter && (
-                    <button onClick={() => setActiveTab('mieter')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors">
+                    <div className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4">
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><User size={12}/> Mieter</p>
-                        <span className="text-xs text-indigo-600 font-semibold">Details →</span>
+                        <button onClick={() => setActiveTab('mieter')} className="text-xs text-indigo-600 font-semibold hover:underline">Details →</button>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <div><div className="text-[10px] text-gray-400">Name</div><div className="text-sm font-semibold text-gray-800 truncate">{aktiverMieter.name}</div></div>
@@ -856,9 +842,20 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           <div><div className="text-[10px] text-gray-400">Nebenkosten-VZ</div><div className="text-sm text-gray-700">{formatCurrency(params.nebenkostenVomMieter || 0)}</div></div>
                         )}
                         <div><div className="text-[10px] text-gray-400">Kaution</div><div className="text-sm text-gray-700">{aktiverMieter.kaution_betrag ? formatCurrency(aktiverMieter.kaution_betrag) : '—'}</div></div>
-                        <div><div className="text-[10px] text-gray-400">Letzte Erhöhung</div><div className="text-sm text-gray-700">{aktiverMieter.letzte_mieterhoehung ? new Date(aktiverMieter.letzte_mieterhoehung).toLocaleDateString('de-DE') : '—'}</div></div>
+                        <div><div className="text-[10px] text-gray-400">Letzte Erhöhung</div><div className="text-sm text-gray-700">{aktiverMieter.letzte_mieterhoehung ? new Date(aktiverMieter.letzte_mieterhoehung).toLocaleDateString('de-DE') : 'nicht hinterlegt'}</div></div>
                       </div>
-                    </button>
+                      {/* Teil 1: Mieter-Karte mit den zwei häufigsten Handlungen */}
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <button onClick={() => setMieterhoeungMieter(aktiverMieter)}
+                          className="flex-1 px-3 py-2 text-xs font-bold rounded-lg border border-gray-200 text-gray-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors">
+                          Mieterhöhung
+                        </button>
+                        <button onClick={() => setActiveTab('nkabrechnung')}
+                          className="flex-1 px-3 py-2 text-xs font-bold rounded-lg border border-gray-200 text-gray-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors">
+                          NK-Abrechnung
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -2137,16 +2134,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           )}
 
           {activeTab === 'mieter' && (
-            <>
-              {/* Standalone Mieterhöhung ohne Mieter-Datensatz */}
-              <div className="flex justify-end mb-3">
-                <button
-                  onClick={() => setMieterhoeungMieter({})}
-                  className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold flex items-center gap-2 shadow-sm"
-                >
-                  <TrendingUp size={16} className='inline mr-1'/>Mieterhöhungsschreiben erstellen
-                </button>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+              {/* Teil 1: links Mieter + Mietanpassungen, rechts Kaution + "Was du hier tun kannst" */}
+              <div className="lg:col-span-2 space-y-4 min-w-0">
               <MieterDashboard
                 mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
                 portfolio={[immobilie]}
@@ -2177,17 +2167,49 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 }}
               />
 
-              {/* Abschnitt 3.7: Kaution als Block auf der Mieter-Seite statt als
-                  eigener Unter-Reiter. */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <h3 className="text-sm font-bold text-gray-700 mb-3">Kaution</h3>
-                <KautionsManager
-                  params={params}
-                  updateParams={updateParams}
-                  mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+              <MietanpassungenTabelle
+                anpassungen={params.mietAnpassungen || []}
+                basisMiete={Number(params.kaltmiete) || 0}
+                onAdd={async ({ datum, kaltmiete, grund }) => {
+                  const updated = { ...params, mietAnpassungen: [...(params.mietAnpassungen || []), { datum, kaltmiete, grund }] };
+                  updateParams(updated);
+                  await onSave({ ...immobilie, ...updated });
+                  setHasChanges(false);
+                  // Letzte Mieterhöhung beim aktiven Mieter nachziehen (Grundlage der Erinnerung)
+                  const mAktiv = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
+                  if (mAktiv && grund !== 'Neuvermietung' && onSaveMieter) {
+                    const bisher = mAktiv.letzte_mieterhoehung ? new Date(mAktiv.letzte_mieterhoehung) : null;
+                    if (!bisher || new Date(datum) > bisher) {
+                      await onSaveMieter({
+                        ...mAktiv,
+                        mietanpassungenMieter: mAktiv.mietanpassungen_mieter || [],
+                        naechsteAnpassungDatum: mAktiv.naechste_anpassung_datum || '',
+                        letzteMieterhoehung: datum,
+                        kaltmiete,
+                      });
+                    }
+                  }
+                }}
+              />
+              </div>
+
+              <div className="space-y-4">
+                {/* Abschnitt 3.7: Kaution als Block auf der Mieter-Seite */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Kaution</h3>
+                  <KautionsManager
+                    params={params}
+                    updateParams={updateParams}
+                    mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+                  />
+                </div>
+                <WasDuHierTunKannst
+                  onMieterhoehung={() => setMieterhoeungMieter(mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false) || {})}
+                  onNebenkosten={() => setActiveTab('nkabrechnung')}
+                  onMieteingaenge={() => setActiveTab('mieteinnahmen')}
                 />
               </div>
-            </>
+            </div>
           )}
 
           {/* Mieterhöhungs-Modal — auch ohne Mieter-Datensatz (mieterhoeungMieter === {} oder echter Mieter) */}
