@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Akzentfarbe als Variablen (siehe tailwind.config.js) */
+:root {
+  --c-indigo-50: 238 242 255; --c-indigo-100: 224 231 255; --c-indigo-200: 199 210 254;
+  --c-indigo-300: 165 180 252; --c-indigo-400: 129 140 248; --c-indigo-500: 99 102 241;
+  --c-indigo-600: 79 70 229; --c-indigo-700: 67 56 202; --c-indigo-800: 55 48 163;
+  --c-indigo-900: 49 46 129; --c-indigo-950: 30 27 75;
+}
+/* Eingeloggte App: Violett aus den UX-Mockups */
+.font-app {
+  --c-indigo-50: 243 241 254; --c-indigo-100: 233 229 253; --c-indigo-200: 212 204 251;
+  --c-indigo-300: 182 168 247; --c-indigo-400: 145 122 240; --c-indigo-500: 112 88 232;
+  --c-indigo-600: 90 65 224; --c-indigo-700: 74 51 196; --c-indigo-800: 61 43 160;
+  --c-indigo-900: 51 39 127; --c-indigo-950: 31 23 80;
+}
+.font-app input[type="range"]::-webkit-slider-thumb { background: rgb(var(--c-indigo-600)); }
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
