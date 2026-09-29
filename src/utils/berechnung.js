@@ -1,5 +1,5 @@
 import { getPreisNachPLZ } from '../constants/plz.js';
-import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert } from './miete.js';
+import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert, zahltIchAm, zahlerAnteilJahr, arbitrageZusatzkosten } from './miete.js';
 import { darlehensVerlauf } from './darlehen.js';
 
 // Immobilienwert schätzen
@@ -299,7 +299,10 @@ export const berechneJahresZinsenFuerSteuer = (immo, targetJahr) => {
 // der bisherigen Rechnung: volles Hausgeld als Kosten, volle NK-VZ als Einnahme.
 // Pauschalmiete: keine Abrechnung — volles Hausgeld ist echte Kosten.
 // get(feld) liefert den Monatswert eines datierbaren Kostenfelds (aktuell oder Jahresschnitt).
-export const kostenStruktur = (immo, get = (f) => Number(immo?.[f]) || 0) => {
+// jahr (optional): für Jahreswerte — dann zählt der Anteil der Monate, in denen ich zahle.
+export const kostenStruktur = (immo, get = (f) => Number(immo?.[f]) || 0, jahr = null) => {
+  // Wer zahlt? Positionen, die der Mieter/die Firma direkt zahlt, sind keine Kosten für mich.
+  const zf = (feld) => (jahr != null ? zahlerAnteilJahr(immo, feld, jahr) : (zahltIchAm(immo, feld) ? 1 : 0));
   const modell = immo?.vermietungsmodell || 'kaltmiete';
   const istMFH = immo?.immobilienTyp === 'mehrfamilienhaus';
   const hausgeld = get('hausgeld');
@@ -313,10 +316,12 @@ export const kostenStruktur = (immo, get = (f) => Number(immo?.[f]) || 0) => {
   const weitere = {
     ruecklage: get('instandhaltung'),
     versicherung: istMFH ? 0 : (Number(immo?.versicherungMonat) || 0),
-    strom: get('strom'),
-    internet: get('internet'),
+    strom: get('strom') * zf('strom'),
+    heizung: istMFH ? 0 : get('heizung') * zf('heizung'),
+    internet: get('internet') * zf('internet'),
+    rundfunk: istMFH ? 0 : get('rundfunk') * zf('rundfunk'),
     kontofuehrung: istMFH ? 0 : (Number(immo?.kontofuehrung) || 0),
-    sonstige: get('nebenkosten'),
+    sonstige: get('nebenkosten') * zf('nebenkosten'),
   };
   const weitereSumme = Object.values(weitere).reduce((a, b) => a + b, 0);
   const hausgeldImCashflow = nuBekannt ? nichtUmlagefaehig : hausgeld;
@@ -589,11 +594,8 @@ export const berechneMtlCashflow = (immo) => {
     const vertragsEnde = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
     if (vertragsEnde && vertragsEnde < new Date()) return 0;
     const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo);
-    const ausgaben = getAktuelleWarmmiete(immo)
-      + (immo.arbitrageStrom || 0)
-      + (immo.arbitrageInternet || 0)
-      + (immo.arbitrageGEZ ?? 18.36)
-      + (immo.arbitrageSonstige || 0); // weitere laufende Kosten (z. B. Reinigung, Verschleiß)
+    // Zusatzkosten nur, soweit ich sie selbst trage (Wer zahlt? mit Datum)
+    const ausgaben = getAktuelleWarmmiete(immo) + arbitrageZusatzkosten(immo);
     return einnahmen - ausgaben;
   }
 

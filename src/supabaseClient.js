@@ -46,6 +46,8 @@ const ZUSATZ_KEYS = [
   // Phase I: Anlage-Wizard
   'ort', 'erwerbsart', 'mietstatus',
   'arbitrageSonstige', // weitere laufende Kosten bei Arbitrage
+  // Wer zahlt welche Kosten (mit Datum) + neue Positionen
+  'kostenZahler', 'heizung', 'rundfunk', 'arbitrageHeizung',
 ];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 

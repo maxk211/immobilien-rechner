@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ClipboardList, Landmark, Hammer, Building2, BarChart3, Wrench, RefreshCw, Package, AlertTriangle, ShieldCheck, Lightbulb, TrendingDown, TrendingUp, Car, Download, X } from 'lucide-react';
 import { getXLSX, getJsPDF } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
-import { getJahresDurchschnittFuerFeld } from '../utils/miete.js';
+import { getJahresDurchschnittFuerFeld, zahlerAnteilJahr } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
 import InfoHint from './InfoHint';
 
@@ -139,7 +139,10 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     const jahresHausgeld = getJahresDurchschnittFuerFeld(params, jahr, 'hausgeld') * 12;
     const jahresGrundsteuer = grundsteuerMonat * 12;
     const jahresVersicherung = versicherungMonat * 12;
-    const jahresNebenkosten = getJahresDurchschnittFuerFeld(params, jahr, 'nebenkosten') * 12; // sonstige Betriebskosten (§ 9 EStG Z. 50)
+    // sonstige Betriebskosten (§ 9 EStG Z. 50) — nur, soweit du sie selbst trägst (Wer zahlt?).
+    // Strom, Heizung, Internet, Rundfunk bei Warm-/Pauschalmiete sind ebenfalls Werbungskosten.
+    const jahresNebenkosten = ['nebenkosten', 'strom', 'heizung', 'internet', 'rundfunk']
+      .reduce((sum, f) => sum + getJahresDurchschnittFuerFeld(params, jahr, f) * 12 * zahlerAnteilJahr(params, f, jahr), 0);
     const laufendeKosten = jahresInstandhaltung + jahresVerwaltung + jahresHausgeld + jahresGrundsteuer + jahresVersicherung + jahresNebenkosten;
 
     // Finanzierungskosten (nur Zinsen - Tilgung ist nicht absetzbar!)

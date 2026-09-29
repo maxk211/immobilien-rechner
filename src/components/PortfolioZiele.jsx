@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Wallet, Home, TrendingUp, BarChart3, Target, ChevronDown, Check, CheckCircle2, Trophy } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneMtlCashflow, berechneImmoVermoegenswerte } from '../utils/berechnung.js';
-import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, arbitrageZusatzkosten } from '../utils/miete.js';
 
 const STORAGE_KEY = 'portfolioZiele';
 
@@ -78,7 +78,7 @@ function berechnePortfolioStats(portfolio) {
       const vertragsLaeuft = !vertragsEnde || vertragsEnde >= new Date();
       if (vertragsLaeuft) {
         const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo);
-        const ausgaben = getAktuelleWarmmiete(immo) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36) + (immo.arbitrageSonstige || 0);
+        const ausgaben = getAktuelleWarmmiete(immo) + arbitrageZusatzkosten(immo);
         gesamtCashflowMonat += einnahmen - ausgaben;
       }
     } else {

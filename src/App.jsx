@@ -6,7 +6,7 @@ import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
 import { formatCurrency, formatPercent } from './utils/format.js';
-import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, getJahresDurchschnittFuerFeld, berechneHistorischenArbitrageCashflow } from './utils/miete.js';
+import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, getJahresDurchschnittFuerFeld, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, zahlerAnteilJahr } from './utils/miete.js';
 import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
 import { showConfirm, ConfirmDialog } from './utils/confirm.jsx';
 import { ZAEHLER_TYPEN, NK_KOSTENPOSITIONEN_DEFAULTS, NK_STANDARD_POSITIONEN, CHANGELOG_VERSION, CHANGELOG_EINTRAEGE } from './constants/index.js';
@@ -885,10 +885,10 @@ function App() {
       const arb = berechneJahresArbitrage(immo, jahr);
       arbitrageEinnahmen += arb.einnahmen;
       arbWarmmiete += arb.eigeneWarmmiete;
-      arbStrom     += (immo.arbitrageStrom || 0) * 12 * arb.faktor;
-      arbInternet  += (immo.arbitrageInternet || 0) * 12 * arb.faktor;
-      arbGEZ       += (immo.arbitrageGEZ || 0) * 12 * arb.faktor;
-      arbSonstige  += (immo.arbitrageSonstige || 0) * 12 * arb.faktor;
+      arbStrom     += (immo.arbitrageStrom || 0) * 12 * arb.faktor * zahlerAnteilJahr(immo, 'arbitrageStrom', jahr);
+      arbInternet  += (immo.arbitrageInternet || 0) * 12 * arb.faktor * zahlerAnteilJahr(immo, 'arbitrageInternet', jahr);
+      arbGEZ       += (immo.arbitrageGEZ || 0) * 12 * arb.faktor * zahlerAnteilJahr(immo, 'arbitrageGEZ', jahr);
+      arbSonstige  += ((immo.arbitrageSonstige || 0) * zahlerAnteilJahr(immo, 'arbitrageSonstige', jahr) + (immo.arbitrageHeizung || 0) * zahlerAnteilJahr(immo, 'arbitrageHeizung', jahr)) * 12 * arb.faktor;
     });
     const arbitrageAusgaben = arbWarmmiete + arbStrom + arbInternet + arbGEZ + arbSonstige;
 
@@ -1022,10 +1022,10 @@ function App() {
 
       mietimmobilien.forEach(immo => {
         const arb = berechneJahresArbitrage(immo, jahr);
-        const strom = (immo.arbitrageStrom || 0) * 12 * arb.faktor;
-        const internet = (immo.arbitrageInternet || 0) * 12 * arb.faktor;
-        const gez = (immo.arbitrageGEZ || 0) * 12 * arb.faktor;
-        const sonstige = (immo.arbitrageSonstige || 0) * 12 * arb.faktor;
+        const strom = (immo.arbitrageStrom || 0) * 12 * arb.faktor * zahlerAnteilJahr(immo, 'arbitrageStrom', jahr);
+        const internet = (immo.arbitrageInternet || 0) * 12 * arb.faktor * zahlerAnteilJahr(immo, 'arbitrageInternet', jahr);
+        const gez = (immo.arbitrageGEZ || 0) * 12 * arb.faktor * zahlerAnteilJahr(immo, 'arbitrageGEZ', jahr);
+        const sonstige = ((immo.arbitrageSonstige || 0) * zahlerAnteilJahr(immo, 'arbitrageSonstige', jahr) + (immo.arbitrageHeizung || 0) * zahlerAnteilJahr(immo, 'arbitrageHeizung', jahr)) * 12 * arb.faktor;
         const einnahmen = arb.einnahmen;
         const eigeneMiete = arb.eigeneWarmmiete;
         const gewinn = einnahmen - eigeneMiete - strom - internet - gez - sonstige;
@@ -1182,7 +1182,7 @@ function App() {
       const mietRows = mietimmobilien.map(immo => {
         // aktuelle Werte aus mietAnpassungen
         const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo) * 12;
-        const ausgaben = (getAktuelleWarmmiete(immo) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0) + (immo.arbitrageSonstige || 0)) * 12;
+        const ausgaben = (getAktuelleWarmmiete(immo) + arbitrageZusatzkosten(immo)) * 12;
         return [
           immo.name || 'Unbenannt',
           formatCurrency(einnahmen),

@@ -161,7 +161,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
 
     for (let jahr = kaufjahr; jahr <= aktuellesJahr + 5; jahr++) {
       const kaltmiete  = getMieteForJahr(jahr);
-      const ksJ = kostenStruktur(params, (f) => getJahresDurchschnittFuerFeld(params, jahr, f));
+      const ksJ = kostenStruktur(params, (f) => getJahresDurchschnittFuerFeld(params, jahr, f), jahr);
       const nkVM = ksJ.nkImCashflow;
       const sp = params.stellplatz;
       const stellplatz = (sp?.vorhanden && sp?.istVermietet)
@@ -343,6 +343,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               <Z label="Eigene Rücklage für Reparaturen" wert={ks.weitere.ruecklage} hideZero />
               <Z label="Versicherungen" wert={ks.weitere.versicherung} hideZero />
               <Z label="Strom" wert={ks.weitere.strom} hideZero />
+              <Z label="Heizung" wert={ks.weitere.heizung} hideZero />
+              <Z label="Rundfunkbeitrag" wert={ks.weitere.rundfunk} hideZero />
               <Z label="Internet" wert={ks.weitere.internet} hideZero />
               <Z label="Kontoführung" wert={ks.weitere.kontofuehrung} hideZero />
               <Z label="Eigene Position" wert={ks.weitere.sonstige} hideZero />
