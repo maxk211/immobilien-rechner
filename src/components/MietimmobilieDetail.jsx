@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import JetztDran from './JetztDran';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import ObjektUeberlaufMenu from './ObjektUeberlaufMenu';
@@ -677,41 +678,18 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             };
             return (
             <div className="space-y-4">
-              {/* Jetzt dran */}
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Jetzt dran</p>
-                </div>
-                {(() => {
-                  const hinweise = [...eigeneAufgaben];
-                  if (vertragsende && !vertragsBeendet && (vertragsende - heute) / (1000 * 60 * 60 * 24 * 30.44) <= 6) {
-                    hinweise.unshift({ id: 'hauptmietvertrag-ende', priority: 'gelb', titel: `Hauptmietvertrag endet am ${vertragsende.toLocaleDateString('de-DE')}`, sub: 'Untermieter rechtzeitig informieren', targetTab: 'objekt' });
-                  }
-                  if (hinweise.length === 0) return (
-                    <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50">
-                      <Check size={16} className="text-emerald-500 shrink-0"/>
-                      <span className="text-sm font-semibold text-emerald-700">Alles im grünen Bereich — keine offenen Punkte</span>
-                    </div>
-                  );
-                  return (
-                    <div className="divide-y divide-gray-100">
-                      {hinweise.map(a => (
-                        <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${a.priority === 'rot' ? 'bg-red-500' : a.priority === 'gelb' ? 'bg-amber-400' : 'bg-gray-400'}`} />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-gray-800 truncate">{a.titel}</div>
-                            {a.sub && <div className="text-xs text-gray-400 truncate">{a.sub}</div>}
-                          </div>
-                          <button onClick={() => setActiveTab(a.targetTab === 'mieteinnahmen' ? 'mieteingaenge' : a.targetTab)}
-                            className="px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-emerald-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors">
-                            Ansehen
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
+              {/* Jetzt dran — je Aufgabe die passende Handlung (Teil 1) */}
+              {(() => {
+                const hinweise = [...eigeneAufgaben];
+                if (vertragsende && !vertragsBeendet && (vertragsende - heute) / (1000 * 60 * 60 * 24 * 30.44) <= 6) {
+                  hinweise.unshift({ id: 'hauptmietvertrag-ende', priority: 'gelb', titel: `Hauptmietvertrag endet am ${vertragsende.toLocaleDateString('de-DE')}`, sub: 'Untermieter rechtzeitig informieren', targetTab: 'objekt' });
+                }
+                return (
+                  <JetztDran aufgaben={hinweise} handler={{
+                    onOeffnen: (tab) => setActiveTab(MIET_TAB_MAP[tab] ?? (tab === 'mieteinnahmen' ? 'mieteingaenge' : tab)),
+                  }} />
+                );
+              })()}
 
               {/* Mieteingänge — 12 Monatsfelder, Klick bucht direkt */}
               {!vertragsBeendet && einnahmen > 0 && (

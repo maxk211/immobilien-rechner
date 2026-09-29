@@ -1,4 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import JetztDran from './JetztDran';
+import { WasDuHierTunKannst } from './MieterSeitenleiste';
+import { erstelleZahlungserinnerung } from '../utils/mahnung.js';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { berechneRendite, berechneWertsteigerungSeitKauf } from '../utils/berechnung.js';
@@ -700,34 +703,14 @@ const MehrfamilienhausDetail = ({
             const offeneWE = belegteWohnungenListe.filter(w => berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, Number(w.kaltmiete) || 0, false).status !== 'bezahlt');
             return (
             <div className="space-y-4">
-              {/* Jetzt dran — je Zeile genau ein Aktionsbutton, Leerzustand grün */}
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Jetzt dran</p>
-                </div>
-                {eigeneAufgaben.length === 0 ? (
-                  <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50">
-                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0"/>
-                    <span className="text-sm font-semibold text-emerald-700">Alles im grünen Bereich — keine offenen Punkte</span>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-100">
-                    {eigeneAufgaben.map(aufgabe => (
-                      <div key={aufgabe.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${aufgabe.priority === 'rot' ? 'bg-red-500' : aufgabe.priority === 'gelb' ? 'bg-amber-400' : 'bg-gray-400'}`} />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold text-gray-800 truncate">{aufgabe.titel}</div>
-                          {aufgabe.sub && <div className="text-xs text-gray-400 truncate">{aufgabe.sub}</div>}
-                        </div>
-                        <button onClick={() => setActiveTab(MFH_TAB_MAP[aufgabe.targetTab] ?? aufgabe.targetTab)}
-                          className="px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors">
-                          Ansehen
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Jetzt dran — je Aufgabe die passende Handlung (Teil 1) */}
+              <JetztDran
+                aufgaben={eigeneAufgaben}
+                handler={{
+                  onOeffnen: (tab) => setActiveTab(MFH_TAB_MAP[tab] ?? tab),
+                  onEingegangen: offeneWE.length > 0 ? () => handleAlleWohnungenAbhaken() : null,
+                }}
+              />
 
               {/* Mieteingänge des laufenden Monats — pro Wohnung abhakbar */}
               {belegteWohnungenListe.length > 0 && (
@@ -769,10 +752,24 @@ const MehrfamilienhausDetail = ({
                               </button>
                             </div>
                           ) : (
-                            <button onClick={() => handleWohnungMieteAbhaken(wIdx)}
-                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1">
-                              <Check size={12}/> Erhalten ({formatCurrency(erwartet)})
-                            </button>
+                            <div className="flex gap-1.5 shrink-0">
+                              <button onClick={() => handleWohnungMieteAbhaken(wIdx)}
+                                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1">
+                                <Check size={12}/> Erhalten ({formatCurrency(erwartet)})
+                              </button>
+                              {heute.getDate() > (params.mieteFaelligkeitstag ?? 3) && (
+                                <button onClick={() => erstelleZahlungserinnerung({
+                                    mieterName: w.mieterName,
+                                    objektAdresse: [params.adresse, w.name, params.plz].filter(Boolean).join(', '),
+                                    monatLabel: heute.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
+                                    betrag: erwartet,
+                                    faelligAm: new Date(heute.getFullYear(), heute.getMonth(), params.mieteFaelligkeitstag ?? 3),
+                                  })}
+                                  className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-700 text-xs font-bold rounded-lg transition-colors">
+                                  Mahnen
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       );
@@ -1896,6 +1893,8 @@ const MehrfamilienhausDetail = ({
 
           {/* ── VERMIETUNG: MIETER ───────────────────────────────────────────── */}
           {activeTab === 'mieter' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            <div className="lg:col-span-2 min-w-0">
             <MieterDashboard
               mieterListe={(mieterListe || []).filter(m => m.immobilie_id === immobilie.id)}
               portfolio={[{ ...immobilie, wohnungen }]}
@@ -1914,6 +1913,12 @@ const MehrfamilienhausDetail = ({
               onMieteingaengeClick={() => setActiveTab('mieteinnahmen')}
                 onNebenkostenClick={() => setActiveTab('nkabrechnung')}
             />
+            </div>
+            <WasDuHierTunKannst
+              onNebenkosten={() => setActiveTab('nkabrechnung')}
+              onMieteingaenge={() => setActiveTab('mieteinnahmen')}
+            />
+            </div>
           )}
 
           {/* ── VERMIETUNG: NK-ABRECHNUNG ────────────────────────────────────── */}

@@ -118,7 +118,7 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
         <div className="flex gap-1 mt-4 flex-wrap">
           {jahre.map(j => (
             <button key={j} onClick={() => setFilterJahr(j)}
-              className={`px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${filterJahr === j ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              className={`px-4 py-1.5 text-sm font-semibold rounded-full border transition-colors ${filterJahr === j ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'}`}>
               {j}
             </button>
           ))}
@@ -128,21 +128,25 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
       {/* Fristhinweis: Abrechnung des Vorjahres ist offen — fehlt komplett ODER
           existiert bereits, ist aber noch nicht verschickt (offen/in Arbeit). */}
       {vorjahresAbrechnungOffen && (
-        <div className={`rounded-2xl p-4 text-sm border flex items-start gap-2 ${nachFristStichtag ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-          <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-          <div>
-            <div className="font-semibold">NK-Abrechnung {letztesJahr} steht noch aus</div>
-            <div className="mt-0.5 text-xs opacity-90">
-              {!vorjahresAbrechnung
-                // Gesetzliche Frist § 556 Abs. 3 BGB: Zugang beim Mieter bis 12 Monate
-                // nach Ende des Abrechnungszeitraums (Kalenderjahr → 31.12. Folgejahr).
-                // Der 1. Oktober ist nur der Erinnerungs-Stichtag aus dem Konzept.
-                ? (nachFristStichtag
-                    ? `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Die gesetzliche Frist endet am 31.12.${aktuellesJahr} — danach sind Nachforderungen in der Regel ausgeschlossen.`
-                    : `Für ${letztesJahr} wurde noch keine Abrechnung erfasst. Gesetzliche Frist: 31.12.${aktuellesJahr}.`)
-                : `Für ${letztesJahr} liegt bereits eine Abrechnung vor, sie wurde aber noch nicht verschickt (Status: ${vorjahresAbrechnung.status === 'in_arbeit' ? 'In Arbeit' : 'Offen'}).`}
+        <div className={`rounded-2xl p-4 border flex items-start justify-between gap-3 flex-wrap ${nachFristStichtag ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-start gap-2 min-w-0">
+            <AlertTriangle size={16} className={`flex-shrink-0 mt-0.5 ${nachFristStichtag ? 'text-red-600' : 'text-amber-600'}`} />
+            <div className={nachFristStichtag ? 'text-red-800' : 'text-amber-800'}>
+              <div className="font-semibold text-sm">Abrechnung {letztesJahr} ist noch offen</div>
+              <div className="mt-0.5 text-xs opacity-90">
+                {/* § 556 Abs. 3 BGB: Zugang beim Mieter bis 12 Monate nach Ende des Abrechnungszeitraums */}
+                {vorjahresAbrechnung
+                  ? `Sie ist angelegt, aber noch nicht verschickt (Status: ${vorjahresAbrechnung.status === 'in_arbeit' ? 'In Arbeit' : 'Offen'}). `
+                  : ''}
+                Du hast bis zum 31.12.{aktuellesJahr} Zeit. Danach kannst du keine Nachzahlung mehr verlangen — ein Guthaben musst du trotzdem auszahlen.
+              </div>
             </div>
           </div>
+          <button
+            onClick={() => { setFilterJahr(letztesJahr); setEditAbrechnung(vorjahresAbrechnung || null); setShowForm(true); }}
+            className="px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-700 transition-colors shrink-0">
+            Abrechnung {letztesJahr} {vorjahresAbrechnung ? 'fortsetzen' : 'starten'}
+          </button>
         </div>
       )}
 
@@ -237,6 +241,26 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
           })}
         </div>
       )}
+
+      {/* So läuft eine Abrechnung (Teil 1) */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <p className="text-sm font-bold text-gray-800">So läuft eine Abrechnung</p>
+        <p className="text-xs text-gray-500 mb-4">Vier Schritte, renditly zieht Vorauszahlungen und Hausgeld aus den bereits erfassten Daten.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          {[
+            ['Zeitraum wählen', 'Kalenderjahr oder Teilzeitraum bei Mieterwechsel'],
+            ['Kosten erfassen', 'WEG-Abrechnung zur Hand nehmen, umlagefähige Posten markieren'],
+            ['Ergebnis prüfen', 'Nachzahlung oder Guthaben, verglichen mit den Vorauszahlungen'],
+            ['Schreiben erstellen', 'PDF für den Mieter, Status springt auf verschickt'],
+          ].map(([t, d], i) => (
+            <div key={t} className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+              <div className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center mb-2">{i + 1}</div>
+              <div className="text-sm font-semibold text-gray-800">{t}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
