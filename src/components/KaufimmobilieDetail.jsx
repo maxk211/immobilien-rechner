@@ -2142,7 +2142,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           {activeTab === 'mieteinnahmen' && (
             <MieteinnahmenTracker
               params={params}
-              updateParams={updateParams}
+              updateParams={(neu) => (neu.mietEingaenge !== params.mietEingaenge || neu.nkAbrechnungen !== params.nkAbrechnungen ? speichereSofort(neu) : updateParams(neu))}
               immobilie={immobilie}
               mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false)}
             />

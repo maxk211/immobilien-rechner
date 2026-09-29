@@ -410,11 +410,13 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
                 <MieteinnahmenTracker
                   params={trackerParams}
-                  updateParams={(neu) => updateParams({
-                    mietEingaenge: neu.mietEingaenge,
-                    dauerauftrag: neu.dauerauftrag,
-                    dauerauftragBetrag: neu.dauerauftragBetrag,
-                  })}
+                  updateParams={(neu) => {
+                    // Mieteingänge sofort speichern — rückwirkendes Abhaken soll nicht an
+                    // einem vergessenen "Speichern" scheitern
+                    const upd = { mietEingaenge: neu.mietEingaenge, dauerauftrag: neu.dauerauftrag, dauerauftragBetrag: neu.dauerauftragBetrag };
+                    setParams(prev => ({ ...prev, ...upd }));
+                    onSave({ ...immobilie, ...params, ...upd });
+                  }}
                   immobilie={trackerImmo}
                   mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
                 />

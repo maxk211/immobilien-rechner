@@ -95,7 +95,12 @@ export const getJahresDurchschnittFuerFeld = (params, jahr, feld) => {
 // Alle drei Stellen müssen ab jetzt diese Funktion nutzen.
 // status: 'dauerauftrag' | 'nicht_bezahlt' | 'bezahlt' | 'teilweise' | 'offen'
 export const berechneMietStatusFuerMonat = (mietEingaenge, jahr, monatNr, erwarteterBetrag, isDauerauftrag) => {
+  // Zuordnung zum Monat: ein gebuchter Monat (e.monat = "JJJJ-MM") hat Vorrang vor dem
+  // Zahlungsdatum. Sonst landete eine nachträglich abgehakte Miete (Buchung heute) im
+  // aktuellen Monat, und der vergessene Monat blieb offen.
+  const monatKey = `${jahr}-${String(monatNr).padStart(2, '0')}`;
   const monatEintraege = (mietEingaenge || []).filter(e => {
+    if (e.monat) return e.monat === monatKey;
     const d = new Date(e.datum);
     return d.getFullYear() === jahr && (d.getMonth() + 1) === monatNr;
   });
