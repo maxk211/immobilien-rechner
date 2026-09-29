@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, berechneMietStatusFuerMonat } from '../utils/miete.js';
-import { berechneWertsteigerungSeitKauf, berechneRendite } from '../utils/berechnung.js';
+import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur } from '../utils/berechnung.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
 import MieterhoeungModal from './MieterhoeungModal';
@@ -318,6 +318,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     hausverwaltungKontakt: immobilie.hausverwaltungKontakt || '',
     miteigentumsanteil: immobilie.miteigentumsanteil || '',
     naechsteEigentuemerversammlung: immobilie.naechsteEigentuemerversammlung || '',
+    // Phase E: Kostenstruktur — nicht umlagefähig startet leer (null), nie geschätzt vorbelegt
+    hausgeldNichtUmlagefaehig: immobilie.hausgeldNichtUmlagefaehig ?? null,
+    kontofuehrung: immobilie.kontofuehrung || 0,
+    weitereKostenAktiv: immobilie.weitereKostenAktiv ?? null,
+    weitereKostenChips: immobilie.weitereKostenChips || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
@@ -697,10 +702,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             const kaufjahrCockpit = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : jahrCockpit;
             const kaufmonatCockpit = params.kaufdatum ? new Date(params.kaufdatum).getMonth() + 1 : 1;
 
-            const monatlicheEinnahmen = getAktuelleMiete(params) + nkVomMieterAmpel + (ergebnis.stellplatzMonatsMiete || 0);
-            const monatlicherBetrieb = getAktuellerWert(params, 'instandhaltung') + getAktuellerWert(params, 'verwaltung')
-              + getAktuellerWert(params, 'hausgeld') + getAktuellerWert(params, 'strom') + getAktuellerWert(params, 'internet')
-              + getAktuellerWert(params, 'nebenkosten');
+            const ksCockpit = kostenStruktur(params, (f) => getAktuellerWert(params, f));
+            const monatlicheEinnahmen = getAktuelleMiete(params) + ksCockpit.nkImCashflow + (ergebnis.stellplatzMonatsMiete || 0);
+            const monatlicherBetrieb = ksCockpit.bewirtschaftung;
             const monatlicheRateCockpit = ergebnis.monatlicheRate || 0;
             const monatlichesErgebnis = ergebnis.cashflowMonatlich || 0;
 

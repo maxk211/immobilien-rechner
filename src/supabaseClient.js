@@ -39,6 +39,8 @@ const ZUSATZ_KEYS = [
   'etage', 'energieausweisGueltigBis', 'heizungsart',
   'hausverwaltungName', 'hausverwaltungAnsprechpartner', 'hausverwaltungKontakt',
   'miteigentumsanteil', 'naechsteEigentuemerversammlung', 'mietModus',
+  // Phase E: Kostenstruktur
+  'hausgeldNichtUmlagefaehig', 'kontofuehrung', 'weitereKostenAktiv', 'weitereKostenChips', 'keller',
 ];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 

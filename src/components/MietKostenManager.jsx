@@ -125,91 +125,151 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             );
           })()}
 
-          {/* Einnahmen */}
+          {/* Einnahmen — UX-Paket Teil 2, Nachtrag: nur Kaltmiete + NK-Vorauszahlung */}
+          {(() => {
+            const modell = params.vermietungsmodell || 'kaltmiete';
+            const kalt = Number(params.kaltmiete) || 0;
+            const nk = modell === 'kaltmiete_nk' ? (Number(params.nebenkostenVomMieter) || 0) : 0;
+            const Feld = ({ label, hint, feld, step = 10, nullbar = false, value }) => (
+              <div className="flex items-center justify-between py-2.5 gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm text-gray-800 font-medium">{label}</div>
+                  {hint && <div className="text-[10px] text-gray-400">{hint}</div>}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <input type="number" min={0} step={step}
+                    value={value !== undefined ? value : (nullbar ? (params[feld] ?? '') : (params[feld] ?? 0))}
+                    placeholder={nullbar ? 'leer' : undefined}
+                    onChange={e => updateParams({ ...params, [feld]: e.target.value === '' ? (nullbar ? null : 0) : (parseFloat(e.target.value) || 0) })}
+                    className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
+                  <span className="text-xs text-gray-400 w-5 text-left">€</span>
+                </div>
+              </div>
+            );
+            return (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><TrendingUp size={12} /> Was reinkommt</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><TrendingUp size={12} /> Einnahmen — was dein Mieter überweist</p>
             </div>
             <div className="divide-y divide-gray-100 px-4">
-              {[
-                { label: (params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete (Basis)' : 'Kaltmiete (Basis)', key: 'kaltmiete', unit: '€', step: 25, hint: 'Monatliche Grundmiete' },
-                ...((params.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? [{ label: 'Nebenkosten-Vorauszahlung', key: 'nebenkostenVomMieter', unit: '€', step: 10, hint: 'Monatliche Nebenkosten-Vorauszahlung' }] : []),
-              ].map(item => (
-                <div key={item.key} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
-                    <div className="text-[10px] text-gray-400">{item.hint}</div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <input type="number"
-                      value={params[item.key] ?? 0}
-                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
-                      step={item.step || 1} min={0} max={item.max || 99999}
-                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
-                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
-                  </div>
-                </div>
-              ))}
+              {Feld({ label: modell === 'warmmiete' ? 'Pauschalmiete' : 'Kaltmiete', feld: 'kaltmiete', step: 25,
+                hint: modell === 'warmmiete' ? 'Ein fester Betrag, alle Nebenkosten eingepreist' : 'Monatliche Grundmiete, ohne Nebenkosten' })}
+              {modell === 'kaltmiete_nk' && (
+                Feld({ label: 'Nebenkosten-Vorauszahlung', feld: 'nebenkostenVomMieter', hint: 'Was der Mieter zusätzlich für Betriebskosten zahlt' })
+              )}
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-sm font-bold text-gray-800">Der Mieter überweist</span>
+                <span className="text-sm font-black text-emerald-600 tabular-nums">{formatCurrency(kalt + nk)}</span>
+              </div>
             </div>
           </div>
+            );
+          })()}
 
-          {/* Vermieterkosten */}
+          {/* Ausgaben — Hausgeld (davon nicht umlagefähig), SEV, Grundsteuer; Rest hinter einer Frage */}
+          {(() => {
+            const modell = params.vermietungsmodell || 'kaltmiete';
+            const hausgeld = Number(params.hausgeld) || 0;
+            const setFeld = (feld, v, nullbar = false) => updateParams({ ...params, [feld]: v === '' ? (nullbar ? null : 0) : (parseFloat(v) || 0) });
+            const input = (feld, nullbar = false, step = 5) => (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <input type="number" min={0} step={step}
+                  value={nullbar ? (params[feld] ?? '') : (params[feld] ?? 0)}
+                  placeholder={nullbar ? 'leer' : undefined}
+                  onChange={e => setFeld(feld, e.target.value, nullbar)}
+                  className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums bg-white" />
+                <span className="text-xs text-gray-400 w-5 text-left">€</span>
+              </div>
+            );
+            const zeile = (label, hint, feld, opts = {}) => (
+              <div className={`flex items-center justify-between py-2.5 gap-3 ${opts.klasse || ''}`}>
+                <div className="min-w-0">
+                  <div className={`text-sm font-medium ${opts.labelKlasse || 'text-gray-800'}`}>{label}</div>
+                  {hint && <div className="text-[10px] text-gray-400">{hint}</div>}
+                  {opts.extra}
+                </div>
+                {input(feld, opts.nullbar, opts.step)}
+              </div>
+            );
+            // Weitere Kosten: Frage Ja/Nein. "Ja" ist automatisch aktiv, sobald etwas eingetragen ist.
+            const WEITERE = [
+              ['instandhaltung', 'Eigene Rücklage für Reparaturen', 'Zusätzlich zur WEG-Rücklage, für Sondereigentum wie Bad oder Heizung'],
+              ['versicherungMonat', 'Versicherungen', 'Nur was nicht schon im Hausgeld steckt'],
+            ];
+            const CHIPS = [['strom', 'Strom'], ['internet', 'Internet'], ['kontofuehrung', 'Kontoführung'], ['nebenkosten', 'Eigene Position']];
+            const weitereWerte = [...WEITERE.map(w => w[0]), ...CHIPS.map(c => c[0])].map(k => Number(params[k]) || 0);
+            const hatWeitere = weitereWerte.some(v => v > 0);
+            const weitereAn = params.weitereKostenAktiv === true || hatWeitere;
+            const aktiveChips = params.weitereKostenChips || [];
+            const chipAn = (k) => (Number(params[k]) || 0) > 0 || aktiveChips.includes(k);
+            return (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Receipt size={12} /> Was du zahlst</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Receipt size={12} /> Ausgaben — was du jeden Monat zahlst</p>
             </div>
             <div className="divide-y divide-gray-100 px-4">
-              {[
-                { label: 'Rücklage für Reparaturen', key: 'instandhaltung', unit: '€', step: 10, hint: 'Rücklagen für Reparaturen & Instandhaltung' },
-                { label: 'Hausverwaltung', key: 'verwaltung', unit: '€', step: 5, hint: 'Hausverwaltung, Buchführung etc.' },
-              ].map(item => (
-                <div key={item.key} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
-                    <div className="text-[10px] text-gray-400">{item.hint}</div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <input type="number"
-                      value={params[item.key] ?? 0}
-                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
-                      step={item.step || 1} min={0} max={9999}
-                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
-                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
-                  </div>
-                </div>
-              ))}
+              {zeile('Hausgeld an die WEG', 'Was du monatlich an die Verwaltung der Eigentümergemeinschaft zahlst', 'hausgeld', { step: 10 })}
+              {modell !== 'warmmiete' && hausgeld > 0 && zeile(
+                'davon nicht umlagefähig',
+                'Verwaltervergütung und Zuführung zur Instandhaltungsrücklage — diesen Teil bekommst du nie vom Mieter zurück. Steht in deiner Hausgeldabrechnung.',
+                'hausgeldNichtUmlagefaehig',
+                {
+                  nullbar: true, klasse: 'pl-4 -mx-4 pr-4 bg-indigo-50/60 border-l-4 border-l-indigo-400', labelKlasse: 'text-indigo-800',
+                  extra: (params.hausgeldNichtUmlagefaehig == null || params.hausgeldNichtUmlagefaehig === '') && (
+                    <button type="button" onClick={() => updateParams({ ...params, hausgeldNichtUmlagefaehig: Math.round(hausgeld * 0.35) })}
+                      className="mt-1 text-[11px] font-semibold text-indigo-700 hover:underline">
+                      Mit 35 % schätzen ({formatCurrency(Math.round(hausgeld * 0.35))})
+                    </button>
+                  ),
+                }
+              )}
+              {zeile('Sondereigentumsverwaltung', 'Was du einer Verwaltung für deine Wohnung zahlst — Mietinkasso, Abrechnung, Mieterkontakt. Nicht das Hausgeld.', 'verwaltung')}
+              {zeile('Grundsteuer', `Jahresbetrag durch zwölf — seit 2025 nach neuem Bescheid${(Number(params.grundsteuerMonat) || 0) > 0 ? ` · ${formatCurrency((Number(params.grundsteuerMonat) || 0) * 12)} im Jahr` : ''}`, 'grundsteuerMonat', { step: 1 })}
             </div>
-          </div>
 
-          {/* WEG & Betriebskosten */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><Building2 size={12} /> Was du zahlst · Hausgeld & Betrieb</p>
-            </div>
-            <div className="divide-y divide-gray-100 px-4">
-              {[
-                { label: 'Hausgeld an die WEG', key: 'hausgeld', unit: '€', step: 10, hint: 'Monatliches Hausgeld an die WEG' },
-                { label: 'Strom', key: 'strom', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
-                { label: 'Internet', key: 'internet', unit: '€', step: 5, hint: 'Wenn vom Vermieter getragen' },
-                { label: 'Sonstige Nebenkosten', key: 'nebenkosten', unit: '€', step: 10, hint: 'Versicherungen, Grundsteuer anteilig etc.' },
-              ].map(item => (
-                <div key={item.key} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <div className="text-sm text-gray-800 font-medium">{item.label}</div>
-                    <div className="text-[10px] text-gray-400">{item.hint}</div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <input type="number"
-                      value={params[item.key] ?? 0}
-                      onChange={e => updateParams({...params, [item.key]: parseFloat(e.target.value) || 0})}
-                      step={item.step || 1} min={0} max={9999}
-                      className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
-                    <span className="text-xs text-gray-400 w-5 text-left">{item.unit}</span>
-                  </div>
+            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="text-sm font-semibold text-gray-800">Willst du Rücklagen bilden oder hast du weitere laufende Kosten?</div>
+                  <div className="text-[10px] text-gray-400">Die meisten brauchen das nicht — nur anhaken, wenn wirklich etwas dazukommt.</div>
                 </div>
-              ))}
+                <div className="flex gap-1.5">
+                  <button type="button"
+                    onClick={() => {
+                      if (hatWeitere && !window.confirm('Die eingetragenen weiteren Kosten werden auf 0 gesetzt. Fortfahren?')) return;
+                      const leer = {}; [...WEITERE.map(w => w[0]), ...CHIPS.map(c => c[0])].forEach(k => { leer[k] = 0; });
+                      updateParams({ ...params, ...leer, weitereKostenAktiv: false, weitereKostenChips: [] });
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${!weitereAn ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-300'}`}>Nein</button>
+                  <button type="button" onClick={() => updateParams({ ...params, weitereKostenAktiv: true })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${weitereAn ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-300'}`}>Ja</button>
+                </div>
+              </div>
+              {weitereAn && (
+                <div className="mt-3 bg-white border border-gray-200 rounded-xl px-4 divide-y divide-gray-100">
+                  {WEITERE.map(([k, l, h]) => <div key={k}>{zeile(l, h, k)}</div>)}
+                  <div className="py-2.5 flex flex-wrap gap-1.5">
+                    {CHIPS.map(([k, l]) => (
+                      <button key={k} type="button"
+                        onClick={() => {
+                          if (chipAn(k)) updateParams({ ...params, [k]: 0, weitereKostenChips: aktiveChips.filter(c => c !== k) });
+                          else updateParams({ ...params, weitereKostenChips: [...aktiveChips, k] });
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${chipAn(k) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'}`}>
+                        {chipAn(k) ? '✓ ' : '+ '}{l}
+                      </button>
+                    ))}
+                  </div>
+                  {CHIPS.filter(([k]) => chipAn(k)).map(([k, l]) => (
+                    <div key={k}>{zeile(l, k === 'nebenkosten' ? 'Eigene laufende Kosten, die oben nicht vorkommen' : 'Wenn du das für die Wohnung trägst', k)}</div>
+                  ))}
+                </div>
+              )}
             </div>
+            <p className="px-4 py-2 text-[10px] text-gray-400 border-t border-gray-100">Kostenanpassungen ab Stichtag (z. B. Hausgelderhöhung zum 1. Juli) trägst du unten ein.</p>
           </div>
+            );
+          })()}
 
           {/* Mietanpassungen */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -274,12 +334,12 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               analog zu den Mietanpassungen oben (statt starr pro Kalenderjahr). */}
           {(() => {
             const COST_FELDER = [
-              { key: 'instandhaltung', label: 'Rücklage für Reparaturen' },
-              { key: 'verwaltung', label: 'Hausverwaltung' },
+              { key: 'instandhaltung', label: 'Eigene Rücklage' },
+              { key: 'verwaltung', label: 'Sondereigentumsverwaltung' },
               { key: 'hausgeld', label: 'Hausgeld an die WEG' },
               { key: 'strom', label: 'Strom' },
               { key: 'internet', label: 'Internet' },
-              { key: 'nebenkosten', label: 'Sonstige NK' },
+              { key: 'nebenkosten', label: 'Eigene Position' },
             ];
             const hatKostenFeld = (entry) => COST_FELDER.some(f => entry[f.key] != null);
             const kostenAnpassungen = (params.mietAnpassungen || [])
@@ -488,7 +548,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                         </div>
                       </div>
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <label className="text-xs text-gray-600">Hausverwaltung</label>
+                        <label className="text-xs text-gray-600">Sondereigentumsverwaltung</label>
                         <div className="flex items-center gap-1">
                           <input
                             type="number"

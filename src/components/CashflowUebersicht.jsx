@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Wallet, Landmark, AlertTriangle, ParkingSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
-import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung } from '../utils/berechnung.js';
+import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung, kostenStruktur } from '../utils/berechnung.js';
 
 // ── Hilfsfunktion: Zeile in Tabelle ─────────────────────────────────────────
 function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = false, separator = false, plus = false, hideZero = false }) {
@@ -32,7 +32,7 @@ function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = fa
 
 // ── Hauptkomponente ──────────────────────────────────────────────────────────
 const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], anteilFaktor = 1, onOpenFinanzierung }) => {
-  const [tab, setTab] = useState('aktuell'); // 'aktuell' | 'verlauf'
+  const [tab, setTab] = useState('monat'); // 'monat' | 'jahr' | 'verlauf' (Rechenweg Monat/Jahr/Prognose)
 
   const kaufjahr = immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : new Date().getFullYear();
   const aktuellesJahr = new Date().getFullYear();
@@ -86,29 +86,22 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
     const sp = params.stellplatz;
     const stellplatz = (sp?.vorhanden && sp?.istVermietet)
       ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1) : 0;
-    const nkVomMieter = params.vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
-
     const einnahmen = getAktuelleMiete(params);
-    // Datumsbasierte Kosten-Anpassungen (mietAnpassungen) statt starrem Basiswert —
-    // alte jahresweise mietHistorie-Overrides bleiben als Fallback in getAktuellerWert erhalten.
-    const nk       = getAktuellerWert(params, 'nebenkosten');
-    const inst     = getAktuellerWert(params, 'instandhaltung');
-    const verw     = getAktuellerWert(params, 'verwaltung');
-    const hg       = getAktuellerWert(params, 'hausgeld');
-    const strom    = getAktuellerWert(params, 'strom');
-    const internet = getAktuellerWert(params, 'internet');
+    // Phase E: eine Kostenstruktur für alle Stellen (Hausgeld-Aufteilung, SEV, Grundsteuer, weitere)
+    const ks = kostenStruktur(params, (f) => getAktuellerWert(params, f));
+    const nkVomMieter = ks.nkVomMieter;
     const bauspar  = (params.bausparvertraege || [])
       .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
       .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
 
-    const gesamtEinnahmen    = einnahmen + stellplatz + nkVomMieter;
-    const gesamtBetrieb      = nk + inst + verw + hg + strom + internet;
+    const gesamtEinnahmen    = einnahmen + stellplatz + ks.nkImCashflow;
+    const gesamtBetrieb      = ks.bewirtschaftung;
     const vorTilgung         = gesamtEinnahmen - gesamtBetrieb - kreditDetails.zinsen;
     const vorTilgungMitBS    = vorTilgung - bauspar; // inkl. Bauspar-Sparrate
     const nachTilgung        = gesamtEinnahmen - gesamtBetrieb - kreditDetails.gesamt - bauspar;
 
     return {
-      einnahmen, stellplatz, nkVomMieter, nk, inst, verw, hg, strom, internet,
+      einnahmen, stellplatz, nkVomMieter, ks,
       zinsen: kreditDetails.zinsen, tilgung: kreditDetails.tilgung,
       kreditrate: kreditDetails.gesamt, bauspar,
       gesamtEinnahmen, gesamtBetrieb,
@@ -168,7 +161,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
 
     for (let jahr = kaufjahr; jahr <= aktuellesJahr + 5; jahr++) {
       const kaltmiete  = getMieteForJahr(jahr);
-      const nkVM = params.vermietungsmodell === 'kaltmiete_nk' ? (params.nebenkostenVomMieter || 0) : 0;
+      const ksJ = kostenStruktur(params, (f) => getJahresDurchschnittFuerFeld(params, jahr, f));
+      const nkVM = ksJ.nkImCashflow;
       const sp = params.stellplatz;
       const stellplatz = (sp?.vorhanden && sp?.istVermietet)
         ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1) : 0;
@@ -176,13 +170,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       const einnahmen = (kaltmiete + nkVM + stellplatz) * 12;
       // Monatlich gewichteter Jahresdurchschnitt je Kostenfeld — berücksichtigt
       // unterjährige, datumsbasierte Anpassungen (analog getMieteForJahr oben).
-      const nk     = getJahresDurchschnittFuerFeld(params, jahr, 'nebenkosten')    * 12;
-      const inst   = getJahresDurchschnittFuerFeld(params, jahr, 'instandhaltung') * 12;
-      const verw   = getJahresDurchschnittFuerFeld(params, jahr, 'verwaltung')     * 12;
-      const hg     = getJahresDurchschnittFuerFeld(params, jahr, 'hausgeld')       * 12;
-      const strom  = getJahresDurchschnittFuerFeld(params, jahr, 'strom')          * 12;
-      const inet   = getJahresDurchschnittFuerFeld(params, jahr, 'internet')       * 12;
-      const betrieb = nk + inst + verw + hg + strom + inet;
+      const betrieb = ksJ.bewirtschaftung * 12;
 
       const monatsRate = berechneJahresRateFuerPhasen(phasen, cfFK, kreditStartJahr, jahr, ergebnis.monatlicheRate);
       const kreditrate = monatsRate * 12;
@@ -235,20 +223,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
             </span>
           )}
         </div>
-        {/* Tab Toggle */}
+        {/* Rechenweg: Monat / Jahr / Prognose */}
         <div className="flex bg-gray-100 rounded-lg p-1 gap-0.5">
-          <button
-            onClick={() => setTab('aktuell')}
-            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'aktuell' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            {aktuellesJahr}
-          </button>
-          <button
-            onClick={() => setTab('verlauf')}
-            className={`px-3 py-1 text-xs rounded-md transition-all ${tab === 'verlauf' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Verlauf & Prognose
-          </button>
+          {[['monat', 'Monat'], ['jahr', 'Jahr'], ['verlauf', 'Prognose']].map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`px-3 py-1 text-xs rounded-md transition-all ${tab === id ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}>
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -313,79 +295,88 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         </div>
       </div>
 
-      {/* ── TAB: Aktuelles Jahr ─────────────────────────────────────────────── */}
-      {tab === 'aktuell' && (
-        <div className="p-4">
-          <table className="w-full">
-            <thead>
-              <tr className="text-[10px] text-gray-400 uppercase tracking-wide">
-                <th className="text-left pb-2 pl-1">Position</th>
-                <th className="text-right pb-2 pr-3">Monatlich</th>
-                <th className="text-right pb-2 pr-1">Jährlich</th>
+      {/* ── Rechenweg Monat / Jahr (UX-Paket Teil 2, Nachtrag) ───────────────── */}
+      {(tab === 'monat' || tab === 'jahr') && (() => {
+        const ks = monat.ks;
+        const f = tab === 'monat' ? 1 : 12;
+        const jz = tab === 'jahr';
+        const Z = ({ label, wert, color = 'red', einzug = false, bold = false, separator = false, plus = false, hideZero = false, gedimmt = false, jahrWert }) => {
+          const v = jz && jahrWert != null ? jahrWert : wert * f;
+          if (hideZero && !v) return null;
+          const c = gedimmt ? 'text-gray-400' : { green: 'text-emerald-600', red: 'text-red-500', blue: 'text-indigo-600', violet: 'text-indigo-700', orange: 'text-orange-500', gray: 'text-gray-600' }[color];
+          const sign = v > 0 && plus ? '+' : v < 0 || (!plus && v > 0 && color === 'red') ? '−' : '';
+          return (
+            <>
+              {separator && <tr><td colSpan={2}><div className="border-t border-gray-200 my-0.5" /></td></tr>}
+              <tr className={bold ? 'bg-gray-50' : ''}>
+                <td className={`py-1.5 pr-2 text-xs ${c} ${bold ? 'font-bold' : ''} ${einzug ? 'pl-5' : 'pl-1'}`}>{label}</td>
+                <td className={`py-1.5 text-right text-xs ${c} ${bold ? 'font-bold' : 'font-medium'} pr-1 tabular-nums`}>{sign}{formatCurrency(Math.abs(a(v)))}</td>
               </tr>
-            </thead>
+            </>
+          );
+        };
+        const kopf = (t) => <tr><td colSpan={2} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">{t}</td></tr>;
+        return (
+        <div className="p-4">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Rechenweg {aktuellesJahr} · {jz ? 'pro Jahr' : 'pro Monat'}</p>
+          <table className="w-full">
             <tbody>
-              {/* EINNAHMEN */}
-              <tr><td colSpan={3} className="pt-1 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Einnahmen</td></tr>
-              <CfZeile label="Kaltmiete" color="green" monat={a(monat.einnahmen)} jahr={a(monat.einnahmen * 12)} />
+              {kopf('Einnahmen')}
+              <Z label={ks.modell === 'warmmiete' ? 'Pauschalmiete' : 'Kaltmiete'} color="green" plus wert={monat.einnahmen} />
               {monat.stellplatz > 0 && (
-                <CfZeile
-                  label={<span className="inline-flex items-center gap-1"><ParkingSquare size={11}/>{`Stellplatz${monat.spAnzahl > 1 ? ` (${monat.spAnzahl}×)` : ''}`}</span>}
-                  color="green" einzug
-                  monat={a(monat.stellplatz)} jahr={a(monat.stellplatz * 12)}
-                />
+                <Z label={<span className="inline-flex items-center gap-1"><ParkingSquare size={11}/>{`Stellplatz${monat.spAnzahl > 1 ? ` (${monat.spAnzahl}×)` : ''}`}</span>}
+                  color="green" plus einzug wert={monat.stellplatz} />
               )}
               {monat.nkVomMieter > 0 && (
-                <CfZeile label="NK vom Mieter (Umlagen)" color="green" einzug
-                  monat={a(monat.nkVomMieter)} jahr={a(monat.nkVomMieter * 12)} />
+                <Z label={ks.nuBekannt ? 'Nebenkosten vom Mieter · läuft durch' : 'Nebenkosten vom Mieter'} color="green" plus gedimmt={ks.nuBekannt} wert={monat.nkVomMieter} />
               )}
-              <CfZeile label="Σ Einnahmen" color="green" bold separator
-                monat={a(monat.gesamtEinnahmen)} jahr={a(monat.gesamtEinnahmen * 12)} />
+              <Z label="Einnahmen" color="green" plus bold separator wert={monat.gesamtEinnahmen} />
 
-              {/* BETRIEBSKOSTEN */}
-              <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Bewirtschaftungskosten</td></tr>
-              <CfZeile label="Nebenkosten" color="red" monat={a(monat.nk)} jahr={a(monat.nk * 12)} hideZero />
-              <CfZeile label="Rücklage für Reparaturen" color="red" monat={a(monat.inst)} jahr={a(monat.inst * 12)} hideZero />
-              <CfZeile label="Hausverwaltung" color="red" monat={a(monat.verw)} jahr={a(monat.verw * 12)} hideZero />
-              <CfZeile label="Hausgeld an die WEG" color="red" monat={a(monat.hg)} jahr={a(monat.hg * 12)} hideZero />
-              <CfZeile label="Strom" color="red" monat={a(monat.strom)} jahr={a(monat.strom * 12)} hideZero />
-              <CfZeile label="Internet" color="red" monat={a(monat.internet)} jahr={a(monat.internet * 12)} hideZero />
-              <CfZeile label="Σ Betrieb" color="red" bold separator
-                monat={a(monat.gesamtBetrieb)} jahr={a(monat.gesamtBetrieb * 12)} />
+              {kopf('Ausgaben')}
+              <Z label="Hausgeld an die WEG" wert={ks.hausgeld} hideZero gedimmt={ks.nuBekannt} />
+              {ks.nuBekannt && ks.hausgeld > 0 && (<>
+                <Z label="davon umlagefähig, durch NK gedeckt" einzug gedimmt wert={ks.umlagefaehig} />
+                <Z label="davon nicht umlagefähig" einzug color="violet" wert={ks.nichtUmlagefaehig} />
+              </>)}
+              <Z label="Sondereigentumsverwaltung" wert={ks.sev} hideZero />
+              <Z label="Grundsteuer" wert={ks.grundsteuer} hideZero />
+              <Z label="Eigene Rücklage für Reparaturen" wert={ks.weitere.ruecklage} hideZero />
+              <Z label="Versicherungen" wert={ks.weitere.versicherung} hideZero />
+              <Z label="Strom" wert={ks.weitere.strom} hideZero />
+              <Z label="Internet" wert={ks.weitere.internet} hideZero />
+              <Z label="Kontoführung" wert={ks.weitere.kontofuehrung} hideZero />
+              <Z label="Eigene Position" wert={ks.weitere.sonstige} hideZero />
+              <Z label="Ausgaben" bold separator wert={monat.gesamtBetrieb} />
 
-              {/* FINANZIERUNG */}
-              <tr><td colSpan={3} className="pt-3 pb-0.5 pl-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Finanzierung</td></tr>
-              <CfZeile label="Schuldzinsen" color="red"
-                monat={a(monat.zinsen)}
-                jahr={a(jahresKredit?.zinsen ?? monat.zinsen * 12)} />
-              <CfZeile label="Tilgung (Eigenkapitalaufbau)" color="blue" einzug
-                monat={a(monat.tilgung)}
-                jahr={a(jahresKredit?.tilgung ?? monat.tilgung * 12)} />
-              <CfZeile label="Kreditrate gesamt" color="red" bold separator
-                monat={a(monat.kreditrate)}
-                jahr={a(jahresKredit?.gesamt ?? monat.kreditrate * 12)} />
-              {monat.bauspar > 0 && (
-                <CfZeile label="Bauspar-Sparrate (Ansparphase)" color="orange"
-                  monat={a(monat.bauspar)} jahr={a(monat.bauspar * 12)} />
-              )}
+              {kopf('Finanzierung')}
+              <Z label="Zinsen" wert={monat.zinsen} jahrWert={jahresKredit?.zinsen} />
+              <Z label="Tilgung (Eigenkapitalaufbau)" color="blue" einzug wert={monat.tilgung} jahrWert={jahresKredit?.tilgung} />
+              {monat.bauspar > 0 && <Z label="Bauspar-Sparrate (Ansparphase)" color="orange" wert={monat.bauspar} />}
+
+              <Z label="Cashflow vor Tilgung" color={monat.vorTilgung >= 0 ? 'green' : 'red'} plus bold separator
+                wert={monat.vorTilgung} jahrWert={vorTilgungJahr / (anteilFaktor || 1)} />
+              <Z label="Cashflow nach Tilgung" color={monat.nachTilgung >= 0 ? 'green' : 'red'} plus bold
+                wert={monat.nachTilgung} jahrWert={nachTilgungJahr / (anteilFaktor || 1)} />
             </tbody>
           </table>
 
-          {/* Info zu Tilgung */}
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-indigo-700">
-            <span className="font-semibold">Zur Tilgung:</span> Der Tilgungsanteil ({formatCurrency(a(monat.tilgung))}/Mo) ist kein Verlust — er baut
-            Eigenkapital auf. Der Cashflow <em>vor</em> Tilgung zeigt, ob die Immobilie
-            aus eigener Kraft alle laufenden Kosten + Zinsen trägt.
-            {monat.bauspar > 0 && (
-              <span className="block mt-1">
-                <span className="font-semibold">Bauspar-Sparrate</span> ({formatCurrency(a(monat.bauspar))}/Mo) ist
-                ebenfalls Eigenkapitalaufbau, wird aber im Cashflow berücksichtigt
-                da es ein echter monatlicher Geldabfluss ist.
-              </span>
-            )}
+          {!ks.nuBekannt && ks.hausgeld > 0 && ks.modell !== 'warmmiete' && (
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+              Der nicht umlagefähige Teil des Hausgelds fehlt noch. Bis dahin rechnet renditly mit dem vollen Hausgeld
+              und der vollen Nebenkosten-Vorauszahlung — das macht den Cashflow meist zu positiv.
+            </div>
+          )}
+          {ks.nuBekannt && (
+            <p className="mt-3 text-[11px] text-gray-400">
+              Im Cashflow zählt vom Hausgeld nur der nicht umlagefähige Teil. Der Rest und die Nebenkosten-Vorauszahlung laufen durch und gleichen sich über die Jahresabrechnung aus.
+            </p>
+          )}
+          <div className="mt-3 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700">
+            Tilgung ist kein Verlust, sondern Eigenkapitalaufbau. Der Wert vor Tilgung zeigt, ob die Wohnung aus eigener Kraft trägt.
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── TAB: Verlauf & Prognose ─────────────────────────────────────────── */}
       {tab === 'verlauf' && (
