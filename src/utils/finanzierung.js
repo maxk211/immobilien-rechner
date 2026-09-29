@@ -61,6 +61,8 @@ export function finanzierungsStatus(immo, heute = new Date()) {
     if (a && b && (b - a) / MS_MONAT > 1) { luecke = { von: a, bis: b }; break; }
   }
 
+  // Als abbezahlt markiert → keine Zinsbindungs-Warnung mehr (Teil 3, "Darlehen abschließen")
+  if (letzte.phase?.abbezahltAm) return { aktiv, letzte, stufe: 'neutral', monate: null, luecke, abbezahlt: true };
   // Warnungen nur für die letzte Phase (alle anderen haben eine Folgephase)
   if (!letzte.ende) return { aktiv, letzte, stufe: 'neutral', monate: null, luecke };
   const monate = monateBis(letzte.ende, heute);
