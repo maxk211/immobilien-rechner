@@ -763,28 +763,19 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
 
         <div className="border-t border-gray-100 pt-4">
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Weitere Werbungskosten (Anlage V)</div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Landmark size={12}/> Grundsteuer / Monat</label>
-              <div className="flex items-center gap-1">
-                <input type="number" min="0" step="5" value={grundsteuerMonat}
-                  onChange={(e) => updateSteuerParams({ grundsteuerMonat: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
+          {/* Phase E: Grundsteuer und Versicherungen werden nur noch in Zahlen · Cashflow gepflegt — eine Wahrheit pro Zahl */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2">
+              <div className="text-xs text-gray-500 flex items-center gap-1"><Landmark size={12}/> Grundsteuer / Monat</div>
+              <div className="font-semibold text-gray-800">{formatCurrency(grundsteuerMonat)}</div>
             </div>
-            <div>
-              <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><ShieldCheck size={12}/> Versicherungen / Monat</label>
-              <div className="flex items-center gap-1">
-                <input type="number" min="0" step="5" value={versicherungMonat}
-                  onChange={(e) => updateSteuerParams({ versicherungMonat: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right" />
-                <span className="text-xs text-gray-500">€</span>
-              </div>
+            <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2">
+              <div className="text-xs text-gray-500 flex items-center gap-1"><ShieldCheck size={12}/> Versicherungen / Monat</div>
+              <div className="font-semibold text-gray-800">{formatCurrency(versicherungMonat)}</div>
             </div>
           </div>
           <div className="text-[10px] text-gray-400 mt-2">
-            Hausgeld an die WEG, Hausverwaltung und Rücklage für Reparaturen werden aus Zahlen · Cashflow übernommen.
+            Hausgeld an die WEG, Sondereigentumsverwaltung, Grundsteuer, Versicherungen und weitere laufende Kosten kommen aus Zahlen · Cashflow und werden dort gepflegt.
           </div>
         </div>
 

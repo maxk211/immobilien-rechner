@@ -283,6 +283,46 @@ export const berechneJahresZinsenFuerSteuer = (immo, targetJahr) => {
   return 0;
 };
 
+// ── Kostenstruktur (UX-Paket Teil 2, Nachtrag + Rechenregeln) ────────────────
+// Bewirtschaftung = nicht umlagefähiger Hausgeldanteil + eigene Rücklage
+//                  + Grundsteuer + Versicherung + SEV (+ weitere gewählte Posten)
+// Die Nebenkosten-Vorauszahlung und der umlagefähige Hausgeldanteil laufen nur
+// durch (Ausgleich über die Jahresabrechnung) und zählen deshalb nicht im Cashflow.
+// Solange der nicht umlagefähige Anteil unbekannt ist (Feld leer), bleibt es bei
+// der bisherigen Rechnung: volles Hausgeld als Kosten, volle NK-VZ als Einnahme.
+// Pauschalmiete: keine Abrechnung — volles Hausgeld ist echte Kosten.
+// get(feld) liefert den Monatswert eines datierbaren Kostenfelds (aktuell oder Jahresschnitt).
+export const kostenStruktur = (immo, get = (f) => Number(immo?.[f]) || 0) => {
+  const modell = immo?.vermietungsmodell || 'kaltmiete';
+  const istMFH = immo?.immobilienTyp === 'mehrfamilienhaus';
+  const hausgeld = get('hausgeld');
+  const nuRoh = immo?.hausgeldNichtUmlagefaehig;
+  const nuBekannt = !istMFH && modell !== 'warmmiete' && nuRoh !== null && nuRoh !== undefined && nuRoh !== '' && !Number.isNaN(Number(nuRoh));
+  const nichtUmlagefaehig = nuBekannt ? Math.min(Math.max(0, Number(nuRoh)), hausgeld) : null;
+  const nkVomMieter = (!istMFH && modell === 'kaltmiete_nk') ? (Number(immo?.nebenkostenVomMieter) || 0) : 0;
+  const sev = get('verwaltung');
+  // Grundsteuer/Versicherung gehören seit Phase E in den Cashflow (vorher nur Steuer). MFH unverändert.
+  const grundsteuer = istMFH ? 0 : (Number(immo?.grundsteuerMonat) || 0);
+  const weitere = {
+    ruecklage: get('instandhaltung'),
+    versicherung: istMFH ? 0 : (Number(immo?.versicherungMonat) || 0),
+    strom: get('strom'),
+    internet: get('internet'),
+    kontofuehrung: istMFH ? 0 : (Number(immo?.kontofuehrung) || 0),
+    sonstige: get('nebenkosten'),
+  };
+  const weitereSumme = Object.values(weitere).reduce((a, b) => a + b, 0);
+  const hausgeldImCashflow = nuBekannt ? nichtUmlagefaehig : hausgeld;
+  const nkImCashflow = nuBekannt ? 0 : nkVomMieter;
+  return {
+    modell, nuBekannt, hausgeld, nichtUmlagefaehig,
+    umlagefaehig: nuBekannt ? hausgeld - nichtUmlagefaehig : null,
+    nkVomMieter, nkImCashflow, hausgeldImCashflow,
+    sev, grundsteuer, weitere, weitereSumme,
+    bewirtschaftung: hausgeldImCashflow + sev + grundsteuer + weitereSumme,
+  };
+};
+
 // Rendite-Berechnung
 export const berechneRendite = (params) => {
   const {
@@ -326,7 +366,8 @@ export const berechneRendite = (params) => {
   // - kaltmiete_nk: Kaltmiete + NK-Vorauszahlung vom Mieter
   // - warmmiete: Warmmiete (alles inkl., Vermieter zahlt alle Betriebskosten)
   const jahresmieteKalt = kaltmiete * 12;
-  const jahresNKVomMieter = vermietungsmodell === 'kaltmiete_nk' ? (nebenkostenVomMieter || 0) * 12 : 0;
+  const ks = kostenStruktur(params);
+  const jahresNKVomMieter = ks.nkImCashflow * 12;
 
   // Stellplatz-Einnahmen (falls vorhanden und vermietet)
   const sp = params.stellplatz;
@@ -347,8 +388,7 @@ export const berechneRendite = (params) => {
   const bruttorendite = kaufpreis > 0 ? (jahresmieteKalt / kaufpreis) * 100 : 0;
 
   // Nettorendite: Vermieter-Kosten von den Gesamteinnahmen abziehen
-  const jahresNebenkosten = (params.nebenkosten || 0) * 12;
-  const jahresVermieterKosten = jahresinstandhaltung + jahresverwaltung + jahresHausgeld + jahresStrom + jahresInternet + jahresNebenkosten;
+  const jahresVermieterKosten = ks.bewirtschaftung * 12;
   const nettoEinnahmen = jahresEinnahmen - jahresVermieterKosten;
   const nettorendite = kaufpreis > 0 ? (nettoEinnahmen / kaufpreis) * 100 : 0;
 
@@ -490,7 +530,7 @@ export const berechneRendite = (params) => {
       restschuld: Math.round(restschuld),
       eigenkapital: Math.round(aktuellerWert - restschuld),
       jahresmiete: Math.round(aktuelleMiete * 12),
-      cashflow: Math.round((aktuelleMiete * 12) + jahresNKVomMieter - jahresinstandhaltung - jahresverwaltung - jahresHausgeld - jahresStrom - jahresInternet - jahresrate)
+      cashflow: Math.round((aktuelleMiete * 12) + jahresNKVomMieter - jahresVermieterKosten - jahresrate)
     });
 
     aktuellerWert *= (1 + wertsteigerung / 100);
@@ -554,18 +594,15 @@ export const berechneMtlCashflow = (immo) => {
   const ergebnis = berechneRendite({ ...immo, kaltmiete: gesamtMiete });
 
   // NK-Vorauszahlung vom Mieter (nur bei kaltmiete_nk Modell, nicht bei MFH)
-  const nkVomMieter = (typ !== 'mehrfamilienhaus' && (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk')
-    ? (immo.nebenkostenVomMieter || 0)
-    : 0;
+  const ksMtl = typ === 'mehrfamilienhaus' ? null : kostenStruktur(immo, (f) => getAktuellerWert(immo, f));
+  const nkVomMieter = ksMtl ? ksMtl.nkImCashflow : 0;
 
   // Laufende Betriebskosten des Vermieters — datumsbasierte Kostenanpassungen
   // berücksichtigen (Bug-Fix: vorher wurden immer die Basiswerte genutzt,
   // Anpassungen aus dem "Kostenanpassungen"-Tab flossen hier nie ein)
   const betriebskosten = (typ === 'mehrfamilienhaus')
     ? (immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0) + (immo.nebenkosten || 0)
-    : getAktuellerWert(immo, 'instandhaltung') + getAktuellerWert(immo, 'verwaltung')
-      + getAktuellerWert(immo, 'hausgeld') + getAktuellerWert(immo, 'strom')
-      + getAktuellerWert(immo, 'internet') + getAktuellerWert(immo, 'nebenkosten');
+    : ksMtl.bewirtschaftung;
 
   // Bauspar-Sparraten aller noch aktiven Verträge (vor Zuteilungsreife)
   const bauspar = (immo.bausparvertraege || [])
