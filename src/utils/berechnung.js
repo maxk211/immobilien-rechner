@@ -422,6 +422,11 @@ export const berechneRendite = (params) => {
   // damit die UI "n. v." statt eines irreführenden "0,00%" in Rot anzeigen kann.
   const eigenkapitalRenditeRoh = gesamtEK > 0 ? ((nettoEinnahmen + (kaufpreis * wertsteigerung / 100)) / gesamtEK) * 100 : 0;
   const eigenkapitalRendite = gesamtEK > 0 ? eigenkapitalRenditeRoh : null;
+  // Teil 3, Abschnitt 5.6: unter 5 % Eigenkapitalquote ist die EK-Rendite mathematisch
+  // richtig, als Kennzahl aber nicht aussagekräftig (winziger Nenner) — die UI zeigt
+  // dann einen Hinweis statt einer Prozentzahl.
+  const eigenkapitalQuote = gesamtinvestition > 0 ? gesamtEK / gesamtinvestition : 0;
+  const ekRenditeNichtAussagekraeftig = gesamtEK > 0 && eigenkapitalQuote < 0.05;
 
   const leverageEffekt = eigenkapitalRenditeRoh - nettorendite;
 
@@ -499,6 +504,8 @@ export const berechneRendite = (params) => {
     bruttorendite,
     nettorendite,
     eigenkapitalRendite,
+    eigenkapitalQuote,
+    ekRenditeNichtAussagekraeftig,
     cashOnCash,
     leverageEffekt,
     monatlicheRate: annuitaet,

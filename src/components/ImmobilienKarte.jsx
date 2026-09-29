@@ -257,7 +257,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
                   <div className="text-sm font-semibold text-orange-600">{formatCurrency(restschuldInfo.restschuld)}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400">Netto-Eigenkapital</div>
+                  <div className="text-xs text-gray-400" title="Marktwert minus Restschuld — nicht das eingebrachte Eigenkapital">Dein Anteil</div>
                   <div className="text-sm font-semibold text-amber-700">{formatCurrency(eigenkapital)}</div>
                 </div>
               </div>

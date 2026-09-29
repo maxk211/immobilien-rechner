@@ -173,7 +173,7 @@ const PortfolioOverview = ({ portfolio }) => {
         <div className="flex flex-col sm:flex-row gap-3 mb-4 items-stretch">
           {/* Freies Vermögen — kompakt */}
           <div className="flex-shrink-0 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 p-3 sm:p-4 shadow-sm sm:w-48">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Freies Vermögen</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Dein Anteil am Portfolio</div>
             <div className="text-lg sm:text-xl font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
             <div className="text-xs text-amber-500 mt-0.5">Marktwert − Restschuld</div>
             {stats.gesamtRestschuld > 0 && (

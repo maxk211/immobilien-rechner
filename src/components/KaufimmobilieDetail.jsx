@@ -17,6 +17,7 @@ import MieteinnahmenTracker from './MieteinnahmenTracker';
 import NKAbrechnungTab from './NKAbrechnungTab';
 import KautionsManager from './KautionsManager';
 import InfoHint from './InfoHint';
+import { phasenZeitraeume, finanzierungsStatus } from '../utils/finanzierung.js';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 import {
   BarChart3, Wallet, Users, Wrench, Home, Landmark, MapPin, AlertTriangle,
@@ -570,9 +571,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
                   <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
                   {/* Abschnitt 7.5: kein EK erfasst → "n. v." in Grau statt irreführender "0,00%" */}
-                  <div className={`text-base sm:text-xl font-black ${ergebnis.eigenkapitalRendite == null ? 'text-gray-400' : 'text-amber-700'}`}>
-                    {ergebnis.eigenkapitalRendite == null ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite)}
+                  <div className={`text-base sm:text-xl font-black ${ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig ? 'text-gray-400' : 'text-amber-700'}`}>
+                    {ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite)}
                   </div>
+                    {ergebnis.eigenkapitalRendite == null && <div className="text-[10px] text-gray-400">kein Eigenkapital eingesetzt</div>}
+                    {ergebnis.ekRenditeNichtAussagekraeftig && <div className="text-[10px] text-gray-400">kaum Eigenkapital — nicht aussagekräftig</div>}
                 </div>
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
                   <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Wertsteigerung</div>
@@ -713,16 +716,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
             // Finanzierungs-Kurzfassung — "ca."-Schätzung für Tilgungstempo/Schuldenfreiheit,
             // exakte Berechnung inkl. Sondertilgungen bleibt im Finanzierung-Tab.
-            const ersteAktivePhase = params.finanzierungsphasen?.[0];
-            let zinsbindungBisText = null;
-            if (ersteAktivePhase && ersteAktivePhase.darlehensTyp !== 'endfaellig') {
-              const startDatum = ersteAktivePhase.kreditStartDatum || params.kaufdatum;
-              if (startDatum) {
-                const ablauf = new Date(startDatum);
-                ablauf.setFullYear(ablauf.getFullYear() + (ersteAktivePhase.zinsbindung || 10));
-                zinsbindungBisText = ablauf.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-              }
-            }
+            // Zinsbindungsende der aktuell laufenden (letzten) Phase, als Datum;
+            // ein nur geschätztes Datum wird als "ungeprüft" gekennzeichnet.
+            const finStatusCockpit = finanzierungsStatus(params);
+            const zinsbindungBisText = finStatusCockpit?.letzte?.ende
+              ? finStatusCockpit.letzte.ende.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) + (finStatusCockpit.letzte.endeGeschaetzt ? ' (ungeprüft)' : '')
+              : null;
             const jaehrlicheZinsen = (ergebnis.effRestschuld || 0) * (ergebnis.effZinssatz || 0) / 100;
             const jaehrlicheTilgung = Math.max(0, (monatlicheRateCockpit * 12) - jaehrlicheZinsen);
             const schuldenfreiCaText = (jaehrlicheTilgung > 0 && ergebnis.effRestschuld > 0)
@@ -836,7 +835,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           {wertsteigerungSeitKauf ? `${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}${wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %` : '—'}
                         </div>
                       </div>
-                      <div><div className="text-[10px] text-gray-400">Netto-EK</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(nettoEK)}</div></div>
+                      <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Dein Anteil</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(nettoEK)}</div></div>
                     </div>
                     <p className="text-[10px] text-gray-400 mt-2">
                       {params.geschaetzterWertDatum ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}` : 'Marktwert noch nie aktualisiert'}
@@ -1537,7 +1536,24 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               return result;
             });
 
-            const updatePhase = (id, updates) => {
+            // Teil 3, Abschnitt 5.2 + 6: Zinsbindungsende als Datum, Warnung nur für die letzte Phase
+            const zeitraeume = phasenZeitraeume({ ...params, finanzierungsphasen });
+            const finStatus = finanzierungsStatus({ ...params, finanzierungsphasen });
+            const setZinsbindungBis = (phase, idx, datum) => {
+              const z = zeitraeume[idx];
+              const upd = { zinsbindungBis: datum || null, zinsbindungBisBestaetigt: !!datum };
+              // Jahre für die (jahresgenaue) Berechnung mitführen, damit Rate/Restschuld zum Datum passen
+              if (datum && z?.start) {
+                const jahre = Math.max(1, Math.round((new Date(datum) - z.start) / (1000 * 60 * 60 * 24 * 365.25)));
+                if (phase.darlehensTyp === 'endfaellig') upd.laufzeit = jahre; else upd.zinsbindung = jahre;
+              }
+              updatePhase(phase.id, upd);
+            };
+
+            const updatePhase = (id, updatesRoh) => {
+              // Wird die Zinsbindung in Jahren geändert, gilt ein zuvor gesetztes Datum nicht mehr
+              const updates = (('zinsbindung' in updatesRoh || 'laufzeit' in updatesRoh) && !('zinsbindungBis' in updatesRoh))
+                ? { ...updatesRoh, zinsbindungBis: null, zinsbindungBisBestaetigt: false } : updatesRoh;
               const updated = finanzierungsphasen.map(p => p.id === id ? { ...p, ...updates } : p);
               updateParams({ ...params, finanzierungsphasen: updated,
                 zinssatz: updated[0]?.sollzinssatz ?? params.zinssatz,
@@ -1685,26 +1701,29 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
 
                 {/* Finanzierungsphasen */}
+                {finStatus?.luecke && (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800 flex items-start gap-2">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5"/>
+                    <span>Zwischen {finStatus.luecke.von.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })} und {finStatus.luecke.bis.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })} fehlt eine Finanzierung — Startdatum der Folgephase prüfen.</span>
+                  </div>
+                )}
+                {finStatus?.stufe === 'grau' && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
+                    Die Zinsbindung endet in {Math.ceil(finStatus.monate)} Monaten. Ein Forward-Darlehen kannst du bis zu 60 Monate vorher abschließen.
+                  </div>
+                )}
                 <div className="space-y-4">
                   {phasenMitBerechnung.map((phase, idx) => {
                     // KfW/Bauspardarlehen nutzen für die Eingabefelder und Berechnung
                     // dieselbe Annuitäten-Logik — siehe Kommentar in berechnePhase().
                     const typ = ['kfw', 'bauspardarlehen'].includes(phase.darlehensTyp) ? 'annuitaet' : (phase.darlehensTyp || 'annuitaet');
                     const typLabels = { annuitaet: 'Annuitätendarlehen', tilgung: 'Tilgungsdarlehen', endfaellig: 'Endfälliges Darlehen', kfw: 'KfW-Darlehen', bauspardarlehen: 'Bauspardarlehen' };
-                    const pStartDatum = idx === 0
-                      ? (phase.kreditStartDatum || params.kaufdatum)
-                      : null;
+                    const zr = zeitraeume[idx];
+                    const istLetzte = idx === phasenMitBerechnung.length - 1;
+                    // Warnung nur für die letzte Phase — frühere Phasen haben eine Folgephase (= Historie)
                     let zinsbindungsWarnung = null;
-                    if (pStartDatum && typ !== 'endfaellig') {
-                      const ablaufDatum = new Date(pStartDatum);
-                      ablaufDatum.setFullYear(ablaufDatum.getFullYear() + (phase.zinsbindung || 10));
-                      const heute2 = new Date();
-                      const monateZumAblauf = (ablaufDatum - heute2) / (1000 * 60 * 60 * 24 * 30.44);
-                      if (monateZumAblauf <= 12 && monateZumAblauf >= 0) {
-                        zinsbindungsWarnung = { ablaufDatum, monateZumAblauf: Math.ceil(monateZumAblauf), kritisch: monateZumAblauf <= 3 };
-                      } else if (monateZumAblauf < 0) {
-                        zinsbindungsWarnung = { ablaufDatum, monateZumAblauf: 0, abgelaufen: true, kritisch: true };
-                      }
+                    if (istLetzte && finStatus && zr?.ende && (finStatus.stufe === 'rot' || finStatus.stufe === 'gelb')) {
+                      zinsbindungsWarnung = { ablaufDatum: zr.ende, monateZumAblauf: Math.max(0, Math.ceil(finStatus.monate)), abgelaufen: finStatus.stufe === 'rot', kritisch: finStatus.monate < 12, ungeprueft: zr.endeGeschaetzt };
                     }
                     return (
                     <div key={phase.id} className={`bg-white border-2 rounded-2xl p-5 shadow-sm ${idx === 0 ? 'border-indigo-200' : 'border-gray-200'}`}>
@@ -1721,6 +1740,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               {zinsbindungsWarnung.abgelaufen
                                 ? `Ablauf war am ${zinsbindungsWarnung.ablaufDatum.toLocaleDateString('de-DE')} — Anschlussfinanzierung notwendig!`
                                 : `Ablauf am ${zinsbindungsWarnung.ablaufDatum.toLocaleDateString('de-DE')} — Anschlussfinanzierung vorbereiten!`}
+                              {zinsbindungsWarnung.ungeprueft && ' (Datum ungeprüft — bitte unten bestätigen)'}
                             </p>
                           </div>
                         </div>
@@ -1803,6 +1823,27 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           </div>
                         </div>
                       )}
+
+                      {/* Zinsbindung bis — volles Datum (Teil 2, Fehler 5 / Teil 3, 5.2) */}
+                      <div className={`mb-4 p-3 rounded-xl border ${zr?.endeGeschaetzt ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">
+                          <CalendarDays size={12} className='inline mr-1'/>{phase.darlehensTyp === 'endfaellig' ? 'Laufzeit bis' : 'Zinsbindung bis'}
+                          {zr?.endeGeschaetzt && <span className="ml-2 font-normal text-amber-700">geschätzt — bitte mit dem Kreditvertrag abgleichen</span>}
+                        </label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input type="date"
+                            value={phase.zinsbindungBis || (zr?.ende ? zr.ende.toISOString().split('T')[0] : '')}
+                            onChange={e => setZinsbindungBis(phase, idx, e.target.value)}
+                            className={`px-3 py-1.5 border rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 ${zr?.endeGeschaetzt ? 'border-amber-400' : 'border-slate-300'}`} />
+                          {zr?.endeGeschaetzt && zr?.ende && (
+                            <button type="button" onClick={() => setZinsbindungBis(phase, idx, zr.ende.toISOString().split('T')[0])}
+                              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 hover:bg-amber-100">
+                              Stimmt so
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1">Die Zinsbindung läuft ab Vertragsschluss bzw. Auszahlung, nicht ab Kaufdatum. An diesem Datum hängt die Erinnerung zur Anschlussfinanzierung.</p>
+                      </div>
 
                       <div className="flex gap-2 mb-4 flex-wrap">
                         {Object.entries(typLabels).map(([val, label]) => (
