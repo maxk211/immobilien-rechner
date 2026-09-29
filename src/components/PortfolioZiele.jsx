@@ -78,7 +78,7 @@ function berechnePortfolioStats(portfolio) {
       const vertragsLaeuft = !vertragsEnde || vertragsEnde >= new Date();
       if (vertragsLaeuft) {
         const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo);
-        const ausgaben = getAktuelleWarmmiete(immo) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36);
+        const ausgaben = getAktuelleWarmmiete(immo) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36) + (immo.arbitrageSonstige || 0);
         gesamtCashflowMonat += einnahmen - ausgaben;
       }
     } else {

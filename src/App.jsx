@@ -880,6 +880,7 @@ function App() {
     let arbStrom = 0;
     let arbInternet = 0;
     let arbGEZ = 0;
+    let arbSonstige = 0;
     mietimmobilien.forEach(immo => {
       const arb = berechneJahresArbitrage(immo, jahr);
       arbitrageEinnahmen += arb.einnahmen;
@@ -887,8 +888,9 @@ function App() {
       arbStrom     += (immo.arbitrageStrom || 0) * 12 * arb.faktor;
       arbInternet  += (immo.arbitrageInternet || 0) * 12 * arb.faktor;
       arbGEZ       += (immo.arbitrageGEZ || 0) * 12 * arb.faktor;
+      arbSonstige  += (immo.arbitrageSonstige || 0) * 12 * arb.faktor;
     });
-    const arbitrageAusgaben = arbWarmmiete + arbStrom + arbInternet + arbGEZ;
+    const arbitrageAusgaben = arbWarmmiete + arbStrom + arbInternet + arbGEZ + arbSonstige;
 
     const steuerlichesErgebnis = gesamtEinnahmen - gesamtWerbungskosten + (arbitrageEinnahmen - arbitrageAusgaben);
 
@@ -1012,7 +1014,7 @@ function App() {
     if (mietimmobilien.length > 0) {
       const arbitrageHeader = [
         'Immobilie', 'Adresse', 'Eigene Miete/Jahr €',
-        'Strom/Jahr €', 'Internet/Jahr €', 'GEZ/Jahr €',
+        'Strom/Jahr €', 'Internet/Jahr €', 'GEZ/Jahr €', 'Weitere Kosten/Jahr €',
         'Einnahmen/Jahr €', 'Gewinn/Jahr €'
       ];
 
@@ -1023,9 +1025,10 @@ function App() {
         const strom = (immo.arbitrageStrom || 0) * 12 * arb.faktor;
         const internet = (immo.arbitrageInternet || 0) * 12 * arb.faktor;
         const gez = (immo.arbitrageGEZ || 0) * 12 * arb.faktor;
+        const sonstige = (immo.arbitrageSonstige || 0) * 12 * arb.faktor;
         const einnahmen = arb.einnahmen;
         const eigeneMiete = arb.eigeneWarmmiete;
-        const gewinn = einnahmen - eigeneMiete - strom - internet - gez;
+        const gewinn = einnahmen - eigeneMiete - strom - internet - gez - sonstige;
 
         arbitrageData.push([
           immo.name || 'Unbenannt',
@@ -1034,13 +1037,14 @@ function App() {
           strom.toFixed(2),
           internet.toFixed(2),
           gez.toFixed(2),
+          sonstige.toFixed(2),
           einnahmen.toFixed(2),
           gewinn.toFixed(2)
         ]);
       });
 
       const wsArbitrage = XLSX.utils.aoa_to_sheet(arbitrageData);
-      wsArbitrage['!cols'] = Array(8).fill({ wch: 16 });
+      wsArbitrage['!cols'] = Array(9).fill({ wch: 16 });
       wsArbitrage['!cols'][0] = { wch: 20 };
       wsArbitrage['!cols'][1] = { wch: 25 };
       XLSX.utils.book_append_sheet(wb, wsArbitrage, 'Mietimmobilien');
@@ -1178,7 +1182,7 @@ function App() {
       const mietRows = mietimmobilien.map(immo => {
         // aktuelle Werte aus mietAnpassungen
         const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo) * 12;
-        const ausgaben = (getAktuelleWarmmiete(immo) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0)) * 12;
+        const ausgaben = (getAktuelleWarmmiete(immo) + (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ || 0) + (immo.arbitrageSonstige || 0)) * 12;
         return [
           immo.name || 'Unbenannt',
           formatCurrency(einnahmen),

@@ -183,6 +183,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     // Aufgeschlüsselte Kosten für Steuerberater
     arbitrageStrom: immobilie.arbitrageStrom || 0,
     arbitrageInternet: immobilie.arbitrageInternet || 0,
+    arbitrageSonstige: immobilie.arbitrageSonstige || 0,
     arbitrageGEZ: immobilie.arbitrageGEZ ?? 18.36,
     wohnflaeche: immobilie.wohnflaeche || '',
     zimmer: immobilie.zimmer || '',
@@ -233,7 +234,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
   // Berechnungen — wenn Vertrag beendet: laufender Cashflow = 0
   const einnahmen = vertragsBeendet ? 0 : params.anzahlZimmerVermietet * aktUntermiete;
-  const zusatzkosten = vertragsBeendet ? 0 : (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36);
+  const zusatzkosten = vertragsBeendet ? 0 : (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0);
   const ausgaben = vertragsBeendet ? 0 : aktWarmmiete + zusatzkosten;
   const monatsCashflow = einnahmen - ausgaben;
   const jahresCashflow = monatsCashflow * 12;
@@ -445,7 +446,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <span className="text-sm text-gray-600">
                     Nebenkosten
                     <span className="text-xs text-gray-400 ml-2">
-                      Strom {formatCurrency(params.arbitrageStrom||0)} · Internet {formatCurrency(params.arbitrageInternet||0)} · GEZ {formatCurrency(params.arbitrageGEZ??18.36)}
+                      Strom {formatCurrency(params.arbitrageStrom||0)} · Internet {formatCurrency(params.arbitrageInternet||0)} · GEZ {formatCurrency(params.arbitrageGEZ??18.36)}{(params.arbitrageSonstige || 0) > 0 ? ` · Weitere ${formatCurrency(params.arbitrageSonstige)}` : ''}
                     </span>
                   </span>
                   <span className="text-sm font-bold text-red-500">−{formatCurrency(zusatzkosten)}</span>
@@ -527,6 +528,16 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         type="number"
                         value={params.arbitrageInternet || 0}
                         onChange={(e) => updateParams({ arbitrageInternet: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1" title="z. B. Reinigung, Verschleiß, Verbrauchsmaterial">Weitere Kosten</label>
+                      <input
+                        type="number"
+                        value={params.arbitrageSonstige || 0}
+                        onChange={(e) => updateParams({ arbitrageSonstige: parseFloat(e.target.value) || 0 })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                         placeholder="0"
                       />

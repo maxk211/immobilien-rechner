@@ -55,7 +55,7 @@ export function baueImmobilie(d) {
       wohnflaeche: n(d.wohnflaeche), zimmer: n(d.zimmer),
       kaufpreis: 0, mietvertragStart: kaufdatum, mietvertragEnde: d.mietvertragEnde || '',
       eigeneWarmmiete: n(d.eigeneWarmmiete), anzahlZimmerVermietet: n(d.zimmerVermietet), untermieteProZimmer: n(d.untermieteProZimmer),
-      arbitrageStrom: n(d.strom), arbitrageInternet: n(d.internet), arbitrageGEZ: d.gez ? 18.36 : 0,
+      arbitrageStrom: n(d.strom), arbitrageInternet: n(d.internet), arbitrageGEZ: d.gez ? 18.36 : 0, arbitrageSonstige: n(d.sonstige),
       finanzierungsphasen: [],
     };
   }
@@ -668,6 +668,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
         <Feld label="Untermiete pro Zimmer (warm)"><input type="number" min="0" className={inputCls} value={d.untermieteProZimmer} onChange={e => set({ untermieteProZimmer: e.target.value })} /></Feld>
         <Feld label="Strom im Monat" hint="Wenn du ihn trägst"><input type="number" min="0" className={inputCls} value={d.strom} onChange={e => set({ strom: e.target.value })} /></Feld>
         <Feld label="Internet im Monat"><input type="number" min="0" className={inputCls} value={d.internet} onChange={e => set({ internet: e.target.value })} /></Feld>
+        <Feld label="Weitere Kosten im Monat" hint="z. B. Reinigung, Verschleiß"><input type="number" min="0" className={inputCls} value={d.sonstige} onChange={e => set({ sonstige: e.target.value })} /></Feld>
       </div>
       <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={d.gez} onChange={e => set({ gez: e.target.checked })} /> Ich zahle den Rundfunkbeitrag für die Wohnung (18,36 €)</label>
     </div>

@@ -121,7 +121,7 @@ export const berechneMietStatusFuerMonat = (mietEingaenge, jahr, monatNr, erwart
 // Berechnet den historisch korrekten Cashflow eines Arbitrage-Objekts Monat für Monat
 export const berechneHistorischenArbitrageCashflow = (p, vonDatum, bisDatum) => {
   if (!vonDatum || !bisDatum || vonDatum > bisDatum) return 0;
-  const zusatzkosten = (p.arbitrageStrom || 0) + (p.arbitrageInternet || 0) + (p.arbitrageGEZ ?? 18.36);
+  const zusatzkosten = (p.arbitrageStrom || 0) + (p.arbitrageInternet || 0) + (p.arbitrageGEZ ?? 18.36) + (p.arbitrageSonstige || 0);
   const anpassungen = [...(p.mietAnpassungen || [])].sort((a, b) => new Date(a.datum) - new Date(b.datum));
   let gesamt = 0;
   let d = new Date(vonDatum.getFullYear(), vonDatum.getMonth(), 1);

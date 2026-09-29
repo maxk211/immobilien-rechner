@@ -42,7 +42,7 @@ const PortfolioOverview = ({ portfolio }) => {
         const vertragsEndeImmo = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
         const vertragsLaeuft = !vertragsEndeImmo || vertragsEndeImmo >= new Date();
         const einnahmen = vertragsLaeuft ? (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo) : 0;
-        const zusatzkosten = vertragsLaeuft ? (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36) : 0;
+        const zusatzkosten = vertragsLaeuft ? (immo.arbitrageStrom || 0) + (immo.arbitrageInternet || 0) + (immo.arbitrageGEZ ?? 18.36) + (immo.arbitrageSonstige || 0) : 0;
         const ausgaben = vertragsLaeuft ? getAktuelleWarmmiete(immo) + zusatzkosten : 0;
         const monatsCashflow = einnahmen - ausgaben;
 
