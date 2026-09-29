@@ -10,7 +10,7 @@ const ArbitrageCashflow = ({ params }) => {
   const aktWarmmiete = getAktuelleWarmmiete(params);
   const aktUntermiete = getAktuelleUntermiete(params);
   const einnahmen = params.anzahlZimmerVermietet * aktUntermiete;
-  const zusatzkosten = (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36);
+  const zusatzkosten = (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0);
   const ausgaben = aktWarmmiete + zusatzkosten;
   const monatsCF = einnahmen - ausgaben;
   const jahresCF = monatsCF * 12;
@@ -113,7 +113,7 @@ const ArbitrageCashflow = ({ params }) => {
                   <tr>
                     <td className="py-2.5 px-4 text-xs text-gray-600">
                       − Nebenkosten
-                      <span className="text-gray-400 ml-1">(Strom {formatCurrency(params.arbitrageStrom || 0)} · Internet {formatCurrency(params.arbitrageInternet || 0)} · GEZ {formatCurrency(params.arbitrageGEZ ?? 18.36)})</span>
+                      <span className="text-gray-400 ml-1">(Strom {formatCurrency(params.arbitrageStrom || 0)} · Internet {formatCurrency(params.arbitrageInternet || 0)} · GEZ {formatCurrency(params.arbitrageGEZ ?? 18.36)}{(params.arbitrageSonstige || 0) > 0 ? ` · Weitere ${formatCurrency(params.arbitrageSonstige)}` : ''})</span>
                     </td>
                     <td className="py-2.5 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(zusatzkosten)}</td>
                     <td className="py-2.5 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(zusatzkosten * 12)}</td>

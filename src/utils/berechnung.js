@@ -592,7 +592,8 @@ export const berechneMtlCashflow = (immo) => {
     const ausgaben = getAktuelleWarmmiete(immo)
       + (immo.arbitrageStrom || 0)
       + (immo.arbitrageInternet || 0)
-      + (immo.arbitrageGEZ ?? 18.36);
+      + (immo.arbitrageGEZ ?? 18.36)
+      + (immo.arbitrageSonstige || 0); // weitere laufende Kosten (z. B. Reinigung, Verschleiß)
     return einnahmen - ausgaben;
   }
 

@@ -57,7 +57,7 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
         for (const a of anpassungen) { if (new Date(a.datum) <= monatsMitte) gueltige = a; }
         const warmmiete = gueltige?.eigeneWarmmiete ?? (params.eigeneWarmmiete || 0);
         const untermiete = gueltige?.untermieteProZimmer ?? (params.untermieteProZimmer || 0);
-        const zk = (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36);
+        const zk = (params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0);
         einnahmen += zimmerVermietet * untermiete;
         wkWarmmiete += anteil * warmmiete;
         wkNK += anteil * zk;
@@ -74,13 +74,13 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
   const aktJahrDaten = jahresDaten.find(d => d.jahr === tabJahr) || {
     einnahmen: zimmerVermietet * aktUntermiete * 12,
     wkWarmmiete: Math.round(anteil * aktWarmmiete * 12),
-    wkNK: Math.round(anteil * ((params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36)) * 12),
+    wkNK: Math.round(anteil * ((params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0)) * 12),
     werbungskosten: 0, ueberschuss: 0, steuer: 0
   };
   const aktWerbungskosten = aktJahrDaten.wkWarmmiete + aktJahrDaten.wkNK;
   const aktUeberschuss = aktJahrDaten.einnahmen - aktWerbungskosten;
   const aktSteuer = Math.max(0, aktUeberschuss * (steuersatz / 100));
-  const aktNettoCF = aktJahrDaten.einnahmen - aktWarmmiete * 12 - ((params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36)) * 12;
+  const aktNettoCF = aktJahrDaten.einnahmen - aktWarmmiete * 12 - ((params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0)) * 12;
   const aktNettoCFnachSteuer = aktNettoCF - aktSteuer;
 
   const handleSteuersatzChange = (val) => {
@@ -187,10 +187,10 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
           const wk = aktJahrDaten.wkWarmmiete + aktJahrDaten.wkNK;
           const eigenkosten = Math.round(aktWarmmiete * 12 * (1 - anteil));
           const steuerBetrag = Math.round(Math.max(0, (aktJahrDaten.einnahmen - wk) * steuersatz / 100));
-          const netto = aktJahrDaten.einnahmen - aktWarmmiete * 12 - ((params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36)) * 12 - steuerBetrag;
+          const netto = aktJahrDaten.einnahmen - aktWarmmiete * 12 - ((params.arbitrageStrom || 0) + (params.arbitrageInternet || 0) + (params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0)) * 12 - steuerBetrag;
           const teile = [
             { label: 'Steuer', wert: steuerBetrag, farbe: '#a855f7', pct: Math.round(steuerBetrag / total * 100) },
-            { label: 'Eigene Kosten', wert: eigenkosten + Math.round(((params.arbitrageStrom||0)+(params.arbitrageInternet||0)+(params.arbitrageGEZ??18.36)) * 12 * (1 - anteil)), farbe: '#f87171', pct: 0 },
+            { label: 'Eigene Kosten', wert: eigenkosten + Math.round(((params.arbitrageStrom||0)+(params.arbitrageInternet||0)+(params.arbitrageGEZ ?? 18.36) + (params.arbitrageSonstige || 0)) * 12 * (1 - anteil)), farbe: '#f87171', pct: 0 },
             { label: 'Werbungskosten (absetzbar)', wert: wk, farbe: '#fb923c', pct: Math.round(wk / total * 100) },
             { label: 'Netto verbleibend', wert: Math.max(0, netto), farbe: '#34d399', pct: 0 },
           ];

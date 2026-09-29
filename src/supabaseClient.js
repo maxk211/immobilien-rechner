@@ -45,6 +45,7 @@ const ZUSATZ_KEYS = [
   'plausiBestaetigt', 'feldHerkunft',
   // Phase I: Anlage-Wizard
   'ort', 'erwerbsart', 'mietstatus',
+  'arbitrageSonstige', // weitere laufende Kosten bei Arbitrage
 ];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 

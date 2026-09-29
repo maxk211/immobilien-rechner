@@ -56,7 +56,7 @@ export function arbitrageVorbelegung(a) {
     typ: 'mietimmobilie', eigentumMonat: new Date().toISOString().slice(0, 7),
     wohnflaeche: a.wohnflaeche || '', zimmer: '', eigeneWarmmiete: a.eigeneWarmmiete || '',
     zimmerVermietet: a.zimmer || '', untermieteProZimmer: a.proZimmer || '',
-    strom: a.strom || '', internet: a.internet || '', gez: !!a.gez,
+    strom: a.strom || '', internet: a.internet || '', gez: !!a.gez, sonstige: a.sonstige || '',
   };
 }
 
