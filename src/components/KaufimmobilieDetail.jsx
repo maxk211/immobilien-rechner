@@ -17,6 +17,7 @@ import MieteinnahmenTracker from './MieteinnahmenTracker';
 import NKAbrechnungTab from './NKAbrechnungTab';
 import KautionsManager from './KautionsManager';
 import InfoHint from './InfoHint';
+import { DetailNavigation, ZurueckZumCockpit, KennzahlenZeile } from './DetailNavigation';
 import { phasenZeitraeume, finanzierungsStatus } from '../utils/finanzierung.js';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 import {
@@ -452,11 +453,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
         </div>
         {/* Header */}
         <div className="flex-shrink-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
+          <div className="bg-ink px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <div className="flex justify-between items-start">
-              <div className="flex-1 min-w-0">
+              <ZurueckZumCockpit sichtbar={activeTab !== 'uebersicht'} onClick={() => setActiveTab('uebersicht')} />
+              <div className={`flex-1 min-w-0 ${activeTab !== 'uebersicht' ? 'ml-3' : ''}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1"><Home size={11}/> Kaufimmobilie</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/10 text-white/90 flex items-center gap-1">Kaufimmobilie</span>
                   {isGbR && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1">
                       <Landmark size={11}/> GbR · {params.userAnteil}% Ihr Anteil
@@ -471,11 +473,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <button onClick={() => setActiveTab('uebersicht')}
                       title={`${eigeneAufgaben.length} offene${eigeneAufgaben.length === 1 ? 'r Punkt' : ' Punkte'}`}
                       className={`text-xs font-semibold px-2 py-0.5 rounded-full text-white flex items-center gap-1 ${
-                        eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/80'
-                        : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/80'
-                        : 'bg-gray-400/80'
+                        eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/25 text-red-200'
+                        : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/25 text-amber-200'
+                        : 'bg-white/10 text-white/80'
                       }`}>
-                      {eigeneAufgaben.length} offen
+                      {eigeneAufgaben.length} offene{eigeneAufgaben.length === 1 ? 'r Punkt' : ' Punkte'}
                     </button>
                   )}
                 </div>
@@ -545,9 +547,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 )}
                 {onEdit && (
                   <button onClick={onEdit}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold transition-colors"
                     title="Stammdaten bearbeiten">
-                    <Pencil size={14} className="inline mr-1"/>Bearbeiten
+                    Bearbeiten
                   </button>
                 )}
                 <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
@@ -558,6 +560,17 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           {(() => {
             const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
             const wsPositiv = wertsteigerungSeitKauf && wertsteigerungSeitKauf.absoluteSteigerung >= 0;
+            const ekNv = ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig;
+            if (activeTab !== 'uebersicht') {
+              return (
+                <KennzahlenZeile eintraege={[
+                  ['Brutto', fmtKPI(ergebnis.bruttorendite)],
+                  ['Netto', fmtKPI(ergebnis.nettorendite), 'text-emerald-600'],
+                  ['EK-Rendite', ekNv ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite), ekNv ? 'text-gray-400' : 'text-gray-900'],
+                  ['Wertsteigerung', wertsteigerungSeitKauf ? `${wsPositiv ? '+' : ''}${wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %` : '—', wsPositiv ? 'text-emerald-600' : 'text-red-600'],
+                ]} />
+              );
+            }
             return (
               <div className="grid grid-cols-4 bg-white border-b border-gray-200 divide-x divide-gray-100">
                 <div className="px-2 sm:px-4 py-2 sm:py-3">
@@ -604,7 +617,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           })()}
         </div>
 
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6 bg-canvas">
           {/* Tab-Navigation — 2-stufig: 4 Haupt-Tabs + kontextuelle Sub-Tabs */}
           {(() => {
             const aktiveMieterAnzahl = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -654,41 +667,14 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             ) || GRUPPEN[0];
 
             return (
-              <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-5 pb-2 mb-4 border-b border-slate-100">
-                {/* Haupt-Tabs */}
-                <div className="grid grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1">
-                  {GRUPPEN.map(g => (
-                    <button key={g.id} onClick={() => setActiveTab(g.first)}
-                      className={`py-2 px-1 text-[11px] sm:text-sm font-semibold rounded-lg transition-all text-center leading-tight ${
-                        aktiveGruppe.id === g.id
-                          ? 'bg-white text-indigo-700 shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}>
-                      <span className="flex items-center justify-center gap-1">{g.icon}{g.label}</span>
-                    </button>
-                  ))}
-                </div>
-                {/* Sub-Tabs */}
-                {aktiveGruppe.subs && (
-                  <div className="flex gap-0.5 sm:gap-1 mt-2 bg-indigo-50 rounded-xl p-1 overflow-x-auto">
-                    {aktiveGruppe.subs.map(s => {
-                      const leer = HAT_DATEN[s.id] === false;
-                      return (
-                      <button key={s.id} onClick={() => setActiveTab(s.id)}
-                        title={leer ? LEER_HINWEIS[s.id] : undefined}
-                        className={`flex-shrink-0 sm:flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-sm rounded-lg transition-all text-center leading-tight whitespace-nowrap ${
-                          activeTab === s.id
-                            ? 'bg-indigo-600 text-white shadow-sm font-semibold'
-                            : leer
-                              ? 'text-slate-300 font-normal hover:text-indigo-500 hover:bg-indigo-100'
-                              : 'text-indigo-400 font-semibold hover:text-indigo-700 hover:bg-indigo-100'
-                        }`}>
-                        <span className="flex items-center justify-center gap-1">{s.icon}{s.label}</span>
-                      </button>
-                      );
-                    })}
-                  </div>
-                )}
+              <div className="-mx-3 sm:-mx-6 mb-5 sticky top-0 z-20">
+                <DetailNavigation
+                  gruppen={GRUPPEN}
+                  aktiveGruppeId={aktiveGruppe.id}
+                  activeTab={activeTab}
+                  onSelect={setActiveTab}
+                  leerHinweise={Object.fromEntries(Object.entries(HAT_DATEN).filter(([, v]) => v === false).map(([k]) => [k, LEER_HINWEIS[k]]))}
+                />
               </div>
             );
           })()}

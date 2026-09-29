@@ -52,12 +52,12 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
       onClick={onClick}
     >
       {/* Card Header Strip */}
-      <div className={`bg-gradient-to-r ${accentClass} px-5 pt-4 pb-5`}>
+      <div className="bg-ink px-5 pt-4 pb-5">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span
-                className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1"
+                className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/10 text-white/90 flex items-center gap-1"
                 title={isMietimmobilie ? 'Mietimmobilie (Arbitrage: anmieten & untervermieten)' : isMFH ? 'Mehrfamilienhaus' : 'Kaufimmobilie'}
               >
                 {isMietimmobilie
@@ -68,7 +68,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
                 }
               </span>
               {!isMietimmobilie && !isMFH && immobilie.vermietungsmodell && immobilie.vermietungsmodell !== 'kaltmiete' && (
-                <span className="text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">
+                <span className="text-xs font-medium bg-white/10 text-white/90 px-2 py-0.5 rounded-md">
                   {immobilie.vermietungsmodell === 'kaltmiete_nk' ? 'NK inkl.' : 'Warmmiete'}
                 </span>
               )}
@@ -95,18 +95,12 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
           <div className="flex items-center gap-1 ml-2 shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); onOpenAufgabe ? onOpenAufgabe(eigeneAufgaben[0]) : (onClick && onClick()); }}
-              className="relative w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
+              className={`px-2 h-6 flex items-center justify-center rounded-full text-[11px] font-bold whitespace-nowrap transition-opacity hover:opacity-90 ${
+                aufgabenOffen === 0 ? 'bg-emerald-600 text-white' : aufgabenRot > 0 ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'
+              }`}
               title={aufgabenOffen > 0 ? `${aufgabenOffen} offene Aufgabe${aufgabenOffen !== 1 ? 'n' : ''}` : 'Keine offenen Aufgaben'}
             >
-              {aufgabenOffen > 0
-                ? <ClipboardList size={14}/>
-                : <CheckCircle2 size={14} className="text-white/30"/>
-              }
-              {aufgabenOffen > 0 && (
-                <span className={`absolute -top-1 -right-4 min-w-[16px] h-4 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold text-white leading-none whitespace-nowrap ${aufgabenRot > 0 ? 'bg-red-500' : 'bg-amber-400'}`}>
-                  {aufgabenOffen} offen
-                </span>
-              )}
+              {aufgabenOffen > 0 ? `${aufgabenOffen} offen` : 'alles klar'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }}

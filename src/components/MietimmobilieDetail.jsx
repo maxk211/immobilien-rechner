@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import ObjektUeberlaufMenu from './ObjektUeberlaufMenu';
+import { DetailNavigation, ZurueckZumCockpit, KennzahlenZeile } from './DetailNavigation';
 import MieterDashboard from './MieterDashboard';
 import MieteinnahmenTracker from './MieteinnahmenTracker';
 import ArbitrageCashflow from './ArbitrageCashflow';
@@ -255,11 +256,12 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
         </div>
         {/* Header */}
         <div className="flex-shrink-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-emerald-500 to-emerald-700 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
+          <div className="bg-ink px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <div className="flex justify-between items-start">
-              <div className="flex-1 min-w-0">
+              <ZurueckZumCockpit sichtbar={activeTab !== 'uebersicht'} onClick={() => setActiveTab('uebersicht')} />
+              <div className={`flex-1 min-w-0 ${activeTab !== 'uebersicht' ? 'ml-3' : ''}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1"><RefreshCw size={11}/> Arbitrage</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/10 text-white/90">Angemietet · untervermietet</span>
                   {vertragsBeendet && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/80 text-white flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-red-300"/> Vertrag beendet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
                   )}
@@ -273,14 +275,14 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   )}
                   {params.aktiv !== false && eigeneAufgaben.length > 0 && (
                     <button onClick={() => setActiveTab('uebersicht')}
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full text-white ${eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/80' : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/80' : 'bg-gray-400/80'}`}>
-                      {eigeneAufgaben.length} offen
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/25 text-red-200' : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/25 text-amber-200' : 'bg-white/10 text-white/80'}`}>
+                      {eigeneAufgaben.length} offene{eigeneAufgaben.length === 1 ? 'r Punkt' : ' Punkte'}
                     </button>
                   )}
                 </div>
                 <h2 className="text-lg sm:text-2xl font-black text-white truncate">{params.name || 'Mietimmobilie'}</h2>
                 {(params.plz || params.adresse) && (
-                  <p className="text-emerald-100 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {params.plz} {params.adresse}</p>
+                  <p className="text-slate-300 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {params.plz} {params.adresse}</p>
                 )}
                 {(() => {
                   const eckdaten = [
@@ -289,7 +291,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     params.anzahlZimmerVermietet ? `${params.anzahlZimmerVermietet} untervermietet` : null,
                     params.mietvertragStart ? `Hauptmietvertrag seit ${new Date(params.mietvertragStart).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null,
                   ].filter(Boolean);
-                  return eckdaten.length > 0 ? <p className="text-emerald-100/80 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
+                  return eckdaten.length > 0 ? <p className="text-slate-400 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
                 })()}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
@@ -301,14 +303,14 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 />
                 {onEdit && (
                   <button onClick={onEdit}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold transition-colors"
                     title="Stammdaten bearbeiten">
-                    <Pencil size={14} className="inline mr-1"/>Bearbeiten
+                    Bearbeiten
                   </button>
                 )}
                 {hasChanges && (
                   <button onClick={handleSave}
-                    className="px-4 py-2 bg-white text-emerald-700 rounded-xl hover:bg-emerald-50 font-bold text-sm shadow-sm transition-colors">
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition-colors">
                     Speichern
                   </button>
                 )}
@@ -316,7 +318,14 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               </div>
             </div>
           </div>
-          {/* KPI Strip */}
+          {/* KPI Strip — im Cockpit groß, sonst kompakte Zeile */}
+          {activeTab !== 'uebersicht' ? (
+            <KennzahlenZeile eintraege={[
+              ['Cashflow', `${monatsCashflow >= 0 ? '+' : ''}${formatCurrency(monatsCashflow)}/Mo`, monatsCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'],
+              ['Jährlich', `${jahresCashflow >= 0 ? '+' : ''}${formatCurrency(jahresCashflow)}`],
+              ['Bisher', formatCurrency(bisherigeCashflowGesamt)],
+            ]} />
+          ) : (
           <div className="grid grid-cols-3 bg-white border-b border-gray-200 divide-x divide-gray-100">
             <div className="px-2 sm:px-5 py-2 sm:py-3">
               <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">Monatl.</div>
@@ -338,6 +347,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <div className="text-[10px] sm:text-xs text-gray-400">{monateSeitStart} Mo.</div>
             </div>
           </div>
+          )}
           {/* Tab-Navigation — Abschnitt 2: Cockpit · Zahlen · Vermietung · Objekt */}
           {(() => {
             const anzahlMieter = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
@@ -352,32 +362,11 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               { id: 'objekt', icon: <FileText size={13}/>, label: 'Objekt', first: 'objekt', subs: null },
             ];
             const aktiv = GRUPPEN.find(g => g.id === activeTab || g.subs?.some(x => x.id === activeTab) || (g.id === 'objekt' && activeTab === 'dokumente')) || GRUPPEN[0];
-            return (
-              <div className="flex-shrink-0 bg-white px-2 sm:px-4 pt-2 pb-2 border-b border-slate-100">
-                <div className="grid grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1">
-                  {GRUPPEN.map(g => (
-                    <button key={g.id} onClick={() => setActiveTab(g.first)}
-                      className={`py-2 px-1 text-[11px] sm:text-sm font-semibold rounded-lg transition-all text-center ${aktiv.id === g.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                      <span className="flex items-center justify-center gap-1">{g.icon}{g.label}</span>
-                    </button>
-                  ))}
-                </div>
-                {aktiv.subs && (
-                  <div className="flex gap-1 mt-2 bg-emerald-50 rounded-xl p-1 overflow-x-auto">
-                    {aktiv.subs.map(x => (
-                      <button key={x.id} onClick={() => setActiveTab(x.id)}
-                        className={`flex-shrink-0 sm:flex-1 py-1.5 px-3 text-[11px] sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${activeTab === x.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-emerald-600 hover:bg-emerald-100'}`}>
-                        {x.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
+            return <DetailNavigation gruppen={GRUPPEN} aktiveGruppeId={aktiv.id} activeTab={activeTab} onSelect={setActiveTab} />;
           })()}
         </div>
 
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 bg-canvas">
           {/* Mieteingänge Tab */}
           {activeTab === 'mieteingaenge' && (() => {
             // Angepasste params für MieteinnahmenTracker:
@@ -714,7 +703,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             {a.sub && <div className="text-xs text-gray-400 truncate">{a.sub}</div>}
                           </div>
                           <button onClick={() => setActiveTab(a.targetTab === 'mieteinnahmen' ? 'mieteingaenge' : a.targetTab)}
-                            className="px-3 py-1.5 bg-white border border-gray-200 hover:border-emerald-300 hover:text-emerald-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors">
+                            className="px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-emerald-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors">
                             Ansehen
                           </button>
                         </div>
@@ -729,7 +718,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 <div className="bg-white border border-gray-200 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Mieteingänge {jahr}</p>
-                    <button onClick={() => setActiveTab('mieteingaenge')} className="text-xs font-semibold text-emerald-600 hover:underline">Alle ansehen →</button>
+                    <button onClick={() => setActiveTab('mieteingaenge')} className="text-xs font-semibold text-indigo-600 hover:underline">Alle ansehen →</button>
                   </div>
                   <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
                     {MONATE.map((name, idx) => {
@@ -754,10 +743,10 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2 space-y-4">
                   {/* Cashflow pro Monat */}
-                  <button onClick={() => setActiveTab('cashflow')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-emerald-300 transition-colors">
+                  <button onClick={() => setActiveTab('cashflow')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Cashflow pro Monat</p>
-                      <span className="text-xs text-emerald-600 font-semibold">Details anzeigen →</span>
+                      <span className="text-xs text-indigo-600 font-semibold">Details anzeigen →</span>
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div><div className="text-[10px] text-gray-400">Einnahmen</div><div className="text-sm font-bold text-emerald-600">{formatCurrency(einnahmen)}</div></div>
@@ -779,10 +768,10 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   </div>
 
                   {/* Mieter */}
-                  <button onClick={() => setActiveTab('mieter')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-emerald-300 transition-colors">
+                  <button onClick={() => setActiveTab('mieter')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><User size={12}/> Untermieter · {aktiveUntermieter.length}/{params.anzahlZimmerVermietet || 0} Zimmer</p>
-                      <span className="text-xs text-emerald-600 font-semibold">Details →</span>
+                      <span className="text-xs text-indigo-600 font-semibold">Details →</span>
                     </div>
                     {aktiveUntermieter.length === 0 ? (
                       <p className="text-sm text-gray-400">Noch keine Untermieter erfasst.</p>
@@ -803,10 +792,10 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
 
                 {/* Hauptmietvertrag — rechte Spalte (bei der Mietimmobilie statt Finanzierung) */}
-                <button onClick={() => setActiveTab('objekt')} className="text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-emerald-300 transition-colors h-fit">
+                <button onClick={() => setActiveTab('objekt')} className="text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors h-fit">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Hauptmietvertrag</p>
-                    <span className="text-xs text-emerald-600 font-semibold">Öffnen →</span>
+                    <span className="text-xs text-indigo-600 font-semibold">Öffnen →</span>
                   </div>
                   <div className="space-y-2.5 text-sm">
                     <div><span className="text-[10px] text-gray-400 block">Eigene Warmmiete</span><span className="text-lg font-black text-gray-800">{formatCurrency(aktWarmmiete)}</span></div>
@@ -826,7 +815,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {[['miet-objekt-stammdaten', 'Stammdaten & Mietvertrag'], ['miet-objekt-dokumente', 'Dokumente']].map(([anchorId, label]) => (
                   <button key={anchorId}
                     onClick={() => document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-emerald-100 hover:text-emerald-700 transition-colors whitespace-nowrap lg:text-left">
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors whitespace-nowrap lg:text-left">
                     {label}
                   </button>
                 ))}

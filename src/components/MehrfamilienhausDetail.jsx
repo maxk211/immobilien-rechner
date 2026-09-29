@@ -14,6 +14,7 @@ import MieterDashboard from './MieterDashboard';
 import MietKostenManager from './MietKostenManager';
 import KaufnebenkostenManager from './KaufnebenkostenManager';
 import ObjektUeberlaufMenu from './ObjektUeberlaufMenu';
+import { DetailNavigation, ZurueckZumCockpit, KennzahlenZeile } from './DetailNavigation';
 import { phasenZeitraeume, finanzierungsStatus } from '../utils/finanzierung.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
@@ -94,14 +95,14 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
         <div className="flex flex-wrap gap-1.5">
           {DOK_TYPEN.map(t => (
             <button key={t} onClick={() => setGewaehltTyp(t)}
-              className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all ${gewaehltTyp === t ? 'bg-amber-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all ${gewaehltTyp === t ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
               {t}
             </button>
           ))}
         </div>
-        <label className={`flex items-center justify-center gap-3 py-4 rounded-xl cursor-pointer transition-all ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-amber-50'}`}>
+        <label className={`flex items-center justify-center gap-3 py-4 rounded-xl cursor-pointer transition-all ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-indigo-50'}`}>
           <input type="file" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
-          {uploading ? <Loader2 size={20} className="animate-spin text-amber-600"/> : <Upload size={20} className="text-amber-500"/>}
+          {uploading ? <Loader2 size={20} className="animate-spin text-indigo-600"/> : <Upload size={20} className="text-indigo-500"/>}
           <span className="text-sm font-semibold text-slate-600">
             {uploading ? 'Wird hochgeladen…' : 'Datei auswählen oder hierher ziehen'}
           </span>
@@ -117,8 +118,8 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
         <div className="space-y-2">
           {dokumente.map(doc => (
             <div key={doc.id} className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-3">
-              <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                <FileText size={18} className="text-amber-600"/>
+              <div className="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FileText size={18} className="text-indigo-600"/>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800 truncate">{doc.name}</p>
@@ -126,7 +127,7 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => handleDownload(doc)} disabled={ladeId === doc.id}
-                  className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Herunterladen">
+                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Herunterladen">
                   {ladeId === doc.id ? <Loader2 size={16} className="animate-spin"/> : <Download size={16}/>}
                 </button>
                 <button onClick={() => handleDelete(doc)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Löschen">
@@ -454,12 +455,12 @@ const MehrfamilienhausDetail = ({
 
         {/* Header */}
         <div className="flex-shrink-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-600 to-orange-700 px-4 sm:px-6 pt-3 sm:pt-5 pb-3 sm:pb-4 text-white">
+          <div className="bg-ink px-4 sm:px-6 pt-3 sm:pt-5 pb-3 sm:pb-4 text-white">
             <div className="flex justify-between items-start">
-              <div className="flex-1 min-w-0">
+              <ZurueckZumCockpit sichtbar={activeTab !== 'uebersicht'} onClick={() => setActiveTab('uebersicht')} />
+              <div className={`flex-1 min-w-0 ${activeTab !== 'uebersicht' ? 'ml-3' : ''}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <Building2 size={18}/>
-                  <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">MFH · {wohnungen.length} WE</span>
+                  <span className="text-xs font-semibold bg-white/10 text-white/90 px-2 py-0.5 rounded-md">Mehrfamilienhaus · {wohnungen.length} WE</span>
                   {params.aktiv === false && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500/60 text-white">
                       Verkauft/abgegeben {params.aufgabedatum ? new Date(params.aufgabedatum).toLocaleDateString('de-DE') : ''}
@@ -469,21 +470,21 @@ const MehrfamilienhausDetail = ({
                     <button onClick={() => setActiveTab('uebersicht')}
                       title={`${eigeneAufgaben.length} offene${eigeneAufgaben.length === 1 ? 'r Punkt' : ' Punkte'}`}
                       className={`text-xs font-semibold px-2 py-0.5 rounded-full text-white ${
-                        eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/80'
-                        : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/80' : 'bg-gray-400/80'
+                        eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/25 text-red-200'
+                        : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/25 text-amber-200' : 'bg-white/10 text-white/80'
                       }`}>
-                      {eigeneAufgaben.length} offen
+                      {eigeneAufgaben.length} offene{eigeneAufgaben.length === 1 ? 'r Punkt' : ' Punkte'}
                     </button>
                   )}
                   {kautionOffenAnzahl > 0 && (
-                    <span className="text-xs font-semibold bg-red-500/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-xs font-semibold bg-red-500/25 text-red-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                       <span className="inline-block w-2 h-2 rounded-full bg-red-300"/> {kautionOffenAnzahl}× Kaution offen
                     </span>
                   )}
                 </div>
                 <h2 className="text-base sm:text-2xl font-black truncate">{immobilie.name}</h2>
                 {(immobilie.plz || immobilie.adresse) && (
-                  <p className="text-white/80 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.plz} {immobilie.adresse}</p>
+                  <p className="text-slate-300 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {immobilie.plz} {immobilie.adresse}</p>
                 )}
                 {/* Abschnitt 3.2: Eckdaten im Kopf — nur erfasste Werte */}
                 {(() => {
@@ -493,7 +494,7 @@ const MehrfamilienhausDetail = ({
                     params.baujahr ? `Baujahr ${params.baujahr}` : null,
                     params.kaufdatum ? `gekauft ${new Date(params.kaufdatum).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null,
                   ].filter(Boolean);
-                  return eckdaten.length > 0 ? <p className="text-white/70 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
+                  return eckdaten.length > 0 ? <p className="text-slate-400 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
                 })()}
               </div>
               <div className="flex items-center gap-2 ml-3 shrink-0">
@@ -504,12 +505,12 @@ const MehrfamilienhausDetail = ({
                 />
                 {onEdit && (
                   <button onClick={onEdit}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors">
-                    <Pencil size={14} className="inline mr-1"/>Bearbeiten
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold transition-colors">
+                    Bearbeiten
                   </button>
                 )}
                 {hasChanges && (
-                  <button onClick={handleSave} className="px-3 py-1.5 bg-white text-amber-700 rounded-xl text-xs font-bold shadow-sm">
+                  <button onClick={handleSave} className="px-3 py-1.5 bg-white text-indigo-700 rounded-xl text-xs font-bold shadow-sm">
                     Speichern
                   </button>
                 )}
@@ -522,6 +523,18 @@ const MehrfamilienhausDetail = ({
           {(() => {
             const fmtKPI = (v) => (!isFinite(v) || isNaN(v)) ? '—' : `${v.toFixed(2)} %`;
             const wsPositiv = wertsteigerungSeitKauf && wertsteigerungSeitKauf.absoluteSteigerung >= 0;
+            const ekNv = ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig;
+            if (activeTab !== 'uebersicht') {
+              return (
+                <KennzahlenZeile eintraege={[
+                  ['Kaltmiete', `${formatCurrency(gesamtKaltmiete)}/Mo`],
+                  ['Auslastung', `${auslastung} %`, auslastung < 80 ? 'text-red-600' : 'text-emerald-600'],
+                  ['Brutto', fmtKPI(ergebnis.bruttorendite)],
+                  ['Netto', fmtKPI(ergebnis.nettorendite), 'text-emerald-600'],
+                  ['EK-Rendite', ekNv ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite), ekNv ? 'text-gray-400' : 'text-gray-900'],
+                ]} />
+              );
+            }
             return (
               <div className="bg-white border-b border-gray-200">
                 {/* Zeile 1: Betriebskennzahlen */}
@@ -549,7 +562,7 @@ const MehrfamilienhausDetail = ({
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
                     <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wide">EK-Rendite</div>
                     {/* Abschnitt 7.5: kein EK erfasst → "n. v." in Grau statt irreführender "0,00%" */}
-                    <div className={`text-base sm:text-xl font-black ${ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig ? 'text-gray-400' : 'text-amber-700'}`}>
+                    <div className={`text-base sm:text-xl font-black ${ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig ? 'text-gray-400' : 'text-indigo-700'}`}>
                       {ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite)}
                     </div>
                     {ergebnis.eigenkapitalRendite == null && <div className="text-[10px] text-gray-400">kein Eigenkapital eingesetzt</div>}
@@ -577,38 +590,11 @@ const MehrfamilienhausDetail = ({
         </div>
 
         {/* Tab-Inhalt */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 pb-6 bg-canvas">
 
-          {/* ── Tab-Navigation ───────────────────────────────────────────────── */}
-          <div className="sticky top-0 z-20 bg-white -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 sm:pt-4 pb-2 mb-4 border-b border-slate-100">
-            {/* Haupt-Tabs */}
-            <div className={`grid grid-cols-5 gap-1 bg-slate-100 rounded-xl p-1`}>
-              {GRUPPEN.map(g => (
-                <button key={g.id} onClick={() => setActiveTab(g.first ?? g.id)}
-                  className={`py-2 px-1 text-[10px] sm:text-sm font-semibold rounded-lg transition-all text-center leading-tight ${
-                    aktiveGruppe.id === g.id
-                      ? 'bg-white text-amber-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}>
-                  <span className="flex items-center justify-center gap-1">{g.icon}{g.label}</span>
-                </button>
-              ))}
-            </div>
-            {/* Sub-Tabs */}
-            {aktiveGruppe.subs && (
-              <div className="flex gap-0.5 sm:gap-1 mt-2 bg-amber-50 rounded-xl p-1 overflow-x-auto">
-                {aktiveGruppe.subs.map(s => (
-                  <button key={s.id} onClick={() => setActiveTab(s.id)}
-                    className={`flex-shrink-0 sm:flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-sm font-semibold rounded-lg transition-all text-center whitespace-nowrap ${
-                      activeTab === s.id
-                        ? 'bg-amber-600 text-white shadow-sm'
-                        : 'text-amber-500 hover:text-amber-700 hover:bg-amber-100'
-                    }`}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* ── Tab-Navigation (Optik aus den UX-Mockups) ── */}
+          <div className="-mx-3 sm:-mx-6 mb-5 sticky top-0 z-20">
+            <DetailNavigation gruppen={GRUPPEN} aktiveGruppeId={aktiveGruppe.id} activeTab={activeTab} onSelect={setActiveTab} />
           </div>
 
           <TabErrorBoundary resetKey={activeTab}>
@@ -619,7 +605,7 @@ const MehrfamilienhausDetail = ({
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-500">Wohneinheiten nach Etage</p>
                 <button onClick={() => openWohnungForm()}
-                  className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-1">
+                  className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1">
                   <Plus size={13}/> Wohnung
                 </button>
               </div>
@@ -629,7 +615,7 @@ const MehrfamilienhausDetail = ({
                   <p className="text-base font-semibold">Noch keine Wohneinheiten</p>
                   <p className="text-sm mt-1">Füge deine Wohneinheiten hinzu</p>
                   <button onClick={() => openWohnungForm()}
-                    className="mt-4 px-5 py-2.5 bg-amber-500 text-white rounded-xl font-semibold text-sm hover:bg-amber-600">
+                    className="mt-4 px-5 py-2.5 bg-indigo-500 text-white rounded-xl font-semibold text-sm hover:bg-indigo-600">
                     + Erste Wohnung anlegen
                   </button>
                 </div>
@@ -733,7 +719,7 @@ const MehrfamilienhausDetail = ({
                           {aufgabe.sub && <div className="text-xs text-gray-400 truncate">{aufgabe.sub}</div>}
                         </div>
                         <button onClick={() => setActiveTab(MFH_TAB_MAP[aufgabe.targetTab] ?? aufgabe.targetTab)}
-                          className="px-3 py-1.5 bg-white border border-gray-200 hover:border-amber-300 hover:text-amber-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors">
+                          className="px-3 py-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors">
                           Ansehen
                         </button>
                       </div>
@@ -753,7 +739,7 @@ const MehrfamilienhausDetail = ({
                       {offeneWE.length > 1 && (
                         <button onClick={handleAlleWohnungenAbhaken} className="text-xs font-semibold text-emerald-600 hover:underline">Alle als eingegangen buchen</button>
                       )}
-                      <button onClick={() => setActiveTab('mieteinnahmen')} className="text-xs font-semibold text-amber-600 hover:underline">Alle ansehen →</button>
+                      <button onClick={() => setActiveTab('mieteinnahmen')} className="text-xs font-semibold text-indigo-600 hover:underline">Alle ansehen →</button>
                     </div>
                   </div>
                   <div className="divide-y divide-gray-50">
@@ -797,10 +783,10 @@ const MehrfamilienhausDetail = ({
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2 space-y-4">
                   {/* Cashflow pro Monat */}
-                  <button onClick={() => setActiveTab('cashflow')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-amber-300 transition-colors">
+                  <button onClick={() => setActiveTab('cashflow')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Cashflow pro Monat</p>
-                      <span className="text-xs text-amber-600 font-semibold">Details anzeigen →</span>
+                      <span className="text-xs text-indigo-600 font-semibold">Details anzeigen →</span>
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div><div className="text-[10px] text-gray-400">Einnahmen</div><div className="text-sm font-bold text-emerald-600">{formatCurrency(gesamtKaltmiete)}</div></div>
@@ -811,13 +797,13 @@ const MehrfamilienhausDetail = ({
                   </button>
 
                   {/* Wert & Eigenkapital */}
-                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-bold text-amber-700 uppercase tracking-wide">Wert & Eigenkapital</p>
-                      <button onClick={() => setActiveTab('kaufwert')} className="text-xs font-semibold text-amber-700 hover:underline">Wert aktualisieren →</button>
+                      <p className="text-xs font-bold text-indigo-700 uppercase tracking-wide">Wert & Eigenkapital</p>
+                      <button onClick={() => setActiveTab('kaufwert')} className="text-xs font-semibold text-indigo-700 hover:underline">Wert aktualisieren →</button>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                      <div><div className="text-[10px] text-gray-400">Marktwert</div><div className="text-sm font-bold text-amber-800">{aktuellerWertMFH > 0 ? formatCurrency(aktuellerWertMFH) : '—'}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Marktwert</div><div className="text-sm font-bold text-indigo-800">{aktuellerWertMFH > 0 ? formatCurrency(aktuellerWertMFH) : '—'}</div></div>
                       <div><div className="text-[10px] text-gray-400">Kaufpreis</div><div className="text-sm font-bold text-gray-600">{params.kaufpreis ? formatCurrency(params.kaufpreis) : '—'}</div></div>
                       <div>
                         <div className="text-[10px] text-gray-400">Wertsteigerung</div>
@@ -825,7 +811,7 @@ const MehrfamilienhausDetail = ({
                           {wertsteigerungSeitKauf ? `${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}${wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %` : '—'}
                         </div>
                       </div>
-                      <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Dein Anteil</div><div className="text-sm font-bold text-amber-800">{aktuellerWertMFH > 0 ? formatCurrency(nettoEK) : '—'}</div></div>
+                      <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Dein Anteil</div><div className="text-sm font-bold text-indigo-800">{aktuellerWertMFH > 0 ? formatCurrency(nettoEK) : '—'}</div></div>
                     </div>
                     <p className="text-[10px] text-gray-400 mt-2">
                       {params.geschaetzterWertDatum ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}` : 'Marktwert noch nie aktualisiert'}
@@ -833,10 +819,10 @@ const MehrfamilienhausDetail = ({
                   </div>
 
                   {/* Mieter / Belegung — Karte klicken → Wohnungen */}
-                  <button onClick={() => setActiveTab('wohnungen')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-amber-300 transition-colors">
+                  <button onClick={() => setActiveTab('wohnungen')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><User size={12}/> Mieter · {belegtWE}/{wohnungen.length} WE belegt ({auslastung} %)</p>
-                      <span className="text-xs text-amber-600 font-semibold">Details →</span>
+                      <span className="text-xs text-indigo-600 font-semibold">Details →</span>
                     </div>
                     {wohnungen.length === 0 ? (
                       <p className="text-sm text-gray-400">Noch keine Wohnungen angelegt.</p>
@@ -861,17 +847,17 @@ const MehrfamilienhausDetail = ({
 
                 {/* Finanzierung — rechte Spalte */}
                 {fremdkapital > 0 && (
-                  <button onClick={() => setActiveTab('finanzierung')} className="text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-amber-300 transition-colors h-fit">
+                  <button onClick={() => setActiveTab('finanzierung')} className="text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-300 transition-colors h-fit">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Finanzierung</p>
-                      <span className="text-xs text-amber-600 font-semibold">Öffnen →</span>
+                      <span className="text-xs text-indigo-600 font-semibold">Öffnen →</span>
                     </div>
                     <div className="space-y-2.5">
                       <div>
                         <div className="text-[10px] text-gray-400">Restschuld</div>
                         <div className="text-lg font-black text-gray-800">{formatCurrency(restschuld)}</div>
                         <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                          <div className="h-full bg-amber-500 rounded-full" style={{ width: `${tilgungsfortschritt}%` }} />
+                          <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${tilgungsfortschritt}%` }} />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -931,12 +917,12 @@ const MehrfamilienhausDetail = ({
             return (
               <div className="space-y-4">
                 {/* WE-Tab-Leiste */}
-                <div className="flex gap-1 overflow-x-auto bg-amber-50 rounded-xl p-1 -mx-1 px-1">
+                <div className="flex gap-1 overflow-x-auto bg-indigo-50 rounded-xl p-1 -mx-1 px-1">
                   {wohnungen.map((w, idx) => {
                     const wk = weKosten[idx];
                     return (
                       <button key={idx} onClick={() => setCfWE(idx)}
-                        className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${cfWE === idx ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                        className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${cfWE === idx ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-600 hover:bg-indigo-100'}`}>
                         <span>{w.name || `WE ${idx + 1}`}</span>
                         <span className={`text-[10px] font-normal ${cfWE === idx ? 'text-white/70' : wk.cashflow >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                           {wk.cashflow >= 0 ? '+' : ''}{formatCurrency(wk.cashflow)}
@@ -945,7 +931,7 @@ const MehrfamilienhausDetail = ({
                     );
                   })}
                   <button onClick={() => setCfWE('gesamt')}
-                    className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${cfWE === 'gesamt' ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                    className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${cfWE === 'gesamt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-600 hover:bg-indigo-100'}`}>
                     <span>Gesamt</span>
                     <span className={`text-[10px] font-normal ${cfWE === 'gesamt' ? 'text-white/70' : totalCashflow >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                       {totalCashflow >= 0 ? '+' : ''}{formatCurrency(totalCashflow)}
@@ -957,7 +943,7 @@ const MehrfamilienhausDetail = ({
                   <div className="text-center py-12 text-gray-400">
                     <Building2 size={40} className="mx-auto mb-2 text-gray-300"/>
                     <p className="text-sm">Erst Wohnungen anlegen, dann Cashflow eintragen.</p>
-                    <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600">→ Zu Wohnungen</button>
+                    <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600">→ Zu Wohnungen</button>
                   </div>
                 )}
 
@@ -1041,7 +1027,7 @@ const MehrfamilienhausDetail = ({
                                   value={k[f.key] || ''}
                                   placeholder="0"
                                   onChange={e => updateWohnungKosten(cfWE, { ...k, [f.key]: parseFloat(e.target.value) || 0 })}
-                                  className="w-24 px-2 py-1.5 border border-gray-200 rounded-lg text-right text-base sm:text-sm focus:ring-2 focus:ring-amber-300 focus:border-amber-400"/>
+                                  className="w-24 px-2 py-1.5 border border-gray-200 rounded-lg text-right text-base sm:text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"/>
                                 <span className="text-xs text-gray-400 w-8">€/mo</span>
                               </div>
                             </div>
@@ -1149,7 +1135,7 @@ const MehrfamilienhausDetail = ({
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {weKosten.map((wk) => (
-                            <tr key={wk.idx} className="hover:bg-amber-50/50 cursor-pointer transition-colors" onClick={() => setCfWE(wk.idx)}>
+                            <tr key={wk.idx} className="hover:bg-indigo-50/50 cursor-pointer transition-colors" onClick={() => setCfWE(wk.idx)}>
                               <td className="py-2.5 px-4">
                                 <span className="font-semibold text-gray-800">{wk.name}</span>
                                 {wohnungen[wk.idx]?.mieterName && <span className="text-xs text-gray-400 ml-1.5 hidden sm:inline">· {wohnungen[wk.idx].mieterName}</span>}
@@ -1373,7 +1359,7 @@ const MehrfamilienhausDetail = ({
                     <div><div className="text-xs text-gray-400 mb-0.5">Kaufpreis</div><div className="font-bold text-gray-800">{formatCurrency(params.kaufpreis || 0)}</div></div>
                     <div><div className="text-xs text-gray-400 mb-0.5">Kaufnebenkosten</div><div className="font-bold text-gray-800">{formatCurrency(kaufnebenkostenAbsolut || 0)}</div></div>
                     <div><div className="text-xs text-gray-400 mb-0.5">Eigenkapital</div><div className="font-bold text-green-700">{formatCurrency(gesamtEK)}</div></div>
-                    <div><div className="text-xs text-gray-400 mb-0.5">Summe</div><div className="font-bold text-amber-700">{formatCurrency(gesamtinvestition || 0)}</div></div>
+                    <div><div className="text-xs text-gray-400 mb-0.5">Summe</div><div className="font-bold text-indigo-700">{formatCurrency(gesamtinvestition || 0)}</div></div>
                   </div>
                   {unfinanziert > 1 && (
                     <div className="mt-4 -mx-5 -mb-5 px-5 py-3 bg-orange-50 border-t border-orange-200 rounded-b-2xl">
@@ -1433,10 +1419,10 @@ const MehrfamilienhausDetail = ({
                       <div className="flex items-center gap-2">
                         <input type="number" step={1000} value={params.finanzierungsbetrag ?? berechneterKredit}
                           onChange={e => updateParams({ ...params, finanzierungsbetrag: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-lg font-bold text-right focus:ring-2 focus:ring-amber-400"/>
+                          className="w-full px-3 py-2 border-2 border-indigo-300 rounded-lg text-lg font-bold text-right focus:ring-2 focus:ring-indigo-400"/>
                         <span className="text-gray-500">€</span>
                       </div>
-                      <button onClick={() => updateParams({ ...params, finanzierungsbetrag: null })} className="text-xs text-amber-600 hover:underline mt-1">
+                      <button onClick={() => updateParams({ ...params, finanzierungsbetrag: null })} className="text-xs text-indigo-600 hover:underline mt-1">
                         ↺ Auto ({formatCurrency(berechneterKredit)})
                       </button>
                     </div>
@@ -1447,7 +1433,7 @@ const MehrfamilienhausDetail = ({
                       <div className="text-gray-300">−</div>
                       <div><span className="text-gray-400 text-xs">Eigenkapital</span><br/><strong>{formatCurrency(gesamtEK)}</strong></div>
                       <div className="text-gray-300">=</div>
-                      <div><span className="text-gray-400 text-xs">Kredit (berechnet)</span><br/><strong className="text-amber-700">{formatCurrency(berechneterKredit)}</strong></div>
+                      <div><span className="text-gray-400 text-xs">Kredit (berechnet)</span><br/><strong className="text-indigo-700">{formatCurrency(berechneterKredit)}</strong></div>
                     </div>
                   </div>
                 </div>
@@ -1471,7 +1457,7 @@ const MehrfamilienhausDetail = ({
                       zbWarnung = { ablaufDatum: zr.ende, monateZumAblauf: Math.max(0, Math.ceil(finStatus.monate)), abgelaufen: finStatus.stufe === 'rot', kritisch: finStatus.monate < 12 };
                     }
                     return (
-                      <div key={phase.id} className={`bg-white border-2 rounded-2xl p-5 shadow-sm ${idx === 0 ? 'border-amber-200' : 'border-gray-200'}`}>
+                      <div key={phase.id} className={`bg-white border-2 rounded-2xl p-5 shadow-sm ${idx === 0 ? 'border-indigo-200' : 'border-gray-200'}`}>
                         {zbWarnung && (
                           <div className={`mb-4 p-3 rounded-xl flex items-start gap-3 ${zbWarnung.abgelaufen ? 'bg-red-100 border border-red-300' : zbWarnung.kritisch ? 'bg-orange-100 border border-orange-300' : 'bg-amber-50 border border-amber-200'}`}>
                             <AlertTriangle size={18} className={zbWarnung.abgelaufen ? 'text-red-600' : 'text-amber-600'}/>
@@ -1487,9 +1473,9 @@ const MehrfamilienhausDetail = ({
                         )}
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${idx === 0 ? 'bg-amber-600 text-white' : 'bg-gray-400 text-white'}`}>Phase {idx + 1}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${idx === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-400 text-white'}`}>Phase {idx + 1}</span>
                             <input type="text" value={phase.name} onChange={e => updatePhase(phase.id, { name: e.target.value })}
-                              className="font-bold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-amber-500 focus:outline-none text-base"/>
+                              className="font-bold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none text-base"/>
                             {phase.startjahr && <span className="text-xs text-gray-400">ab {phase.startjahr}</span>}
                           </div>
                           {idx > 0 && <button onClick={() => deletePhase(phase.id)} className="text-red-400 hover:text-red-600 text-sm">Entfernen</button>}
@@ -1501,30 +1487,30 @@ const MehrfamilienhausDetail = ({
                               <label className="block text-[11px] text-slate-500 mb-0.5">Kreditinstitut</label>
                               <input type="text" value={phase.kreditinstitut || ''} placeholder="z.B. Sparkasse, Deutsche Bank …"
                                 onChange={e => updatePhase(phase.id, { kreditinstitut: e.target.value })}
-                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-amber-400 bg-white"/>
+                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white"/>
                             </div>
                             <div>
                               <label className="block text-[11px] text-slate-500 mb-0.5">Darlehensnummer</label>
                               <input type="text" value={phase.darlehensnummer || ''} placeholder="z.B. 1234567890"
                                 onChange={e => updatePhase(phase.id, { darlehensnummer: e.target.value })}
-                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-amber-400 bg-white"/>
+                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white"/>
                             </div>
                             <div>
                               <label className="block text-[11px] text-slate-500 mb-0.5">Ansprechpartner</label>
                               <input type="text" value={phase.ansprechpartner || ''} placeholder="Name des Beraters"
                                 onChange={e => updatePhase(phase.id, { ansprechpartner: e.target.value })}
-                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-amber-400 bg-white"/>
+                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white"/>
                             </div>
                             <div>
                               <label className="block text-[11px] text-slate-500 mb-0.5">Kontakt (Telefon/E-Mail)</label>
                               <input type="text" value={phase.ansprechpartnerKontakt || ''} placeholder="z.B. 089 12345 oder max@bank.de"
                                 onChange={e => updatePhase(phase.id, { ansprechpartnerKontakt: e.target.value })}
-                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-amber-400 bg-white"/>
+                                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400 bg-white"/>
                             </div>
                             <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-1">
                               <span className="text-[11px] text-slate-400">Darlehensvertrag als PDF hinterlegen</span>
                               <button type="button" onClick={() => setActiveTab('dokumente')}
-                                className="text-[11px] font-semibold text-amber-700 hover:text-amber-900 flex items-center gap-1 flex-shrink-0">
+                                className="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 flex-shrink-0">
                                 <FileText size={11}/> In Dokumente hochladen →
                               </button>
                             </div>
@@ -1535,7 +1521,7 @@ const MehrfamilienhausDetail = ({
                             <label className="block text-xs font-semibold text-slate-600 mb-1"><CalendarDays size={12} className='inline mr-1'/>Auszahlungsdatum</label>
                             <div className="flex items-center gap-2">
                               <input type="date" value={phase.kreditStartDatum || ''} onChange={e => updatePhase(phase.id, { kreditStartDatum: e.target.value || null })}
-                                className="px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-amber-400"/>
+                                className="px-3 py-1.5 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-indigo-400"/>
                               {phase.kreditStartDatum && <button onClick={() => updatePhase(phase.id, { kreditStartDatum: null })} className="text-xs text-slate-500 hover:underline">↺ Kaufdatum</button>}
                             </div>
                           </div>
@@ -1558,7 +1544,7 @@ const MehrfamilienhausDetail = ({
                         <div className="flex gap-2 mb-4 flex-wrap">
                           {Object.entries(typLabels).map(([val, label]) => (
                             <button key={val} type="button" onClick={() => updatePhase(phase.id, { darlehensTyp: val })}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${(phase.darlehensTyp || 'annuitaet') === val ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${(phase.darlehensTyp || 'annuitaet') === val ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
                               {label}
                             </button>
                           ))}
@@ -1569,15 +1555,15 @@ const MehrfamilienhausDetail = ({
                           </p>
                         )}
                         {idx > 0 && (
-                          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                            <label className="block text-xs font-semibold text-amber-800 mb-1"><Landmark size={12} className='inline mr-1'/>Restschuld laut Bank (Startbetrag)</label>
+                          <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                            <label className="block text-xs font-semibold text-indigo-800 mb-1"><Landmark size={12} className='inline mr-1'/>Restschuld laut Bank (Startbetrag)</label>
                             <div className="flex items-center gap-2">
                               <input type="number" step={1000} value={phase.restschuldOverride ?? ''}
                                 placeholder={`Berechnet: ${formatCurrency(phasenBerechnet[idx-1]?.restschuldNachZinsbindung ?? 0)}`}
                                 onChange={e => updatePhase(phase.id, { restschuldOverride: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
-                                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-base sm:text-sm"/>
+                                className="flex-1 px-3 py-2 border border-indigo-300 rounded-lg text-base sm:text-sm"/>
                               <span className="text-sm text-gray-500">€</span>
-                              {phase.restschuldOverride != null && <button onClick={() => updatePhase(phase.id, { restschuldOverride: null })} className="text-xs text-amber-600 hover:underline">Auto</button>}
+                              {phase.restschuldOverride != null && <button onClick={() => updatePhase(phase.id, { restschuldOverride: null })} className="text-xs text-indigo-600 hover:underline">Auto</button>}
                             </div>
                           </div>
                         )}
@@ -1590,7 +1576,7 @@ const MehrfamilienhausDetail = ({
                                   <div className="flex items-center gap-1">
                                     <input type="number" min={min} max={max} step={step} value={phase[field] ?? (field === 'zinsbindung' ? 10 : field === 'anfangstilgung' ? 2 : 4)}
                                       onChange={e => updatePhase(phase.id, { [field]: parseFloat(e.target.value) || 0 })}
-                                      className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-amber-400"/>
+                                      className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-indigo-400"/>
                                     <span className="text-xs text-gray-400">{unit}</span>
                                   </div>
                                 </div>
@@ -1600,7 +1586,7 @@ const MehrfamilienhausDetail = ({
                                 <div className="flex items-center gap-1">
                                   <input type="number" min={0} step={10} value={phase.monatlicherBetrag || ''} placeholder={phase.rate ? String(phase.rate) : 'Berechnet'}
                                     onChange={e => updatePhase(phase.id, { monatlicherBetrag: e.target.value === '' ? null : parseFloat(e.target.value) || null })}
-                                    className="w-full px-2 py-2 border-2 border-amber-200 bg-amber-50 rounded-lg text-right font-bold focus:border-amber-500"/>
+                                    className="w-full px-2 py-2 border-2 border-indigo-200 bg-indigo-50 rounded-lg text-right font-bold focus:border-indigo-500"/>
                                   <span className="text-xs text-gray-400">€</span>
                                 </div>
                               </div>
@@ -1621,9 +1607,9 @@ const MehrfamilienhausDetail = ({
                                 </div>
                               </div>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 bg-amber-50 rounded-xl text-center text-sm">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 bg-indigo-50 rounded-xl text-center text-sm">
                               <div><div className="text-xs text-gray-400 mb-1">Startbetrag</div><div className="font-bold">{formatCurrency(phase.startKredit)}</div></div>
-                              <div><div className="text-xs text-gray-400 mb-1">Monatl. Rate</div><div className="font-bold text-amber-700">{formatCurrency(phase.rate)}</div></div>
+                              <div><div className="text-xs text-gray-400 mb-1">Monatl. Rate</div><div className="font-bold text-indigo-700">{formatCurrency(phase.rate)}</div></div>
                               <div><div className="text-xs text-gray-400 mb-1">Zinsen (Monat 1)</div><div className="font-bold text-orange-600">{formatCurrency(phase.erstZinsen)}</div></div>
                               <div><div className="text-xs text-gray-400 mb-1">Tilgung (Monat 1)</div><div className="font-bold text-emerald-600">{formatCurrency(phase.erstTilgung)}</div></div>
                               <div><div className="text-xs text-gray-400 mb-1">Restschuld nach {phase.zinsbindung||10}J.</div>
@@ -1676,7 +1662,7 @@ const MehrfamilienhausDetail = ({
                     );
                   })}
                 </div>
-                <button onClick={addPhase} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-amber-400 hover:text-amber-600 text-sm font-semibold transition-all">
+                <button onClick={addPhase} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
                   + Anschlussfinanzierung planen
                 </button>
 
@@ -1706,17 +1692,17 @@ const MehrfamilienhausDetail = ({
                   <div className="text-center py-12 text-gray-400">
                     <Building2 size={40} className="mx-auto mb-2 text-gray-300"/>
                     <p className="text-sm">Erst Wohnungen mit Mieter anlegen.</p>
-                    <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600">→ Zu Wohnungen</button>
+                    <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600">→ Zu Wohnungen</button>
                   </div>
                 ) : (
                   <>
-                    <div className="flex gap-1 overflow-x-auto bg-amber-50 rounded-xl p-1 -mx-1 px-1">
+                    <div className="flex gap-1 overflow-x-auto bg-indigo-50 rounded-xl p-1 -mx-1 px-1">
                       {wohnungen.map((w, idx) => {
                         const eingaenge = w.mietEingaenge || [];
                         const diesJahr = eingaenge.filter(e => new Date(e.datum).getFullYear() === aktJahr).length;
                         return (
                           <button key={idx} onClick={() => setEinnahmenWE(idx)}
-                            className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${einnahmenWE === idx ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                            className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${einnahmenWE === idx ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-600 hover:bg-indigo-100'}`}>
                             <span>{w.name || `WE ${idx + 1}`}</span>
                             <span className={`text-[10px] font-normal ${einnahmenWE === idx ? 'text-white/70' : 'text-gray-400'}`}>
                               {diesJahr}/12 Monate
@@ -1725,7 +1711,7 @@ const MehrfamilienhausDetail = ({
                         );
                       })}
                       <button onClick={() => setEinnahmenWE('gesamt')}
-                        className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${einnahmenWE === 'gesamt' ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-600 hover:bg-amber-100'}`}>
+                        className={`flex-shrink-0 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex flex-col items-center gap-0.5 ${einnahmenWE === 'gesamt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-600 hover:bg-indigo-100'}`}>
                         <span>Gesamt</span>
                         <span className={`text-[10px] font-normal ${einnahmenWE === 'gesamt' ? 'text-white/70' : 'text-gray-400'}`}>alle WE</span>
                       </button>
@@ -1816,7 +1802,7 @@ const MehrfamilienhausDetail = ({
                             <span className="text-xs text-gray-500 font-semibold">Jahr:</span>
                             {[aktJahr - 1, aktJahr, aktJahr + 1].filter(j => j >= (immobilie.kaufdatum ? new Date(immobilie.kaufdatum).getFullYear() : aktJahr)).map(j => (
                               <button key={j} onClick={() => setGJahr(j)}
-                                className={`px-3 py-1 text-xs font-semibold rounded-lg ${gJahr === j ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                className={`px-3 py-1 text-xs font-semibold rounded-lg ${gJahr === j ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                                 {j}
                               </button>
                             ))}
@@ -1930,7 +1916,7 @@ const MehrfamilienhausDetail = ({
                 <div className="text-center py-10 text-gray-400">
                   <Key size={40} className="mx-auto mb-2 text-gray-300"/>
                   <p className="text-sm">Erst Wohnungen anlegen, dann Kaution verwalten.</p>
-                  <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600">
+                  <button onClick={() => setActiveTab('wohnungen')} className="mt-3 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600">
                     → Zu Wohnungen
                   </button>
                 </div>
@@ -1959,7 +1945,7 @@ const MehrfamilienhausDetail = ({
                               const neu = [...wohnungen]; neu[idx] = { ...neu[idx], kautionBetrag: parseFloat(e.target.value) || 0 };
                               setWohnungen(neu); aggregiereUndSpeichere(neu);
                             }}
-                            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-300 text-right"/>
+                            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-300 text-right"/>
                         </div>
                         <div className="flex items-end pb-1">
                           <label className="flex items-center gap-2 cursor-pointer">
@@ -1997,7 +1983,7 @@ const MehrfamilienhausDetail = ({
               updateParams({ ...params, geschaetzterWert: n, geschaetzterWertDatum: new Date().toISOString().split('T')[0] });
               if (n > 0 && gesamtFlaeche > 0) setQmPreis(String(Math.round(n / gesamtFlaeche)));
             };
-            const feld = 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-400 text-base sm:text-sm bg-white';
+            const feld = 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 text-base sm:text-sm bg-white';
             return (
             <div className="lg:flex lg:gap-6 lg:items-start">
               <nav className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 mb-5 lg:mb-0 lg:w-48 lg:shrink-0 lg:sticky lg:top-36 lg:self-start">
@@ -2012,7 +1998,7 @@ const MehrfamilienhausDetail = ({
                 ].map(([anchorId, label]) => (
                   <button key={anchorId}
                     onClick={() => document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-amber-100 hover:text-amber-700 transition-colors whitespace-nowrap lg:text-left">
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors whitespace-nowrap lg:text-left">
                     {label}
                   </button>
                 ))}
@@ -2036,13 +2022,13 @@ const MehrfamilienhausDetail = ({
                       <input type="date" value={params.energieausweisGueltigBis || ''} onChange={e => updateParams({ ...params, energieausweisGueltigBis: e.target.value })} className={feld}/></div>
                     <div className="flex items-end pb-2">
                       <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <input type="checkbox" checked={!!params.keller} onChange={e => updateParams({ ...params, keller: e.target.checked })} className="w-4 h-4 accent-amber-600"/>
+                        <input type="checkbox" checked={!!params.keller} onChange={e => updateParams({ ...params, keller: e.target.checked })} className="w-4 h-4 accent-indigo-600"/>
                         Keller vorhanden
                       </label>
                     </div>
                     <div className="flex items-end pb-2">
                       <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <input type="checkbox" checked={!!params.garage} onChange={e => updateParams({ ...params, garage: e.target.checked })} className="w-4 h-4 accent-amber-600"/>
+                        <input type="checkbox" checked={!!params.garage} onChange={e => updateParams({ ...params, garage: e.target.checked })} className="w-4 h-4 accent-indigo-600"/>
                         Stellplatz / Garage
                       </label>
                     </div>
@@ -2051,31 +2037,31 @@ const MehrfamilienhausDetail = ({
                 </div>
 
                 {/* Kauf & Wert */}
-                <div id="mfh-objekt-kaufwert" className="bg-amber-50 border border-amber-100 p-4 sm:p-5 rounded-2xl">
-                  <h3 className="text-sm font-bold text-amber-700 uppercase tracking-wide mb-3">Kauf & Wert</h3>
+                <div id="mfh-objekt-kaufwert" className="bg-indigo-50 border border-indigo-100 p-4 sm:p-5 rounded-2xl">
+                  <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-3">Kauf & Wert</h3>
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div><label className="block text-sm text-gray-600 mb-1">Kaufdatum</label>
                       <input type="date" value={params.kaufdatum || ''} onChange={e => updateParams({ ...params, kaufdatum: e.target.value })} className={feld}/></div>
                     <div><label className="block text-sm text-gray-600 mb-1">Kaufpreis</label>
-                      <div className="px-3 py-2 border border-amber-100 rounded-lg text-sm bg-white/60 font-semibold text-gray-800">{params.kaufpreis ? formatCurrency(params.kaufpreis) : '—'}</div>
+                      <div className="px-3 py-2 border border-indigo-100 rounded-lg text-sm bg-white/60 font-semibold text-gray-800">{params.kaufpreis ? formatCurrency(params.kaufpreis) : '—'}</div>
                       <p className="text-[10px] text-gray-400 mt-0.5">Änderung über „Bearbeiten“ (wirkt auf die Finanzierung)</p></div>
                   </div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m²</label>
                   <div className="flex items-center gap-2 flex-wrap mb-3">
                     <input type="number" value={qmPreis} onChange={e => setQm(e.target.value)}
-                      className="w-32 px-3 py-2 text-base sm:text-lg font-bold text-amber-700 border border-amber-300 rounded-lg bg-white focus:ring-2 focus:ring-amber-400"/>
-                    <span className="text-sm font-bold text-amber-700">€/m²</span>
+                      className="w-32 px-3 py-2 text-base sm:text-lg font-bold text-indigo-700 border border-indigo-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-400"/>
+                    <span className="text-sm font-bold text-indigo-700">€/m²</span>
                     <span className="text-gray-400">×</span>
                     <span className="text-sm text-gray-600">{gesamtFlaeche > 0 ? `${gesamtFlaeche} m²` : 'Wohnflächen der Wohnungen fehlen'}</span>
                   </div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Marktwert</label>
                   <div className="flex items-center gap-2 mb-3">
                     <input type="number" value={params.geschaetzterWert || ''} onChange={e => setWert(e.target.value)}
-                      className="w-44 px-3 py-2 text-base sm:text-xl font-bold text-amber-700 border border-amber-300 rounded-lg bg-white focus:ring-2 focus:ring-amber-400"/>
-                    <span className="text-xl font-bold text-amber-700">€</span>
+                      className="w-44 px-3 py-2 text-base sm:text-xl font-bold text-indigo-700 border border-indigo-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-400"/>
+                    <span className="text-xl font-bold text-indigo-700">€</span>
                   </div>
                   <a href={`https://www.homeday.de/de/preisatlas/${immobilie.plz ? '?search=' + immobilie.plz : ''}`} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm">
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
                     <Search size={14}/> Preis bei Homeday recherchieren
                   </a>
                   <p className="text-xs text-gray-400 mt-2">
@@ -2226,7 +2212,7 @@ const MehrfamilienhausDetail = ({
                   <Trash2 size={16}/>
                 </button>
               )}
-              <button onClick={saveWohnung} className="flex-1 py-3 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700">Speichern</button>
+              <button onClick={saveWohnung} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700">Speichern</button>
             </div>
           </div>
         </div>

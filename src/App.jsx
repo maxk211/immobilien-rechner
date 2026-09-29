@@ -1237,7 +1237,7 @@ function App() {
   const inaktiveImmobilien = portfolio.filter(i => isInaktiv(i));
 
   return (
-    <div className="font-app min-h-screen bg-slate-50">
+    <div className="font-app min-h-screen bg-canvas">
       {/* Toast Notifications */}
       <Toaster position="top-right" toastOptions={{
         duration: 4000,
@@ -1299,17 +1299,15 @@ function App() {
       )}
 
       {/* Header */}
-      <header className="bg-slate-900 text-white px-4 shadow-xl border-b border-slate-800">
+      <header className="bg-ink text-white px-4 border-b border-black/40">
         <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
-              <Home size={18} className="text-white" />
-            </div>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-600 text-white font-black text-lg" aria-hidden="true">r</div>
             <div>
               <div className="font-black text-white text-lg leading-tight tracking-tight" style={{letterSpacing: '-0.02em'}}>
                 renditly
               </div>
-              <div className="text-xs hidden sm:block" style={{color: '#818cf8', letterSpacing: '0.02em'}}>Rendite · Cashflow · Vermögen</div>
+              <div className="text-xs hidden sm:block text-slate-400" style={{letterSpacing: '0.02em'}}>Rendite · Cashflow · Vermögen</div>
             </div>
           </div>
           <div className="flex items-center gap-4">
