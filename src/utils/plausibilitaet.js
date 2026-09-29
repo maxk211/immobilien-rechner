@@ -226,6 +226,52 @@ export function pruefeImmobilie(immo, { portfolio = [], mieter = [], heute = new
   return h.filter(x => x.stufe === 'rot' || best[x.id]?.wert !== x.fingerprint);
 }
 
+// Alle geprüften Werte, die gerade NICHT auffällig sind — für die Zeile
+// "N weitere Werte sind unauffällig · Alle anzeigen" in der Prüfung.
+// offeneHinweise = Ergebnis von pruefeImmobilie (ohne bestätigte).
+export function unauffaelligeWerte(immo, offeneHinweise = [], { heute = new Date() } = {}) {
+  if (!immo || ['mietimmobilie', 'mehrfamilienhaus'].includes(immo.immobilienTyp)) return [];
+  const offen = new Set(offeneHinweise.map(x => x.id));
+  const best = immo.plausiBestaetigt || {};
+  const w = [];
+  const add = (id, label, wert, ids = [id]) => {
+    if (ids.some(i => offen.has(i))) return;
+    w.push({ id, label, wert, bestaetigt: ids.some(i => best[i]) });
+  };
+  const kaufpreis = Number(immo.kaufpreis) || 0;
+  const flaeche = Number(immo.wohnflaeche) || 0;
+  const miete = getAktuelleMiete(immo) || Number(immo.kaltmiete) || 0;
+  const hausgeld = Number(immo.hausgeld) || 0;
+  const knk = Number(immo.kaufnebenkosten) || 0;
+  const mw = Number(immo.geschaetzterWert) || 0;
+  if (miete > 0 && flaeche > 0) add('miete-qm', 'Kaltmiete pro m²', eur2(miete / flaeche));
+  if (miete > 0 && kaufpreis > 0) add('kaufpreisfaktor', 'Kaufpreisfaktor', (kaufpreis / (miete * 12)).toLocaleString('de-DE', { maximumFractionDigits: 1 }));
+  if (hausgeld > 0 && flaeche > 0) add('hausgeld-qm', 'Hausgeld pro m²', eur2(hausgeld / flaeche));
+  if (flaeche > 0) add('wohnflaeche', 'Wohnfläche', `${flaeche.toLocaleString('de-DE')} m²`);
+  if (kaufpreis > 0 && knk > 0 && !immo.geschenkt) add('kaufnebenkosten', 'Kaufnebenkosten', pct(knk, 1), ['kaufnebenkosten', 'kaufnebenkosten-grest']);
+  if (mw > 0 && kaufpreis > 0) add('marktwert-faktor', 'Marktwert zu Kaufpreis', `${eur(mw)} / ${eur(kaufpreis)}`);
+  if (mw > 0) add('marktwert-alt', 'Marktwert aktuell gepflegt', immo.geschaetzterWertDatum ? dat(immo.geschaetzterWertDatum) : '—');
+  const nu = immo.hausgeldNichtUmlagefaehig;
+  if (nu !== null && nu !== undefined && nu !== '' && hausgeld > 0) add('nu-ueber-hausgeld', 'Nicht umlagefähig ≤ Hausgeld', `${eur(nu)} von ${eur(hausgeld)}`, ['nu-ueber-hausgeld', 'nu-geschaetzt']);
+  const phasen = immo.finanzierungsphasen || [];
+  const mehr = phasen.length > 1;
+  phasen.forEach((p, i) => {
+    const sfx = mehr ? ` (Phase ${i + 1})` : '';
+    const z = phasenZins(p, immo);
+    if (z > 0) add(`sollzins-${i}`, `Sollzins${sfx}`, pct(z));
+    const at = Number(p.anfangstilgung);
+    if (at > 0 && p.darlehensTyp !== 'endfaellig') add(`tilgung-${i}`, `Anfangstilgung${sfx}`, pct(at));
+    if (p.monatlicherBetrag > 0 && at > 0) add(`rate-${i}`, `Rate passt zu Zins und Tilgung${sfx}`, eur(p.monatlicherBetrag));
+    if (p.zinsbindungBis) add(`zb-vor-start-${i}`, `Zinsbindung nach Kreditstart${sfx}`, dat(p.zinsbindungBis), [`zb-vor-start-${i}`, `zb-vor-kauf-${i}`, `zb-geschaetzt-${i}`]);
+    if (p.schlusszahlung > 0 && p.abbezahltAm) add(`schluss-${i}`, `Schlusszahlung${sfx}`, eur(p.schlusszahlung));
+  });
+  if (phasen.length) {
+    const v = darlehensVerlauf(immo, heute);
+    if (v && v.fk > 0) add('restschuld-waechst', 'Restschuld sinkt planmäßig', eur(v.restschuldAm(heute)));
+  }
+  return w;
+}
+
 export const zaehle = (hinweise) => ({
   rot: hinweise.filter(x => x.stufe === 'rot').length,
   gelb: hinweise.filter(x => x.stufe === 'gelb').length,

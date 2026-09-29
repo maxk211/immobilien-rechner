@@ -66,8 +66,9 @@ function Zeile({ h, params, updateParams }) {
   );
 }
 
-export default function PlausiPruefung({ hinweise, params, updateParams, onClose }) {
+export default function PlausiPruefung({ hinweise, params, updateParams, onClose, unauffaellig = [] }) {
   const z = zaehle(hinweise);
+  const [alleZeigen, setAlleZeigen] = useState(false);
   const offen = z.rot + z.gelb;
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -87,6 +88,27 @@ export default function PlausiPruefung({ hinweise, params, updateParams, onClose
           {['rot', 'gelb', 'grau'].map(stufe => hinweise.filter(h => h.stufe === stufe).map(h => (
             <Zeile key={`${h.id}-${h.fingerprint}`} h={h} params={params} updateParams={updateParams} />
           )))}
+          {unauffaellig.length > 0 && (
+            <div className="rounded-xl border border-gray-100 bg-gray-50/60">
+              <button type="button" onClick={() => setAlleZeigen(v => !v)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm">
+                <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
+                <span className="text-gray-600">{unauffaellig.length} weitere{unauffaellig.length === 1 ? 'r' : ''} Wert{unauffaellig.length !== 1 ? 'e' : ''} {unauffaellig.length !== 1 ? 'sind' : 'ist'} unauffällig</span>
+                <span className="text-gray-300">·</span>
+                <span className="font-semibold text-indigo-600">{alleZeigen ? 'Ausblenden' : 'Alle anzeigen'}</span>
+              </button>
+              {alleZeigen && (
+                <div className="divide-y divide-gray-100 border-t border-gray-100">
+                  {unauffaellig.map(u => (
+                    <div key={u.id} className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
+                      <span className="text-gray-600">{u.label}{u.bestaetigt && <span className="ml-1.5 text-[10px] font-semibold text-emerald-600">von dir bestätigt</span>}</span>
+                      <span className="font-semibold text-gray-800 tabular-nums">{u.wert}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <p className="text-[11px] text-gray-400 pt-2">
             Bestätigte Werte verlieren die Markierung dauerhaft und tauchen erst wieder auf, wenn sich die Zahl ändert.
             Widersprüche bleiben rot, bis sie aufgelöst sind — sie lassen sich nicht wegbestätigen.

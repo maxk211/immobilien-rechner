@@ -29,12 +29,15 @@ export function aktionenFuer(aufgabe, h) {
   return [oeffnen()];
 }
 
-export default function JetztDran({ aufgaben, handler, zusatz = null }) {
+export default function JetztDran({ aufgaben, handler, zusatz = null, onAlle = null }) {
   return (
     <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
       <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Jetzt dran</p>
-        {aufgaben.length > 0 && <span className="text-xs font-semibold text-gray-400">{aufgaben.length} offen</span>}
+        <div className="flex items-center gap-3">
+          {aufgaben.length > 0 && <span className="text-xs font-semibold text-gray-400">{aufgaben.length} offen</span>}
+          {onAlle && <button type="button" onClick={onAlle} className="text-xs font-semibold text-indigo-600 hover:underline">Alle Erinnerungen →</button>}
+        </div>
       </div>
       {aufgaben.length === 0 && !zusatz ? (
         <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50">

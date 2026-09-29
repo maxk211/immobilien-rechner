@@ -6,7 +6,7 @@ import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur, berech
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import FinanzierungsReiter from './FinanzierungsReiter';
 import PlausiPruefung from './PlausiPruefung';
-import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
+import { pruefeImmobilie, zaehle, brauchtErinnerung, unauffaelligeWerte } from '../utils/plausibilitaet.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
 import MieterhoeungModal from './MieterhoeungModal';
@@ -204,7 +204,7 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
 // dieselbe zusammengeführte Objekt-Seite aus und scrollen zum passenden Anker.
 const OBJEKT_TAB_IDS = ['stammdaten', 'investitionen', 'zaehler', 'dokumente'];
 
-const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [] }) => {
+const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [], onAlleErinnerungen }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
 
@@ -758,6 +758,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             <div className="space-y-4">
               {/* Jetzt dran — je Aufgabe die passende Handlung (Teil 1) */}
               <JetztDran
+                onAlle={onAlleErinnerungen}
                 zusatz={brauchtErinnerung(plausiHinweise) ? (
                   <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${plausiZahl.rot > 0 ? 'bg-red-500' : 'bg-amber-400'}`} />
@@ -2291,7 +2292,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           )}
 
           {showPlausi && (
-            <PlausiPruefung hinweise={plausiHinweise} params={params} updateParams={speichereSofort} onClose={() => setShowPlausi(false)} />
+            <PlausiPruefung hinweise={plausiHinweise} unauffaellig={unauffaelligeWerte({ ...immobilie, ...params }, plausiHinweise)} params={params} updateParams={speichereSofort} onClose={() => setShowPlausi(false)} />
           )}
 
           {/* Mieterhöhungs-Modal — auch ohne Mieter-Datensatz (mieterhoeungMieter === {} oder echter Mieter) */}

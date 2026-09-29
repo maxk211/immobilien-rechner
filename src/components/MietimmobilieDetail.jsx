@@ -176,7 +176,7 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
-const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [] }) => {
+const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [], onAlleErinnerungen }) => {
   const [params, setParams] = useState({
     eigeneWarmmiete: immobilie.eigeneWarmmiete || 0,
     anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 0,
@@ -683,8 +683,10 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   hinweise.unshift({ id: 'hauptmietvertrag-ende', priority: 'gelb', titel: `Hauptmietvertrag endet am ${vertragsende.toLocaleDateString('de-DE')}`, sub: 'Untermieter rechtzeitig informieren', targetTab: 'objekt' });
                 }
                 return (
-                  <JetztDran aufgaben={hinweise} handler={{
+                  <JetztDran aufgaben={hinweise} onAlle={onAlleErinnerungen} handler={{
                     onOeffnen: (tab) => setActiveTab(MIET_TAB_MAP[tab] ?? (tab === 'mieteinnahmen' ? 'mieteingaenge' : tab)),
+                    // Untermiete des laufenden Monats direkt abhaken
+                    onEingegangen: einnahmen > 0 ? () => bucheMonat(heute.getMonth() + 1) : null,
                   }} />
                 );
               })()}
