@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X, MoreVertical } from 'lucide-react';
+import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X, MoreVertical, Landmark } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
@@ -43,6 +43,7 @@ import PortfolioZiele from './components/PortfolioZiele';
 import VermieterTodos, { generiereAufgaben } from './components/VermieterTodos';
 import MieteingaengeMonat from './components/MieteingaengeMonat';
 import { finanzierungsStatus } from './utils/finanzierung.js';
+import { getBeleihungsgrenze, setBeleihungsgrenze } from './utils/kapital.js';
 import ErsteSchritte from './components/ErsteSchritte';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
@@ -89,6 +90,8 @@ function App() {
   // Export/Steuer-Export bekommen einen echten Auswahl-Dialog statt Hover-Dropdown.
   const [showToolbarMenu, setShowToolbarMenu] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showBeleihungDialog, setShowBeleihungDialog] = useState(false);
+  const [beleihungsgrenzeEingabe, setBeleihungsgrenzeEingabe] = useState(getBeleihungsgrenze);
   const [exportSteuerJahr, setExportSteuerJahr] = useState(new Date().getFullYear() - 1);
   const [showSelbstauskunftModal, setShowSelbstauskunftModal] = useState(false);
   const [selbstauskunftDaten, setSelbstauskunftDaten] = useState(() => {
@@ -1310,7 +1313,53 @@ function App() {
               <div className="text-xs hidden sm:block text-slate-400" style={{letterSpacing: '0.02em'}}>Rendite · Cashflow · Vermögen</div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Teil 1 + 3: Werkzeugleiste im dunklen Kopf. Sichtbar nur
+                "Rechnet sich das?" und "+ Neue Immobilie", der Rest im Überlaufmenü. */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowKalkulation(true)}
+                className="px-2.5 sm:px-3 py-2 rounded-xl border border-white/15 bg-white/5 text-white/90 hover:bg-white/10 flex items-center gap-1.5 text-sm font-semibold transition-colors"
+                title="Ein Objekt durchrechnen, das dir noch nicht gehört">
+                <Calculator size={15} /><span className="hidden sm:inline">Rechnet sich das?</span>
+              </button>
+              <button
+                onClick={() => canAddImmo ? setShowForm(true) : setShowUpgradeModal(true)}
+                className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 flex items-center gap-1.5 text-sm font-semibold transition-colors whitespace-nowrap"
+              >
+                + <span className="hidden sm:inline">Neue Immobilie</span><span className="sm:hidden">Neu</span>
+              </button>
+              <div className="relative" ref={toolbarMenuRef}>
+                <button
+                  onClick={() => setShowToolbarMenu(v => !v)}
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/15 text-white/80 hover:bg-white/10 transition-colors"
+                  aria-label="Weitere Aktionen" title="Weitere Aktionen"
+                >
+                  <MoreVertical size={16} />
+                </button>
+                {showToolbarMenu && (
+                  <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden text-left">
+                    {portfolio.length > 0 && (<>
+                      <button onClick={() => { handleSelbstauskunft(); setShowToolbarMenu(false); }}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5">
+                        <ClipboardList size={15} /> Selbstauskunft für die Bank
+                      </button>
+                      <button onClick={() => { setShowExportDialog(true); setShowToolbarMenu(false); }}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5">
+                        <Upload size={15} /> Exportieren…
+                      </button>
+                    </>)}
+                    <label className="w-full flex items-center gap-1.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
+                      <Download size={15} /> Import
+                      <input type="file" accept=".json" onChange={(e) => { handleImport(e); setShowToolbarMenu(false); }} className="hidden" />
+                    </label>
+                    <button onClick={() => { setBeleihungsgrenzeEingabe(getBeleihungsgrenze()); setShowBeleihungDialog(true); setShowToolbarMenu(false); }}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-1.5">
+                      <Landmark size={15} /> Beleihungsgrenze ({getBeleihungsgrenze()} %)
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
             {syncStatus === 'syncing' && (
               <div className="flex items-center gap-1.5 text-slate-400 text-xs">
                 <div className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full"></div>
@@ -1369,63 +1418,52 @@ function App() {
           onOpenImmobilie={(immo, tab) => { setSelectedImmobilie(immo); setInitialTab(tab); }}
         />
 
-        {/* Navigation & Actions Bar */}
-        <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-          {/* Tab Navigation */}
-          <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-            <button
-              onClick={() => setActiveView('portfolio')}
-              className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeView === 'portfolio' ? 'bg-slate-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-            >
-              <Home size={15} /> Immobilien
-              {portfolio.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeView === 'portfolio' ? 'bg-white/20' : 'bg-gray-100'}`}>{aktiveImmobilien.length}</span>}
-            </button>
-          </div>
-
-          {/* Action Buttons — Abschnitt 3.1: Toolbar entrümpelt, nur "Neue Immobilie"
-              bleibt sichtbarer Primärbutton. Selbstauskunft/Export/Import/Kalkulation
-              wandern in ein einziges Überlaufmenü (identisch auf Mobile & Desktop,
-              klick- statt hover-basiert — funktioniert auch per Touch). */}
-          <div className="flex flex-wrap gap-2">
-            {portfolio.length > 0 && (
-              <div className="relative" ref={toolbarMenuRef}>
-                <button
-                  onClick={() => setShowToolbarMenu(v => !v)}
-                  className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm shadow-sm transition-colors"
-                  aria-label="Weitere Aktionen"
-                >
-                  <MoreVertical size={16} />
-                </button>
-                {showToolbarMenu && (
-                  <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                    <button onClick={() => { handleSelbstauskunft(); setShowToolbarMenu(false); }}
-                      className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 border-b border-gray-100 font-semibold flex items-center gap-1.5">
-                      <ClipboardList size={15} /> Selbstauskunft für die Bank
-                    </button>
-                    <button onClick={() => { setShowExportDialog(true); setShowToolbarMenu(false); }}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-1.5">
-                      <Upload size={15} /> Exportieren…
-                    </button>
-                    <label className="w-full flex items-center gap-1.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
-                      <Download size={15} /> Import
-                      <input type="file" accept=".json" onChange={(e) => { handleImport(e); setShowToolbarMenu(false); }} className="hidden" />
-                    </label>
-                    <button onClick={() => { setShowKalkulation(true); setShowToolbarMenu(false); }}
-                      className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
-                      <Calculator size={15} /> Rechnet sich das?
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-            <button
-              onClick={() => canAddImmo ? setShowForm(true) : setShowUpgradeModal(true)}
-              className="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm transition-colors"
-            >
-              + Neue Immobilie
-            </button>
-          </div>
+        {/* Objekte-Überschrift — Aktionen sitzen jetzt im dunklen Kopf */}
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
+            Objekte
+            {portfolio.length > 0 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">{aktiveImmobilien.length}</span>}
+          </h2>
         </div>
+
+        {/* Beleihungsgrenze — Teil 3, Abschnitt 4: Annahme gehört in die Einstellungen */}
+        {showBeleihungDialog && (
+          <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowBeleihungDialog(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-gray-800 flex items-center gap-1.5"><Landmark size={16} /> Beleihungsgrenze</h3>
+                <button onClick={() => setShowBeleihungDialog(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Bis zu wie viel Prozent vom Marktwert würde deine Bank beleihen? Daraus rechnet renditly
+                „Beleihbar frei“ je Objekt und den Beleihungsspielraum im Portfolio. Manche Banken gehen bis 90 %, andere nur bis 70 %.
+              </p>
+              <div className="flex gap-2 mb-3">
+                {[60, 70, 80, 90].map(v => (
+                  <button key={v} onClick={() => setBeleihungsgrenzeEingabe(v)}
+                    className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-colors ${Number(beleihungsgrenzeEingabe) === v ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'}`}>
+                    {v} %
+                  </button>
+                ))}
+              </div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Eigener Wert (40–100 %)</label>
+              <input type="number" min="40" max="100" step="1" value={beleihungsgrenzeEingabe}
+                onChange={e => setBeleihungsgrenzeEingabe(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-base mb-4" />
+              <button
+                onClick={() => {
+                  const v = Number(beleihungsgrenzeEingabe);
+                  if (!(v >= 40 && v <= 100)) { toast.error('Bitte einen Wert zwischen 40 und 100 % eingeben.'); return; }
+                  setBeleihungsgrenze(v);
+                  setShowBeleihungDialog(false);
+                  toast.success(`Beleihungsgrenze auf ${v} % gesetzt`);
+                }}
+                className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">
+                Übernehmen
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Export-Dialog — Abschnitt 6: Export und Steuer-Export als ein Button
             mit Auswahl im Dialog, statt zwei getrennter Aktionen. */}

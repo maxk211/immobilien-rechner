@@ -19,6 +19,7 @@ import KautionsManager from './KautionsManager';
 import InfoHint from './InfoHint';
 import { DetailNavigation, ZurueckZumCockpit, KennzahlenZeile } from './DetailNavigation';
 import { phasenZeitraeume, finanzierungsStatus } from '../utils/finanzierung.js';
+import { beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 import {
   BarChart3, Wallet, Users, Wrench, Home, Landmark, MapPin, AlertTriangle,
@@ -804,6 +805,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       <div><div className="text-[10px] text-gray-400">Kreditrate</div><div className="text-sm font-bold text-red-500">-{formatCurrency(monatlicheRateCockpit)}</div></div>
                       <div><div className="text-[10px] text-gray-400">Ergebnis</div><div className={`text-base font-black ${monatlichesErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{monatlichesErgebnis >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis)}</div></div>
                     </div>
+                    {/* Teil 3, Abschnitt 9: Cashflow vor und nach Tilgung */}
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-baseline justify-between gap-2 text-xs">
+                      <span className="text-gray-500">Nach Tilgung <strong className={monatlichesErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}>{monatlichesErgebnis >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis)}</strong></span>
+                      <span className="text-gray-500">Vor Tilgung <strong className={monatlichesErgebnis + jaehrlicheTilgung / 12 >= 0 ? 'text-emerald-600' : 'text-red-600'}>{monatlichesErgebnis + jaehrlicheTilgung / 12 >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis + jaehrlicheTilgung / 12)}</strong></span>
+                      <span className="text-gray-400">{jaehrlicheTilgung > 0 ? `davon ${formatCurrency(jaehrlicheTilgung / 12)} Tilgung — baut Eigenkapital auf` : 'schuldenfrei, keine Tilgung'}</span>
+                    </div>
                   </button>
 
                   {/* Wert & Eigenkapital */}
@@ -823,6 +830,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       </div>
                       <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Dein Anteil</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(nettoEK)}</div></div>
                     </div>
+                    {aktuellerWert > 0 && (
+                      <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde. Grenze änderbar im Menü oben rechts auf der Startseite.`}>
+                        <span className="text-xs font-semibold text-emerald-700">Beleihbar frei <span className="font-normal text-gray-400">bei {getBeleihungsgrenze()} %</span></span>
+                        <span className="text-sm font-black text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWert, (ergebnis.effRestschuld || 0)))}</span>
+                      </div>
+                    )}
                     <p className="text-[10px] text-gray-400 mt-2">
                       {params.geschaetzterWertDatum ? `Zuletzt aktualisiert am ${new Date(params.geschaetzterWertDatum).toLocaleDateString('de-DE')}` : 'Marktwert noch nie aktualisiert'}
                     </p>
