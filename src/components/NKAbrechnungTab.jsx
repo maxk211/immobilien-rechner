@@ -85,7 +85,9 @@ const NKAbrechnungTab = ({ params, updateParams, immobilie, mieterListe = [] }) 
   // verschickt (offen/in Arbeit) ab, nicht nur den Fall "gar kein Datensatz".
   const letztesJahr = aktuellesJahr - 1;
   const vorjahresAbrechnung = nkAbrechnungen.find(a => a.typ === 'nk_abrechnung_detail' && parseInt(a.abrechnungsjahr) === letztesJahr);
-  const vorjahresAbrechnungOffen = aktiveMieter.length > 0 &&
+  // Fehler 4 (UX-Paket Teil 2): nur, wenn das ganze Vorjahr schon im Eigentum war
+  const vorjahrImEigentum = !params.kaufdatum || new Date(params.kaufdatum) <= new Date(aktuellesJahr - 1, 0, 1);
+  const vorjahresAbrechnungOffen = vorjahrImEigentum && aktiveMieter.length > 0 &&
     (!vorjahresAbrechnung || (vorjahresAbrechnung.status || 'offen') !== 'verschickt');
   const nachFristStichtag = new Date() > new Date(aktuellesJahr, 9, 1); // 1. Oktober
 

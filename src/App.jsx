@@ -42,6 +42,7 @@ import PortfolioOverview from './components/PortfolioOverview';
 import PortfolioZiele from './components/PortfolioZiele';
 import VermieterTodos, { generiereAufgaben } from './components/VermieterTodos';
 import MieteingaengeMonat from './components/MieteingaengeMonat';
+import { finanzierungsStatus } from './utils/finanzierung.js';
 import ErsteSchritte from './components/ErsteSchritte';
 import UpgradeModal from './components/UpgradeModal';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
@@ -407,12 +408,11 @@ function App() {
 
     const immoRows = kaufimmos.map((immo, idx) => {
       const phase0 = (immo.finanzierungsphasen || [])[0];
-      const startDatum = phase0?.kreditStartDatum || immo.kaufdatum;
-      const zinsbindung = phase0?.zinsbindung || 10;
+      // Zinsbindungsende der laufenden Phase als Datum (Teil 3, Abschnitt 5.2)
+      const finSt = finanzierungsStatus(immo);
       let zinsbindungBisStr = '—';
-      if (startDatum && immo.kaufpreis) {
-        const d = new Date(startDatum);
-        d.setFullYear(d.getFullYear() + zinsbindung);
+      if (finSt?.letzte?.ende && immo.kaufpreis) {
+        const d = finSt.letzte.ende;
         zinsbindungBisStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
       }
       const miete = getAktuelleMiete(immo);
@@ -1414,7 +1414,7 @@ function App() {
                     </label>
                     <button onClick={() => { setShowKalkulation(true); setShowToolbarMenu(false); }}
                       className="w-full text-left px-4 py-3 text-sm text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
-                      <Calculator size={15} /> Kalkulation
+                      <Calculator size={15} /> Rechnet sich das?
                     </button>
                   </div>
                 )}

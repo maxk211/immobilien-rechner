@@ -294,7 +294,7 @@ const KalkulationsModal = ({ onClose, portfolio = [] }) => {
         <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-t-2xl">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2"><Calculator size={24}/> Schnellkalkulation</h2>
+              <h2 className="text-2xl font-bold flex items-center gap-2"><Calculator size={24}/> Rechnet sich das?</h2>
               <p className="text-purple-200 text-sm">Prüfe ob sich eine Immobilie lohnt — speichere und lade Kalkulationen</p>
             </div>
             <button onClick={onClose} className="text-white hover:text-purple-200"><X size={24}/></button>

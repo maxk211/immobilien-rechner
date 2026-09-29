@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
+import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
 
 // Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
 // "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
@@ -21,6 +22,17 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   const aktuellerMonat = heute.getMonth() + 1;
   const letztesJahr = aktuellesJahr - 1;
 
+  // UX-Paket Teil 2, Fehler 4: Eine Erinnerung darf nur feuern, wenn der
+  // betroffene Zeitraum vollständig nach dem Eigentumsdatum liegt.
+  const gehoertSeit = (immo) => {
+    const d = immo.kaufdatum || immo.mietvertragStart;
+    return d ? new Date(d) : null;
+  };
+  const zeitraumNachEigentum = (immo, von) => {
+    const seit = gehoertSeit(immo);
+    return !seit || seit <= von;
+  };
+
   // ── 1. Zinsbindung läuft ab ───────────────────────────────────────────────
   portfolio.forEach(immo => {
     if (immo.immobilienTyp === 'mietimmobilie') return;
@@ -32,35 +44,38 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     const kreditbetrag = kaufpreis - ekFuerKaufpreis;
     if (kreditbetrag < 1) return; // vollständig eigenfinanziert
 
-    const phasen = immo.finanzierungsphasen || [];
-    phasen.forEach((phase, idx) => {
-      // Wenn bereits eine Folge-Phase hinterlegt ist → Anschlussfinanzierung geregelt, keine Warnung
-      if (idx < phasen.length - 1) return;
-
-      const startDatum = idx === 0
-        ? (phase.kreditStartDatum || immo.kaufdatum)
-        : phase.kreditStartDatum || null;
-      if (!startDatum) return;
-      const ablauf = new Date(startDatum);
-      ablauf.setFullYear(ablauf.getFullYear() + (phase.zinsbindung || 10));
-      const monate = (ablauf - heute) / (1000 * 60 * 60 * 24 * 30.44);
-      // Abschnitt 5, Regel 2: <24 Monate → gelb, <12 Monate → rot.
-      if (monate > 24 || monate < -6) return;
-
-      const abgelaufen = monate < 0;
+    // UX-Paket Teil 3, Abschnitt 6: Alarm nur für die aktive/letzte Phase —
+    // eine Phase mit Folgephase ist Historie. Dazu Lücken-Hinweis und
+    // leiser Forward-Hinweis ab 60 Monaten. Zinsbindungsende ist ein Datum;
+    // ein nur geschätztes Datum wird als "ungeprüft" gekennzeichnet.
+    const st = finanzierungsStatus(immo, heute);
+    if (!st) return;
+    const name = immo.name || immo.adresse || 'Immobilie';
+    if (st.luecke) {
       todos.push({
-        id: `zinsbindung-${immo.id}-${idx}`,
-        priority: abgelaufen || monate < 12 ? 'rot' : 'gelb',
-        icon: <Landmark size={16} />,
+        id: `finanzierung-luecke-${immo.id}`, priority: 'gelb', icon: <Landmark size={16} />,
         kategorie: 'Finanzierung',
-        titel: abgelaufen
-          ? 'Zinsbindung bereits abgelaufen!'
-          : `Zinsbindung läuft in ${Math.ceil(monate)} Monaten ab`,
-        sub: immo.name || immo.adresse || 'Immobilie',
-        immoId: immo.id,
-        badge: abgelaufen ? 'Dringend' : monate < 12 ? 'Kritisch' : 'Bald',
-        targetTab: 'finanzierung',
+        titel: `Zwischen ${formatMonatJahr(st.luecke.von)} und ${formatMonatJahr(st.luecke.bis)} fehlt eine Finanzierung`,
+        sub: name, immoId: immo.id, badge: 'Prüfen', targetTab: 'finanzierung',
       });
+    }
+    if (st.stufe === 'neutral' || st.monate == null) return;
+    const ungeprueft = st.letzte.endeGeschaetzt ? ' (Datum ungeprüft)' : '';
+    const ende = formatMonatJahr(st.letzte.ende);
+    todos.push({
+      id: `zinsbindung-${immo.id}`,
+      priority: st.stufe,
+      icon: <Landmark size={16} />,
+      kategorie: 'Finanzierung',
+      titel: st.stufe === 'rot'
+        ? `Zinsbindung seit ${ende} abgelaufen — keine Anschlussfinanzierung hinterlegt${ungeprueft}`
+        : st.stufe === 'gelb'
+          ? `Zinsbindung endet ${ende} — noch ${Math.ceil(st.monate)} Monate${ungeprueft}`
+          : `Zinsbindung endet ${ende} — Forward-Darlehen wäre jetzt möglich${ungeprueft}`,
+      sub: name,
+      immoId: immo.id,
+      badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis',
+      targetTab: 'finanzierung',
     });
   });
 
@@ -75,6 +90,8 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
 
     const faelligkeitstag = immo.mieteFaelligkeitstag ?? 3;
     if (heute.getDate() < faelligkeitstag) return;
+    // Miete des laufenden Monats nur, wenn das Objekt zum Fälligkeitstag schon gehörte
+    if (!zeitraumNachEigentum(immo, new Date(aktuellesJahr, aktuellerMonat - 1, faelligkeitstag))) return;
 
     const nkVomMieter = immo.vermietungsmodell === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) : 0;
     const erwarteterBetrag = immo.dauerauftrag
@@ -115,6 +132,8 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       if (immo.immobilienTyp === 'mietimmobilie') return;
       const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
       if (aktiveMieter.length === 0) return;
+      // Nur wenn das ganze Vorjahr schon im Eigentum war (Fehler 4)
+      if (!zeitraumNachEigentum(immo, new Date(letztesJahr, 0, 1))) return;
 
       const hatAbrechnung = (immo.nkAbrechnungen || []).some(nk =>
         nk.typ === 'nk_abrechnung_detail' && parseInt(nk.abrechnungsjahr) === letztesJahr
@@ -224,8 +243,11 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
 
     aktiveMieter.forEach(mieter => {
       // Monate seit Mietbeginn — bei neuen Mietern (<12 Monate) keine Hinweise
+      // Maßgeblich ist der spätere Zeitpunkt aus Mietbeginn und Eigentumsdatum (Fehler 4)
       const mietbeginnDatum = mieter.mietbeginn ? new Date(mieter.mietbeginn) : null;
-      const monateSeitEinzug = mietbeginnDatum ? (heute - mietbeginnDatum) / (1000 * 60 * 60 * 24 * 30.44) : 999;
+      const seit = gehoertSeit(immo);
+      const bezug = mietbeginnDatum && seit ? (mietbeginnDatum > seit ? mietbeginnDatum : seit) : (mietbeginnDatum || seit);
+      const monateSeitEinzug = bezug ? (heute - bezug) / (1000 * 60 * 60 * 24 * 30.44) : 999;
 
       if (!mieter.letzte_mieterhoehung) {
         // Feld nicht gepflegt → nur zeigen wenn Mieter mind. 12 Monate drin ist
