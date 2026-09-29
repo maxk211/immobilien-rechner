@@ -1,12 +1,19 @@
-import { useState, useMemo } from 'react';
-import { BarChart3, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import { beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert } from '../utils/miete.js';
 import { berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
 
 const PortfolioOverview = ({ portfolio }) => {
-  const [showVermoegenDetail, setShowVermoegenDetail] = useState(false);
+  // Beleihungsgrenze ist einstellbar (Menü oben rechts) — bei Änderung neu rechnen
+  const [grenze, setGrenze] = useState(getBeleihungsgrenze);
+  useEffect(() => {
+    const h = () => setGrenze(getBeleihungsgrenze());
+    window.addEventListener('renditly-beleihungsgrenze', h);
+    return () => window.removeEventListener('renditly-beleihungsgrenze', h);
+  }, []);
   const stats = useMemo(() => {
     let gesamtKaufpreis = 0;
     let gesamtWert = 0;
@@ -22,6 +29,7 @@ const PortfolioOverview = ({ portfolio }) => {
     let gesamtRestschuld = 0;
     let gesamtTilgungJahr = 0;
     let gesamtFreiesVermoegen = 0;
+    let gesamtBeleihbarFrei = 0;
     const vermoegenProImmo = [];
 
     portfolio.forEach(immo => {
@@ -52,6 +60,7 @@ const PortfolioOverview = ({ portfolio }) => {
           gesamtRestschuld += vw.restschuld;
           gesamtTilgungJahr += vw.tilgungJahr;
           gesamtFreiesVermoegen += vw.freiVermoegen;
+          gesamtBeleihbarFrei += beleihbarFrei(vw.marktwert, vw.restschuld, grenze);
           vermoegenProImmo.push({ id: immo.id, name: immo.name || immo.adresse || 'Immobilie', kaufpreis: immo.kaufpreis || 0, ...vw });
         }
         const nkMieterJahr = (immo.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk' ? (immo.nebenkostenVomMieter || 0) * 12 : 0;
@@ -102,142 +111,83 @@ const PortfolioOverview = ({ portfolio }) => {
       gesamtRestschuld,
       gesamtTilgungJahr,
       gesamtFreiesVermoegen,
+      gesamtBeleihbarFrei,
       vermoegenProImmo,
     };
-  }, [portfolio]);
+  }, [portfolio, grenze]);
 
   if (portfolio.length === 0) return null;
 
-  const cfPositiv = stats.gesamtCashflowMonat >= 0;
+  // Teil 3, Abschnitt 3 + 9: vier Kennzahlen, Cashflow vor UND nach Tilgung.
+  // "Vermögensaufbau pro Objekt" ist raus (steht in jedem Objekt selbst).
+  const cfNach = stats.gesamtCashflowMonat;
+  const tilgungMonat = stats.gesamtTilgungJahr / 12;
+  const cfVor = cfNach + tilgungMonat;
+  const vz = (v) => (v >= 0 ? '+' : '');
+  const kachel = 'rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm';
+  const label = 'text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1';
 
   return (
     <div className="mb-6 sm:mb-8">
-      {/* Top KPI Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
-        {/* Cashflow — most important, gets visual prominence */}
-        <div className={`col-span-2 md:col-span-1 rounded-2xl p-3 sm:p-5 border ${cfPositiv ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Monatl. Cashflow</div>
-          <div className={`text-2xl sm:text-3xl font-black ${cfPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
-            {stats.gesamtCashflowMonat >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowMonat)}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
+        {/* Cashflow / Monat — nach und vor Tilgung */}
+        <div className="col-span-2 lg:col-span-1 rounded-2xl bg-ink text-white p-3 sm:p-5 shadow-sm">
+          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/50 mb-2">Cashflow / Monat</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className={`text-2xl sm:text-3xl font-black ${cfNach >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{vz(cfNach)}{formatCurrency(cfNach)}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-white/50 mt-0.5">nach Tilgung</div>
+            </div>
+            <div>
+              <div className={`text-2xl sm:text-3xl font-black ${cfVor >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{vz(cfVor)}{formatCurrency(cfVor)}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-white/50 mt-0.5">vor Tilgung</div>
+            </div>
           </div>
-          <div className={`text-xs mt-1 font-medium ${cfPositiv ? 'text-emerald-500' : 'text-red-400'}`}>
-            {stats.gesamtCashflowJahr >= 0 ? '+' : ''}{formatCurrency(stats.gesamtCashflowJahr)} p.a.
-          </div>
-          <div className="text-xs text-gray-400 mt-0.5 hidden sm:block">nach Kredit &amp; Kosten</div>
+          {tilgungMonat > 0 && (
+            <p className="text-xs text-white/60 mt-3 leading-snug">
+              {formatCurrency(tilgungMonat)} Tilgung pro Monat sind kein Verlust — sie bauen Eigenkapital auf.
+            </p>
+          )}
         </div>
 
         {/* Mieteinnahmen */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Mieteinnahmen</div>
-          <div className="text-xl sm:text-2xl font-black text-gray-800">{formatCurrency(stats.gesamtMieteMonat)}</div>
-          <div className="text-xs text-gray-400 mt-1 font-medium">{formatCurrency(stats.gesamtMieteJahr)} p.a.</div>
+        <div className={kachel}>
+          <div className={label}>Mieteinnahmen</div>
+          <div className="text-xl sm:text-2xl font-black text-gray-900">{formatCurrency(stats.gesamtMieteMonat)}</div>
+          <div className="text-xs text-gray-400 mt-1 font-medium">{formatCurrency(stats.gesamtMieteJahr)} p. a.</div>
         </div>
 
-        {/* Gesamtwert */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Portfoliowert</div>
-          <div className="text-xl sm:text-2xl font-black text-slate-800">{formatCurrency(stats.gesamtWert)}</div>
-          {stats.wertsteigerung !== 0 && (
-            <div className={`text-xs mt-1 font-semibold flex items-center gap-0.5 ${stats.wertsteigerung >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {stats.wertsteigerung >= 0 ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {formatCurrency(Math.abs(stats.wertsteigerung))}
+        {/* Portfoliowert */}
+        <div className={kachel}>
+          <div className={label}>Portfoliowert</div>
+          <div className="text-xl sm:text-2xl font-black text-gray-900">{formatCurrency(stats.gesamtWert)}</div>
+          {stats.wertsteigerung !== 0 ? (
+            <div className={`text-xs mt-1 font-semibold flex items-center gap-0.5 ${stats.wertsteigerung >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+              {stats.wertsteigerung >= 0 ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+              {vz(stats.wertsteigerung)}{formatCurrency(stats.wertsteigerung)} über {stats.anzahlKaufimmobilien} Objekt{stats.anzahlKaufimmobilien !== 1 ? 'e' : ''}
             </div>
+          ) : (
+            <div className="text-xs text-gray-400 mt-1">{stats.anzahl} Objekt{stats.anzahl !== 1 ? 'e' : ''}</div>
           )}
-          <div className="text-xs text-gray-400 mt-0.5">
-            {stats.anzahl} Objekt{stats.anzahl !== 1 ? 'e' : ''}
-          </div>
         </div>
 
-        {/* EK-Rendite */}
-        <div className="rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm">
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">EK-Rendite</div>
-          {stats.ekRendite !== null ? (
-            <>
-              <div className={`text-xl sm:text-2xl font-black ${stats.ekRendite >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
-                {stats.ekRendite >= 0 ? '+' : ''}{stats.ekRendite.toFixed(1)} %
-              </div>
-              <div className="text-xs text-gray-400 mt-1 font-medium">
-                EK: {formatCurrency(stats.gesamtEigenkapital)}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-xl sm:text-2xl font-black text-gray-300">–</div>
-              <div className="text-xs text-gray-400 mt-1">Kein EK erfasst</div>
-            </>
+        {/* Dein Anteil am Portfolio + Beleihungsspielraum gesamt */}
+        <div className={kachel}>
+          <div className={label} title="Marktwert minus Restschuld — nicht frei verfügbar, nur über Verkauf oder Beleihung erreichbar">Dein Anteil am Portfolio</div>
+          <div className="text-xl sm:text-2xl font-black text-gray-900">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
+          <div className="text-xs text-gray-400 mt-1">Marktwert − {formatCurrency(stats.gesamtRestschuld)} Restschuld</div>
+          {stats.anzahlKaufimmobilien > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-100" title={`${grenze} % vom Marktwert minus Restschuld, je Objekt mindestens 0. Grenze änderbar im Menü oben rechts.`}>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Beleihungsspielraum gesamt</div>
+              <div className="text-sm font-bold text-emerald-700">{formatCurrency(stats.gesamtBeleihbarFrei)} <span className="text-xs font-medium text-gray-400">bei {grenze} %</span></div>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Freies Vermögen + Portfolio-Ziele Zeile */}
       {stats.anzahlKaufimmobilien > 0 && (
-        <div className="flex flex-col sm:flex-row gap-3 mb-4 items-stretch">
-          {/* Freies Vermögen — kompakt */}
-          <div className="flex-shrink-0 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 p-3 sm:p-4 shadow-sm sm:w-48">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Dein Anteil am Portfolio</div>
-            <div className="text-lg sm:text-xl font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
-            <div className="text-xs text-amber-500 mt-0.5">Marktwert − Restschuld</div>
-            {stats.gesamtRestschuld > 0 && (
-              <div className="text-[10px] text-gray-400 mt-0.5">Schulden: {formatCurrency(stats.gesamtRestschuld)}</div>
-            )}
-          </div>
-          {/* Portfolio-Ziele inline */}
-          <div className="flex-1">
-            <PortfolioZiele portfolio={portfolio} inline />
-          </div>
-        </div>
-      )}
-
-      {/* Vermögensdetails pro Objekt */}
-      {stats.vermoegenProImmo.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
-          <button
-            onClick={() => setShowVermoegenDetail(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-700 text-sm flex items-center gap-1"><BarChart3 size={16}/>Vermögensaufbau pro Objekt</span>
-              <span className="text-xs text-gray-400">{stats.vermoegenProImmo.length} Kaufobjekt{stats.vermoegenProImmo.length !== 1 ? 'e' : ''}</span>
-            </div>
-            <span className="text-gray-400 text-sm">{showVermoegenDetail ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
-          </button>
-          {showVermoegenDetail && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-y border-gray-100">
-                  <tr>
-                    <th className="text-left px-3 sm:px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Objekt</th>
-                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Kaufpreis</th>
-                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Marktwert</th>
-                    <th className="hidden sm:table-cell text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Restschuld</th>
-                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-amber-700 uppercase">Freies EK</th>
-                    <th className="text-right px-3 sm:px-4 py-2 text-xs font-semibold text-teal-600 uppercase">Tilgung {new Date().getFullYear()}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {stats.vermoegenProImmo.map(v => (
-                    <tr key={v.id} className="hover:bg-gray-50">
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-gray-800 truncate max-w-[120px] sm:max-w-[160px] text-sm">{v.name}</td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-right text-gray-500">{formatCurrency(v.kaufpreis)}</td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-right text-gray-700 font-semibold">{formatCurrency(v.marktwert)}</td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-right text-red-500">{formatCurrency(v.restschuld)}</td>
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-amber-800 font-bold text-sm">{formatCurrency(v.freiVermoegen)}</td>
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right text-teal-700 font-bold text-sm">+{formatCurrency(v.tilgungJahr)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-slate-100 border-t-2 border-slate-200">
-                  <tr>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-black text-gray-800 text-xs uppercase">Gesamt</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-gray-600">{formatCurrency(stats.gesamtKaufpreis)}</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-gray-800">{formatCurrency(stats.gesamtWert)}</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right font-bold text-red-600">{formatCurrency(stats.gesamtRestschuld)}</td>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-amber-800">{formatCurrency(stats.gesamtFreiesVermoegen)}</td>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-black text-teal-700">+{formatCurrency(stats.gesamtTilgungJahr)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
+        <div className="mb-4">
+          <PortfolioZiele portfolio={portfolio} inline />
         </div>
       )}
     </div>

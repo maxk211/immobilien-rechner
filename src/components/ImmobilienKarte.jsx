@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete } from '../utils/miete.js';
-import { berechneWertsteigerungSeitKauf, berechneRestschuld, berechneMtlCashflow, getAktuellerGesamtwert } from '../utils/berechnung.js';
+import { berechneWertsteigerungSeitKauf, berechneRestschuld, getAktuellerGesamtwert } from '../utils/berechnung.js';
+import { cashflowVorNach, beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 
 const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, onOpenAufgabe, onDelete, onEdit }) => {
   const [mfhExpanded, setMfhExpanded] = useState(false);
@@ -26,15 +27,9 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
   const mfhWohnungen = isMFH ? (immobilie.wohnungen || []) : [];
 
   // Monatlicher Cashflow — einheitliche Berechnung via berechneMtlCashflow
-  const cashflow = berechneMtlCashflow(immobilie);
-  const cashflowPositiv = cashflow >= 0;
-
-  // Tile accent color — psychologisch: Slate=Vertrauen/Premium, Teal=Cashflow/Wachstum, Amber=Ertrag
-  const accentClass = isMietimmobilie
-    ? 'from-emerald-500 to-emerald-700'
-    : isMFH
-      ? 'from-amber-600 to-orange-700'
-      : 'from-slate-700 to-slate-900';
+  // Teil 3, Abschnitt 9: Cashflow vor UND nach Tilgung nebeneinander
+  const cf = cashflowVorNach(immobilie);
+  const cashflow = cf.nach;
 
   const eigenkapital = (!isMietimmobilie && !isMFH) && restschuldInfo
     ? aktuellerWert - restschuldInfo.restschuld
@@ -120,21 +115,21 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
         </div>
       </div>
 
-      {/* Cashflow Hero — pulled up over the border */}
+      {/* Cashflow — Teil 3, Abschnitt 9: nach und vor Tilgung nebeneinander */}
       <div className="mx-5 -mt-3 mb-4">
-        <div className={`rounded-xl px-4 py-3 flex items-center justify-between shadow-sm ${cashflowPositiv ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">Monatlicher Cashflow</div>
-            <div className={`text-xl font-black ${cashflowPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
-              {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow)}
+        <div className="rounded-xl bg-white border border-gray-200 shadow-sm grid grid-cols-2 divide-x divide-gray-100">
+          {[
+            ['Nach Tilgung', cf.nach, `${cf.nach >= 0 ? '+' : ''}${formatCurrency(cf.nach * 12)} pro Jahr`],
+            ['Vor Tilgung', cf.vor, isMietimmobilie ? 'kein Kredit' : cf.hatKredit ? `davon ${formatCurrency(cf.tilgung)} Tilgung` : 'schuldenfrei, keine Tilgung'],
+          ].map(([label, wert, sub]) => (
+            <div key={label} className="px-3 py-2.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</div>
+              <div className={`text-lg font-black ${wert >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {wert >= 0 ? '+' : ''}{formatCurrency(wert)}
+              </div>
+              <div className="text-[11px] text-gray-400 truncate">{sub}</div>
             </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-gray-500 font-medium">pro Jahr</div>
-            <div className={`text-sm font-bold ${cashflowPositiv ? 'text-emerald-600' : 'text-red-600'}`}>
-              {cashflow >= 0 ? '+' : ''}{formatCurrency(cashflow * 12)}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -252,7 +247,11 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
                 </div>
                 <div>
                   <div className="text-xs text-gray-400" title="Marktwert minus Restschuld — nicht das eingebrachte Eigenkapital">Dein Anteil</div>
-                  <div className="text-sm font-semibold text-amber-700">{formatCurrency(eigenkapital)}</div>
+                  <div className="text-sm font-semibold text-gray-800">{formatCurrency(eigenkapital)}</div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-xs text-gray-400" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde`}>Beleihbar frei</div>
+                  <div className="text-sm font-semibold text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWert, restschuldInfo.restschuld))}</div>
                 </div>
               </div>
             )}
