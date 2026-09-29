@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow } from '../utils/miete.js';
+import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, berechneMietStatusFuerMonat } from '../utils/miete.js';
+import ObjektUeberlaufMenu from './ObjektUeberlaufMenu';
 import MieterDashboard from './MieterDashboard';
 import MieteinnahmenTracker from './MieteinnahmenTracker';
 import ArbitrageCashflow from './ArbitrageCashflow';
@@ -172,7 +173,7 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
-const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab }) => {
+const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [] }) => {
   const [params, setParams] = useState({
     eigeneWarmmiete: immobilie.eigeneWarmmiete || 0,
     anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 0,
@@ -196,10 +197,15 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     dauerauftragBetrag: immobilie.dauerauftragBetrag || 0,
     dokumente: immobilie.dokumente || [],
     mieteFaelligkeitstag: immobilie.mieteFaelligkeitstag ?? 3,
+    aktiv: immobilie.aktiv !== false,
+    aufgabedatum: immobilie.aufgabedatum || '',
     nkAbrechnungen: immobilie.nkAbrechnungen || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => initialTab || 'uebersicht');
+  // Deep-Links aus Erinnerungen auf die neuen Reiter abbilden
+  const MIET_TAB_MAP = { mieteinnahmen: 'mieteingaenge', kaution: 'mieter', dokumente: 'objekt', stammdaten: 'objekt' };
+  const [activeTab, setActiveTab] = useState(() => (initialTab && (MIET_TAB_MAP[initialTab] || initialTab)) || 'uebersicht');
+  const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
   // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben.
   const scrollContainerRef = useRef(null);
   useEffect(() => { scrollContainerRef.current?.scrollTo(0, 0); }, [activeTab]);
@@ -260,13 +266,39 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   {vertragsende && !vertragsBeendet && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-400/80 text-amber-900 flex items-center gap-1"><Loader2 size={11}/> Endet {new Date(params.mietvertragEnde).toLocaleDateString('de-DE')}</span>
                   )}
+                  {params.aktiv === false && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500/60 text-white">
+                      Abgegeben {params.aufgabedatum ? new Date(params.aufgabedatum).toLocaleDateString('de-DE') : ''}
+                    </span>
+                  )}
+                  {params.aktiv !== false && eigeneAufgaben.length > 0 && (
+                    <button onClick={() => setActiveTab('uebersicht')}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full text-white ${eigeneAufgaben.some(a => a.priority === 'rot') ? 'bg-red-500/80' : eigeneAufgaben.some(a => a.priority === 'gelb') ? 'bg-amber-500/80' : 'bg-gray-400/80'}`}>
+                      {eigeneAufgaben.length} offen
+                    </button>
+                  )}
                 </div>
                 <h2 className="text-lg sm:text-2xl font-black text-white truncate">{params.name || 'Mietimmobilie'}</h2>
                 {(params.plz || params.adresse) && (
                   <p className="text-emerald-100 text-sm mt-0.5 flex items-center gap-1"><MapPin size={12}/> {params.plz} {params.adresse}</p>
                 )}
+                {(() => {
+                  const eckdaten = [
+                    params.wohnflaeche ? `${params.wohnflaeche} m²` : null,
+                    params.zimmer ? `${params.zimmer} Zimmer` : null,
+                    params.anzahlZimmerVermietet ? `${params.anzahlZimmerVermietet} untervermietet` : null,
+                    params.mietvertragStart ? `Hauptmietvertrag seit ${new Date(params.mietvertragStart).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null,
+                  ].filter(Boolean);
+                  return eckdaten.length > 0 ? <p className="text-emerald-100/80 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
+                })()}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
+                <ObjektUeberlaufMenu
+                  aktiv={params.aktiv}
+                  onAufgeben={(datum) => updateParams({ aktiv: false, aufgabedatum: datum })}
+                  onReaktivieren={() => updateParams({ aktiv: true, aufgabedatum: '' })}
+                  bestaetigenText="Die Wohnung wird aus dem aktiven Portfolio genommen. Daten bleiben für den Steuerexport erhalten."
+                />
                 {onEdit && (
                   <button onClick={onEdit}
                     className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-sm font-semibold transition-colors"
@@ -306,24 +338,43 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <div className="text-[10px] sm:text-xs text-gray-400">{monateSeitStart} Mo.</div>
             </div>
           </div>
-          {/* Tab-Navigation */}
-          <div className="overflow-x-auto flex-shrink-0">
-            <div className="flex gap-1 bg-slate-100 p-1 min-w-max">
-              {[
-                { id: 'uebersicht',   icon: <BarChart3 size={13}/>, label: 'Cockpit' },
-                { id: 'mieteingaenge',icon: <TrendingUp size={13}/>, label: 'Eingänge' },
-                { id: 'cashflow',     icon: <TrendingUp size={13}/>, label: 'Cashflow' },
-                { id: 'steuern',      icon: <Receipt size={13}/>, label: 'Steuern' },
-                { id: 'dokumente',    icon: <FileText size={13}/>, label: `Dokumente${params.dokumente?.length > 0 ? ` (${params.dokumente.length})` : ''}` },
-                { id: 'mieter',       icon: <User size={13}/>, label: `Mieter${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length > 0 ? ` (${mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length})` : ''}` },
-              ].map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-3 sm:px-4 text-[11px] sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                  <span className="flex items-center gap-1">{tab.icon}{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Tab-Navigation — Abschnitt 2: Cockpit · Zahlen · Vermietung · Objekt */}
+          {(() => {
+            const anzahlMieter = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
+            const GRUPPEN = [
+              { id: 'uebersicht', icon: <BarChart3 size={13}/>, label: 'Cockpit', first: 'uebersicht', subs: null },
+              { id: 'zahlen', icon: <Wallet size={13}/>, label: 'Zahlen', first: 'cashflow', subs: [
+                { id: 'cashflow', label: 'Cashflow' }, { id: 'steuern', label: 'Steuern' },
+              ] },
+              { id: 'vermietung', icon: <User size={13}/>, label: 'Vermietung', first: 'mieteingaenge', subs: [
+                { id: 'mieteingaenge', label: 'Mieteingänge' }, { id: 'mieter', label: anzahlMieter > 0 ? `Mieter (${anzahlMieter})` : 'Mieter' },
+              ] },
+              { id: 'objekt', icon: <FileText size={13}/>, label: 'Objekt', first: 'objekt', subs: null },
+            ];
+            const aktiv = GRUPPEN.find(g => g.id === activeTab || g.subs?.some(x => x.id === activeTab) || (g.id === 'objekt' && activeTab === 'dokumente')) || GRUPPEN[0];
+            return (
+              <div className="flex-shrink-0 bg-white px-2 sm:px-4 pt-2 pb-2 border-b border-slate-100">
+                <div className="grid grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1">
+                  {GRUPPEN.map(g => (
+                    <button key={g.id} onClick={() => setActiveTab(g.first)}
+                      className={`py-2 px-1 text-[11px] sm:text-sm font-semibold rounded-lg transition-all text-center ${aktiv.id === g.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                      <span className="flex items-center justify-center gap-1">{g.icon}{g.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {aktiv.subs && (
+                  <div className="flex gap-1 mt-2 bg-emerald-50 rounded-xl p-1 overflow-x-auto">
+                    {aktiv.subs.map(x => (
+                      <button key={x.id} onClick={() => setActiveTab(x.id)}
+                        className={`flex-shrink-0 sm:flex-1 py-1.5 px-3 text-[11px] sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${activeTab === x.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-emerald-600 hover:bg-emerald-100'}`}>
+                        {x.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6">
@@ -382,47 +433,11 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
           {/* Cashflow Tab */}
           {activeTab === 'cashflow' && (
-            <ArbitrageCashflow params={params} />
-          )}
-
-          {/* Steuern Tab */}
-          {activeTab === 'steuern' && (
-            <ArbitrageSteuern
-              params={params}
-              onUpdateParams={(neu) => updateParams(neu)}
-            />
-          )}
-
-          {/* Dokumente Tab */}
-          {activeTab === 'dokumente' && (
-            <ArbitrageDokumenteTab
-              immobilie={immobilie}
-              dokumente={params.dokumente || []}
-              onDokumentUpdate={async (neueDokumente) => {
-                const updated = { ...params, dokumente: neueDokumente };
-                updateParams({ dokumente: neueDokumente });
-                await onSave({ ...immobilie, ...updated });
-                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
-              }}
-            />
-          )}
-
-          {/* Mieter Tab */}
-          {activeTab === 'mieter' && (
-            <MieterDashboard
-              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
-              portfolio={[immobilie]}
-              onDelete={onDeleteMieter}
-              onSave={onSaveMieter}
-              nkAbrechnungen={nkAbrechnungen}
-              onSaveNK={onSaveNK}
-              onDeleteNK={onDeleteNK}
-              onMieteingaengeClick={() => setActiveTab('mieteingaenge')}
-            />
-          )}
-          {activeTab === 'uebersicht' && <>
+            // Abschnitt 3.3 + Leitsatz 1: Ergebnisse über bzw. neben den Eingaben.
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+              <div className="order-1 lg:order-2 lg:col-span-2 space-y-4">
           {/* Cashflow-Aufschlüsselung */}
-          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 mb-6">
+          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 ">
             <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide mb-4">Cashflow-Aufschlüsselung</h3>
             <div className="space-y-1">
               <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
@@ -453,107 +468,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             </div>
           </div>
 
-          {/* Bearbeitungsbereich */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Grunddaten */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><MapPin size={14}/> Grunddaten</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Name/Bezeichnung</label>
-                  <input
-                    type="text"
-                    value={params.name}
-                    onChange={(e) => updateParams({ name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
-                    placeholder="z.B. Mitarbeiter-WG München"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">PLZ</label>
-                    <input
-                      type="text"
-                      value={params.plz}
-                      onChange={(e) => updateParams({ plz: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Mietvertrag seit</label>
-                    <input
-                      type="date"
-                      value={params.mietvertragStart}
-                      onChange={(e) => updateParams({ mietvertragStart: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Mietvertragsende</label>
-                    <input
-                      type="date"
-                      value={params.mietvertragEnde}
-                      onChange={(e) => updateParams({ mietvertragEnde: e.target.value })}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 ${vertragsBeendet ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                    />
-                    {params.mietvertragEnde && (
-                      <button
-                        type="button"
-                        onClick={() => updateParams({ mietvertragEnde: '' })}
-                        className="text-xs text-gray-400 hover:text-red-500 mt-1 flex items-center gap-1"
-                      >
-                        <X size={12}/> Datum entfernen
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-end pb-2">
-                    {vertragsBeendet && (
-                      <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">
-                        Cashflow wird ab Vertragsende nicht mehr berechnet.
-                      </div>
-                    )}
-                    {vertragsende && !vertragsBeendet && (
-                      <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2">
-                        Noch {Math.ceil((vertragsende - heute) / (1000 * 60 * 60 * 24 * 30))} Monate verbleibend.
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Adresse</label>
-                  <input
-                    type="text"
-                    value={params.adresse}
-                    onChange={(e) => updateParams({ adresse: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
-                    placeholder="Musterstraße 123"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Wohnfläche (m²)</label>
-                    <input
-                      type="number"
-                      value={params.wohnflaeche}
-                      onChange={(e) => updateParams({ wohnflaeche: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Gesamtzahl Zimmer</label>
-                    <input
-                      type="number"
-                      value={params.zimmer}
-                      onChange={(e) => updateParams({ zimmer: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
-                    />
-                  </div>
-                </div>
+                <ArbitrageCashflow params={params} />
               </div>
-            </div>
-
+              <div className="order-2 lg:order-1 lg:col-span-3">
             {/* Finanzdaten */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
               <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><Wallet size={14}/> Arbitrage-Kalkulation</h3>
@@ -729,23 +646,308 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
               </div>
             </div>
-          </div>
+              </div>
+            </div>
+          )}
 
-          {/* Prognose */}
-          <div className="mt-5 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><TrendingUp size={14}/> Kumulierter Cashflow</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[[1,'1 Jahr'],[2,'2 Jahre'],[3,'3 Jahre'],[5,'5 Jahre']].map(([mult, label]) => (
-                <div key={mult} className={`rounded-xl p-4 text-center border ${jahresCashflow >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
-                  <div className="text-xs text-gray-400 font-medium mb-1">{label}</div>
-                  <div className={`text-lg font-black ${jahresCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * mult)}
+          {/* Steuern Tab */}
+          {activeTab === 'steuern' && (
+            <ArbitrageSteuern
+              params={params}
+              onUpdateParams={(neu) => updateParams(neu)}
+            />
+          )}
+
+          {/* Mieter Tab */}
+          {activeTab === 'mieter' && (
+            <MieterDashboard
+              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
+              portfolio={[immobilie]}
+              onDelete={onDeleteMieter}
+              onSave={onSaveMieter}
+              nkAbrechnungen={nkAbrechnungen}
+              onSaveNK={onSaveNK}
+              onDeleteNK={onDeleteNK}
+              onMieteingaengeClick={() => setActiveTab('mieteingaenge')}
+            />
+          )}
+          {/* ── COCKPIT (Abschnitt 3.2) — nur lesen und handeln ─────────────────
+              Die Eingaben (Kalkulation, Mietanpassungen, Stammdaten) sind nach
+              Zahlen · Cashflow bzw. Objekt gewandert (Leitsatz 2). */}
+          {activeTab === 'uebersicht' && (() => {
+            const MONATE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+            const jahr = heute.getFullYear();
+            const startJahr = mietvertragStart ? mietvertragStart.getFullYear() : jahr;
+            const startMonat = mietvertragStart ? mietvertragStart.getMonth() + 1 : 1;
+            const aktiveUntermieter = mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
+            const bucheMonat = (monatNr) => {
+              const datum = new Date(jahr, monatNr - 1, Math.min(heute.getDate(), 28)).toISOString().split('T')[0];
+              const neu = { ...params, mietEingaenge: [...(params.mietEingaenge || []), { id: Date.now(), datum, betrag: einnahmen, typ: 'kaltmiete', notiz: '' }] };
+              setParams(neu);
+              onSave({ ...immobilie, ...neu });
+            };
+            return (
+            <div className="space-y-4">
+              {/* Jetzt dran */}
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Jetzt dran</p>
+                </div>
+                {(() => {
+                  const hinweise = [...eigeneAufgaben];
+                  if (vertragsende && !vertragsBeendet && (vertragsende - heute) / (1000 * 60 * 60 * 24 * 30.44) <= 6) {
+                    hinweise.unshift({ id: 'hauptmietvertrag-ende', priority: 'gelb', titel: `Hauptmietvertrag endet am ${vertragsende.toLocaleDateString('de-DE')}`, sub: 'Untermieter rechtzeitig informieren', targetTab: 'objekt' });
+                  }
+                  if (hinweise.length === 0) return (
+                    <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50">
+                      <Check size={16} className="text-emerald-500 shrink-0"/>
+                      <span className="text-sm font-semibold text-emerald-700">Alles im grünen Bereich — keine offenen Punkte</span>
+                    </div>
+                  );
+                  return (
+                    <div className="divide-y divide-gray-100">
+                      {hinweise.map(a => (
+                        <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${a.priority === 'rot' ? 'bg-red-500' : a.priority === 'gelb' ? 'bg-amber-400' : 'bg-gray-400'}`} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold text-gray-800 truncate">{a.titel}</div>
+                            {a.sub && <div className="text-xs text-gray-400 truncate">{a.sub}</div>}
+                          </div>
+                          <button onClick={() => setActiveTab(a.targetTab === 'mieteinnahmen' ? 'mieteingaenge' : a.targetTab)}
+                            className="px-3 py-1.5 bg-white border border-gray-200 hover:border-emerald-300 hover:text-emerald-700 text-gray-600 text-xs font-bold rounded-lg shrink-0 transition-colors">
+                            Ansehen
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Mieteingänge — 12 Monatsfelder, Klick bucht direkt */}
+              {!vertragsBeendet && einnahmen > 0 && (
+                <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Mieteingänge {jahr}</p>
+                    <button onClick={() => setActiveTab('mieteingaenge')} className="text-xs font-semibold text-emerald-600 hover:underline">Alle ansehen →</button>
+                  </div>
+                  <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
+                    {MONATE.map((name, idx) => {
+                      const m = idx + 1;
+                      const vorStart = jahr === startJahr && m < startMonat || jahr < startJahr;
+                      const zukunft = m > heute.getMonth() + 1;
+                      if (vorStart || zukunft) return <div key={m} className="rounded-lg border border-dashed border-gray-200 py-2 text-center text-[10px] text-gray-300">{name}</div>;
+                      const st = berechneMietStatusFuerMonat(params.mietEingaenge, jahr, m, einnahmen, params.dauerauftrag).status;
+                      const ok = st === 'bezahlt' || st === 'dauerauftrag';
+                      return (
+                        <button key={m} onClick={() => { if (!ok) bucheMonat(m); }}
+                          title={ok ? 'Eingegangen' : 'Noch offen — klicken zum Abhaken'}
+                          className={`rounded-lg py-2 text-center text-[10px] font-bold transition-colors ${ok ? 'bg-emerald-100 text-emerald-700' : st === 'teilweise' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
+                          {name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Cashflow pro Monat */}
+                  <button onClick={() => setActiveTab('cashflow')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-emerald-300 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Cashflow pro Monat</p>
+                      <span className="text-xs text-emerald-600 font-semibold">Details anzeigen →</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div><div className="text-[10px] text-gray-400">Einnahmen</div><div className="text-sm font-bold text-emerald-600">{formatCurrency(einnahmen)}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Eigene Miete</div><div className="text-sm font-bold text-red-500">-{formatCurrency(vertragsBeendet ? 0 : aktWarmmiete)}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Nebenkosten</div><div className="text-sm font-bold text-red-500">-{formatCurrency(zusatzkosten)}</div></div>
+                      <div><div className="text-[10px] text-gray-400">Ergebnis</div><div className={`text-base font-black ${monatsCashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{monatsCashflow >= 0 ? '+' : ''}{formatCurrency(monatsCashflow)}</div></div>
+                    </div>
+                  </button>
+
+                  {/* Bisher & Prognose (nur lesen) */}
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+                    <p className="text-xs font-bold text-emerald-700 uppercase tracking-wide mb-3">Bisher & Prognose</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+                      <div><div className="text-[10px] text-gray-400">Bisher ({monateSeitStart} Mo.)</div><div className="text-sm font-bold text-emerald-700">{formatCurrency(bisherigeCashflowGesamt)}</div></div>
+                      {[[1,'1 Jahr'],[2,'2 Jahre'],[3,'3 Jahre'],[5,'5 Jahre']].map(([mult, label]) => (
+                        <div key={mult}><div className="text-[10px] text-gray-400">{label}</div><div className={`text-sm font-bold ${jahresCashflow >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{jahresCashflow >= 0 ? '+' : ''}{formatCurrency(jahresCashflow * mult)}</div></div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mieter */}
+                  <button onClick={() => setActiveTab('mieter')} className="w-full text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-emerald-300 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><User size={12}/> Untermieter · {aktiveUntermieter.length}/{params.anzahlZimmerVermietet || 0} Zimmer</p>
+                      <span className="text-xs text-emerald-600 font-semibold">Details →</span>
+                    </div>
+                    {aktiveUntermieter.length === 0 ? (
+                      <p className="text-sm text-gray-400">Noch keine Untermieter erfasst.</p>
+                    ) : (
+                      <div className="divide-y divide-gray-50 text-sm">
+                        {aktiveUntermieter.map(m => (
+                          <div key={m.id} className="flex items-center justify-between gap-2 py-1.5">
+                            <span className="font-semibold text-gray-800 truncate">{m.name}</span>
+                            <span className="text-gray-500 truncate">{m.zimmer_bezeichnung || ''}</span>
+                            <span className="text-gray-500 shrink-0">{m.mietbeginn ? `seit ${new Date(m.mietbeginn).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : ''}</span>
+                            <span className="font-semibold text-gray-700 shrink-0">{Number(m.kaltmiete) > 0 ? formatCurrency(Number(m.kaltmiete)) : '—'}</span>
+                            <span className="text-[10px] shrink-0">{Number(m.kaution_betrag) > 0 ? (m.kaution_bezahlt ? <span className="text-emerald-600">Kaution ✓</span> : <span className="text-red-500">Kaution offen</span>) : <span className="text-gray-300">keine Kaution</span>}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Hauptmietvertrag — rechte Spalte (bei der Mietimmobilie statt Finanzierung) */}
+                <button onClick={() => setActiveTab('objekt')} className="text-left bg-white border border-gray-200 rounded-2xl p-4 hover:border-emerald-300 transition-colors h-fit">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Hauptmietvertrag</p>
+                    <span className="text-xs text-emerald-600 font-semibold">Öffnen →</span>
+                  </div>
+                  <div className="space-y-2.5 text-sm">
+                    <div><span className="text-[10px] text-gray-400 block">Eigene Warmmiete</span><span className="text-lg font-black text-gray-800">{formatCurrency(aktWarmmiete)}</span></div>
+                    <div><span className="text-[10px] text-gray-400 block">Seit</span><span className="font-semibold">{mietvertragStart ? mietvertragStart.toLocaleDateString('de-DE') : '—'}</span></div>
+                    <div><span className="text-[10px] text-gray-400 block">Endet</span><span className={`font-semibold ${vertragsBeendet ? 'text-red-600' : ''}`}>{vertragsende ? vertragsende.toLocaleDateString('de-DE') : 'unbefristet'}</span></div>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
-          </>}
+            );
+          })()}
+
+          {/* ── OBJEKT — Abschnitt 3.9: eine Seite mit Sprungleiste links ── */}
+          {(activeTab === 'objekt' || activeTab === 'dokumente') && (
+            <div className="lg:flex lg:gap-6 lg:items-start">
+              <nav className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 mb-5 lg:mb-0 lg:w-48 lg:shrink-0 lg:sticky lg:top-24 lg:self-start">
+                {[['miet-objekt-stammdaten', 'Stammdaten & Mietvertrag'], ['miet-objekt-dokumente', 'Dokumente']].map(([anchorId, label]) => (
+                  <button key={anchorId}
+                    onClick={() => document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-lg hover:bg-emerald-100 hover:text-emerald-700 transition-colors whitespace-nowrap lg:text-left">
+                    {label}
+                  </button>
+                ))}
+              </nav>
+              <div className="flex-1 min-w-0 space-y-5">
+                <div id="miet-objekt-stammdaten">
+            {/* Grunddaten */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1"><MapPin size={14}/> Stammdaten & Hauptmietvertrag</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Name/Bezeichnung</label>
+                  <input
+                    type="text"
+                    value={params.name}
+                    onChange={(e) => updateParams({ name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
+                    placeholder="z.B. Mitarbeiter-WG München"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">PLZ</label>
+                    <input
+                      type="text"
+                      value={params.plz}
+                      onChange={(e) => updateParams({ plz: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Mietvertrag seit</label>
+                    <input
+                      type="date"
+                      value={params.mietvertragStart}
+                      onChange={(e) => updateParams({ mietvertragStart: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Mietvertragsende</label>
+                    <input
+                      type="date"
+                      value={params.mietvertragEnde}
+                      onChange={(e) => updateParams({ mietvertragEnde: e.target.value })}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 ${vertragsBeendet ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                    />
+                    {params.mietvertragEnde && (
+                      <button
+                        type="button"
+                        onClick={() => updateParams({ mietvertragEnde: '' })}
+                        className="text-xs text-gray-400 hover:text-red-500 mt-1 flex items-center gap-1"
+                      >
+                        <X size={12}/> Datum entfernen
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-end pb-2">
+                    {vertragsBeendet && (
+                      <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">
+                        Cashflow wird ab Vertragsende nicht mehr berechnet.
+                      </div>
+                    )}
+                    {vertragsende && !vertragsBeendet && (
+                      <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2">
+                        Noch {Math.ceil((vertragsende - heute) / (1000 * 60 * 60 * 24 * 30))} Monate verbleibend.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Adresse</label>
+                  <input
+                    type="text"
+                    value={params.adresse}
+                    onChange={(e) => updateParams({ adresse: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
+                    placeholder="Musterstraße 123"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Wohnfläche (m²)</label>
+                    <input
+                      type="number"
+                      value={params.wohnflaeche}
+                      onChange={(e) => updateParams({ wohnflaeche: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Gesamtzahl Zimmer</label>
+                    <input
+                      type="number"
+                      value={params.zimmer}
+                      onChange={(e) => updateParams({ zimmer: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+                </div>
+                <div id="miet-objekt-dokumente">
+                  <ArbitrageDokumenteTab
+                    immobilie={immobilie}
+                    dokumente={params.dokumente || []}
+                    onDokumentUpdate={async (neueDokumente) => {
+                      const updated = { ...params, dokumente: neueDokumente };
+                      updateParams({ dokumente: neueDokumente });
+                      await onSave({ ...immobilie, ...updated });
+                      setHasChanges(false);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

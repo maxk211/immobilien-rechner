@@ -136,14 +136,8 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     });
   }
 
-  // Abschnitt 3.7: Kaution ist bei Kaufimmobilien/Mietimmobilien ein Block im
-  // Mieter-Tab (kein eigener Subtab mehr), bei Mehrfamilienhäusern (mehrere
-  // Wohnungen) bleibt Kaution vorerst ein eigener Subtab — deshalb hier je
-  // nach Objekttyp unterschiedliches targetTab.
-  const kautionZielTab = (mieterId) => {
-    const immo = portfolio.find(i => i.id === mieterListe.find(m => m.id === mieterId)?.immobilie_id);
-    return immo?.immobilienTyp === 'mehrfamilienhaus' ? 'kaution' : 'mieter';
-  };
+  // Abschnitt 3.7: Kaution ist bei allen Objekttypen ein Block im Mieter-Reiter.
+  const kautionZielTab = () => 'mieter';
 
   // ── 4. Kaution nicht zurückgegeben ────────────────────────────────────────
   mieterListe.forEach(mieter => {
