@@ -574,7 +574,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   </button>
                 )}
                 {onEdit && (
-                  <button onClick={onEdit}
+                  <button onClick={() => setActiveTab('stammdaten')}
                     className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold transition-colors"
                     title="Stammdaten bearbeiten">
                     Bearbeiten

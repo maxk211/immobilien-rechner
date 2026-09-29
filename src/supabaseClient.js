@@ -43,6 +43,8 @@ const ZUSATZ_KEYS = [
   'hausgeldNichtUmlagefaehig', 'kontofuehrung', 'weitereKostenAktiv', 'weitereKostenChips', 'keller',
   // Phase G: Plausibilitätsprüfung — Bestätigungen mit Zeitstempel und Feldherkunft
   'plausiBestaetigt', 'feldHerkunft',
+  // Phase I: Anlage-Wizard
+  'ort', 'erwerbsart', 'mietstatus',
 ];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 

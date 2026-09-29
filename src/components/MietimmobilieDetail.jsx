@@ -303,7 +303,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   bestaetigenText="Die Wohnung wird aus dem aktiven Portfolio genommen. Daten bleiben für den Steuerexport erhalten."
                 />
                 {onEdit && (
-                  <button onClick={onEdit}
+                  <button onClick={() => setActiveTab('objekt')}
                     className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold transition-colors"
                     title="Stammdaten bearbeiten">
                     Bearbeiten

@@ -36,7 +36,7 @@ import ImmobilienDetail from './components/ImmobilienDetail';
 import { ModalErrorBoundary } from './components/ErrorBoundary';
 import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 import KalkulationsModal from './components/KalkulationsModal';
-import ImmobilienFormular from './components/ImmobilienFormular';
+import AnlageWizard from './components/AnlageWizard';
 import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
 import PortfolioZiele from './components/PortfolioZiele';
@@ -67,6 +67,8 @@ function App() {
   const [selectedImmobilie, setSelectedImmobilie] = useState(null);
   const [initialTab, setInitialTab] = useState(null);
   const [editImmobilie, setEditImmobilie] = useState(null);
+  // Phase I/J: Vorbelegung für den Anlage-Wizard (z. B. aus "Rechnet sich das?" → "Gekauft – übernehmen")
+  const [wizardVorbelegung, setWizardVorbelegung] = useState(null);
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'error'
   const [activeView, setActiveView] = useState('portfolio'); // 'portfolio' | 'mieter'
   const [mieterListe, setMieterListe] = useState([]);
@@ -296,7 +298,7 @@ function App() {
         saved = await saveImmobilie(data);
         setPortfolio(prev => [...prev, saved]);
         toast.success('Immobilie gespeichert ✓');
-        // Formular bleibt offen — ImmobilienFormular zeigt den Nachfrage-Dialog
+        // Wizard bleibt offen — AnlageWizard zeigt den Abschluss mit Vollständigkeitsring
       }
       setSyncStatus('idle');
       return saved; // wichtig: gespeicherte Immobilie zurückgeben
@@ -1522,7 +1524,7 @@ function App() {
                   onClick={() => { setSelectedImmobilie(immobilie); setInitialTab(null); }}
                   onOpenAufgabe={(todo) => { setSelectedImmobilie(immobilie); setInitialTab(todo?.targetTab || null); }}
                   onDelete={() => handleDelete(immobilie.id)}
-                  onEdit={() => { setEditImmobilie(immobilie); setShowForm(true); }}
+                  onEdit={() => { setSelectedImmobilie(immobilie); setInitialTab('stammdaten'); }}
                 />
               ))}
             </div>
@@ -1541,7 +1543,7 @@ function App() {
                         mieterListe={mieterListe}
                         onClick={() => { setSelectedImmobilie(immobilie); setInitialTab(null); }}
                         onDelete={() => handleDelete(immobilie.id)}
-                        onEdit={() => { setEditImmobilie(immobilie); setShowForm(true); }}
+                        onEdit={() => { setSelectedImmobilie(immobilie); setInitialTab('stammdaten'); }}
                       />
                     ))}
                   </div>
@@ -1555,16 +1557,19 @@ function App() {
 
       {showForm && (
         <ModalErrorBoundary onClose={() => { setShowForm(false); setEditImmobilie(null); }}>
-          <ImmobilienFormular
+          <AnlageWizard
             onSave={handleSave}
-            onClose={() => { setShowForm(false); setEditImmobilie(null); }}
-            onOpenDetail={(immo) => {
+            onSaveMieter={handleSaveMieter}
+            portfolio={portfolio}
+            vorbelegung={wizardVorbelegung}
+            onClose={() => { setShowForm(false); setEditImmobilie(null); setWizardVorbelegung(null); }}
+            onOpenDetail={(immo, tab) => {
               setShowForm(false);
               setEditImmobilie(null);
+              setWizardVorbelegung(null);
               setSelectedImmobilie(immo);
-              setInitialTab(null);
+              setInitialTab(tab && tab !== 'uebersicht' ? tab : null);
             }}
-            initialData={editImmobilie}
           />
         </ModalErrorBoundary>
       )}
@@ -1585,7 +1590,7 @@ function App() {
             immobilie={selectedImmobilie}
             initialTab={initialTab}
             onClose={() => { setSelectedImmobilie(null); setInitialTab(null); }}
-            onEdit={() => { setEditImmobilie(selectedImmobilie); setSelectedImmobilie(null); setShowForm(true); }}
+            onEdit={() => {}}
             onSave={async (data) => {
               try {
                 setSyncStatus('syncing');
