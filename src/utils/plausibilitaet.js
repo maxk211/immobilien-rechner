@@ -12,6 +12,7 @@ import { PLAUSI_SCHWELLEN as S } from '../config/plausibilitaet.js';
 import { phasenZeitraeume } from './finanzierung.js';
 import { darlehensVerlauf, phasenZins } from './darlehen.js';
 import { getAktuelleMiete } from './miete.js';
+import { grestSatz, grestFrei, GREST_HISTORIE } from '../config/grunderwerbsteuer.js';
 
 const eur = (v) => `${Math.round(Number(v) || 0).toLocaleString('de-DE')} €`;
 const eur2 = (v) => `${(Number(v) || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
@@ -157,6 +158,13 @@ export function pruefeImmobilie(immo, { portfolio = [], mieter = [], heute = new
     add({ id: 'kaufnebenkosten', stufe: 'gelb', titel: `Kaufnebenkosten ${pct(knk, 1)}`,
       text: `Üblich sind ${S.kaufnebenkosten.min} bis ${S.kaufnebenkosten.max} % (Grunderwerbsteuer je Bundesland plus Notar, Grundbuch, ggf. Makler).`,
       feld: 'kaufnebenkosten', feldLabel: 'Kaufnebenkosten in %', wert: knk });
+  }
+  // Kaufnebenkosten unter der Grunderwerbsteuer des Bundeslands allein (Teil 3, 8: "abgeglichen mit dem Bundesland")
+  const grest = immo.bundesland && !grestFrei(immo) ? grestSatz(immo.bundesland, immo.kaufdatum || heute) : null;
+  if (kaufpreis > 0 && grest && knk > 0 && knk < grest.satz && !(knk < S.kaufnebenkosten.min)) {
+    add({ id: 'kaufnebenkosten-grest', stufe: 'gelb', titel: `Kaufnebenkosten ${pct(knk, 1)} — weniger als die Grunderwerbsteuer`,
+      text: `In ${GREST_HISTORIE[immo.bundesland].name} galt am Kaufdatum ${pct(grest.satz, 1)} Grunderwerbsteuer. Dazu kommen Notar und Grundbuch.`,
+      feld: 'kaufnebenkosten', feldLabel: 'Kaufnebenkosten in %', wert: knk, fingerprint: `${knk}|${immo.bundesland}` });
   }
   if (flaeche > 0 && (flaeche < S.wohnflaeche.min || flaeche > S.wohnflaeche.max)) {
     add({ id: 'wohnflaeche', stufe: 'gelb', titel: `Wohnfläche ${flaeche} m²`,

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { GREST_HISTORIE, BUNDESLAND_KEYS, grestSatz, grestFrei, bundeslandAusPlz, bundeslandAusAdresse } from '../config/grunderwerbsteuer.js';
 import { formatCurrency } from '../utils/format.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import InfoHint from './InfoHint';
@@ -6,35 +7,31 @@ import InfoHint from './InfoHint';
 const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
   const [modus, setModus] = useState(params.kaufnebenkostenModus || 'prozent'); // 'prozent' oder 'manuell'
 
-  // Manuelle Positionen mit Standardwerten basierend auf Bundesland
+  // Phase H: Grunderwerbsteuer aus der Tabelle mit Gültig-ab-Historie — Satz am Kaufdatum,
+  // Bundesland aus der Adresse (kein stiller Vorgabewert mehr), 0 bei Erbe/Schenkung.
+  const [bundesland, setBundesland] = useState(params.bundesland || bundeslandAusPlz(params.plz) || '');
+  const [erkannt, setErkannt] = useState(null); // aus der Adresse erkannt, noch nicht übernommen
+  useEffect(() => {
+    if (params.bundesland) return;
+    let aktiv = true;
+    bundeslandAusAdresse({ plz: params.plz, adresse: params.adresse }).then(bl => {
+      if (aktiv && bl) { setErkannt(bl); if (!bundesland) setBundesland(bl); }
+    });
+    return () => { aktiv = false; };
+  }, [params.plz, params.adresse]); // eslint-disable-line react-hooks/exhaustive-deps
+  const frei = grestFrei(params);
+  const grest = bundesland ? grestSatz(bundesland, params.kaufdatum || new Date()) : null;
+  const grestProzent = frei ? 0 : (grest?.satz ?? 0);
+  const blName = bundesland ? GREST_HISTORIE[bundesland]?.name : null;
+
+  // Manuelle Positionen: Grunderwerbsteuer aus dem Satz, sonst leer (keine erfundenen Werte)
   const [positionen, setPositionen] = useState(params.kaufnebenkostenPositionen || {
-    grunderwerbsteuer: kaufpreis * 0.035,
-    notar: kaufpreis * 0.015,
-    grundbuch: kaufpreis * 0.005,
-    makler: kaufpreis * 0.0357,
+    grunderwerbsteuer: kaufpreis * (grestProzent / 100),
+    notar: 0,
+    grundbuch: 0,
+    makler: 0,
     sonstige: 0
   });
-
-  const bundeslaender = {
-    'bayern': { name: 'Bayern', grunderwerbsteuer: 3.5 },
-    'baden-wuerttemberg': { name: 'Baden-Württemberg', grunderwerbsteuer: 5.0 },
-    'berlin': { name: 'Berlin', grunderwerbsteuer: 6.0 },
-    'brandenburg': { name: 'Brandenburg', grunderwerbsteuer: 6.5 },
-    'bremen': { name: 'Bremen', grunderwerbsteuer: 5.0 },
-    'hamburg': { name: 'Hamburg', grunderwerbsteuer: 5.5 },
-    'hessen': { name: 'Hessen', grunderwerbsteuer: 6.0 },
-    'mecklenburg': { name: 'Mecklenburg-Vorpommern', grunderwerbsteuer: 6.0 },
-    'niedersachsen': { name: 'Niedersachsen', grunderwerbsteuer: 5.0 },
-    'nrw': { name: 'Nordrhein-Westfalen', grunderwerbsteuer: 6.5 },
-    'rheinland-pfalz': { name: 'Rheinland-Pfalz', grunderwerbsteuer: 5.0 },
-    'saarland': { name: 'Saarland', grunderwerbsteuer: 6.5 },
-    'sachsen': { name: 'Sachsen', grunderwerbsteuer: 5.5 },
-    'sachsen-anhalt': { name: 'Sachsen-Anhalt', grunderwerbsteuer: 5.0 },
-    'schleswig-holstein': { name: 'Schleswig-Holstein', grunderwerbsteuer: 6.5 },
-    'thueringen': { name: 'Thüringen', grunderwerbsteuer: 5.0 }
-  };
-
-  const [bundesland, setBundesland] = useState(params.bundesland || 'bayern');
 
   const kaufnebenkostenAbsolut = modus === 'prozent'
     ? kaufpreis * (params.kaufnebenkosten / 100)
@@ -56,18 +53,48 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
 
   const handleBundeslandChange = (bl) => {
     setBundesland(bl);
-    const neueGrunderwerbsteuer = kaufpreis * (bundeslaender[bl].grunderwerbsteuer / 100);
-    const neuePositionen = { ...positionen, grunderwerbsteuer: neueGrunderwerbsteuer };
+    setErkannt(null);
+    const satz = frei ? 0 : (grestSatz(bl, params.kaufdatum || new Date())?.satz ?? 0);
+    const neuePositionen = { ...positionen, grunderwerbsteuer: kaufpreis * (satz / 100) };
     setPositionen(neuePositionen);
-    const neuesGesamt = Object.values(neuePositionen).reduce((sum, val) => sum + val, 0);
+    const neuesGesamt = Object.values(neuePositionen).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
     const neuerProzentsatz = kaufpreis > 0 ? (neuesGesamt / kaufpreis) * 100 : 0;
     updateParams({
       ...params,
-      kaufnebenkosten: neuerProzentsatz,
+      ...(modus === 'manuell' ? { kaufnebenkosten: neuerProzentsatz, kaufnebenkostenPositionen: neuePositionen } : {}),
       bundesland: bl,
-      kaufnebenkostenPositionen: neuePositionen
     });
   };
+
+  // Bundesland-Auswahl + Grunderwerbsteuer-Zeile, in beiden Modi sichtbar
+  const bundeslandBlock = (
+    <div className="mb-3 space-y-1.5">
+      <label className="text-xs text-gray-600 flex items-center gap-1">Bundesland (für Grunderwerbsteuer) <InfoHint text="Einmalige Steuer beim Eigentumswechsel, vom Bundesland festgelegt. Maßgeblich ist der Satz am Tag des Kaufvertrags — renditly nimmt den Satz, der am Kaufdatum galt." /></label>
+      <select value={bundesland} onChange={(e) => handleBundeslandChange(e.target.value)}
+        className={`w-full px-2 py-1.5 border rounded text-base sm:text-sm ${!bundesland ? 'border-amber-400 bg-amber-50' : ''}`}>
+        <option value="">Bitte wählen</option>
+        {BUNDESLAND_KEYS.map(key => (
+          <option key={key} value={key}>{GREST_HISTORIE[key].name} ({String(grestSatz(key, params.kaufdatum || new Date()).satz).replace('.', ',')} %)</option>
+        ))}
+      </select>
+      {erkannt && !params.bundesland && (
+        <div className="text-[11px] text-indigo-700 flex items-center gap-2">
+          Aus der Adresse erkannt: {GREST_HISTORIE[erkannt]?.name}
+          <button type="button" onClick={() => handleBundeslandChange(erkannt)} className="font-bold underline">übernehmen</button>
+        </div>
+      )}
+      {frei ? (
+        <p className="text-[11px] text-emerald-700">Keine Grunderwerbsteuer: Erwerb durch Schenkung oder Erbe ist befreit (§ 3 Nr. 2 GrEStG). Ausnahme: Bei einer Schenkung mit Auflage (z. B. übernommene Schulden) ist der Wert der Auflage steuerpflichtig.</p>
+      ) : grest ? (
+        <p className="text-[11px] text-gray-500">
+          Grunderwerbsteuer {blName}: <strong>{String(grest.satz).replace('.', ',')} %</strong>, gültig seit {new Date(grest.ab).toLocaleDateString('de-DE')}
+          {params.kaufdatum ? ` (Satz am Kaufdatum ${new Date(params.kaufdatum).toLocaleDateString('de-DE')})` : ''} = {formatCurrency(kaufpreis * grest.satz / 100)}
+        </p>
+      ) : (
+        <p className="text-[11px] text-amber-700">Ohne Bundesland kann renditly die Grunderwerbsteuer nicht ausweisen.</p>
+      )}
+    </div>
+  );
 
   const handleModusChange = (neuerModus) => {
     setModus(neuerModus);
@@ -94,6 +121,8 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
         </div>
       </div>
 
+      {bundeslandBlock}
+
       {modus === 'prozent' ? (
         <div>
           <InputSliderCombo
@@ -108,25 +137,15 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
           <div className="text-sm text-gray-600 mt-2">
             = {formatCurrency(kaufpreis * (params.kaufnebenkosten / 100))}
           </div>
+          {!frei && grest && (params.kaufnebenkosten || 0) < grest.satz && (
+            <p className="text-[11px] text-amber-700 mt-1">Die Kaufnebenkosten liegen unter der Grunderwerbsteuer allein ({String(grest.satz).replace('.', ',')} %). Notar und Grundbuch kommen noch dazu.</p>
+          )}
         </div>
       ) : (
         <div>
-          <div className="mb-3">
-            <label className="text-xs text-gray-600 mb-1 flex items-center gap-1">Bundesland (für Grunderwerbsteuer) <InfoHint text="Einmalige Steuer beim Eigentumswechsel, die vom Bundesland festgelegt wird — aktuell zwischen 3,5% (z.B. Bayern) und 6,5% (mehrere Bundesländer) des Kaufpreises." /></label>
-            <select
-              value={bundesland}
-              onChange={(e) => handleBundeslandChange(e.target.value)}
-              className="w-full px-2 py-1 border rounded text-sm"
-            >
-              {Object.entries(bundeslaender).map(([key, val]) => (
-                <option key={key} value={key}>{val.name} ({val.grunderwerbsteuer}%)</option>
-              ))}
-            </select>
-          </div>
-
           <div className="space-y-2">
             {[
-              { key: 'grunderwerbsteuer', label: `Grunderwerbsteuer (${bundeslaender[bundesland].grunderwerbsteuer}%)` },
+              { key: 'grunderwerbsteuer', label: frei ? 'Grunderwerbsteuer (befreit)' : `Grunderwerbsteuer (${grest ? String(grest.satz).replace('.', ',') + ' %' : 'Bundesland wählen'})` },
               { key: 'notar', label: 'Notar (ca. 1,5%)' },
               { key: 'grundbuch', label: 'Grundbuch (Faustregel ca. 0,5 % — Eigentum und Grundschuld zusammen)' },
               { key: 'makler', label: 'Makler (ca. 3,57%)' },
