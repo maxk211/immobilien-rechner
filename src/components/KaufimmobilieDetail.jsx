@@ -248,7 +248,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     kaufnebenkosten: immobilie.kaufnebenkosten ?? 10,
     kaufnebenkostenModus: immobilie.kaufnebenkostenModus || 'prozent',
     kaufnebenkostenPositionen: immobilie.kaufnebenkostenPositionen || null,
-    bundesland: immobilie.bundesland || 'bayern',
+    bundesland: immobilie.bundesland || '', // Phase H: kein stiller Vorgabewert — Adresse oder Auswahl
     finanzierungsbetrag: immobilie.finanzierungsbetrag ?? null,
     finanzierungsphasen: immobilie.finanzierungsphasen || [
       {
