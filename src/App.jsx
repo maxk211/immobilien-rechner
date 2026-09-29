@@ -35,7 +35,7 @@ import KautionsManager from './components/KautionsManager';
 import ImmobilienDetail from './components/ImmobilienDetail';
 import { ModalErrorBoundary } from './components/ErrorBoundary';
 import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
-import KalkulationsModal from './components/KalkulationsModal';
+import RechnetSichDas from './components/RechnetSichDas';
 import AnlageWizard from './components/AnlageWizard';
 import ImmobilienKarte from './components/ImmobilienKarte';
 import PortfolioOverview from './components/PortfolioOverview';
@@ -1576,7 +1576,8 @@ function App() {
 
       {showKalkulation && (
         <ModalErrorBoundary onClose={() => setShowKalkulation(false)}>
-          <KalkulationsModal onClose={() => setShowKalkulation(false)} portfolio={portfolio} />
+          <RechnetSichDas onClose={() => setShowKalkulation(false)} portfolio={portfolio}
+            onUebernehmen={(vorbelegung) => { setShowKalkulation(false); setWizardVorbelegung(vorbelegung); setShowForm(true); }} />
         </ModalErrorBoundary>
       )}
 
