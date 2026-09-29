@@ -128,7 +128,7 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
             {[
               { key: 'grunderwerbsteuer', label: `Grunderwerbsteuer (${bundeslaender[bundesland].grunderwerbsteuer}%)` },
               { key: 'notar', label: 'Notar (ca. 1,5%)' },
-              { key: 'grundbuch', label: 'Grundbuch (ca. 0,5%)' },
+              { key: 'grundbuch', label: 'Grundbuch (Faustregel ca. 0,5 % — Eigentum und Grundschuld zusammen)' },
               { key: 'makler', label: 'Makler (ca. 3,57%)' },
               { key: 'sonstige', label: 'Sonstige' }
             ].map(({ key, label }) => (

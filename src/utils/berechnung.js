@@ -1,5 +1,6 @@
 import { getPreisNachPLZ } from '../constants/plz.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert } from './miete.js';
+import { darlehensVerlauf } from './darlehen.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
@@ -119,6 +120,12 @@ export const berechneRestschuld = (immobilie) => {
     const rs = immobilie.aktuelleRestschuld || 0;
     const kp = immobilie.kaufpreis || rs;
     return { restschuld: rs, anfangsFremdkapital: kp, getilgt: Math.max(0, kp - rs) };
+  }
+
+  // Phase F: datumsgenauer Verlauf (Sondertilgungen, abbezahlt) hat Vorrang
+  const verlaufRS = (immobilie.finanzierungsphasen || []).length ? darlehensVerlauf(immobilie) : null;
+  if (verlaufRS) {
+    return { restschuld: Math.round(verlaufRS.restschuldHeute), anfangsFremdkapital: verlaufRS.fk, getilgt: Math.max(0, verlaufRS.fk - verlaufRS.restschuldHeute) };
   }
 
   // Kreditstartdatum: aus erster Finanzierungsphase oder Fallback auf Kaufdatum
@@ -403,6 +410,11 @@ export const berechneRendite = (params) => {
     : (() => {
     const phasen = params.finanzierungsphasen;
     if (!phasen || phasen.length === 0) return null;
+    // Phase F: Darlehen als abbezahlt markiert → keine Kreditrate mehr
+    const verlaufR = darlehensVerlauf(params);
+    if (verlaufR?.abbezahltHeute && phasen.some(p => p.abbezahltAm)) {
+      return { zinssatz: 0, restschuld: 0, laufzeit: 1, monatlicherBetrag: 0 };
+    }
     // Kreditstart: aus Phase 1 oder Kaufdatum
     const kreditStart = phasen[0]?.kreditStartDatum || kaufdatum;
     if (!kreditStart) return null;
@@ -648,6 +660,21 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
   const kreditStartStr = phasen[0]?.kreditStartDatum || params.kaufdatum;
   if (!kreditStartStr || !params.kaufpreis) return null;
 
+  // Phase F: datumsgenauer Verlauf (Zinsbindung-bis-Daten, erfasste Sondertilgungen,
+  // "Darlehen abbezahlt") — eine Rechnung für Finanzierungs-Reiter, Cashflow und Steuer.
+  if (phasen.length > 0) {
+    const v = darlehensVerlauf(params);
+    if (v) {
+      const von = targetJahr * 12 + (targetMonat !== null ? targetMonat : 0);
+      const bis = targetJahr * 12 + (targetMonat !== null ? targetMonat : 11);
+      let z = 0, t = 0;
+      v.monate.forEach(e => { if (e.idx >= von && e.idx <= bis) { z += e.zins; t += e.tilgung + e.sonder; } });
+      const d0 = new Date(Math.floor(von / 12), von % 12, 1);
+      const d1 = new Date(Math.floor((bis + 1) / 12), (bis + 1) % 12, 1);
+      return { zinsen: Math.round(z), tilgung: Math.round(t), restschuldAnfang: Math.round(v.restschuldAm(d0)), restschuldEnde: Math.round(v.restschuldAm(d1)) };
+    }
+  }
+
   const kreditStart = new Date(kreditStartStr);
   const ksJahr = kreditStart.getFullYear();
   const ksMonat = kreditStart.getMonth(); // 0-indexed
@@ -784,6 +811,13 @@ export const berechneImmoVermoegenswerte = (immo) => {
   const phasen = immo.finanzierungsphasen;
   const jetzt = new Date();
   const aktuellesJahr = jetzt.getFullYear();
+
+  // Phase F: datumsgenauer Verlauf inkl. Sondertilgungen und "abbezahlt"
+  const verlauf = (phasen && phasen.length > 0) ? darlehensVerlauf(immo, jetzt) : null;
+  if (verlauf) {
+    const rsHeute = verlauf.restschuldHeute;
+    return { fremdkapital, restschuld: rsHeute, tilgungJahr: Math.round(verlauf.tilgungImJahr(aktuellesJahr)), freiVermoegen: Math.max(0, marktwert - rsHeute), marktwert };
+  }
 
   if (phasen && phasen.length > 0 && immo.kaufdatum) {
     const kreditStartDatum = new Date(phasen[0]?.kreditStartDatum || immo.kaufdatum);

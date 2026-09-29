@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, berechneMietStatusFuerMonat } from '../utils/miete.js';
-import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur } from '../utils/berechnung.js';
+import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur, berechneMtlCashflow } from '../utils/berechnung.js';
+import { darlehensVerlauf } from '../utils/darlehen.js';
+import FinanzierungsReiter from './FinanzierungsReiter';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
 import MieterhoeungModal from './MieterhoeungModal';
@@ -328,6 +330,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const [qmPreis, setQmPreis] = useState(initialQmPreis.toString());
   const [activeTab, setActiveTab] = useState(() => initialTab || 'uebersicht');
   const [mieterhoeungMieter, setMieterhoeungMieter] = useState(null); // Mieterhöhungs-Modal
+  const [finanzDetailsOffen, setFinanzDetailsOffen] = useState(false);
   // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben —
   // Inhalt konnte mitten in einer langen Ansicht (z.B. Finanzierung) hängen bleiben.
   const scrollContainerRef = useRef(null);
@@ -716,16 +719,19 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             const zinsbindungBisText = finStatusCockpit?.letzte?.ende
               ? finStatusCockpit.letzte.ende.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) + (finStatusCockpit.letzte.endeGeschaetzt ? ' (ungeprüft)' : '')
               : null;
-            const jaehrlicheZinsen = (ergebnis.effRestschuld || 0) * (ergebnis.effZinssatz || 0) / 100;
-            const jaehrlicheTilgung = Math.max(0, (monatlicheRateCockpit * 12) - jaehrlicheZinsen);
-            const schuldenfreiCaText = (jaehrlicheTilgung > 0 && ergebnis.effRestschuld > 0)
-              ? `ca. ${jahrCockpit + Math.round(ergebnis.effRestschuld / jaehrlicheTilgung)}`
+            // Phase F: Restschuld/Tilgung/Schuldenfrei aus dem datumsgenauen Darlehensverlauf
+            const verlaufCockpit = darlehensVerlauf(params);
+            const rsHeuteCockpit = verlaufCockpit ? verlaufCockpit.restschuldHeute : (ergebnis.effRestschuld || 0);
+            const jaehrlicheZinsen = verlaufCockpit ? verlaufCockpit.zinsenImJahr(jahrCockpit) : (ergebnis.effRestschuld || 0) * (ergebnis.effZinssatz || 0) / 100;
+            const jaehrlicheTilgung = verlaufCockpit ? verlaufCockpit.tilgungImJahr(jahrCockpit) : Math.max(0, (monatlicheRateCockpit * 12) - jaehrlicheZinsen);
+            const schuldenfreiCaText = verlaufCockpit?.abbezahltHeute ? 'bereits' : verlaufCockpit?.schuldenfrei ? `ca. ${verlaufCockpit.schuldenfrei.getFullYear()}` : (jaehrlicheTilgung > 0 && rsHeuteCockpit > 0)
+              ? `ca. ${jahrCockpit + Math.round(rsHeuteCockpit / jaehrlicheTilgung)}`
               : null;
             const tilgungsfortschrittProzent = (ergebnis.fremdkapital || 0) > 0
-              ? Math.max(0, Math.min(100, 100 - ((ergebnis.effRestschuld || 0) / ergebnis.fremdkapital) * 100))
+              ? Math.max(0, Math.min(100, 100 - (rsHeuteCockpit / ergebnis.fremdkapital) * 100))
               : 0;
 
-            const nettoEK = aktuellerWert - (ergebnis.effRestschuld || 0);
+            const nettoEK = aktuellerWert - rsHeuteCockpit;
             const aktiverMieter = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
 
             return (
@@ -823,7 +829,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     {aktuellerWert > 0 && (
                       <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde. Grenze änderbar im Menü oben rechts auf der Startseite.`}>
                         <span className="text-xs font-semibold text-emerald-700">Beleihbar frei <span className="font-normal text-gray-400">bei {getBeleihungsgrenze()} %</span></span>
-                        <span className="text-sm font-black text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWert, (ergebnis.effRestschuld || 0)))}</span>
+                        <span className="text-sm font-black text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWert, rsHeuteCockpit))}</span>
                       </div>
                     )}
                     <p className="text-[10px] text-gray-400 mt-2">
@@ -873,7 +879,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <div className="space-y-2.5">
                       <div>
                         <div className="text-[10px] text-gray-400">Restschuld</div>
-                        <div className="text-lg font-black text-gray-800">{formatCurrency(ergebnis.effRestschuld || 0)}</div>
+                        <div className="text-lg font-black text-gray-800">{formatCurrency(rsHeuteCockpit)}</div>
                         <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
                           <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${tilgungsfortschrittProzent}%` }} />
                         </div>
@@ -1449,6 +1455,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             // besser, als sie ist (siehe PDF-Beispiel: 8.700 € nirgends abgebildet).
             const unfinanzierterBetrag = Math.max(0, gesamtinvestition - gesamtEK - kreditbetrag);
 
+            const hatDarlehensVerlauf = !!darlehensVerlauf(params);
             const finanzierungsphasen = params.finanzierungsphasen || [{
               id: 1, name: 'Erstfinanzierung', darlehensTyp: 'annuitaet',
               sollzinssatz: params.zinssatz ?? 4.0, anfangstilgung: params.tilgung ?? 2.0,
@@ -1586,6 +1593,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
             return (
               <div className="space-y-5">
+                <FinanzierungsReiter params={params} updateParams={updateParams} marktwert={aktuellerWert}
+                  cashflowNachTilgung={berechneMtlCashflow({ ...immobilie, ...params })} />
+
 
                 {/* Gesamtinvestition — Abschnitt 3.4: neue Karte oben, mit Warnung
                     falls ein Teil (typischerweise die Kaufnebenkosten) weder als
@@ -1608,6 +1618,19 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   )}
                 </div>
 
+                {/* Teil 3: die Details stehen eingeklappt unter der Auswertung */}
+                {hatDarlehensVerlauf && (
+                  <button onClick={() => setFinanzDetailsOffen(o => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-2xl text-left hover:border-gray-300">
+                    <span>
+                      <span className="block text-sm font-bold text-gray-800">Alle Eingaben im Detail</span>
+                      <span className="block text-xs text-gray-400">Kaufnebenkosten, Eigenkapital, Kreditbetrag, Phasen, Bausparvertrag</span>
+                    </span>
+                    <span className="text-xs font-semibold text-indigo-600">{finanzDetailsOffen ? 'Zuklappen' : 'Aufklappen'}</span>
+                  </button>
+                )}
+                {(finanzDetailsOffen || !hatDarlehensVerlauf) && (
+                  <div className="space-y-5">
                 {/* Kaufnebenkosten */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <KaufnebenkostenManager
@@ -2078,6 +2101,8 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <BausparManager params={params} updateParams={updateParams} />
                 </div>
 
+                                </div>
+                )}
               </div>
             );
           })()}

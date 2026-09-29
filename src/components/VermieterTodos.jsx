@@ -6,6 +6,7 @@ import {
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
+import { darlehensVerlauf } from '../utils/darlehen.js';
 
 // Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
 // "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
@@ -72,7 +73,11 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         : st.stufe === 'gelb'
           ? `Zinsbindung endet ${ende} — noch ${Math.ceil(st.monate)} Monate${ungeprueft}`
           : `Zinsbindung endet ${ende} — Forward-Darlehen wäre jetzt möglich${ungeprueft}`,
-      sub: name,
+      sub: (() => {
+        const v = st.stufe !== 'rot' ? darlehensVerlauf(immo, heute) : null;
+        const rs = v?.phasen[v.phasen.length - 1]?.restschuldBeiZinsbindung;
+        return rs > 0 ? `${name} · Restschuld dann ca. ${formatCurrency(Math.round(rs / 100) * 100)}` : name;
+      })(),
       immoId: immo.id,
       badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis',
       targetTab: 'finanzierung',
