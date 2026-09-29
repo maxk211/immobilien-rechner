@@ -50,6 +50,8 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
   const monateBisZb = aktiv.ende ? monateZwischen(heute, aktiv.ende) : null;
   const zbRot = aktivIstLetzte && monateBisZb != null && monateBisZb < 24 && !v.abbezahltHeute;
   const abbezahlt = v.abbezahltHeute;
+  // Plausibilität (Teil 3, 8): Widerspruch → abhängige Werte aussetzen statt falsch zu rechnen
+  const zbWiderspruch = !!(aktiv.ende && aktiv.start && aktiv.ende.getTime() <= aktiv.start.getTime() + 36 * 3600 * 1000);
 
   const setPhasen = (neu, extra = {}) => updateParams({ ...params, ...extra, finanzierungsphasen: neu, zinssatz: neu[0]?.sollzinssatz ?? params.zinssatz });
 
@@ -163,7 +165,13 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
         )}
 
         {/* So läuft dein Kredit ab */}
-        {!abbezahlt && aktiv.ende && (() => {
+        {zbWiderspruch && (
+          <div className="px-4 py-3 border-t border-red-100 bg-red-50 text-sm text-red-800 flex items-start gap-2">
+            <AlertTriangle size={15} className="shrink-0 mt-0.5"/>
+            <span>Restschuld zum Zinsbindungsende nicht berechenbar: Die Zinsbindung ({ttmmjjjj(aktiv.ende)}) endet vor dem Kreditstart ({ttmmjjjj(aktiv.start)}). Unter „Konditionen bearbeiten“ korrigieren.</span>
+          </div>
+        )}
+        {!abbezahlt && !zbWiderspruch && aktiv.ende && (() => {
           const pEnde = aktiv.idx === letzteIdx ? (v.schuldenfrei || aktiv.ende) : v.phasen[aktiv.idx + 1].start;
           const span = Math.max(1, monateZwischen(aktiv.start, pEnde));
           const w = (a, b) => Math.max(0, Math.min(100, (monateZwischen(a, b) / span) * 100));
@@ -198,7 +206,7 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
       </div>
 
       {/* Anschluss-Szenarien — Teil 3, 5.4 */}
-      {!abbezahlt && aktivIstLetzte && aktiv.ende && aktiv.restschuldBeiZinsbindung >= 1 && aktiv.typ !== 'endfaellig' && (() => {
+      {!abbezahlt && !zbWiderspruch && aktivIstLetzte && aktiv.ende && aktiv.restschuldBeiZinsbindung >= 1 && aktiv.typ !== 'endfaellig' && (() => {
         const rs = aktiv.restschuldBeiZinsbindung;
         const tilg = Math.round((aktiv.anfangstilgung || 2) * 100) / 100;
         const mittel = mittelZins ?? Math.round(aktiv.sollzins * 10) / 10;

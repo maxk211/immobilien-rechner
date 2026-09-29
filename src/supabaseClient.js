@@ -41,6 +41,8 @@ const ZUSATZ_KEYS = [
   'miteigentumsanteil', 'naechsteEigentuemerversammlung', 'mietModus',
   // Phase E: Kostenstruktur
   'hausgeldNichtUmlagefaehig', 'kontofuehrung', 'weitereKostenAktiv', 'weitereKostenChips', 'keller',
+  // Phase G: Plausibilitätsprüfung — Bestätigungen mit Zeitstempel und Feldherkunft
+  'plausiBestaetigt', 'feldHerkunft',
 ];
 const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
