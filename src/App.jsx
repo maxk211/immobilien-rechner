@@ -1628,6 +1628,10 @@ function App() {
             immobilie={selectedImmobilie}
             initialTab={initialTab}
             onClose={() => { setSelectedImmobilie(null); setInitialTab(null); }}
+            onAlleErinnerungen={() => {
+              setSelectedImmobilie(null); setInitialTab(null);
+              setTimeout(() => document.getElementById('was-steht-an')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+            }}
             onEdit={() => {}}
             onSave={async (data) => {
               try {

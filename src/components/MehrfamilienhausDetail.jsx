@@ -174,7 +174,7 @@ const MFH_OBJEKT_IDS = ['stammdaten', 'kaufwert', 'investitionen', 'zaehler', 'd
 
 // ─── MehrfamilienhausDetail ───────────────────────────────────────────────────
 const MehrfamilienhausDetail = ({
-  immobilie, onClose, onEdit, onSave, initialTab,
+  immobilie, onClose, onEdit, onSave, initialTab, onAlleErinnerungen,
   mieterListe = [], onSaveMieter, onDeleteMieter,
   nkAbrechnungen = [], onSaveNK, onDeleteNK,
   portfolio = [], aufgaben = [],
@@ -706,6 +706,7 @@ const MehrfamilienhausDetail = ({
             <div className="space-y-4">
               {/* Jetzt dran — je Aufgabe die passende Handlung (Teil 1) */}
               <JetztDran
+                onAlle={onAlleErinnerungen}
                 aufgaben={eigeneAufgaben}
                 handler={{
                   onOeffnen: (tab) => setActiveTab(MFH_TAB_MAP[tab] ?? tab),

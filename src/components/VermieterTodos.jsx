@@ -4,7 +4,7 @@ import {
   Key, TrendingUp, CalendarDays, AlertTriangle, Building2, ScrollText,
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuelleUntermiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
@@ -119,6 +119,39 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         immoId: immo.id,
         badge: tageUeberfaellig >= 10 ? `${tag}. des Monats` : 'Prüfen',
         targetTab: 'mieteinnahmen',
+      });
+    }
+  });
+
+  // ── 2b. Untermiete offen (Anmieten und untervermieten) ─────────────────
+  // Gleiche Logik wie bei Kaufobjekten: ab dem Fälligkeitstag, nur wenn der
+  // Hauptmietvertrag läuft und Zimmer untervermietet sind.
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp !== 'mietimmobilie' || immo.aktiv === false) return;
+    const zimmer = Number(immo.anzahlZimmerVermietet) || 0;
+    if (zimmer <= 0) return;
+    const start = immo.mietvertragStart ? new Date(immo.mietvertragStart) : null;
+    const ende = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
+    const faelligkeitstag = immo.mieteFaelligkeitstag ?? 3;
+    const stichtag = new Date(aktuellesJahr, aktuellerMonat - 1, faelligkeitstag);
+    if (heute.getDate() < faelligkeitstag) return;
+    if ((start && start > stichtag) || (ende && ende < stichtag)) return;
+    const erwartet = immo.dauerauftrag ? (immo.dauerauftragBetrag || zimmer * getAktuelleUntermiete(immo)) : zimmer * getAktuelleUntermiete(immo);
+    if (!(erwartet > 0)) return;
+    const { status } = berechneMietStatusFuerMonat(immo.mietEingaenge, aktuellesJahr, aktuellerMonat, erwartet, immo.dauerauftrag);
+    if (status === 'offen' || status === 'teilweise' || status === 'nicht_bezahlt') {
+      const tageUeberfaellig = heute.getDate() - faelligkeitstag;
+      todos.push({
+        id: `miete-ausstehend-${immo.id}`,
+        priority: status === 'nicht_bezahlt' || tageUeberfaellig >= 10 ? 'rot' : 'gelb',
+        icon: <TrendingDown size={16} />,
+        kategorie: 'Miete',
+        titel: `Untermiete ${heute.toLocaleDateString('de-DE', { month: 'long' })} ${status === 'teilweise' ? 'nur teilweise da' : 'offen'} · ${formatCurrency(erwartet)}${tageUeberfaellig > 0 ? ` · seit ${tageUeberfaellig} Tag${tageUeberfaellig !== 1 ? 'en' : ''}` : ''}`,
+        sub: `${immo.name || immo.adresse || 'Wohnung'} · ${zimmer} Zimmer`,
+        immoId: immo.id,
+        badge: tageUeberfaellig >= 10 ? `${heute.getDate()}. des Monats` : 'Prüfen',
+        targetTab: 'mieteinnahmen',
+        buchen: { betrag: erwartet, jahr: aktuellesJahr, monat: aktuellerMonat },
       });
     }
   });
@@ -513,7 +546,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
   const anzahlGrau = todos.filter(t => t.priority === 'grau').length;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
+    <div id="was-steht-an" className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden scroll-mt-4">
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-all select-none"
