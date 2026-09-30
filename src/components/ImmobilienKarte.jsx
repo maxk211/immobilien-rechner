@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete, getAktuelleUntermiete } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, getAktuellerGesamtwert } from '../utils/berechnung.js';
 import { cashflowVorNach, beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 
@@ -168,7 +168,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Wohnfläche</div>
-                <div className="text-sm font-semibold text-gray-800">{immobilie.wohnflaeche} m²</div>
+                <div className="text-sm font-semibold text-gray-800">{immobilie.wohnflaeche || '–'} m²</div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Kaltmiete</div>
@@ -179,7 +179,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
             <>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Eigene Miete</div>
-                <div className="text-sm font-semibold text-red-500">−{formatCurrency(immobilie.eigeneWarmmiete)}/Mon</div>
+                <div className="text-sm font-semibold text-red-500">−{formatCurrency(getAktuelleWarmmiete(immobilie))}/Mon</div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Untermiet-Einnahmen</div>
@@ -187,7 +187,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Wohnfläche</div>
-                <div className="text-sm font-semibold text-gray-800">{immobilie.wohnflaeche} m²</div>
+                <div className="text-sm font-semibold text-gray-800">{immobilie.wohnflaeche || '–'} m²</div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Vermietet</div>

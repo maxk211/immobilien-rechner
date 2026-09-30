@@ -196,6 +196,7 @@ const MehrfamilienhausDetail = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [cfWE, setCfWE] = useState('gesamt');       // aktive WE im Cashflow-Tab
   const [einnahmenWE, setEinnahmenWE] = useState(0); // aktive WE im Einnahmen-Tab
+  const [gJahr, setGJahr] = useState(new Date().getFullYear()); // Jahr der Gesamt-Einnahmen-Übersicht (Hook muss auf oberster Ebene stehen)
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);
@@ -1472,7 +1473,7 @@ const MehrfamilienhausDetail = ({
                       zbWarnung = { ablaufDatum: zr.ende, monateZumAblauf: Math.max(0, Math.ceil(finStatus.monate)), abgelaufen: finStatus.stufe === 'rot', kritisch: finStatus.monate < 12 };
                     }
                     return (
-                      <div key={phase.id} className={`bg-white border-2 rounded-2xl p-5 shadow-sm ${idx === 0 ? 'border-indigo-200' : 'border-gray-200'}`}>
+                      <div key={phase.id ?? idx} className={`bg-white border-2 rounded-2xl p-5 shadow-sm ${idx === 0 ? 'border-indigo-200' : 'border-gray-200'}`}>
                         {zbWarnung && (
                           <div className={`mb-4 p-3 rounded-xl flex items-start gap-3 ${zbWarnung.abgelaufen ? 'bg-red-100 border border-red-300' : zbWarnung.kritisch ? 'bg-orange-100 border border-orange-300' : 'bg-amber-50 border border-amber-200'}`}>
                             <AlertTriangle size={18} className={zbWarnung.abgelaufen ? 'text-red-600' : 'text-amber-600'}/>
@@ -1788,7 +1789,6 @@ const MehrfamilienhausDetail = ({
 
                     {/* Gesamt-Einnahmen-Übersicht */}
                     {einnahmenWE === 'gesamt' && (() => {
-                      const [gJahr, setGJahr] = useState(aktJahr);
                       const MONATE = Array.from({ length: 12 }, (_, i) => i + 1);
                       const rows = MONATE.map(m => {
                         const erwartet = wohnungen.reduce((s, w) => {
