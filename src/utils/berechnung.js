@@ -337,6 +337,17 @@ export const kostenStruktur = (immo, get = (f) => Number(immo?.[f]) || 0, jahr =
 
 // Rendite-Berechnung
 export const berechneRendite = (params) => {
+  // Fehlende Zahlen (leer/null) nicht als NaN durchrechnen — gleiche Defaults wie
+  // berechneRestschuld/berechneImmoVermoegenswerte (Kaufnebenkosten 10 %).
+  const zahl = (v, d = 0) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? d : Number(v));
+  params = {
+    ...params,
+    kaufpreis: zahl(params?.kaufpreis),
+    kaufnebenkosten: zahl(params?.kaufnebenkosten, 10),
+    kaltmiete: zahl(params?.kaltmiete),
+    instandhaltung: zahl(params?.instandhaltung),
+    verwaltung: zahl(params?.verwaltung),
+  };
   const {
     kaufpreis, zinssatz, tilgung, laufzeit,
     kaltmiete, nebenkosten, instandhaltung, verwaltung,

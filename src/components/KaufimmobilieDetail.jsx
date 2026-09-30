@@ -209,7 +209,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
 
   // Berechne initiale EK-Werte basierend auf altem eigenkapital
-  const initKaufnebenkosten = immobilie.kaufpreis * ((immobilie.kaufnebenkosten ?? 10) / 100);
+  const initKaufnebenkosten = (Number(immobilie.kaufpreis) || 0) * ((immobilie.kaufnebenkosten ?? 10) / 100);
   const initEkFuerNebenkosten = immobilie.ekFuerNebenkosten ?? initKaufnebenkosten;
   const initEkFuerKaufpreis = immobilie.ekFuerKaufpreis ?? (immobilie.eigenkapital ? Math.max(0, immobilie.eigenkapital - initKaufnebenkosten) : 0);
 
@@ -1492,8 +1492,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           )}
 
           {activeTab === 'finanzierung' && (() => {
-            const kaufnebenkostenAbsolut = params.kaufpreis * ((params.kaufnebenkosten ?? 10) / 100);
-            const gesamtinvestition = params.kaufpreis + kaufnebenkostenAbsolut;
+            const kpFin = Number(params.kaufpreis) || 0; // leeres Feld nicht als NaN rechnen
+            const kaufnebenkostenAbsolut = kpFin * ((params.kaufnebenkosten ?? 10) / 100);
+            const gesamtinvestition = kpFin + kaufnebenkostenAbsolut;
             const ekFuerNebenkosten = params.ekFuerNebenkosten ?? kaufnebenkostenAbsolut;
             const ekFuerKaufpreis = params.ekFuerKaufpreis ?? 0;
             const gesamtEK = ekFuerNebenkosten + ekFuerKaufpreis;
@@ -1719,12 +1720,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         <span className="text-xs text-gray-400">{params.kaufpreis > 0 ? ((ekFuerKaufpreis / params.kaufpreis) * 100).toFixed(1) : 0}%</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <input type="range" min={0} max={params.kaufpreis} step={5000}
+                        <input type="range" min={0} max={kpFin} step={5000}
                           value={ekFuerKaufpreis}
                           onChange={e => updateParams({ ...params, ekFuerKaufpreis: parseFloat(e.target.value) })}
                           className="flex-1" />
                         <input type="number" value={Math.round(ekFuerKaufpreis)}
-                          onChange={e => updateParams({ ...params, ekFuerKaufpreis: Math.min(params.kaufpreis, parseFloat(e.target.value) || 0) })}
+                          onChange={e => updateParams({ ...params, ekFuerKaufpreis: Math.min(kpFin, parseFloat(e.target.value) || 0) })}
                           className="w-28 px-2 py-1 border rounded text-right text-base sm:text-sm" />
                         <span className="text-sm text-gray-500">€</span>
                       </div>
