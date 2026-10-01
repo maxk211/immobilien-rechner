@@ -12,14 +12,27 @@ const MAX_MONATE = 60 * 12;
 const monatsIndex = (d) => d.getFullYear() * 12 + d.getMonth();
 const ausIndex = (i) => new Date(Math.floor(i / 12), i % 12, 1);
 
+// Anfangs-Fremdkapital — EINE Regel für Karte, Cockpit, Zahlen-Reiter, Steuer und Dashboard.
+// UX-Gesamtpaket B12: Die Erwerbsart entscheidet nie darüber, ob ein Darlehen zählt —
+// allein das Vorhandensein eines Darlehens. Ein geschenktes oder geerbtes Objekt mit
+// Darlehen (Betrag oder Finanzierungsphase) hat also Kreditrate und Restschuld.
+// Eigenkapital-Vorgaben wie in der Detailansicht: fehlt "EK für Nebenkosten", gelten
+// die Nebenkosten als selbst bezahlt; fehlt "EK für Kaufpreis", der Rest des Gesamt-EK.
 export const anfangsFremdkapital = (immo) => {
-  if (immo.geschenkt || immo.vollEigenfinanziert) return 0;
-  if (immo.finanzierungsbetrag !== null && immo.finanzierungsbetrag !== undefined) return Number(immo.finanzierungsbetrag) || 0;
-  const kNK = (immo.kaufpreis || 0) * ((immo.kaufnebenkosten ?? 10) / 100);
-  const ek = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
-    ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
-    : (immo.eigenkapital || 0);
-  return Math.max(0, (immo.kaufpreis || 0) + kNK - ek);
+  if (!immo || immo.vollEigenfinanziert) return 0;
+  const fb = immo.finanzierungsbetrag;
+  const explizit = fb !== null && fb !== undefined && fb !== '' ? (Number(fb) || 0) : null;
+  const hatPhasen = (immo.finanzierungsphasen || []).length > 0;
+  if (immo.geschenkt) {
+    if (explizit !== null) return explizit;
+    if (!hatPhasen) return 0; // geschenkt ohne Darlehen: kein Kredit konstruieren
+  }
+  if (explizit !== null) return explizit;
+  const kp = Number(immo.kaufpreis) || 0;
+  const kNK = kp * ((immo.kaufnebenkosten ?? 10) / 100);
+  const ekNK = immo.ekFuerNebenkosten ?? kNK;
+  const ekKP = immo.ekFuerKaufpreis ?? (immo.eigenkapital ? Math.max(0, Number(immo.eigenkapital) - kNK) : 0);
+  return Math.max(0, kp + kNK - (Number(ekNK) || 0) - (Number(ekKP) || 0));
 };
 
 export const phasenZins = (phase, immo) => Number(phase.sollzinssatz ?? phase.zinssatz ?? immo?.zinssatz ?? 4) || 0;

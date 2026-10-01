@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, berechneMietStatusFuerMonat } from '../utils/miete.js';
-import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur, berechneMtlCashflow } from '../utils/berechnung.js';
+import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur, berechneMtlCashflow, cashflowMonat } from '../utils/berechnung.js';
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import FinanzierungsReiter from './FinanzierungsReiter';
 import PlausiPruefung from './PlausiPruefung';
@@ -35,6 +35,7 @@ import {
   TrendingUp, TrendingDown, Building2, Key, User, Search, Upload, Download,
   Trash2, FolderOpen, Loader2, ClipboardList, Zap, Receipt, Hash, MoreVertical,
 } from 'lucide-react';
+import ZahlInput from './ZahlInput';
 
 // ─── Dokumente-Tab ────────────────────────────────────────────────────────────
 const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
@@ -251,6 +252,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     kaufnebenkostenPositionen: immobilie.kaufnebenkostenPositionen || null,
     bundesland: immobilie.bundesland || '', // Phase H: kein stiller Vorgabewert — Adresse oder Auswahl
     finanzierungsbetrag: immobilie.finanzierungsbetrag ?? null,
+    geschenkt: !!immobilie.geschenkt,
+    vollEigenfinanziert: !!immobilie.vollEigenfinanziert,
+    erwerbsart: immobilie.erwerbsart || null,
     finanzierungsphasen: immobilie.finanzierungsphasen || [
       {
         id: 1,
@@ -726,11 +730,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
             const kaufjahrCockpit = params.kaufdatum ? new Date(params.kaufdatum).getFullYear() : jahrCockpit;
             const kaufmonatCockpit = params.kaufdatum ? new Date(params.kaufdatum).getMonth() + 1 : 1;
 
-            const ksCockpit = kostenStruktur(params, (f) => getAktuellerWert(params, f));
-            const monatlicheEinnahmen = getAktuelleMiete(params) + ksCockpit.nkImCashflow + (ergebnis.stellplatzMonatsMiete || 0);
-            const monatlicherBetrieb = ksCockpit.bewirtschaftung;
-            const monatlicheRateCockpit = ergebnis.monatlicheRate || 0;
-            const monatlichesErgebnis = ergebnis.cashflowMonatlich || 0;
+            // B12/B15: dieselbe Rechnung wie Objektkarte, Zahlen-Reiter und Dashboard
+            const cfCockpit = cashflowMonat({ ...immobilie, ...params });
+            const monatlicheEinnahmen = cfCockpit.einnahmen;
+            const monatlicherBetrieb = cfCockpit.betrieb;
+            const monatlicheRateCockpit = cfCockpit.rate;
+            const bausparCockpit = cfCockpit.bauspar;
+            const monatlichesErgebnis = cfCockpit.nach;
 
             // Finanzierungs-Kurzfassung — "ca."-Schätzung für Tilgungstempo/Schuldenfreiheit,
             // exakte Berechnung inkl. Sondertilgungen bleibt im Finanzierung-Tab.
@@ -847,17 +853,19 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Cashflow pro Monat</p>
                       <span className="text-xs text-indigo-600 font-semibold">Details →</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className={`grid ${bausparCockpit > 0 ? 'grid-cols-5' : 'grid-cols-4'} gap-2 text-center`}>
                       <div><div className="text-[10px] text-gray-400">Einnahmen</div><div className="text-sm font-bold text-emerald-600">{formatCurrency(monatlicheEinnahmen)}</div></div>
                       <div><div className="text-[10px] text-gray-400">Betrieb</div><div className="text-sm font-bold text-red-500">-{formatCurrency(monatlicherBetrieb)}</div></div>
                       <div><div className="text-[10px] text-gray-400">Kreditrate</div><div className="text-sm font-bold text-red-500">-{formatCurrency(monatlicheRateCockpit)}</div></div>
+                      {/* Bausparrate nur, wenn ein Vertrag hängt — violett wie Tilgung, baut Vermögen auf */}
+                      {bausparCockpit > 0 && <div><div className="text-[10px] text-gray-400">Bausparrate</div><div className="text-sm font-bold text-indigo-600">-{formatCurrency(bausparCockpit)}</div></div>}
                       <div><div className="text-[10px] text-gray-400">Ergebnis</div><div className={`text-base font-black ${monatlichesErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{monatlichesErgebnis >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis)}</div></div>
                     </div>
                     {/* Teil 3, Abschnitt 9: Cashflow vor und nach Tilgung */}
                     <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-baseline justify-between gap-2 text-xs">
                       <span className="text-gray-500">Nach Tilgung <strong className={monatlichesErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}>{monatlichesErgebnis >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis)}</strong></span>
-                      <span className="text-gray-500">Vor Tilgung <strong className={monatlichesErgebnis + jaehrlicheTilgung / 12 >= 0 ? 'text-emerald-600' : 'text-red-600'}>{monatlichesErgebnis + jaehrlicheTilgung / 12 >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis + jaehrlicheTilgung / 12)}</strong></span>
-                      <span className="text-gray-400">{jaehrlicheTilgung > 0 ? `davon ${formatCurrency(jaehrlicheTilgung / 12)} Tilgung — baut Eigenkapital auf` : 'schuldenfrei, keine Tilgung'}</span>
+                      <span className="text-gray-500">Vor Tilgung <strong className={cfCockpit.vor >= 0 ? 'text-emerald-600' : 'text-red-600'}>{cfCockpit.vor >= 0 ? '+' : ''}{formatCurrency(cfCockpit.vor)}</strong></span>
+                      <span className="text-gray-400">{cfCockpit.tilgung > 0 ? `davon ${formatCurrency(cfCockpit.tilgung)} Tilgung — baut Eigenkapital auf` : 'schuldenfrei, keine Tilgung'}</span>
                     </div>
                   </button>
 
@@ -988,7 +996,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Wohnfläche</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <ZahlInput
                         type="number"
                         value={params.wohnflaeche}
                         onChange={(e) => {
@@ -1006,7 +1014,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   </div>
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Zimmer</label>
-                    <input
+                    <ZahlInput
                       type="number"
                       value={params.zimmer}
                       onChange={(e) => updateParams({...params, zimmer: parseFloat(e.target.value) || 0})}
@@ -1017,7 +1025,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   </div>
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Baujahr</label>
-                    <input
+                    <ZahlInput
                       type="number"
                       value={params.baujahr}
                       onChange={(e) => updateParams({...params, baujahr: e.target.value === '' ? '' : (parseInt(e.target.value) || '')})}
@@ -1107,7 +1115,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 <div className="mb-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preis pro m² eingeben</label>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <input
+                    <ZahlInput
                       type="number"
                       value={qmPreis}
                       onChange={(e) => handleQmPreisChange(e.target.value)}
@@ -1125,7 +1133,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     {stellplatzWert > 0 ? 'Wohnungswert' : 'Berechneter Gesamtwert'}
                   </label>
                   <div className="flex items-center gap-2">
-                    <input
+                    <ZahlInput
                       type="number"
                       value={params.geschaetzterWert || ''}
                       onChange={(e) => handleGesamtwertChange(e.target.value)}
@@ -1258,7 +1266,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           </div>
                           <div>
                             <label className="block text-xs text-gray-500 mb-1">Anzahl Stellplätze</label>
-                            <input
+                            <ZahlInput
                               type="number" min={1} max={20}
                               value={sp.anzahl || 1}
                               onChange={e => updateSp({ anzahl: parseInt(e.target.value) || 1 })}
@@ -1268,7 +1276,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           <div>
                             <label className="block text-xs text-gray-500 mb-1">Kaufpreis-Anteil</label>
                             <div className="flex items-center gap-1">
-                              <input
+                              <ZahlInput
                                 type="number" min={0} step={1000}
                                 value={sp.kaufpreisAnteil || 0}
                                 onChange={e => updateSp({ kaufpreisAnteil: parseFloat(e.target.value) || 0 })}
@@ -1297,7 +1305,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               <div className="flex-1">
                                 <label className="block text-xs text-gray-500 mb-1">Miete pro Stellplatz / Monat</label>
                                 <div className="flex items-center gap-1">
-                                  <input
+                                  <ZahlInput
                                     type="number" min={0} step={5}
                                     value={sp.monatlicheMiete || 0}
                                     onChange={e => updateSp({ monatlicheMiete: parseFloat(e.target.value) || 0 })}
@@ -1441,7 +1449,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               className={`flex-1 px-3 py-1.5 border rounded-lg text-base sm:text-sm bg-white ${p.isUser ? 'border-indigo-300 font-semibold' : 'border-gray-300'}`}
                             />
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <input
+                              <ZahlInput
                                 type="number" min="0" max="100" step="0.5"
                                 value={p.anteil}
                                 onChange={e => updatePartner(p.id, { anteil: parseFloat(e.target.value) || 0 })}
@@ -1708,7 +1716,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           value={ekFuerNebenkosten}
                           onChange={e => updateParams({ ...params, ekFuerNebenkosten: parseFloat(e.target.value) })}
                           className="flex-1" />
-                        <input type="number" value={Math.round(ekFuerNebenkosten)}
+                        <ZahlInput type="number" value={Math.round(ekFuerNebenkosten)}
                           onChange={e => updateParams({ ...params, ekFuerNebenkosten: Math.min(kaufnebenkostenAbsolut, parseFloat(e.target.value) || 0) })}
                           className="w-28 px-2 py-1 border rounded text-right text-base sm:text-sm" />
                         <span className="text-sm text-gray-500">€</span>
@@ -1727,7 +1735,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           value={ekFuerKaufpreis}
                           onChange={e => updateParams({ ...params, ekFuerKaufpreis: parseFloat(e.target.value) })}
                           className="flex-1" />
-                        <input type="number" value={Math.round(ekFuerKaufpreis)}
+                        <ZahlInput type="number" value={Math.round(ekFuerKaufpreis)}
                           onChange={e => updateParams({ ...params, ekFuerKaufpreis: Math.min(kpFin, parseFloat(e.target.value) || 0) })}
                           className="w-28 px-2 py-1 border rounded text-right text-base sm:text-sm" />
                         <span className="text-sm text-gray-500">€</span>
@@ -1747,7 +1755,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <div className="md:col-span-1">
                       <label className="block text-xs text-gray-500 mb-1">Kreditbetrag</label>
                       <div className="flex items-center gap-2">
-                        <input type="number" step={1000}
+                        <ZahlInput type="number" step={1000}
                           value={params.finanzierungsbetrag ?? berechneterKredit}
                           onChange={e => updateParams({ ...params, finanzierungsbetrag: parseFloat(e.target.value) || 0 })}
                           className="w-full px-3 py-2 border-2 border-indigo-300 rounded-lg text-lg font-bold text-right focus:ring-2 focus:ring-indigo-400"
@@ -1941,7 +1949,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                           <label className="block text-xs font-semibold text-amber-800 mb-1"><Landmark size={12} className='inline mr-1'/>Tatsächliche Restschuld (Startbetrag laut Bank)</label>
                           <div className="flex items-center gap-2">
-                            <input type="number" step={1000} value={phase.restschuldOverride ?? ''}
+                            <ZahlInput type="number" step={1000} value={phase.restschuldOverride ?? ''}
                               placeholder={`Berechnet: ${formatCurrency(phasenMitBerechnung[idx-1]?.restschuldNachZinsbindung ?? 0)}`}
                               onChange={e => updatePhase(phase.id, { restschuldOverride: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
                               className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-base sm:text-sm" />
@@ -1960,7 +1968,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Sollzinssatz p.a.</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
+                                <ZahlInput type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
                                   onChange={e => updatePhase(phase.id, { sollzinssatz: parseFloat(e.target.value) || 0 })}
                                   className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-indigo-400" />
                                 <span className="text-xs text-gray-400">%</span>
@@ -1969,7 +1977,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Anfangstilgung p.a.</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} max={20} step={0.1} value={phase.anfangstilgung ?? 2}
+                                <ZahlInput type="number" min={0} max={20} step={0.1} value={phase.anfangstilgung ?? 2}
                                   onChange={e => updatePhase(phase.id, { anfangstilgung: parseFloat(e.target.value) || 0 })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm focus:border-indigo-400" />
                                 <span className="text-xs text-gray-400">%</span>
@@ -1978,7 +1986,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Monatl. Rate (optional)</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} step={10} value={phase.monatlicherBetrag || ''}
+                                <ZahlInput type="number" min={0} step={10} value={phase.monatlicherBetrag || ''}
                                   placeholder={phase.rate ? String(phase.rate) : 'Berechnet'}
                                   onChange={e => updatePhase(phase.id, { monatlicherBetrag: e.target.value === '' ? null : parseFloat(e.target.value) || null })}
                                   className="w-full px-2 py-2 border-2 border-indigo-200 bg-blue-50 rounded-lg text-right font-bold focus:border-indigo-500" />
@@ -1989,7 +1997,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Zinsbindung <InfoHint text="Zeitraum, für den der Sollzins festgeschrieben ist. Danach ist für die Restschuld eine Anschlussfinanzierung zu aktuellen Konditionen nötig." /></label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
+                                <ZahlInput type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
                                   onChange={e => updatePhase(phase.id, { zinsbindung: parseInt(e.target.value) || 10 })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">J.</span>
@@ -1998,13 +2006,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Sondertilgung/Jahr <InfoHint text="Zusätzliche freiwillige Tilgung außer der Rate, die die Restschuld schneller reduziert. Viele Banken erlauben nur einen bestimmten Prozentsatz der Darlehenssumme pro Jahr — siehe Kreditvertrag." /></label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
+                                <ZahlInput type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
                                   onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">€</span>
                               </div>
                               <div className="flex items-center gap-1 mt-1">
-                                <input type="number" min={0} max={100} step={1} value={phase.sondertilgungErlaubtProzent || ''}
+                                <ZahlInput type="number" min={0} max={100} step={1} value={phase.sondertilgungErlaubtProzent || ''}
                                   placeholder="lt. Vertrag"
                                   onChange={e => updatePhase(phase.id, { sondertilgungErlaubtProzent: e.target.value === '' ? null : parseFloat(e.target.value) })}
                                   className="w-full px-2 py-1 border border-gray-200 rounded-lg text-right text-xs" />
@@ -2038,7 +2046,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Sollzinssatz p.a.</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
+                                <ZahlInput type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
                                   onChange={e => updatePhase(phase.id, { sollzinssatz: parseFloat(e.target.value) || 0 })}
                                   className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-indigo-400" />
                                 <span className="text-xs text-gray-400">%</span>
@@ -2047,7 +2055,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Tilgungssatz p.a.</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} max={20} step={0.1} value={phase.tilgungssatz ?? 2}
+                                <ZahlInput type="number" min={0} max={20} step={0.1} value={phase.tilgungssatz ?? 2}
                                   onChange={e => updatePhase(phase.id, { tilgungssatz: parseFloat(e.target.value) || 0, monatlicheTilgung: null })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">%</span>
@@ -2056,7 +2064,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Oder: feste monatl. Tilgung</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} step={10} value={phase.monatlicheTilgung || ''}
+                                <ZahlInput type="number" min={0} step={10} value={phase.monatlicheTilgung || ''}
                                   placeholder="Berechnet"
                                   onChange={e => updatePhase(phase.id, { monatlicheTilgung: e.target.value === '' ? null : parseFloat(e.target.value) || null })}
                                   className="w-full px-2 py-2 border-2 border-indigo-200 bg-blue-50 rounded-lg text-right font-bold focus:border-indigo-500" />
@@ -2066,7 +2074,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Zinsbindung <InfoHint text="Zeitraum, für den der Sollzins festgeschrieben ist. Danach ist für die Restschuld eine Anschlussfinanzierung zu aktuellen Konditionen nötig." /></label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
+                                <ZahlInput type="number" min={1} max={30} step={1} value={phase.zinsbindung ?? 10}
                                   onChange={e => updatePhase(phase.id, { zinsbindung: parseInt(e.target.value) || 10 })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">J.</span>
@@ -2075,13 +2083,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">Sondertilgung/Jahr <InfoHint text="Zusätzliche freiwillige Tilgung außer der Rate, die die Restschuld schneller reduziert. Viele Banken erlauben nur einen bestimmten Prozentsatz der Darlehenssumme pro Jahr — siehe Kreditvertrag." /></label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
+                                <ZahlInput type="number" min={0} step={1000} value={phase.sondertilgungJaehrlich || 0}
                                   onChange={e => updatePhase(phase.id, { sondertilgungJaehrlich: parseFloat(e.target.value) || 0 })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">€</span>
                               </div>
                               <div className="flex items-center gap-1 mt-1">
-                                <input type="number" min={0} max={100} step={1} value={phase.sondertilgungErlaubtProzent || ''}
+                                <ZahlInput type="number" min={0} max={100} step={1} value={phase.sondertilgungErlaubtProzent || ''}
                                   placeholder="lt. Vertrag"
                                   onChange={e => updatePhase(phase.id, { sondertilgungErlaubtProzent: e.target.value === '' ? null : parseFloat(e.target.value) })}
                                   className="w-full px-2 py-1 border border-gray-200 rounded-lg text-right text-xs" />
@@ -2112,7 +2120,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Sollzinssatz p.a.</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
+                                <ZahlInput type="number" min={0} max={15} step={0.01} value={phase.sollzinssatz ?? 4}
                                   onChange={e => updatePhase(phase.id, { sollzinssatz: parseFloat(e.target.value) || 0 })}
                                   className="w-full px-2 py-2 border-2 border-gray-300 rounded-lg text-right font-semibold focus:border-indigo-400" />
                                 <span className="text-xs text-gray-400">%</span>
@@ -2121,7 +2129,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Laufzeit</label>
                               <div className="flex items-center gap-1">
-                                <input type="number" min={1} max={30} step={1} value={phase.laufzeit ?? 10}
+                                <ZahlInput type="number" min={1} max={30} step={1} value={phase.laufzeit ?? 10}
                                   onChange={e => updatePhase(phase.id, { laufzeit: parseInt(e.target.value) || 10 })}
                                   className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-base sm:text-sm" />
                                 <span className="text-xs text-gray-400">J.</span>

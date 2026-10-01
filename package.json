@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "sitemap": "node scripts/generate-sitemap.js",
     "markdown": "node scripts/generate-markdown.js",
-    "verify:agentic": "node scripts/verify-agentic-readiness.mjs"
+    "verify:agentic": "node scripts/verify-agentic-readiness.mjs",
+    "test:cashflow": "node tests/run.mjs tests/cashflow-gleichheit.jsx"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.0",

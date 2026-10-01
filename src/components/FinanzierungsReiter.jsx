@@ -3,6 +3,7 @@ import { MoreHorizontal, X, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle,
 import { formatCurrency } from '../utils/format.js';
 import { darlehensVerlauf, mitSondertilgung, anschlussRate, phasenZins } from '../utils/darlehen.js';
 import { beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
+import ZahlInput from './ZahlInput';
 
 // Finanzierungs-Reiter (UX-Paket Teil 3, Abschnitte 5–7):
 // Kopfleiste · Phasen-Zeitstrahl · abgeschlossene Phasen eingeklappt · aktive Phase mit
@@ -240,7 +241,7 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
                   <div className="text-xs text-gray-500 flex items-center gap-1">
                     {s.label}{' '}
                     {s.editierbar ? (
-                      <input type="number" step="0.1" min="0" value={mittel}
+                      <ZahlInput type="number" step="0.1" min="0" value={mittel}
                         onChange={e => setMittelZins(parseFloat(e.target.value) || 0)}
                         className="w-16 px-1 py-0.5 border border-indigo-200 rounded text-right text-base sm:text-xs bg-white" />
                     ) : <strong>{pct(s.zins, 1)}</strong>}
@@ -421,15 +422,15 @@ function KonditionenPanel({ params, idx, verlauf, cashflowNachTilgung, onClose, 
           <div className="space-y-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Betrag und Zins</p>
             <label className="block text-xs text-gray-500">{idx === 0 ? 'Darlehensbetrag' : 'Startbetrag'}
-              <input type="number" min="0" step="100" value={betrag} onChange={e => setBetrag(e.target.value)} className={`${inputCls} mt-1`} />
+              <ZahlInput type="number" min="0" step="100" value={betrag} onChange={e => setBetrag(e.target.value)} className={`${inputCls} mt-1`} />
               {idx > 0 && <span className="text-[10px] text-gray-400">Aus Phase {idx} übernommen · ändern, falls die Ablösesumme anders war</span>}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-xs text-gray-500">Sollzins p. a.
-                <input type="number" step="0.01" min="0" value={p.sollzinssatz ?? ''} onChange={e => set({ sollzinssatz: parseFloat(e.target.value) || 0 })} className={`${inputCls} mt-1`} />
+                <ZahlInput type="number" step="0.01" min="0" value={p.sollzinssatz ?? ''} onChange={e => set({ sollzinssatz: parseFloat(e.target.value) || 0 })} className={`${inputCls} mt-1`} />
               </label>
               <label className="block text-xs text-gray-500">Effektivzins
-                <input type="number" step="0.01" min="0" value={p.effektivzins ?? ''} placeholder="optional" onChange={e => set({ effektivzins: e.target.value === '' ? null : parseFloat(e.target.value) })} className={`${inputCls} mt-1`} />
+                <ZahlInput type="number" step="0.01" min="0" value={p.effektivzins ?? ''} placeholder="optional" onChange={e => set({ effektivzins: e.target.value === '' ? null : parseFloat(e.target.value) })} className={`${inputCls} mt-1`} />
               </label>
             </div>
           </div>
@@ -444,7 +445,7 @@ function KonditionenPanel({ params, idx, verlauf, cashflowNachTilgung, onClose, 
               </div>
               {kenne === 'tilgung' ? (
                 <label className="block text-xs text-gray-500">{typ === 'tilgung' ? 'Tilgungssatz p. a.' : 'Anfangstilgung p. a.'}
-                  <input type="number" step="0.01" min="0"
+                  <ZahlInput type="number" step="0.01" min="0"
                     value={(typ === 'tilgung' ? p.tilgungssatz : p.anfangstilgung) ?? ''}
                     onChange={e => set(typ === 'tilgung' ? { tilgungssatz: parseFloat(e.target.value) || 0, monatlicheTilgung: null } : { anfangstilgung: parseFloat(e.target.value) || 0, monatlicherBetrag: null })}
                     className={`${inputCls} mt-1`} />
@@ -452,7 +453,7 @@ function KonditionenPanel({ params, idx, verlauf, cashflowNachTilgung, onClose, 
                 </label>
               ) : (
                 <label className="block text-xs text-gray-500">{typ === 'tilgung' ? 'Feste Tilgung pro Monat' : 'Monatsrate'}
-                  <input type="number" step="1" min="0"
+                  <ZahlInput type="number" step="1" min="0"
                     value={(typ === 'tilgung' ? p.monatlicheTilgung : p.monatlicherBetrag) ?? ''}
                     onChange={e => set(typ === 'tilgung' ? { monatlicheTilgung: parseFloat(e.target.value) || null } : { monatlicherBetrag: parseFloat(e.target.value) || null })}
                     className={`${inputCls} mt-1`} />
@@ -475,7 +476,7 @@ function KonditionenPanel({ params, idx, verlauf, cashflowNachTilgung, onClose, 
               </label>
             </div>
             <label className="block text-xs text-gray-500">Sondertilgung erlaubt (% vom Darlehen pro Jahr)
-              <input type="number" step="0.5" min="0" max="100" value={p.sondertilgungErlaubtProzent ?? ''} placeholder="z. B. 5"
+              <ZahlInput type="number" step="0.5" min="0" max="100" value={p.sondertilgungErlaubtProzent ?? ''} placeholder="z. B. 5"
                 onChange={e => set({ sondertilgungErlaubtProzent: e.target.value === '' ? null : parseFloat(e.target.value) })} className={`${inputCls} mt-1`} />
             </label>
           </div>
@@ -573,7 +574,7 @@ function DarlehenAbschliessen({ params, idx, verlauf, cashflowNachTilgung, onClo
               </label>
               {art === 'abbezahlt' && (
                 <label className="block text-xs text-gray-500">Tatsächliche Schlusszahlung
-                  <input type="number" min="0" value={schluss} placeholder={String(Math.round(rsAm))} onChange={e => setSchluss(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl text-base sm:text-sm bg-white" />
+                  <ZahlInput type="number" min="0" value={schluss} placeholder={String(Math.round(rsAm))} onChange={e => setSchluss(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl text-base sm:text-sm bg-white" />
                   <span className="text-[10px] text-gray-400">Unser Rechenwert: {formatCurrency(rsAm)}. Steht auf deinem Kontoauszug etwas anderes, trag das ein.</span>
                 </label>
               )}

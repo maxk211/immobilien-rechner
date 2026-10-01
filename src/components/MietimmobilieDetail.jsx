@@ -17,6 +17,7 @@ import {
   FolderOpen, Loader2, Zap, Globe, Key, Lightbulb, ClipboardList,
   CalendarDays, Settings,
 } from 'lucide-react';
+import ZahlInput from './ZahlInput';
 
 // ─── Dokumente-Tab (Arbitrage) ────────────────────────────────────────────────
 const ARB_DOK_TYPEN = ['Hauptmietvertrag', 'Untermietvertrag', 'Stromvertrag', 'WLAN-Vertrag', 'GEZ-Dokument', 'Übergabeprotokoll', 'Kaution', 'Versicherung', 'Sonstiges'];
@@ -485,7 +486,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <div className="space-y-4">
                 <div className="p-3 bg-red-50 rounded-lg border border-red-100">
                   <label className="block text-sm font-medium text-red-700 mb-1">Eigene Warmmiete (€/Monat)</label>
-                  <input
+                  <ZahlInput
                     type="number"
                     value={params.eigeneWarmmiete}
                     onChange={(e) => updateParams({ eigeneWarmmiete: parseFloat(e.target.value) || 0 })}
@@ -499,7 +500,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Vermietete Zimmer</label>
-                      <input
+                      <ZahlInput
                         type="number"
                         value={params.anzahlZimmerVermietet}
                         onChange={(e) => updateParams({ anzahlZimmerVermietet: parseInt(e.target.value) || 0 })}
@@ -510,7 +511,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     </div>
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Miete pro Zimmer (€)</label>
-                      <input
+                      <ZahlInput
                         type="number"
                         value={params.untermieteProZimmer}
                         onChange={(e) => updateParams({ untermieteProZimmer: parseFloat(e.target.value) || 0 })}
@@ -541,7 +542,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                         <div className="flex items-center justify-between gap-3">
                           <label className="text-xs font-semibold text-gray-700">{label}</label>
                           <div className="flex items-center gap-1">
-                            <input type="number" min="0" step="0.01"
+                            <ZahlInput type="number" min="0" step="0.01"
                               value={feld === 'arbitrageGEZ' ? (params.arbitrageGEZ ?? std) : (params[feld] || 0)}
                               onChange={(e) => updateParams({ [feld]: parseFloat(e.target.value) || 0 })}
                               className="w-24 px-2 py-1 text-base sm:text-sm text-right border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" />
@@ -608,7 +609,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                             <div className="grid grid-cols-2 gap-2">
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] text-red-600 shrink-0">Warmmiete</span>
-                                <input
+                                <ZahlInput
                                   type="number"
                                   value={anp.eigeneWarmmiete ?? ''}
                                   placeholder="—"
@@ -624,7 +625,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                               </div>
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] text-green-600 shrink-0">Untermiete</span>
-                                <input
+                                <ZahlInput
                                   type="number"
                                   value={anp.untermieteProZimmer ?? ''}
                                   placeholder="—"
@@ -892,7 +893,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Wohnfläche (m²)</label>
-                    <input
+                    <ZahlInput
                       type="number"
                       value={params.wohnflaeche}
                       onChange={(e) => updateParams({ wohnflaeche: parseFloat(e.target.value) || 0 })}
@@ -901,7 +902,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   </div>
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Gesamtzahl Zimmer</label>
-                    <input
+                    <ZahlInput
                       type="number"
                       value={params.zimmer}
                       onChange={(e) => updateParams({ zimmer: parseInt(e.target.value) || 0 })}

@@ -3,7 +3,7 @@
 //  - Beleihbar frei   = Beleihungsgrenze × Marktwert − Restschuld, mindestens 0
 //  - Cashflow vor Tilgung = Cashflow nach Tilgung + monatliche Tilgung
 // Die Beleihungsgrenze ist eine Annahme und gehört in die Einstellungen (Standard 80 %).
-import { berechneImmoVermoegenswerte, berechneMtlCashflow } from './berechnung.js';
+import { berechneImmoVermoegenswerte, cashflowMonat } from './berechnung.js';
 
 const KEY = 'renditlyBeleihungsgrenze';
 export const BELEIHUNGSGRENZE_STANDARD = 80;
@@ -39,15 +39,14 @@ export function kapitalWerte(immo, grenze = getBeleihungsgrenze()) {
   };
 }
 
-// Cashflow nach und vor Tilgung (monatlich)
+// Cashflow nach und vor Tilgung (monatlich) — dieselbe Funktion wie Cockpit und Zahlen-Reiter
 export function cashflowVorNach(immo) {
-  const nach = berechneMtlCashflow(immo);
-  const kw = kapitalWerte(immo);
-  const tilgung = kw ? kw.tilgungMonat : 0;
+  const cf = cashflowMonat(immo);
   return {
-    nach,
-    vor: nach + tilgung,
-    tilgung,
-    hatKredit: !!kw && kw.restschuld > 0,
+    nach: cf.nach,
+    vor: cf.vor,
+    tilgung: cf.tilgung,
+    bauspar: cf.bauspar,
+    hatKredit: cf.hatKredit,
   };
 }
