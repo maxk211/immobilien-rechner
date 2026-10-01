@@ -295,7 +295,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {(() => {
                   const eckdaten = [
                     params.wohnflaeche ? `${params.wohnflaeche} m²` : null,
-                    params.zimmer ? `${params.zimmer} Zimmer` : null,
+                    Number(params.zimmer) > 0 ? `${params.zimmer} Zimmer` : null, // B13: −1/0 = unbekannt → ausblenden
                     params.anzahlZimmerVermietet ? `${params.anzahlZimmerVermietet} untervermietet` : null,
                     params.mietvertragStart ? `Hauptmietvertrag seit ${new Date(params.mietvertragStart).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null,
                   ].filter(Boolean);
@@ -720,10 +720,11 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       if (vorStart || zukunft) return <div key={m} className="rounded-lg border border-dashed border-gray-200 py-2 text-center text-[10px] text-gray-300">{name}</div>;
                       const st = berechneMietStatusFuerMonat(params.mietEingaenge, jahr, m, einnahmen, params.dauerauftrag).status;
                       const ok = st === 'bezahlt' || st === 'dauerauftrag';
+                      const nochNichtFaellig = jahr === heute.getFullYear() && m === heute.getMonth() + 1 && heute.getDate() <= (params.mieteFaelligkeitstag ?? 3);
                       return (
                         <button key={m} onClick={() => { if (!ok) bucheMonat(m); }}
-                          title={ok ? 'Eingegangen' : 'Noch offen — klicken zum Abhaken'}
-                          className={`rounded-lg py-2 text-center text-[10px] font-bold transition-colors ${ok ? 'bg-emerald-100 text-emerald-700' : st === 'teilweise' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
+                          title={ok ? 'Eingegangen' : nochNichtFaellig ? `Fällig am ${params.mieteFaelligkeitstag ?? 3}. — klicken zum Abhaken` : 'Überfällig — klicken zum Abhaken'}
+                          className={`rounded-lg py-2 text-center text-[10px] font-bold transition-colors ${ok ? 'bg-emerald-100 text-emerald-700' : st === 'teilweise' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : nochNichtFaellig ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
                           {name}
                         </button>
                       );
@@ -904,8 +905,8 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <label className="block text-sm text-gray-600 mb-1">Gesamtzahl Zimmer</label>
                     <ZahlInput
                       type="number"
-                      value={params.zimmer}
-                      onChange={(e) => updateParams({ zimmer: parseInt(e.target.value) || 0 })}
+                      value={Number(params.zimmer) > 0 ? params.zimmer : ""}
+                      onChange={(e) => { const v = parseInt(e.target.value); updateParams({ zimmer: v >= 1 ? v : '' }); }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-base sm:text-sm"
                     />
                   </div>

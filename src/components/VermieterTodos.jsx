@@ -536,23 +536,13 @@ const AKTION_LABEL = {
 const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSelectImmobilie, onBuchen }) => {
   const [offeneGruppen, setOffeneGruppen] = useState({});
   const [collapsed, setCollapsed] = useState(false);
-  // Gegencheck 2: "Was steht an" ist laut Abschnitt 3.1 ein fester Dashboard-
-  // Block — standardmäßig AN, nur wer ihn bewusst ausschaltet, sieht ihn aus.
-  const [aktiv, setAktiv] = useState(() => {
-    try { return localStorage.getItem(LS_AKTIV_KEY) !== 'false'; }
-    catch { return true; }
-  });
+  // UX-Gesamtpaket B1: "Was steht an" ist der wichtigste Dashboard-Block und lässt sich
+  // nicht mehr abschalten — nur noch einklappen. Ein früher gesetzter Aus-Schalter wird ignoriert.
+  const aktiv = true;
+  try { localStorage.removeItem(LS_AKTIV_KEY); } catch { /* kein Storage */ }
   // Abschnitt 3.1: filterbar nach Miete, Finanzierung, Mieter, Steuer
   const [kategorieFilter, setKategorieFilter] = useState('alle');
 
-  const toggleAktiv = (e) => {
-    e.stopPropagation();
-    setAktiv(prev => {
-      const next = !prev;
-      try { localStorage.setItem(LS_AKTIV_KEY, String(next)); } catch {}
-      return next;
-    });
-  };
 
   const todos = useMemo(
     () => aktiv ? generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) : [],
@@ -595,19 +585,8 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
               )}
             </div>
           )}
-          {!aktiv && (
-            <span className="text-xs text-gray-400">deaktiviert</span>
-          )}
         </div>
 
-        {/* Regler (Toggle) */}
-        <button
-          onClick={toggleAktiv}
-          className={`relative flex-shrink-0 w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none mx-2 ${aktiv ? 'bg-emerald-500' : 'bg-gray-200'}`}
-          title={aktiv ? 'Aufgaben deaktivieren' : 'Aufgaben aktivieren'}
-        >
-          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${aktiv ? 'translate-x-5' : 'translate-x-0'}`} />
-        </button>
 
         {aktiv && (
           <span className={`text-gray-400 transition-transform inline-flex ${collapsed ? '' : 'rotate-180'}`}>

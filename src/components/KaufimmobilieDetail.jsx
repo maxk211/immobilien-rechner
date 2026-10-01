@@ -526,9 +526,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 {(() => {
                   const eckdaten = [
                     params.wohnflaeche ? `${params.wohnflaeche} m²` : null,
-                    params.zimmer ? `${params.zimmer} Zimmer` : null,
+                    Number(params.zimmer) > 0 ? `${params.zimmer} Zimmer` : null, // B13: −1/0 = unbekannt → ausblenden
                     params.baujahr ? `Baujahr ${params.baujahr}` : null,
-                    params.kaufdatum ? `gekauft ${new Date(params.kaufdatum).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null,
+                    params.kaufdatum ? `${(immobilie.geschenkt || ['erbe', 'schenkung', 'geerbt', 'geschenkt'].includes(immobilie.erwerbsart)) ? 'erhalten' : 'gekauft'} ${new Date(params.kaufdatum).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null, // B14
                   ].filter(Boolean);
                   return eckdaten.length > 0 ? <p className="text-slate-400 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
                 })()}
@@ -827,13 +827,16 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       }
                       const statusMonat = berechneMietStatusFuerMonat(params.mietEingaenge, jahrCockpit, monatNr, erwarteterMietBetrag, params.dauerauftrag).status;
                       const istOk = statusMonat === 'bezahlt' || statusMonat === 'dauerauftrag';
+                      // B3: Überfällig erst nach dem Fälligkeitstag — davor neutral "offen"
+                      const nochNichtFaellig = jahrCockpit === heute.getFullYear() && monatNr === heute.getMonth() + 1 && heute.getDate() <= (params.mieteFaelligkeitstag ?? 3);
                       return (
                         <button key={monatNr}
                           onClick={() => { if (!istOk) handleMieteAbhakenFuerMonat(jahrCockpit, monatNr, erwarteterMietBetrag); }}
-                          title={istOk ? 'Eingegangen' : statusMonat === 'teilweise' ? 'Teilweise eingegangen — klicken zum Ergänzen' : 'Noch offen — klicken zum Abhaken'}
+                          title={istOk ? 'Eingegangen' : statusMonat === 'teilweise' ? 'Teilweise eingegangen — klicken zum Ergänzen' : nochNichtFaellig ? `Fällig am ${params.mieteFaelligkeitstag ?? 3}. — klicken zum Abhaken` : 'Überfällig — klicken zum Abhaken'}
                           className={`rounded-lg py-2 text-center text-[10px] font-bold transition-colors ${
                             istOk ? 'bg-emerald-100 text-emerald-700'
                             : statusMonat === 'teilweise' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                            : nochNichtFaellig ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                             : 'bg-red-50 text-red-500 hover:bg-red-100'
                           }`}>
                           {name}
@@ -884,7 +887,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           {wertsteigerungSeitKauf ? `${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}${wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %` : '—'}
                         </div>
                       </div>
-                      <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Dein Anteil</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(nettoEK)}</div></div>
+                      <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Netto-Vermögen</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(nettoEK)}</div></div>
                     </div>
                     {aktuellerWert > 0 && (
                       <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde. Grenze änderbar im Menü oben rechts auf der Startseite.`}>
@@ -1016,8 +1019,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <label className="block text-sm text-gray-600 mb-1">Zimmer</label>
                     <ZahlInput
                       type="number"
-                      value={params.zimmer}
-                      onChange={(e) => updateParams({...params, zimmer: parseFloat(e.target.value) || 0})}
+                      value={Number(params.zimmer) > 0 ? params.zimmer : ''}
+                      placeholder="weiß ich nicht"
+                      onChange={(e) => { const v = parseFloat(e.target.value); updateParams({...params, zimmer: v >= 1 ? v : ''}); }}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-right text-base sm:text-sm"
                       min={1}
                       step={0.5}
