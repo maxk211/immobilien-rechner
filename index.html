@@ -21,8 +21,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-K3VNNVZPS7"></script>
     <link rel="stylesheet" href="/consent-banner.css" />
     <script defer src="/consent-banner.js"></script>
-    <!-- App-Font (nur für die eingeloggte App-Oberfläche via .app-shell genutzt,
-         Marketing-Seiten behalten ihren bisherigen Systemfont-Stack) -->
+    <!-- Plus Jakarta Sans: App und Startseite (via .font-app) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
@@ -59,7 +58,7 @@
     <meta name="twitter:image" content="https://www.renditly.de/og-image.png" />
 
     <!-- PWA / Mobile -->
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#14161c" />
     <meta name="apple-mobile-web-app-title" content="renditly" />
     <meta name="application-name" content="renditly" />
 
@@ -116,7 +115,11 @@
         "Kautionsmanagement",
         "Mehrfamilienhausverwaltung",
         "Steuer-Export als Excel und PDF",
-        "Selbstauskunft PDF"
+        "Selbstauskunft PDF",
+        "Erinnerungen: offene Mieten, Mieterhöhung, Zinsbindung, Nebenkostenabrechnung",
+        "Kaufprüfung „Rechnet sich das?“ mit Grenzwerten",
+        "Plausibilitätsprüfung der Eingaben",
+        "Untervermietung mit Kostenaufteilung"
       ],
       "screenshot": "https://www.renditly.de/og-image.png",
       "publisher": {
@@ -146,12 +149,28 @@
           "name": "Was ist ein guter Cashflow bei Immobilien?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Als Faustregel gilt: ein positiver monatlicher Cashflow nach allen Kosten (Rate, Instandhaltung, Verwaltung, Hausgeld) ist das Ziel. renditly zeigt dir den Cashflow monatsgenau — inklusive 25-Jahres-Prognose mit Anschlussfinanzierung."
+            "text": "Als Faustregel gilt: ein positiver monatlicher Cashflow nach allen Kosten (Rate, Instandhaltung, Verwaltung, Hausgeld) ist das Ziel. renditly zeigt dir den Cashflow monatsgenau — vor und nach Tilgung, inklusive Prognose mit Anschlussfinanzierung."
           }
         },
         {
           "@type": "Question",
-          "name": "Kann ich renditly kostenlos testen?",
+          "name": "Woran erinnert mich renditly?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Unter „Was steht an“ sammelt renditly alles, was gerade fällig ist: offene Mieten und Untermieten, mögliche Mieterhöhungen (Kappungsgrenze und 15-Monats-Frist), das Ende der Zinsbindung, fehlende Nebenkostenabrechnungen und fehlende Kautionen. Jede Zeile hat die passende Aktion, zum Beispiel „Eingegangen“ oder „Anschluss planen“."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Was passiert, wenn ich mich bei einer Zahl vertippe?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Die Plausibilitätsprüfung vergleicht deine Eingaben mit typischen Werten. Widersprüche wie eine Zinsbindung, die vor dem Kreditstart endet, werden rot markiert; ungewöhnliche Werte wie 38 % Sollzins gelb. Du korrigierst mit einem Klick oder bestätigst mit „Stimmt so“."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Kann ich die App kostenlos testen?",
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "Ja — du kannst renditly 90 Tage kostenlos mit einer Immobilie testen, ohne Kreditkarte. Du bekommst Zugang zu allen Features: Cashflow-Analyse, Steuervorbereitung, Mieterverwaltung und mehr."
@@ -170,7 +189,7 @@
           "name": "Welche Steuer-Daten kann renditly exportieren?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "renditly exportiert alle steuerlich relevanten Posten als Excel und PDF: Mieteinnahmen, Schuldzinsen, Instandhaltung, Hausgeld, Verwaltungskosten, Fahrtkosten nach km-Pauschale und Erhaltungsaufwand. AfA-Daten werden als Grundlage für den Steuerberater mitgeliefert."
+            "text": "renditly exportiert alle steuerlich relevanten Posten als Excel und PDF: Mieteinnahmen, Schuldzinsen (annuitätisch korrekt je Phase), Instandhaltung, Hausgeld, Verwaltungskosten, Fahrtkosten nach km-Pauschale und Erhaltungsaufwand. AfA-Daten werden als Grundlage für den Steuerberater mitgeliefert."
           }
         },
         {
@@ -183,7 +202,7 @@
         },
         {
           "@type": "Question",
-          "name": "Sind meine Finanzdaten bei renditly sicher?",
+          "name": "Sind meine Finanzdaten sicher gespeichert?",
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "Ja. Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL via Supabase). Die Verbindung ist immer TLS-verschlüsselt. Deine Daten werden nicht verkauft oder für Werbung genutzt."
@@ -191,7 +210,15 @@
         },
         {
           "@type": "Question",
-          "name": "Gibt es eine mobile App für renditly?",
+          "name": "Was passiert wenn ich kündige?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Du kannst jederzeit monatlich kündigen. Deine Daten bleiben erhalten und du kannst weiterhin eine Immobilie verwalten."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Gibt es eine mobile App?",
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "Die Web-App ist vollständig mobiloptimiert und funktioniert auf iPhone und Android wie eine native App — ohne Download aus dem App Store."
@@ -245,19 +272,19 @@
       Sektion in src/LandingPage.jsx) — keine abweichenden Behauptungen.
     -->
     <div id="root">
-      <div style="background:#0f172a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:48px 20px;">
+      <div style="background:#14161c;color:#fff;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:56px 20px;">
         <div style="max-width:640px;margin:0 auto;">
-          <h1 style="font-size:2rem;font-weight:900;line-height:1.2;margin:0 0 16px;">Dein Immobilienportfolio. Endlich im Griff.</h1>
-          <p style="font-size:1.05rem;color:#cbd5e1;line-height:1.6;margin:0 0 28px;">renditly ist eine Immobilienverwaltungs-Software für deutsche Vermieter und Investoren. Rendite, Cashflow, Steuer und Mieter — alles an einem Ort, für Einsteiger mit einer Wohnung bis zum Profi mit mehreren Objekten.</p>
+          <h1 style="font-size:2.2rem;font-weight:800;line-height:1.15;margin:0 0 16px;">Dein Immobilienportfolio. <span style="color:#b6a8f7;">Endlich im Griff.</span></h1>
+          <p style="font-size:1.05rem;color:rgba(255,255,255,.7);line-height:1.6;margin:0 0 28px;">Rendite, Cashflow, Steuer und Mieter an einem Ort — und jeden Monat auf einen Blick, was ansteht: offene Mieten, Mieterhöhungen, Zinsbindung, Nebenkostenabrechnung. renditly ist die Immobilienverwaltung für private Vermieter in Deutschland. 90 Tage kostenlos testen, keine Kreditkarte.</p>
 
-          <h2 style="font-size:1.25rem;font-weight:800;margin:0 0 10px;">Was renditly kann</h2>
-          <p style="color:#cbd5e1;line-height:1.6;margin:0 0 24px;">Mietrendite und Cashflow automatisch berechnen, AfA und Werbungskosten für den Steuerberater vorbereiten, Mieter und Kautionen verwalten, Nebenkostenabrechnungen erstellen und Mehrfamilienhäuser mit mehreren Wohnungen abbilden — alles nach deutschem Miet- und Steuerrecht.</p>
+          <h2 style="font-size:1.2rem;font-weight:800;margin:0 0 10px;">Was renditly kann</h2>
+          <p style="color:rgba(255,255,255,.7);line-height:1.6;margin:0 0 24px;">„Was steht an“ sammelt alle offenen Punkte deines Portfolios mit der passenden Aktion. „Rechnet sich das?“ bewertet eine Wohnung vor dem Kauf in einem Satz und nennt die Grenzwerte, ab denen sie sich trägt. Die Finanzierung wird monatsgenau gerechnet, inklusive Restschuld zum Zinsbindungsende und Anschlussrate. Eine Plausibilitätsprüfung findet Tippfehler und Widersprüche. Dazu Cashflow vor und nach Tilgung, Steuern je Steuerjahr (AfA, Schuldzinsen, Werbungskosten), Mieter und Mieterhöhung, Nebenkostenabrechnung, Mehrfamilienhäuser und Untervermietung.</p>
 
-          <h2 style="font-size:1.25rem;font-weight:800;margin:0 0 10px;">Für wen renditly gebaut ist</h2>
-          <p style="color:#cbd5e1;line-height:1.6;margin:0 0 24px;">Für deutsche Vermieter und Immobilien-Investoren, vom Einsteiger mit einer Eigentumswohnung bis zum Profi mit mehreren Mehrfamilienhäusern. 90 Tage kostenlos testen, mit einer Immobilie und allen Features, ohne Kreditkarte.</p>
+          <h2 style="font-size:1.2rem;font-weight:800;margin:0 0 10px;">Preise</h2>
+          <p style="color:rgba(255,255,255,.7);line-height:1.6;margin:0 0 24px;">Alle Funktionen in jedem Tarif: Starter (1 Immobilie) 4,99 € im Monat, Standard (bis 10 Immobilien) 12,49 € im Monat, Pro (unbegrenzt) 24,99 € im Monat. Jährlich rund 20 % günstiger. Monatlich kündbar.</p>
 
-          <h2 style="font-size:1.25rem;font-weight:800;margin:0 0 10px;">Kostenlose Rechner &amp; Ratgeber</h2>
-          <p style="color:#cbd5e1;line-height:1.6;margin:0;">Mietrendite-, AfA-, Grunderwerbsteuer-, Kaufnebenkosten-, Tilgungsplan- und Spekulationsfrist-Rechner sowie ein umfangreicher Ratgeber zu Mietrecht und Steuern stehen kostenlos und ohne Anmeldung unter <a href="/ratgeber" style="color:#a5b4fc;">renditly.de/ratgeber</a> zur Verfügung.</p>
+          <h2 style="font-size:1.2rem;font-weight:800;margin:0 0 10px;">Kostenlose Rechner &amp; Ratgeber</h2>
+          <p style="color:rgba(255,255,255,.7);line-height:1.6;margin:0;">Mietrendite-, AfA-, Grunderwerbsteuer-, Kaufnebenkosten-, Tilgungsplan- und Spekulationsfrist-Rechner sowie ein Ratgeber zu Mietrendite, Cashflow, Steuern und Mietrecht.</p>
         </div>
       </div>
     </div>
