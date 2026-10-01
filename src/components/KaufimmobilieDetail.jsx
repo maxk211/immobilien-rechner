@@ -6,6 +6,7 @@ import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur, berech
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import FinanzierungsReiter from './FinanzierungsReiter';
 import PlausiPruefung from './PlausiPruefung';
+import NachforderungenManager from './NachforderungenManager';
 import { pruefeImmobilie, zaehle, brauchtErinnerung, unauffaelligeWerte } from '../utils/plausibilitaet.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import MieterDashboard from './MieterDashboard';
@@ -275,6 +276,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     mietModus: immobilie.mietModus || 'automatisch',
     mietHistorie: immobilie.mietHistorie || {},
     mietEingaenge: immobilie.mietEingaenge || [],
+    nachforderungen: immobilie.nachforderungen || [],
     steuersatz: immobilie.steuersatz || 42,
     gebaeudeAnteilProzent: immobilie.gebaeudeAnteilProzent || 80,
     afaModus: immobilie.afaModus || 'linear',
@@ -773,6 +775,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 handler={{
                   onOeffnen: (tab) => setActiveTab(tab),
                   onEingegangen: () => handleMieteAbhaken(),
+                  onFelder: (felder) => speichereSofort({ ...params, ...felder }),
                   onMahnen: () => erstelleZahlungserinnerung({
                     mieterName: aktiverMieter?.name,
                     objektAdresse: [params.adresse, params.plz].filter(Boolean).join(', '),
@@ -2159,12 +2162,19 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           })()}
 
           {activeTab === 'mieteinnahmen' && (
-            <MieteinnahmenTracker
-              params={params}
-              updateParams={(neu) => (neu.mietEingaenge !== params.mietEingaenge || neu.nkAbrechnungen !== params.nkAbrechnungen ? speichereSofort(neu) : updateParams(neu))}
-              immobilie={immobilie}
-              mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false)}
-            />
+            <div className="space-y-6">
+              <MieteinnahmenTracker
+                params={params}
+                updateParams={(neu) => (neu.mietEingaenge !== params.mietEingaenge || neu.nkAbrechnungen !== params.nkAbrechnungen ? speichereSofort(neu) : updateParams(neu))}
+                immobilie={immobilie}
+                mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false)}
+              />
+              <NachforderungenManager
+                liste={params.nachforderungen || []}
+                onChange={(liste) => speichereSofort({ ...params, nachforderungen: liste })}
+                mieterNamen={mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).map(m => m.name).filter(Boolean)}
+              />
+            </div>
           )}
 
           {activeTab === 'cashflow' && (

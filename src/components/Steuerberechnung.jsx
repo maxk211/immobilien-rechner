@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { nachforderungSteuerJahr } from '../utils/nachforderung.js';
 import { ClipboardList, Landmark, Hammer, Building2, BarChart3, Wrench, RefreshCw, Package, AlertTriangle, ShieldCheck, Lightbulb, TrendingDown, TrendingUp, Car, Download, X } from 'lucide-react';
 import { getXLSX, getJsPDF } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
@@ -205,8 +206,11 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     // Steuerliche Berechnung — NK vom Mieter ist Einnahme UND Werbungskosten (Durchlaufposten)
     // In der Praxis: NK-Einnahmen müssen deklariert werden, NK-Ausgaben sind Werbungskosten
     // Vereinfacht: NK-Einnahmen + NK-Ausgaben heben sich auf → hier nur Überschuss relevant
-    const gesamtEinnahmen = jahresMiete + jahresNK;
-    const absetzbareKosten = jahresAfa + jahresZinsen + laufendeKosten + jahresFahrtkosten + (bereinigt ? 0 : sofortAbsetzbar);
+    // Nachforderung mit Ratenplan: Rückzahlungen der Mieter sind Einnahmen (Umlage),
+    // die Raten an den Anbieter Werbungskosten — nur was tatsächlich geflossen ist.
+    const nfSt = nachforderungSteuerJahr(params, jahr);
+    const gesamtEinnahmen = jahresMiete + jahresNK + nfSt.einnahmen;
+    const absetzbareKosten = jahresAfa + jahresZinsen + laufendeKosten + jahresFahrtkosten + nfSt.ausgabe + (bereinigt ? 0 : sofortAbsetzbar);
     const zuVersteuern = gesamtEinnahmen - absetzbareKosten;
     const steuerEffekt = zuVersteuern * (steuersatz / 100);
 
@@ -224,6 +228,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       // Einnahmen (Anlage V)
       einnahmen: Math.round(jahresMiete),          // Kaltmiete
       nkEinnahmen: Math.round(jahresNK),           // Z. 6 — NK vom Mieter
+      nfEinnahmen: Math.round(nfSt.einnahmen),     // Umlage: Rückzahlungen Nachforderung
+      nfAusgaben: Math.round(nfSt.ausgabe),        // Z. 50 — Nachforderung an den Anbieter
       gesamtEinnahmen: Math.round(gesamtEinnahmen),
       // Werbungskosten (Anlage V)
       zinsen: Math.round(jahresZinsen),            // Z. 9 — Schuldzinsen
@@ -278,6 +284,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       ['A. EINNAHMEN (§ 21 EStG)', '', ...verfuegbareJahre.map(() => '')],
       ['Mieteinnahmen (Kaltmiete)', 'Z. 4–5', ...alleJahreDaten.map(d => d.einnahmen)],
       ['Nebenkosten vom Mieter (Umlagen)', 'Z. 6', ...alleJahreDaten.map(d => d.nkEinnahmen)],
+      ...(alleJahreDaten.some(d => d.nfEinnahmen) ? [['Umlage: Rückzahlungen Nachforderung', 'Z. 6', ...alleJahreDaten.map(d => d.nfEinnahmen)]] : []),
       ['Summe Einnahmen', '', ...alleJahreDaten.map(d => d.gesamtEinnahmen)],
       [],
       ['B. WERBUNGSKOSTEN (§ 9 EStG)', '', ...verfuegbareJahre.map(() => '')],
@@ -292,6 +299,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       ['Verwaltungskosten', 'Z. 37', ...alleJahreDaten.map(d => d.verwaltung)],
       ['Fahrtkosten (§ 9 Abs. 1 EStG)', 'Z. 40', ...alleJahreDaten.map(d => d.fahrtkosten)],
       ['Sonstige Betriebskosten', 'Z. 50', ...alleJahreDaten.map(d => d.nebenkosten)],
+      ...(alleJahreDaten.some(d => d.nfAusgaben) ? [['Nachforderung an den Anbieter', 'Z. 50', ...alleJahreDaten.map(d => d.nfAusgaben)]] : []),
       ['Summe Werbungskosten', 'Z. 53', ...alleJahreDaten.map(d => d.absetzbareKosten)],
       [],
       ['C. ERGEBNIS', '', ...verfuegbareJahre.map(() => '')],
@@ -323,6 +331,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         ['A. EINNAHMEN'],
         ['Mieteinnahmen (Kaltmiete)', d.einnahmen],
         ['Nebenkosten vom Mieter', d.nkEinnahmen],
+        ...(d.nfEinnahmen ? [['Umlage: Rückzahlungen Nachforderung', d.nfEinnahmen]] : []),
         ['Summe Einnahmen', d.gesamtEinnahmen],
         [],
         ['B. WERBUNGSKOSTEN'],
@@ -336,6 +345,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         ['Verwaltungskosten (Z. 37)', d.verwaltung],
         ['Fahrtkosten §9 (Z. 40)', d.fahrtkosten],
         ['Sonstige Betriebskosten (Z. 50)', d.nebenkosten],
+        ...(d.nfAusgaben ? [['Nachforderung an den Anbieter (Z. 50)', d.nfAusgaben]] : []),
         ['Summe Werbungskosten (Z. 53)', d.absetzbareKosten],
         [],
         ['C. ERGEBNIS'],
@@ -390,6 +400,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       body: [
         ['Mieteinnahmen (Kaltmiete)', 'Z. 4–5', `${formatCurrency(a(d.einnahmen))}`],
         ...(d.nkEinnahmen > 0 ? [['Nebenkosten vom Mieter', 'Z. 6', `${formatCurrency(a(d.nkEinnahmen))}`]] : []),
+        ...(d.nfEinnahmen > 0 ? [['Umlage: Rückzahlungen Nachforderung', 'Z. 6', `${formatCurrency(a(d.nfEinnahmen))}`]] : []),
       ],
       foot: [['Summe Einnahmen', '', formatCurrency(a(d.gesamtEinnahmen))]],
       styles: { fontSize: 9 },
@@ -410,6 +421,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       ...(d.verwaltung > 0 ? [['Verwaltungskosten', 'Z. 37', d.verwaltung]] : []),
       ...(d.fahrtkosten > 0 ? [['Fahrtkosten (§ 9 Abs. 1)', 'Z. 40', d.fahrtkosten]] : []),
       ...(d.nebenkosten > 0 ? [['Sonstige Betriebskosten', 'Z. 50', d.nebenkosten]] : []),
+      ...(d.nfAusgaben > 0 ? [['Nachforderung an den Anbieter', 'Z. 50', d.nfAusgaben]] : []),
     ].map(([label, zeile, betrag]) => [label, zeile, formatCurrency(a(betrag))]);
 
     pdf.autoTable({
@@ -567,6 +579,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               {selectedDaten.nkEinnahmen > 0 && (
                 <AnlageVZeile zeile="Z. 6" label="Nebenkosten vom Mieter (Umlagen)" betrag={a(selectedDaten.nkEinnahmen)} color="green" />
               )}
+              {selectedDaten.nfEinnahmen > 0 && (
+                <AnlageVZeile zeile="Z. 6" label="Umlage: Rückzahlungen der Mieter (Nachforderung)" betrag={a(selectedDaten.nfEinnahmen)} color="green" />
+              )}
               <AnlageVZeile zeile="Σ" label="Summe Einnahmen" betrag={a(selectedDaten.gesamtEinnahmen)} color="green" bold />
             </div>
 
@@ -604,6 +619,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               )}
               {selectedDaten.nebenkosten > 0 && (
                 <AnlageVZeile zeile="Z. 50" label="Sonstige Betriebskosten" betrag={a(selectedDaten.nebenkosten)} color="red" />
+              )}
+              {selectedDaten.nfAusgaben > 0 && (
+                <AnlageVZeile zeile="Z. 50" label="Nachforderung an den Anbieter (gezahlte Raten)" betrag={a(selectedDaten.nfAusgaben)} color="red" />
               )}
               <AnlageVZeile zeile="Z. 53" label="Summe Werbungskosten" betrag={a(selectedDaten.absetzbareKosten)} color="red" bold />
             </div>
