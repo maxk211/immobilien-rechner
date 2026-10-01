@@ -1,6 +1,7 @@
 import { getPreisNachPLZ } from '../constants/plz.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert, zahltIchAm, zahlerAnteilJahr, arbitrageZusatzkosten } from './miete.js';
 import { darlehensVerlauf, anfangsFremdkapital } from './darlehen.js';
+import { bausparMonat } from './bauspar.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
@@ -626,15 +627,17 @@ export const cashflowMonat = (immo, heute = new Date()) => {
   }
   const tilgung = Math.max(0, rate - zinsen);
 
-  const bauspar = (immo.bausparvertraege || [])
-    .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > heute)
-    .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
+  // A.7: Bausparrate nach Rolle — Tilgungsersatz zählt wie Tilgung (nicht in "vor Tilgung"),
+  // Rücklage für das Objekt als laufende Kosten (in beiden Werten)
+  const bs = bausparMonat(immo, heute);
+  const bauspar = bs.gesamt;
 
   const einnahmen = kaltmiete + nkImCashflow + stellplatz;
   return {
     kaltmiete, nkImCashflow, stellplatz, einnahmen, betrieb, ks,
-    rate, zinsen, tilgung, bauspar,
-    vor: einnahmen - betrieb - zinsen - bauspar,
+    rate, zinsen, tilgung, bauspar, bausparTilgung: bs.tilgung, bausparKosten: bs.kosten,
+    vermoegensaufbau: tilgung + bs.tilgung,
+    vor: einnahmen - betrieb - zinsen - bs.kosten,
     nach: einnahmen - betrieb - rate - bauspar,
     hatKredit: rate > 0,
   };

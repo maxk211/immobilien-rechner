@@ -365,7 +365,5 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// BausparManager — Bausparverträge verwalten
-// ─────────────────────────────────────────────────────────────
 
 export default ZaehlerVerwaltung;

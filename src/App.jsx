@@ -25,7 +25,6 @@ import CashflowUebersicht from './components/CashflowUebersicht';
 import Steuerberechnung from './components/Steuerberechnung';
 import ReparaturenInvestitionen from './components/ReparaturenInvestitionen';
 import ZaehlerVerwaltung from './components/ZaehlerVerwaltung';
-import BausparManager from './components/BausparManager';
 import ZahlungErfassenForm from './components/ZahlungErfassenForm';
 import MieteinnahmenTracker from './components/MieteinnahmenTracker';
 import NKAbrechnungTab from './components/NKAbrechnungTab';
