@@ -135,20 +135,21 @@ const PortfolioOverview = ({ portfolio }) => {
     <div className="mb-6 sm:mb-8">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
         {/* Cashflow / Monat — nach und vor Tilgung */}
-        <div className="col-span-2 lg:col-span-1 rounded-2xl bg-ink text-white p-3 sm:p-5 shadow-sm">
-          <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/50 mb-2">Cashflow / Monat</div>
+        {/* B10: weiß wie die anderen drei Kacheln — die Farbe steckt in der Zahl, nicht im Hintergrund */}
+        <div className={`col-span-2 lg:col-span-1 ${kachel}`}>
+          <div className={label}>Cashflow / Monat</div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className={`text-2xl sm:text-3xl font-black ${cfNach >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{vz(cfNach)}{formatCurrency(cfNach)}</div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-white/50 mt-0.5">nach Tilgung</div>
+              <div className={`text-xl sm:text-2xl font-black ${cfNach >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{vz(cfNach)}{formatCurrency(cfNach)}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mt-0.5">nach Tilgung</div>
             </div>
-            <div>
-              <div className={`text-2xl sm:text-3xl font-black ${cfVor >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{vz(cfVor)}{formatCurrency(cfVor)}</div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-white/50 mt-0.5">vor Tilgung</div>
+            <div className="border-l border-gray-200 pl-3">
+              <div className={`text-xl sm:text-2xl font-black ${cfVor >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{vz(cfVor)}{formatCurrency(cfVor)}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mt-0.5">vor Tilgung</div>
             </div>
           </div>
           {tilgungMonat > 0 && (
-            <p className="text-xs text-white/60 mt-3 leading-snug">
+            <p className="text-xs text-gray-500 mt-3 leading-snug">
               {formatCurrency(tilgungMonat)} Tilgung pro Monat sind kein Verlust — sie bauen Eigenkapital auf.
             </p>
           )}
@@ -175,9 +176,9 @@ const PortfolioOverview = ({ portfolio }) => {
           )}
         </div>
 
-        {/* Dein Anteil am Portfolio + Beleihungsspielraum gesamt */}
+        {/* Netto-Immobilienvermögen (A.4) + Beleihungsspielraum gesamt */}
         <div className={kachel}>
-          <div className={label} title="Marktwert minus Restschuld — nicht frei verfügbar, nur über Verkauf oder Beleihung erreichbar">Dein Anteil am Portfolio</div>
+          <div className={label} title="Marktwert minus Restschuld — nicht frei verfügbar, nur über Verkauf oder Beleihung erreichbar">Netto-Immobilienvermögen</div>
           <div className="text-xl sm:text-2xl font-black text-gray-900">{formatCurrency(stats.gesamtFreiesVermoegen)}</div>
           <div className="text-xs text-gray-400 mt-1">Marktwert − {formatCurrency(stats.gesamtRestschuld)} Restschuld</div>
           {stats.anzahlKaufimmobilien > 0 && (

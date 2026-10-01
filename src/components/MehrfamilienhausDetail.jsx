@@ -499,7 +499,7 @@ const MehrfamilienhausDetail = ({
                     wohnungen.length > 0 ? `${wohnungen.length} Wohneinheiten` : null,
                     gesamtFlaeche > 0 ? `${gesamtFlaeche} m²` : null,
                     params.baujahr ? `Baujahr ${params.baujahr}` : null,
-                    params.kaufdatum ? `gekauft ${new Date(params.kaufdatum).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null,
+                    params.kaufdatum ? `${(immobilie.geschenkt || ['erbe', 'schenkung', 'geerbt', 'geschenkt'].includes(immobilie.erwerbsart)) ? 'erhalten' : 'gekauft'} ${new Date(params.kaufdatum).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : null, // B14
                   ].filter(Boolean);
                   return eckdaten.length > 0 ? <p className="text-slate-400 text-xs mt-0.5">{eckdaten.join(' · ')}</p> : null;
                 })()}
@@ -822,7 +822,7 @@ const MehrfamilienhausDetail = ({
                           {wertsteigerungSeitKauf ? `${wertsteigerungSeitKauf.absoluteSteigerung >= 0 ? '+' : ''}${wertsteigerungSeitKauf.prozentSteigerung.toFixed(1)} %` : '—'}
                         </div>
                       </div>
-                      <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Dein Anteil</div><div className="text-sm font-bold text-indigo-800">{aktuellerWertMFH > 0 ? formatCurrency(nettoEK) : '—'}</div></div>
+                      <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Netto-Vermögen</div><div className="text-sm font-bold text-indigo-800">{aktuellerWertMFH > 0 ? formatCurrency(nettoEK) : '—'}</div></div>
                     </div>
                     {aktuellerWertMFH > 0 && (
                       <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde. Grenze änderbar im Menü oben rechts auf der Startseite.`}>

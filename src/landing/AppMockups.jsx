@@ -104,7 +104,7 @@ export function DashboardMockup() {
           </div>
           <Kpi label="Mieteinnahmen" wert="3.420 €" sub="41.040 € im Jahr" />
           <Kpi label="Portfoliowert" wert="742.000 €" sub="+96.000 € seit Kauf" />
-          <Kpi label="Freies Vermögen" wert="318.400 €" sub="Marktwert − Restschuld" ton="text-indigo-700" className="col-span-2 sm:col-span-1" />
+          <Kpi label="Netto-Immobilienvermögen" wert="318.400 €" sub="Marktwert − Restschuld" ton="text-indigo-700" className="col-span-2 sm:col-span-1" />
         </div>
         <WasStehtAn />
       </div>

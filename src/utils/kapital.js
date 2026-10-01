@@ -1,5 +1,5 @@
 // Kapital-Kennzahlen (UX-Paket Teil 3, Abschnitt 4 + 9):
-//  - Dein Anteil      = Marktwert − Restschuld
+//  - Netto-Vermögen  = Marktwert − Restschuld (UX-Gesamtpaket A.4: eine Zahl, ein Name)
 //  - Beleihbar frei   = Beleihungsgrenze × Marktwert − Restschuld, mindestens 0
 //  - Cashflow vor Tilgung = Cashflow nach Tilgung + monatliche Tilgung
 // Die Beleihungsgrenze ist eine Annahme und gehört in die Einstellungen (Standard 80 %).

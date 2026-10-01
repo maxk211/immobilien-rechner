@@ -37,7 +37,7 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
   const [abschlussIdx, setAbschlussIdx] = useState(null);
   const [menuOffen, setMenuOffen] = useState(false);
   const [offeneHistorie, setOffeneHistorie] = useState({});
-  const [sonderBetrag, setSonderBetrag] = useState(0);
+  const [sonderBetrag, setSonderBetrag] = useState(null); // B8: null = vorbelegt mit 5 % des Darlehens bzw. dem erlaubten Betrag
   const [mittelZins, setMittelZins] = useState(null);
   if (!v) return null;
 
@@ -272,7 +272,7 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
       {!abbezahlt && aktiv.typ !== 'endfaellig' && rsHeute > 0 && (() => {
         const erlaubtProzent = Number(aktiv.phase.sondertilgungErlaubtProzent) || 0;
         const max = Math.min(rsHeute, Math.round(((erlaubtProzent || 5) / 100) * aktiv.startbetrag / 100) * 100);
-        const betrag = Math.min(sonderBetrag, max);
+        const betrag = Math.min(sonderBetrag ?? max, max);
         const sim = betrag > 0 ? mitSondertilgung(params, aktiv.idx, betrag, heute) : v;
         const zinsenGesamt = (x) => x.phasen.slice(aktiv.idx).reduce((s, p) => s + p.zinsenGesamt, 0);
         const gespart = Math.max(0, zinsenGesamt(v) - zinsenGesamt(sim));
@@ -367,7 +367,16 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
 function KonditionenPanel({ params, idx, verlauf, cashflowNachTilgung, onClose, onSave }) {
   const phasen = params.finanzierungsphasen || [];
   const orig = phasen[idx];
-  const [p, setP] = useState(() => ({ ...orig }));
+  // B6: Anfangstilgung/Sollzins aus dem Verlauf vorbelegen, wenn sie nur an der Immobilie (Altdaten) oder gar nicht hinterlegt sind
+  const [p, setP] = useState(() => {
+    const vp = verlauf.phasen[idx];
+    const r2 = (x) => Math.round(x * 100) / 100;
+    return {
+      ...orig,
+      sollzinssatz: orig.sollzinssatz ?? orig.zinssatz ?? (params.zinssatz != null ? Number(params.zinssatz) : undefined),
+      anfangstilgung: orig.anfangstilgung ?? (orig.monatlicherBetrag > 0 ? undefined : (vp?.anfangstilgung ? r2(vp.anfangstilgung) : undefined)), // so rechnet der Verlauf schon
+    };
+  });
   const [kenne, setKenne] = useState(orig.monatlicherBetrag > 0 ? 'rate' : 'tilgung');
   const [betrag, setBetrag] = useState(() => idx === 0 ? (params.finanzierungsbetrag ?? Math.round(verlauf.fk)) : (orig.restschuldOverride ?? Math.round(verlauf.phasen[idx]?.startbetrag || 0)));
   const [bankOffen, setBankOffen] = useState(false);
@@ -398,7 +407,8 @@ function KonditionenPanel({ params, idx, verlauf, cashflowNachTilgung, onClose, 
 
   return (
     <div className="fixed inset-0 z-[80] flex justify-end bg-black/30" onClick={onClose}>
-      <div className="w-full max-w-md h-full bg-white shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+      {/* B5: Panel 660 px breit, legt sich über die Seite statt sie zusammenzuschieben */}
+      <div className="w-full sm:w-[660px] max-w-full h-full bg-white shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">Phase {idx + 1}{p.kreditinstitut ? ` · ${p.kreditinstitut}` : ''}</div>
@@ -409,7 +419,7 @@ function KonditionenPanel({ params, idx, verlauf, cashflowNachTilgung, onClose, 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-2">Darlehensart</p>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {['annuitaet', 'tilgung', 'endfaellig', 'bauspardarlehen'].map(t => (
                 <button key={t} onClick={() => set({ darlehensTyp: t })}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold border ${typ === t || (t === 'annuitaet' && typ === 'kfw') ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300'}`}>

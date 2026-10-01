@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { X, Home, Building2, ArrowLeftRight, MapPin, ChevronDown, ChevronUp, Plus, Trash2, CheckCircle2, Upload } from 'lucide-react';
+import { X, Home, Building2, ArrowLeftRight, MapPin, ChevronDown, ChevronUp, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneMtlCashflow } from '../utils/berechnung.js';
 import { cashflowVorNach } from '../utils/kapital.js';
@@ -244,11 +244,12 @@ function AdressSuche({ wert, onWaehle, onManuell }) {
 }
 
 // ── Kleine, modul-weite Bausteine (keine Inline-Komponenten → kein Fokusverlust) ──
-function Feld({ label, hint, children, pflicht }) {
+function Feld({ label, hint, children, pflicht, fehler }) {
   return (
     <label className="block text-xs font-semibold text-gray-600">
       {label}{pflicht && <span className="text-indigo-600"> *</span>}
       <div className="mt-1">{children}</div>
+      {fehler && <span className="block text-[11px] font-semibold text-red-600 mt-0.5">{fehler}</span>}
       {hint && <span className="block text-[11px] font-normal text-gray-400 mt-0.5">{hint}</span>}
     </label>
   );
@@ -287,7 +288,8 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
     try { const e = JSON.parse(localStorage.getItem(ENTWURF_KEY) || 'null'); return e?.d?.typ ? e : null; } catch { return null; }
   });
   const [mehrOffen, setMehrOffen] = useState(false);
-  const [fehler, setFehler] = useState('');
+  const [fehler, setFehler] = useState(''); // eslint-disable-line no-unused-vars
+  const [geprueft, setGeprueft] = useState({}); // Schritt → schon einmal "Weiter" geklickt
   const [speichert, setSpeichert] = useState(false);
   const [fertig, setFertig] = useState(null); // gespeicherte Immobilie → Abschluss
 
@@ -308,35 +310,47 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
   const blName = d.bundesland ? GREST_HISTORIE[d.bundesland]?.name : null;
   const grest = !geerbt && d.bundesland ? grestSatz(d.bundesland, monatZuDatum(d.eigentumMonat) || new Date()) : null;
 
-  const pruefe = (s) => {
+  // N3–N5: Alle Pflichtangaben eines Schritts auf einmal prüfen, jede mit Feldbezug.
+  // Nach dem ersten "Weiter" wird bei jeder Eingabe neu geprüft (nicht erst beim nächsten Klick).
+  const pruefeAlle = (s) => {
+    const f = [];
     if (s === 1) {
-      if (!d.typ) return 'Bitte wähle, um was für ein Objekt es geht.';
-      if (!/^\d{5}$/.test(d.plz || '')) return 'Bitte gib die Adresse mit Postleitzahl an.';
-      if (!d.eigentumMonat) return istArb ? 'Seit wann mietest du es an?' : 'Seit wann gehört es dir? Monat und Jahr reichen.';
+      if (!d.typ) f.push({ feld: 'typ', text: 'Bitte wähle, um was für ein Objekt es geht.' });
+      if (!/^\d{5}$/.test(d.plz || '')) f.push({ feld: 'adresse', text: 'Bitte gib die Adresse mit Postleitzahl an.' });
+      if (!d.eigentumMonat) f.push({ feld: 'eigentum', text: istArb ? 'Seit wann mietest du es an? Monat und Jahr reichen.' : 'Seit wann gehört es dir? Monat und Jahr reichen.' });
     }
     if (s === 2) {
-      if (istMFH) { if (!d.wohnungen.some(w => n(w.wohnflaeche) > 0)) return 'Bitte mindestens eine Wohneinheit mit Wohnfläche anlegen.'; }
-      else if (!(n(d.wohnflaeche) > 0)) return 'Die Wohnfläche ist hier das einzige Pflichtfeld.';
+      if (istMFH) { if (!d.wohnungen.some(w => n(w.wohnflaeche) > 0)) f.push({ feld: 'wohnflaeche', text: 'Bitte mindestens eine Wohneinheit mit Wohnfläche anlegen.' }); }
+      else if (!(n(d.wohnflaeche) > 0)) f.push({ feld: 'wohnflaeche', text: 'Die Wohnfläche ist hier das einzige Pflichtfeld.' });
     }
     if (s === 3 && !istArb) {
-      if (!geerbt && !(n(d.kaufpreis) > 0)) return 'Bitte den Kaufpreis eintragen.';
-      if (!geerbt && !d.zahlweise) return 'Wie hast du bezahlt? Bitte eine der vier Varianten wählen.';
+      if (!geerbt && !(n(d.kaufpreis) > 0)) f.push({ feld: 'kaufpreis', text: 'Bitte den Kaufpreis eintragen.' });
+      if (!geerbt && !d.zahlweise) f.push({ feld: 'zahlweise', text: 'Wie hast du bezahlt? Bitte eine der vier Varianten wählen.' });
       const kredit = geerbt ? d.kreditBeiErbe : d.zahlweise !== 'ohne';
-      if (kredit && !(n(d.sollzins) > 0)) return 'Bitte den Sollzins aus dem Kreditvertrag eintragen.';
-      if (kredit && d.kenne === 'rate' && !(n(d.rate) > 0)) return 'Bitte die Monatsrate eintragen — oder auf Tilgungssatz umschalten.';
+      if (kredit && !(n(d.sollzins) > 0)) f.push({ feld: 'sollzins', text: 'Bitte den Sollzins aus dem Kreditvertrag eintragen.' });
+      if (kredit && d.kenne === 'rate' && !(n(d.rate) > 0)) f.push({ feld: 'rate', text: 'Bitte die Monatsrate eintragen — oder auf Tilgungssatz umschalten.' });
     }
     if (s === 4) {
-      if (istArb && !(n(d.eigeneWarmmiete) > 0)) return 'Was zahlst du selbst an Miete?';
-      if (!istArb && !istMFH && !d.mietstatus) return 'Ist die Wohnung gerade vermietet?';
-      if (!istArb && !istMFH && d.mietstatus === 'vermietet' && !(n(d.kaltmiete) > 0)) return 'Bitte die Kaltmiete eintragen.';
+      if (istArb && !(n(d.eigeneWarmmiete) > 0)) f.push({ feld: 'warmmiete', text: 'Was zahlst du selbst an Miete?' });
+      if (!istArb && !istMFH && !d.mietstatus) f.push({ feld: 'mietstatus', text: 'Ist die Wohnung gerade vermietet?' });
+      if (!istArb && !istMFH && d.mietstatus === 'vermietet' && !(n(d.kaltmiete) > 0)) f.push({ feld: 'kaltmiete', text: 'Bitte die Kaltmiete eintragen.' });
     }
-    return '';
+    return f;
   };
-  const weiter = () => { const f = pruefe(schritt); setFehler(f); if (!f) setSchritt(s => Math.min(4, s + 1)); };
+  const pruefe = (s) => pruefeAlle(s)[0]?.text || '';
+  // Fehler erst nach dem ersten "Weiter" zeigen, dann live
+  const fehlerListe = geprueft[schritt] ? pruefeAlle(schritt) : [];
+  const fehlerFuer = (feld) => fehlerListe.find(x => x.feld === feld)?.text || '';
+  const weiter = () => {
+    const f = pruefeAlle(schritt);
+    setGeprueft(g => ({ ...g, [schritt]: true }));
+    setFehler(f.length ? 'x' : '');
+    if (!f.length) setSchritt(s => Math.min(4, s + 1));
+  };
   const zurueck = () => { setFehler(''); setSchritt(s => Math.max(1, s - 1)); };
 
   const anlegen = async () => {
-    for (const s of [1, 2, 3, 4]) { const f = pruefe(s); if (f) { setSchritt(s); setFehler(f); return; } }
+    for (const s of [1, 2, 3, 4]) { const f = pruefe(s); if (f) { setSchritt(s); setGeprueft(g => ({ ...g, [s]: true })); setFehler(f); return; } }
     setSpeichert(true);
     try {
       const daten = baueImmobilie(d);
@@ -432,12 +446,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
   // ── Schritt-Inhalte als Funktionen (keine Inline-Komponenten) ───────────────
   const schritt1 = () => (
     <div className="space-y-5">
-      <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-3 flex items-center gap-3">
-        <Upload size={18} className="text-indigo-600 shrink-0" />
-        <div className="text-xs text-indigo-900 flex-1">
-          <strong>Unterlagen zur Hand?</strong> Das Auslesen von Exposé, Kauf- und Kreditvertrag kommt in einer späteren Version. Bis dahin: einfach eintippen, dauert keine vier Minuten.
-        </div>
-      </div>
+      {/* N1: Upload-Hinweis entfernt, bis das Auslesen wirklich funktioniert */}
       <div>
         <p className="text-xs font-semibold text-gray-600 mb-2">Um was für ein Objekt geht es? <span className="text-indigo-600">*</span></p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -445,10 +454,11 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           <Karte aktiv={istMFH} onClick={() => set({ typ: 'mehrfamilienhaus', wohnungen: d.wohnungen.length ? d.wohnungen : [{ name: 'WE 1', wohnflaeche: '', kaltmiete: '' }] })} icon={<Building2 size={16} className="text-indigo-600" />} titel="Mehrfamilienhaus" sub="Gehört dir, mehrere Wohneinheiten" />
           <Karte aktiv={istArb} onClick={() => set({ typ: 'mietimmobilie' })} icon={<ArrowLeftRight size={16} className="text-indigo-600" />} titel="Anmieten und untervermieten" sub="Gehört dir nicht — auch Arbitrage genannt" />
         </div>
+        {fehlerFuer('typ') && <p className="text-[11px] font-semibold text-red-600 mt-1">{fehlerFuer('typ')}</p>}
       </div>
       <div className="text-xs font-semibold text-gray-600">
         Wo steht es?<span className="text-indigo-600"> *</span>
-        <div className="mt-1">
+        <div className={`mt-1 ${fehlerFuer('adresse') ? 'rounded-xl ring-2 ring-red-300' : ''}`}>
           <AdressSuche wert={d.strasse ? `${d.strasse}${d.plz ? `, ${d.plz} ${d.ort}` : ''}` : ''}
             onWaehle={(t) => set({ strasse: t.strasse, plz: t.plz, ort: t.ort, bundesland: t.bundesland, ...(d.nameGeaendert ? {} : { name: t.strasse }) })}
             onManuell={(t, oeffnen) => {
@@ -456,6 +466,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
               if (oeffnen) setManuellOffen(true);
             }} />
         </div>
+        {fehlerFuer('adresse') && <span className="block text-[11px] font-semibold text-red-600 mt-0.5">{fehlerFuer('adresse')}</span>}
         <span className="block text-[11px] font-normal text-gray-400 mt-0.5">{blName ? `Bundesland: ${blName} — daraus kommt die Grunderwerbsteuer in Schritt 3.` : 'Tippen genügt — Straße, Hausnummer und Ort kommen als Vorschlag. Daraus leiten wir auch dein Bundesland ab.'}</span>
       </div>
       <details className="text-xs text-gray-500" open={manuellOffen} onToggle={(e) => setManuellOffen(e.currentTarget.open)}>
@@ -474,8 +485,8 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
         <Feld label="Wie willst du es nennen?" hint="Aus der Adresse übernommen, änderbar.">
           <input className={inputCls} value={d.name} onChange={e => set({ name: e.target.value, nameGeaendert: true })} />
         </Feld>
-        <Feld label={istArb ? 'Seit wann mietest du es an?' : 'Seit wann gehört es dir?'} pflicht hint={istArb ? 'Beginn deines Hauptmietvertrags. Monat reicht.' : 'Monat der Übergabe. Tag brauchen wir nicht.'}>
-          <input type="month" className={inputCls} value={d.eigentumMonat} onChange={e => set({ eigentumMonat: e.target.value, ...(d.kreditSeit ? {} : {}) })} />
+        <Feld label={istArb ? 'Seit wann mietest du es an?' : 'Seit wann gehört es dir?'} pflicht fehler={fehlerFuer('eigentum')} hint={istArb ? 'Beginn deines Hauptmietvertrags. Monat reicht.' : 'Monat der Übergabe. Tag brauchen wir nicht.'}>
+          <input type="month" className={`${inputCls} ${fehlerFuer('eigentum') ? 'border-red-400 ring-2 ring-red-200' : ''}`} value={d.eigentumMonat} onChange={e => set({ eigentumMonat: e.target.value, ...(d.kreditSeit ? {} : {}) })} />
         </Feld>
       </div>
     </div>
@@ -497,7 +508,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
               </select>
             </Feld>
           )}
-          <Feld label="Wohnfläche" pflicht hint={istArb ? undefined : 'Das einzige Pflichtfeld hier — aus ihr rechnen wir den Quadratmeterpreis.'}>
+          <Feld label="Wohnfläche" pflicht fehler={fehlerFuer("wohnflaeche")} hint={istArb ? undefined : 'Das einzige Pflichtfeld hier — aus ihr rechnen wir den Quadratmeterpreis.'}>
             <div className="relative"><input type="number" min="0" className={`${inputCls} pr-10`} value={d.wohnflaeche} onChange={e => set({ wohnflaeche: e.target.value })} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">m²</span></div>
           </Feld>
           {istArb ? (
@@ -608,7 +619,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Feld label="Kaufpreis" pflicht><input type="number" min="0" className={inputCls} value={d.kaufpreis} onChange={e => set({ kaufpreis: e.target.value })} /></Feld>
+              <Feld label="Kaufpreis" pflicht fehler={fehlerFuer("kaufpreis")}><input type="number" min="0" className={inputCls} value={d.kaufpreis} onChange={e => set({ kaufpreis: e.target.value })} /></Feld>
               <Feld label="Kaufnebenkosten" hint={grest
                 ? `${String(grest.satz).replace('.', ',')} % Grunderwerbsteuer für ${blName} — der Satz, der zu deinem Kaufdatum galt. Dazu ${String(d.knkNotar).replace('.', ',')} % Notar und Grundbuch${d.mitMakler ? ', 3,0 % Makler' : ''}. Alles änderbar.`
                 : 'Ohne Bundesland fehlt die Grunderwerbsteuer — in Schritt 1 die Adresse wählen.'}>
@@ -651,7 +662,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
             <p className="text-sm font-bold text-gray-800">Dein Kredit</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {!geerbt && <Feld label="Darlehensbetrag"><input type="number" min="0" className={inputCls} value={!leer(d.darlehenManuell) ? d.darlehenManuell : Math.round(darlehen)} onChange={e => set({ darlehenManuell: e.target.value })} /></Feld>}
-              <Feld label="Sollzins p. a." pflicht><input type="number" step="0.01" min="0" className={inputCls} value={d.sollzins} onChange={e => set({ sollzins: e.target.value })} /></Feld>
+              <Feld label="Sollzins p. a." pflicht fehler={fehlerFuer("sollzins")}><input type="number" step="0.01" min="0" className={inputCls} value={d.sollzins} onChange={e => set({ sollzins: e.target.value })} /></Feld>
               <Feld label="Kredit läuft seit"><input type="month" className={inputCls} value={(d.kreditSeit || monatZuDatum(d.eigentumMonat)).slice(0, 7)} onChange={e => set({ kreditSeit: monatZuDatum(e.target.value) })} /></Feld>
               <Feld label="Zinsbindung bis" hint={d.zbBestaetigt ? 'bestätigt' : 'geschätzt — bitte aus dem Vertrag'}>
                 <input type="date" className={`${inputCls} ${!d.zbBestaetigt ? 'border-amber-400 bg-amber-50' : ''}`} value={phase?.zinsbindungBis || ''} onChange={e => set({ zinsbindungBis: e.target.value, zbBestaetigt: !!e.target.value })} />
@@ -695,7 +706,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
 
   const schritt3Arb = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <Feld label="Was zahlst du selbst im Monat (warm)?" pflicht><input type="number" min="0" className={inputCls} value={d.eigeneWarmmiete} onChange={e => set({ eigeneWarmmiete: e.target.value })} /></Feld>
+      <Feld label="Was zahlst du selbst im Monat (warm)?" pflicht fehler={fehlerFuer("warmmiete")}><input type="number" min="0" className={inputCls} value={d.eigeneWarmmiete} onChange={e => set({ eigeneWarmmiete: e.target.value })} /></Feld>
       <Feld label="Hauptmietvertrag endet am" hint="Leer lassen, wenn unbefristet"><input type="date" className={inputCls} value={d.mietvertragEnde} onChange={e => set({ mietvertragEnde: e.target.value })} /></Feld>
       <p className="sm:col-span-2 text-[11px] text-gray-400">Kein Kaufpreis, kein Kredit, keine Abschreibung — der Pfad für Arbitrage ist bewusst kurz.</p>
     </div>
@@ -735,7 +746,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <Feld label={d.vermietungsmodell === 'warmmiete' ? 'Pauschalmiete' : 'Kaltmiete pro Monat'} pflicht><input type="number" min="0" className={inputCls} value={d.kaltmiete} onChange={e => set({ kaltmiete: e.target.value })} /></Feld>
+                <Feld label={d.vermietungsmodell === 'warmmiete' ? 'Pauschalmiete' : 'Kaltmiete pro Monat'} pflicht fehler={fehlerFuer('kaltmiete')}><input type="number" min="0" className={inputCls} value={d.kaltmiete} onChange={e => set({ kaltmiete: e.target.value })} /></Feld>
                 {d.vermietungsmodell === 'kaltmiete_nk' && <Feld label="NK-Vorauszahlung"><input type="number" min="0" className={inputCls} value={d.nkVz} onChange={e => set({ nkVz: e.target.value })} /></Feld>}
                 <Feld label="Mieter seit"><input type="month" className={inputCls} value={d.mieterSeit} onChange={e => set({ mieterSeit: e.target.value })} /></Feld>
                 <Feld label="Miete fällig am"><select className={inputCls} value={d.faelligTag} onChange={e => set({ faelligTag: e.target.value })}>{[1, 3, 5, 10, 15].map(t => <option key={t} value={t}>{t}. des Monats</option>)}</select></Feld>
@@ -871,7 +882,12 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
                 {schritt === 3 && (istArb ? schritt3Arb() : schritt3Kauf())}
                 {schritt === 4 && (istArb ? schritt4Arb() : schritt4Kauf())}
                 {ersteZahl()}
-                {fehler && <p className="text-sm text-red-600 font-semibold">{fehler}</p>}
+                {fehlerListe.length > 0 && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                    <p className="font-semibold">{fehlerListe.length === 1 ? 'Eine Angabe fehlt noch:' : `${fehlerListe.length} Angaben fehlen noch:`}</p>
+                    <ul className="list-disc pl-5 mt-0.5 space-y-0.5">{fehlerListe.map(x => <li key={x.feld}>{x.text}</li>)}</ul>
+                  </div>
+                )}
               </div>
               <div className="lg:sticky lg:top-0 h-fit">{vorschau()}</div>
             </div>
