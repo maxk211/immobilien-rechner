@@ -46,6 +46,7 @@ const ZUSATZ_KEYS = [
   // Phase I: Anlage-Wizard
   'ort', 'erwerbsart', 'mietstatus',
   'arbitrageSonstige', // weitere laufende Kosten bei Arbitrage
+  'kappungsgrenze', // 20 oder 15 % (angespannter Wohnungsmarkt) — Was-wäre-wenn bei der Mieterhöhung
   'nachforderungen', // Nachforderung mit Ratenplan (z. B. Strom-Nachzahlung, von Mietern in Raten zurückgezahlt)
   // Wer zahlt welche Kosten (mit Datum) + neue Positionen
   'kostenZahler', 'heizung', 'rundfunk', 'arbitrageHeizung',

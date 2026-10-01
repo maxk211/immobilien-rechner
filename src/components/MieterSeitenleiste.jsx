@@ -5,7 +5,7 @@ import { formatCurrency } from '../utils/format.js';
 // Mieter-Seite (UX-Paket Teil 1): Mietanpassungen als Tabelle alt → neu
 // und der Kasten "Was du hier tun kannst" in der rechten Spalte.
 
-export function MietanpassungenTabelle({ anpassungen = [], basisMiete = 0, onAdd }) {
+export function MietanpassungenTabelle({ anpassungen = [], basisMiete = 0, onAdd, cfFuerMiete }) {
   const [offen, setOffen] = useState(false);
   const [form, setForm] = useState({ datum: '', kaltmiete: '', grund: 'Mieterhöhung' });
   const sortiert = [...anpassungen].filter(a => a.kaltmiete != null && a.datum).sort((a, b) => new Date(a.datum) - new Date(b.datum));
@@ -79,6 +79,7 @@ export function MietanpassungenTabelle({ anpassungen = [], basisMiete = 0, onAdd
                 <th className="text-left px-4 py-2 font-semibold">Grund</th>
                 <th className="text-right px-4 py-2 font-semibold">Alt</th>
                 <th className="text-right px-4 py-2 font-semibold">Neu</th>
+                {cfFuerMiete && <th className="text-right px-4 py-2 font-semibold">Cashflow ab dann</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -97,6 +98,17 @@ export function MietanpassungenTabelle({ anpassungen = [], basisMiete = 0, onAdd
                         </span>
                       )}
                     </td>
+                    {cfFuerMiete && (() => {
+                      // A.5: was die Anpassung ab ihrem Stichtag mit dem Cashflow macht — alt durchgestrichen, neu fett
+                      const a = cfFuerMiete(z.alt), b = cfFuerMiete(z.neu);
+                      const f = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${formatCurrency(Math.abs(Math.round(v)))}`;
+                      return (
+                        <td className="px-4 py-2 text-right text-[11px] whitespace-nowrap">
+                          <div><span className="text-gray-400">nach Tilgung </span><span className="line-through text-gray-400">{f(a.nach)}</span> <strong className={b.nach >= 0 ? 'text-emerald-700' : 'text-red-600'}>{f(b.nach)}</strong></div>
+                          <div><span className="text-gray-400">vor Tilgung </span><span className="line-through text-gray-400">{f(a.vor)}</span> <strong className={b.vor >= 0 ? 'text-emerald-700' : 'text-red-600'}>{f(b.vor)}</strong></div>
+                        </td>
+                      );
+                    })()}
                   </tr>
                 );
               })}

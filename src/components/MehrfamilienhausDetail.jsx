@@ -8,7 +8,7 @@ import { formatCurrency } from '../utils/format.js';
 import { berechneRendite, berechneWertsteigerungSeitKauf, cashflowMonat } from '../utils/berechnung.js';
 import { berechneMietStatusFuerMonat } from '../utils/miete.js';
 import CashflowUebersicht from './CashflowUebersicht';
-import BausparManager from './BausparManager';
+import BausparReiter from './BausparReiter';
 import Steuerberechnung from './Steuerberechnung';
 import ReparaturenInvestitionen from './ReparaturenInvestitionen';
 import ZaehlerVerwaltung from './ZaehlerVerwaltung';
@@ -166,7 +166,7 @@ const MFH_TAB_MAP = {
   mieter: 'mieter', mieteinnahmen: 'mieteinnahmen', nkabrechnung: 'nkabrechnung',
   // Abschnitt 2: Kaution ist ein Block im Mieter-Reiter, Bauspar ein Block in Finanzierung
   kaution: 'mieter', cashflow: 'cashflow', investitionen: 'investitionen',
-  zaehler: 'zaehler', dokumente: 'dokumente', steuern: 'steuern', bauspar: 'finanzierung',
+  zaehler: 'zaehler', dokumente: 'dokumente', steuern: 'steuern', bauspar: 'bauspar',
   finanzierung: 'finanzierung', uebersicht: 'uebersicht', stammdaten: 'stammdaten',
   kaufwert: 'kaufwert', wohnungen: 'wohnungen',
 };
@@ -436,6 +436,7 @@ const MehrfamilienhausDetail = ({
       subs: [
         { id: 'cashflow',     label: 'Cashflow' },
         { id: 'finanzierung', label: 'Finanzierung' },
+        { id: 'bauspar',      label: 'Bauspar' },
         { id: 'steuern',      label: 'Steuern' },
       ]
     },
@@ -1692,16 +1693,21 @@ const MehrfamilienhausDetail = ({
                   + Anschlussfinanzierung planen
                 </button>
 
-                {/* Abschnitt 3.4: Bausparvertrag als Block in Finanzierung (kein eigener Reiter mehr) */}
-                <div className="pt-2 border-t border-gray-100">
-                  <h3 className="text-sm font-bold text-gray-700 mb-3">Bausparvertrag</h3>
-                  <BausparManager params={params} updateParams={updateParams}/>
+                {/* A.7: Bausparvertrag hat einen eigenen Reiter */}
+                <div className="pt-2 border-t border-gray-100 text-sm text-gray-500">
+                  Bausparverträge haben jetzt einen eigenen Reiter:{' '}
+                  <button type="button" onClick={() => setActiveTab('bauspar')} className="font-semibold text-indigo-600 hover:underline">Zahlen · Bauspar →</button>
                 </div>
               </div>
             );
           })()}
 
           {/* ── FINANZEN: STEUERN ────────────────────────────────────────────── */}
+          {activeTab === 'bauspar' && (
+            <BausparReiter params={{ ...params, wohnungen }} immobilie={immobilie}
+              onChange={(liste) => { const neu = { ...params, bausparvertraege: liste }; setParams(neu); onSave({ ...immobilie, ...neu, wohnungen }); }} />
+          )}
+
           {activeTab === 'steuern' && (
             <Steuerberechnung params={{ ...params, kaltmiete: gesamtKaltmiete }} ergebnis={ergebnis} immobilie={{ ...immobilie, ...params, kaltmiete: gesamtKaltmiete }} onUpdateParams={updateParams} anteilFaktor={1}/>
           )}
