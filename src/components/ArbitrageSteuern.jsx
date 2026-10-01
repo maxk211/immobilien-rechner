@@ -71,7 +71,7 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
       const werbungskosten = wkWarmmiete + wkNK + wkNF;
       const ueberschuss = einnahmen - werbungskosten;
       const steuer = Math.max(0, ueberschuss * (steuersatz / 100));
-      return { jahr: jStr, einnahmen: Math.round(einnahmen), nfEin: Math.round(nfSt.einnahmen), nfAus: Math.round(nfSt.ausgabe), wkNF: Math.round(wkNF), wkWarmmiete: Math.round(wkWarmmiete), wkNK: Math.round(wkNK), werbungskosten: Math.round(werbungskosten), ueberschuss: Math.round(ueberschuss), steuer: Math.round(steuer) };
+      return { jahr: jStr, nfAusfall: Math.round(nfSt.ausfall), nfAusfaelle: nfSt.ausfaelle, einnahmen: Math.round(einnahmen), nfEin: Math.round(nfSt.einnahmen), nfAus: Math.round(nfSt.ausgabe), wkNF: Math.round(wkNF), wkWarmmiete: Math.round(wkWarmmiete), wkNK: Math.round(wkNK), werbungskosten: Math.round(werbungskosten), ueberschuss: Math.round(ueberschuss), steuer: Math.round(steuer) };
     });
   }, [params, steuersatz, mietvertragStart, bisWann]);
 
@@ -164,6 +164,14 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
               </td>
               <td className="py-3 px-4 text-right font-semibold text-red-500">−{formatCurrency(aktJahrDaten.wkNK)}</td>
             </tr>
+            {aktJahrDaten.nfAusfall > 0 && (
+              <tr className="bg-red-50/60">
+                <td className="py-3 px-4 text-gray-700" colSpan={2}>
+                  <div className="text-xs font-bold text-red-700">Hinweis: Forderungsausfall {formatCurrency(aktJahrDaten.nfAusfall)}</div>
+                  <div className="text-xs text-gray-500">{aktJahrDaten.nfAusfaelle.map(x => `${x.name} (${x.titel})`).join(', ')} zahlt nicht mehr. Nicht zusätzlich absetzbar: Die Raten an den Anbieter stehen schon voll in den Werbungskosten, die Rückzahlung fehlt nur bei den Einnahmen.</div>
+                </td>
+              </tr>
+            )}
             {aktJahrDaten.wkNF > 0 && (
               <tr>
                 <td className="py-3 px-4 text-gray-600">

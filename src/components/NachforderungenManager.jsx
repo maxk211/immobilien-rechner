@@ -3,7 +3,7 @@ import { Plus, Trash2, Pencil, ChevronDown, ChevronUp, AlertTriangle, CheckCircl
 import {
   nachforderungStand, gezahlt, restbetrag, sollImMonat, istImMonat, voraussichtlichFertig,
   anbieterEnde, rateEingegangen, restKomplett, mitZahlung, ohneZahlung, baueNachforderung,
-  teileAuf, heuteKey, monatName,
+  teileAuf, heuteKey, monatName, ausfallBetrag, alsAusgefallen, ausfallAufheben,
 } from '../utils/nachforderung.js';
 
 // Nachforderung mit Ratenplan (z. B. Strom-Nachzahlung).
@@ -182,8 +182,40 @@ function ZahlungErfassen({ onErfassen }) {
   );
 }
 
+// "Zahlt nicht mehr": Rest als Forderungsausfall markieren (bleibt bei dir)
+function AusfallErfassen({ max, onErfassen, onAbbrechen }) {
+  const [datum, setDatum] = useState(new Date().toISOString().slice(0, 10));
+  const [betrag, setBetrag] = useState(String(max));
+  const [notiz, setNotiz] = useState('');
+  return (
+    <div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
+      <div className="text-xs text-red-900">
+        Der offene Betrag wird nicht mehr erwartet und als <strong>Forderungsausfall</strong> gekennzeichnet — er bleibt bei dir wie dein Eigenanteil.
+        Keine Erinnerungen mehr für diesen Mieter.
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="text-xs text-gray-600 flex items-center gap-1">seit
+          <input type="date" value={datum} onChange={e => setDatum(e.target.value)} className="px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs bg-white" />
+        </label>
+        <label className="text-xs text-gray-600 flex items-center gap-1">Betrag
+          <input type="number" inputMode="decimal" value={betrag} onChange={e => setBetrag(e.target.value)} className="w-28 px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs bg-white" />
+        </label>
+        <input value={notiz} onChange={e => setNotiz(e.target.value)} placeholder="Notiz, z. B. ausgeschieden" className="flex-1 min-w-[10rem] px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs bg-white" />
+      </div>
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={onAbbrechen} className="px-2.5 py-1 rounded-md text-xs font-semibold text-gray-600 hover:bg-white">Abbrechen</button>
+        <button type="button" disabled={!(n(betrag) > 0) || !datum}
+          onClick={() => onErfassen({ datum, betrag: Math.min(max, n(betrag)), notiz })}
+          className="px-2.5 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-40">Als Ausfall kennzeichnen</button>
+      </div>
+    </div>
+  );
+}
+
 function MieterZeile({ nf, m, onListe, liste }) {
   const [offen, setOffen] = useState(false);
+  const [ausfallForm, setAusfallForm] = useState(false);
+  const ausfall = ausfallBetrag(m);
   const key = heuteKey();
   const rest = restbetrag(m);
   const soll = sollImMonat(m, key);
@@ -197,11 +229,16 @@ function MieterZeile({ nf, m, onListe, liste }) {
         <div className="min-w-0 flex-1 basis-40">
           <div className="text-sm font-bold text-gray-900 truncate">{m.name}</div>
           <div className="text-xs text-gray-500">
-            {rest <= 0.004
+            {ausfall > 0
+              ? <span className="text-red-700 font-semibold">Zahlt nicht mehr · Forderungsausfall {eur(ausfall)} seit {new Date(m.ausfall.datum).toLocaleDateString('de-DE')}{m.ausfall.notiz ? ` · ${m.ausfall.notiz}` : ''}</span>
+              : rest <= 0.004
               ? <span className="text-emerald-700 font-semibold">Komplett zurückgezahlt{ende ? ` · ${monatName(ende)}` : ''}</span>
               : <>{eur(m.zuschlag)} pro Monat · noch {eur(rest)}{ende ? ` · fertig voraussichtlich ${monatName(ende)}` : ''}</>}
           </div>
-          <div className="mt-1.5 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-xs"><div className="h-full bg-emerald-500" style={{ width: `${quote}%` }} /></div>
+          <div className="mt-1.5 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-xs flex">
+            <div className="h-full bg-emerald-500" style={{ width: `${quote}%` }} />
+            {ausfall > 0 && <div className="h-full bg-red-400" style={{ width: `${Math.min(100 - quote, (ausfall / n(m.anteil)) * 100)}%` }} />}
+          </div>
         </div>
         <div className="text-right text-xs text-gray-500 w-28">
           <div><span className="font-bold text-gray-900">{eur(gezahlt(m))}</span> von {eur(m.anteil)}</div>
@@ -213,6 +250,14 @@ function MieterZeile({ nf, m, onListe, liste }) {
               {monatName(key).split(' ')[0]} eingegangen · {eur(soll - ist)}
             </button>
           )}
+          {rest > 0.004 && !ausfallForm && (
+            <button type="button" onClick={() => setAusfallForm(true)}
+              className="px-2.5 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-xs font-bold text-red-700">Zahlt nicht mehr</button>
+          )}
+          {ausfall > 0 && (
+            <button type="button" onClick={() => { if (confirm(`Forderungsausfall bei ${m.name} aufheben? Der Betrag wird dann wieder als offen erwartet.`)) onListe(ausfallAufheben(liste, nf.id, m.id)); }}
+              className="px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-indigo-300 text-xs font-bold text-gray-700">Ausfall aufheben</button>
+          )}
           {rest > 0.004 && (
             <button type="button" onClick={() => { if (confirm(`${m.name} hat den Rest von ${eur(rest)} auf einmal gezahlt?`)) onListe(restKomplett(liste, nf.id, m.id)); }}
               className="px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-indigo-300 text-xs font-bold text-gray-700">Rest auf einmal</button>
@@ -222,6 +267,10 @@ function MieterZeile({ nf, m, onListe, liste }) {
           </button>
         </div>
       </div>
+      {ausfallForm && (
+        <AusfallErfassen max={rest} onAbbrechen={() => setAusfallForm(false)}
+          onErfassen={(a) => { onListe(alsAusgefallen(liste, nf.id, m.id, a)); setAusfallForm(false); }} />
+      )}
       {offen && (
         <div className="mt-2 ml-0 sm:ml-2 rounded-lg bg-gray-50 border border-gray-100 p-2.5">
           {(m.zahlungen || []).length === 0 && <div className="text-xs text-gray-400">Noch keine Zahlung erfasst.</div>}
@@ -252,7 +301,7 @@ function Karte({ nf, liste, onListe, onBearbeiten }) {
           <div className="flex items-center gap-2">
             <Zap size={15} className="text-amber-500 shrink-0" />
             <span className="font-extrabold text-gray-900">{nf.titel}</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.fertig ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>{s.fertig ? 'zurückgezahlt' : 'läuft'}</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.fertig ? (s.ausgefallen > 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700') : 'bg-indigo-50 text-indigo-700'}`}>{s.fertig ? (s.ausgefallen > 0 ? 'abgeschlossen · mit Ausfall' : 'zurückgezahlt') : 'läuft'}</span>
           </div>
           <div className="text-xs text-gray-500 mt-0.5">{eur(nf.gesamt)} insgesamt · getrennt von der Miete gebucht</div>
         </div>
@@ -281,9 +330,9 @@ function Karte({ nf, liste, onListe, onBearbeiten }) {
           <div className="text-base font-extrabold text-gray-900">{eur(s.offen)}</div>
         </div>
         <div className="bg-white px-4 py-3">
-          <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Dein Eigenanteil</div>
-          <div className="text-base font-extrabold text-indigo-700">{eur(s.eigenanteil)}</div>
-          <div className="text-[11px] text-gray-500">bleibt am Ende bei dir</div>
+          <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Bleibt bei dir</div>
+          <div className={`text-base font-extrabold ${s.ausgefallen > 0 ? 'text-red-700' : 'text-indigo-700'}`}>{eur(s.verlust)}</div>
+          <div className="text-[11px] text-gray-500">{s.ausgefallen > 0 ? `Eigenanteil ${eur(s.eigenanteil)} + Ausfall ${eur(s.ausgefallen)}` : 'dein Eigenanteil'}</div>
         </div>
       </div>
       <div className="px-4 sm:px-5 pt-3">
@@ -302,7 +351,7 @@ function Karte({ nf, liste, onListe, onBearbeiten }) {
       </div>
       {s.fertig && (
         <div className="mx-4 sm:mx-5 mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800 flex items-center gap-1.5">
-          <CheckCircle2 size={14} /> Alle Mieter haben ihren Anteil zurückgezahlt.
+          <CheckCircle2 size={14} /> {s.ausgefallen > 0 ? `Abgeschlossen. ${eur(s.ausgefallen)} hast du als Forderungsausfall gekennzeichnet.` : 'Alle Mieter haben ihren Anteil zurückgezahlt.'}
         </div>
       )}
     </div>
