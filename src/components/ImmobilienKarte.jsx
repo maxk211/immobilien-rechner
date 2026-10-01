@@ -4,6 +4,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, getAktuellerGesamtwert } from '../utils/berechnung.js';
 import { cashflowVorNach, beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
+import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 
 const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, onOpenAufgabe, onDelete, onEdit }) => {
   const [mfhExpanded, setMfhExpanded] = useState(false);
@@ -239,19 +240,24 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
                 </span>
               </span>
             </div>
-            {eigenkapital !== null && restschuldInfo && restschuldInfo.anfangsFremdkapital > 0 && (
+            {eigenkapital !== null && restschuldInfo && aktuellerWert > 0 && (
               <div className="mt-2 pt-2 border-t border-gray-200 grid grid-cols-2 gap-2">
                 <div>
                   <div className="text-xs text-gray-400">Restschuld</div>
-                  <div className="text-sm font-semibold text-orange-600">{formatCurrency(restschuldInfo.restschuld)}</div>
+                  <div className={`text-sm font-semibold ${restschuldInfo.restschuld > 0 ? 'text-orange-600' : 'text-emerald-700'}`}>{restschuldInfo.restschuld > 0 ? formatCurrency(restschuldInfo.restschuld) : 'schuldenfrei'}</div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-400" title="Marktwert minus Restschuld — nicht das eingebrachte Eigenkapital">Netto-Vermögen</div>
                   <div className="text-sm font-semibold text-gray-800">{formatCurrency(eigenkapital)}</div>
                 </div>
                 <div className="col-span-2">
-                  <div className="text-xs text-gray-400" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde`}>Beleihbar frei</div>
+                  <div className="text-xs text-gray-400 flex items-center">Beleihbar frei
+                    <SchaetzInfo {...beleihbarFreiInfo({ grenze: getBeleihungsgrenze(), marktwert: aktuellerWert, restschuld: restschuldInfo.restschuld,
+                      onGrenze: () => window.dispatchEvent(new Event('renditly-beleihungsgrenze-dialog')),
+                      onMarktwert: onOpenAufgabe ? () => onOpenAufgabe({ targetTab: 'stammdaten' }) : null })} />
+                  </div>
                   <div className="text-sm font-semibold text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWert, restschuldInfo.restschuld))}</div>
+                  <SchaetzZeile>Schätzung bei {getBeleihungsgrenze()} %</SchaetzZeile>
                 </div>
               </div>
             )}

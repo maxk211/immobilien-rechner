@@ -5,6 +5,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, arbitrageZusatzkosten } from '../utils/miete.js';
 import { cashflowMonat, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert, kostenStruktur } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
+import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 
 const PortfolioOverview = ({ portfolio }) => {
   // Beleihungsgrenze ist einstellbar (Menü oben rechts) — bei Änderung neu rechnen
@@ -183,8 +184,13 @@ const PortfolioOverview = ({ portfolio }) => {
           <div className="text-xs text-gray-400 mt-1">Marktwert − {formatCurrency(stats.gesamtRestschuld)} Restschuld</div>
           {stats.anzahlKaufimmobilien > 0 && (
             <div className="mt-2 pt-2 border-t border-gray-100" title={`${grenze} % vom Marktwert minus Restschuld, je Objekt mindestens 0. Grenze änderbar im Menü oben rechts.`}>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Beleihungsspielraum gesamt</div>
-              <div className="text-sm font-bold text-emerald-700">{formatCurrency(stats.gesamtBeleihbarFrei)} <span className="text-xs font-medium text-gray-400">bei {grenze} %</span></div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 flex items-center">Beleihungsspielraum gesamt
+                <SchaetzInfo ausrichtung="rechts" {...beleihbarFreiInfo({ grenze, marktwert: stats.gesamtWert, restschuld: stats.gesamtRestschuld, onGrenze: () => window.dispatchEvent(new Event('renditly-beleihungsgrenze-dialog')) })}
+                  titel={`Beleihungsspielraum gesamt: ${formatCurrency(stats.gesamtBeleihbarFrei)}`}
+                  rechnung={`Summe je Objekt: ${grenze} % × Marktwert − Restschuld, mindestens 0`} />
+              </div>
+              <div className="text-sm font-bold text-emerald-700">{formatCurrency(stats.gesamtBeleihbarFrei)}</div>
+              <SchaetzZeile>Schätzung bei {grenze} %</SchaetzZeile>
             </div>
           )}
         </div>

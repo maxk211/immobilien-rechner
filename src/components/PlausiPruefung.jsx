@@ -21,8 +21,24 @@ const feldWert = (params, feld) => {
   return params[feld] ?? '';
 };
 
+// A.3: aufklappbarer Kasten "Warum fragt ihr das?" — Ursachen, Auswirkung, Herkunft der Spanne
+export function WarumKasten({ warum }) {
+  if (!warum) return null;
+  return (
+    <div className="mt-2 rounded-lg bg-white/80 border border-gray-200 px-3 py-2.5 text-xs text-gray-700 space-y-2">
+      <div>
+        <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">Warum wir das hinterfragen</div>
+        <ol className="list-decimal pl-4 space-y-0.5">{warum.ursachen.map((u, i) => <li key={i}>{u}</li>)}</ol>
+      </div>
+      {warum.auswirkung && <div><span className="font-semibold text-gray-900">Was auf dem Spiel steht: </span>{warum.auswirkung}</div>}
+      {warum.spanne && <div className="text-gray-500"><span className="font-semibold text-gray-700">Woher die Spanne kommt: </span>{warum.spanne}</div>}
+    </div>
+  );
+}
+
 function Zeile({ h, params, updateParams }) {
   const [entwurf, setEntwurf] = useState(() => String(feldWert(params, h.feld) ?? ''));
+  const [warumOffen, setWarumOffen] = useState(false);
   const st = STUFEN[h.stufe];
   const uebernehmen = (wert) => {
     const v = h.feldTyp === 'date' ? wert : (wert === '' ? null : parseFloat(String(wert).replace(',', '.')));
@@ -32,9 +48,18 @@ function Zeile({ h, params, updateParams }) {
     <div className={`rounded-xl border p-3 ${st.rahmen}`}>
       <div className="flex items-start gap-2">
         <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0 ${st.chip}`}>{st.label}</span>
-        <div className="min-w-0">
-          <div className="text-sm font-bold text-gray-900">{h.titel}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-x-3">
+            <div className="text-sm font-bold text-gray-900">{h.titel}</div>
+            {h.warum && (
+              <button type="button" onClick={() => setWarumOffen(o => !o)} aria-expanded={warumOffen}
+                className="text-[11px] font-semibold text-indigo-600 hover:underline whitespace-nowrap">
+                {warumOffen ? 'Begründung ausblenden' : 'Warum fragt ihr das?'}
+              </button>
+            )}
+          </div>
           <div className="text-xs text-gray-600 mt-0.5">{h.text}</div>
+          {warumOffen && <WarumKasten warum={h.warum} />}
         </div>
       </div>
       <div className="mt-2 flex flex-wrap items-end gap-2">
@@ -125,15 +150,21 @@ export default function PlausiPruefung({ hinweise, params, updateParams, onClose
 
 // Hinweis direkt am Feld: gelber/roter Rahmen darunter eine Zeile mit Vergleichswert und "Stimmt so".
 export function PlausiFeldHinweis({ hinweise = [], feld, params, updateParams }) {
+  const [offen, setOffen] = useState(false);
   const h = hinweise.find(x => x.feld === feld && x.stufe !== 'grau');
   if (!h) return null;
   return (
-    <div className={`mt-1 flex items-start gap-1.5 text-[11px] ${h.stufe === 'rot' ? 'text-red-700' : 'text-amber-700'}`}>
-      <AlertTriangle size={12} className="shrink-0 mt-0.5"/>
-      <span className="flex-1">{h.titel}. {h.stufe === 'rot' ? 'Das kann nicht stimmen.' : 'Sicher?'}</span>
-      {h.stufe !== 'rot' && updateParams && (
-        <button type="button" onClick={() => updateParams(bestaetige(params, h))} className="font-bold underline shrink-0">Stimmt so</button>
-      )}
+    <div className={`mt-1 text-[11px] ${h.stufe === 'rot' ? 'text-red-700' : 'text-amber-700'}`}>
+      <div className="flex items-start gap-1.5">
+        <AlertTriangle size={12} className="shrink-0 mt-0.5"/>
+        <span className="flex-1">{h.titel}. {h.stufe === 'rot' ? 'Das kann nicht stimmen.' : 'Sicher?'}
+          {h.warum && <button type="button" onClick={() => setOffen(o => !o)} className="ml-1.5 font-semibold text-indigo-600 hover:underline">{offen ? 'Weniger' : 'Warum fragt ihr das?'}</button>}
+        </span>
+        {h.stufe !== 'rot' && updateParams && (
+          <button type="button" onClick={() => updateParams(bestaetige(params, h))} className="font-bold underline shrink-0">Stimmt so</button>
+        )}
+      </div>
+      {offen && <WarumKasten warum={h.warum} />}
     </div>
   );
 }

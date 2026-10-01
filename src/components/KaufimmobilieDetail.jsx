@@ -36,6 +36,7 @@ import {
   Trash2, FolderOpen, Loader2, ClipboardList, Zap, Receipt, Hash, MoreVertical,
 } from 'lucide-react';
 import ZahlInput from './ZahlInput';
+import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo, marktwertInfo } from './SchaetzInfo';
 
 // ─── Dokumente-Tab ────────────────────────────────────────────────────────────
 const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
@@ -879,7 +880,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       <button onClick={() => setActiveTab('stammdaten')} className="text-xs font-semibold text-indigo-600 hover:underline">Wert aktualisieren →</button>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                      <div><div className="text-[10px] text-gray-400">Marktwert</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(aktuellerWert)}</div></div>
+                      <div><div className="text-[10px] text-gray-400 flex items-center justify-center">Marktwert
+                        <SchaetzInfo {...marktwertInfo({ qmPreis: Number(params.wohnflaeche) > 0 ? Math.round(aktuellerWert / Number(params.wohnflaeche)) : null, flaeche: params.wohnflaeche, wert: aktuellerWert })} /></div>
+                        <div className="text-sm font-bold text-indigo-700">{formatCurrency(aktuellerWert)}</div><SchaetzZeile>dein Schätzwert</SchaetzZeile></div>
                       <div><div className="text-[10px] text-gray-400">Kaufpreis</div><div className="text-sm font-bold text-gray-600">{formatCurrency(params.kaufpreis)}</div></div>
                       <div>
                         <div className="text-[10px] text-gray-400">Wertsteigerung</div>
@@ -890,9 +893,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                       <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Netto-Vermögen</div><div className="text-sm font-bold text-indigo-700">{formatCurrency(nettoEK)}</div></div>
                     </div>
                     {aktuellerWert > 0 && (
-                      <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde. Grenze änderbar im Menü oben rechts auf der Startseite.`}>
-                        <span className="text-xs font-semibold text-emerald-700">Beleihbar frei <span className="font-normal text-gray-400">bei {getBeleihungsgrenze()} %</span></span>
-                        <span className="text-sm font-black text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWert, rsHeuteCockpit))}</span>
+                      <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2">
+                        <span className="text-xs font-semibold text-emerald-700 flex items-center">Beleihbar frei
+                          <SchaetzInfo {...beleihbarFreiInfo({ grenze: getBeleihungsgrenze(), marktwert: aktuellerWert, restschuld: rsHeuteCockpit,
+                            onGrenze: () => window.dispatchEvent(new Event('renditly-beleihungsgrenze-dialog')), onMarktwert: () => setActiveTab('stammdaten') })} />
+                        </span>
+                        <span className="text-right">
+                          <span className="block text-sm font-black text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWert, rsHeuteCockpit))}</span>
+                          <SchaetzZeile>Schätzung bei {getBeleihungsgrenze()} %</SchaetzZeile>
+                        </span>
                       </div>
                     )}
                     <p className="text-[10px] text-gray-400 mt-2">

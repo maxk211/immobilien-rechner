@@ -8,7 +8,7 @@
 // Bestätigungen liegen in immo.plausiBestaetigt = { [regelId]: { wert, am } }.
 // "wert" ist ein Fingerabdruck der geprüften Zahl(en); ändert sich die Zahl, fragt die Prüfung neu.
 // Feldherkunft liegt in immo.feldHerkunft = { [feld]: 'manuell'|'dokument'|'berechnet'|'geschaetzt' }.
-import { PLAUSI_SCHWELLEN as S } from '../config/plausibilitaet.js';
+import { PLAUSI_SCHWELLEN as S, plausiBegruendung } from '../config/plausibilitaet.js';
 import { phasenZeitraeume } from './finanzierung.js';
 import { darlehensVerlauf, phasenZins } from './darlehen.js';
 import { getAktuelleMiete } from './miete.js';
@@ -29,6 +29,16 @@ export function portfolioMieteProQm(portfolio = [], ausserId) {
     .filter(x => x.m > 0 && x.f > 0);
   if (werte.length === 0) return null;
   return { schnitt: werte.reduce((s, x) => s + x.m / x.f, 0) / werte.length, anzahl: werte.length };
+}
+
+// Durchschnittliches Hausgeld/m² der übrigen Kauf-Objekte
+export function portfolioHausgeldProQm(portfolio = [], ausserId) {
+  const werte = portfolio
+    .filter(i => i.id !== ausserId && i.aktiv !== false && !['mietimmobilie', 'mehrfamilienhaus'].includes(i.immobilienTyp))
+    .map(i => ({ h: Number(i.hausgeld) || 0, f: Number(i.wohnflaeche) || 0 }))
+    .filter(x => x.h > 0 && x.f > 0);
+  if (werte.length === 0) return null;
+  return { schnitt: werte.reduce((s, x) => s + x.h / x.f, 0) / werte.length, anzahl: werte.length };
 }
 
 /**
@@ -220,6 +230,19 @@ export function pruefeImmobilie(immo, { portfolio = [], mieter = [], heute = new
         feld: 'hausgeldNichtUmlagefaehig', feldLabel: 'davon nicht umlagefähig', wert: nu });
     }
   });
+
+  // A.3: Begründung je Hinweis ("Warum fragt ihr das?") — Ursachen, Auswirkung, Herkunft der Spanne
+  const kontext = {
+    miete, flaeche, hausgeld, kaufpreis, mw, knk,
+    mieteQm: flaeche > 0 ? miete / flaeche : 0,
+    faktor: kaufpreis > 0 && miete > 0 ? kaufpreis / (miete * 12) : 0,
+    pfMiete: portfolioMieteProQm(portfolio, immo.id),
+    pfHausgeld: portfolioHausgeldProQm(portfolio, immo.id),
+    fk: verlauf?.fk || 0,
+    restschuld: verlauf ? verlauf.restschuldHeute : 0,
+    grest: grest?.satz || null,
+  };
+  h.forEach(x => { const w = plausiBegruendung(x, kontext); if (w) x.warum = w; });
 
   // Bestätigte gelbe/graue Hinweise ausblenden, solange sich der Wert nicht geändert hat
   const best = immo.plausiBestaetigt || {};
