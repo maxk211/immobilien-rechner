@@ -9,6 +9,7 @@ import MieterDashboard from './MieterDashboard';
 import MieteinnahmenTracker from './MieteinnahmenTracker';
 import ArbitrageCashflow from './ArbitrageCashflow';
 import ArbitrageSteuern from './ArbitrageSteuern';
+import NachforderungenManager from './NachforderungenManager';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 import {
   BarChart3, Wallet, User, FileText, Receipt, MapPin, AlertTriangle,
@@ -206,6 +207,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     aktiv: immobilie.aktiv !== false,
     aufgabedatum: immobilie.aufgabedatum || '',
     nkAbrechnungen: immobilie.nkAbrechnungen || [],
+    nachforderungen: immobilie.nachforderungen || [],
   });
   const [hasChanges, setHasChanges] = useState(false);
   // Deep-Links aus Erinnerungen auf die neuen Reiter abbilden
@@ -423,6 +425,16 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   immobilie={trackerImmo}
                   mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
                 />
+                <div className="mt-6">
+                  <NachforderungenManager
+                    liste={params.nachforderungen || []}
+                    onChange={(liste) => {
+                      setParams(prev => ({ ...prev, nachforderungen: liste }));
+                      onSave({ ...immobilie, ...params, nachforderungen: liste });
+                    }}
+                    mieterNamen={mieterListe.filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).map(m => m.name).filter(Boolean)}
+                  />
+                </div>
               </div>
             );
           })()}
@@ -687,6 +699,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     onOeffnen: (tab) => setActiveTab(MIET_TAB_MAP[tab] ?? (tab === 'mieteinnahmen' ? 'mieteingaenge' : tab)),
                     // Untermiete des laufenden Monats direkt abhaken
                     onEingegangen: einnahmen > 0 ? () => bucheMonat(heute.getMonth() + 1) : null,
+                    onFelder: (felder) => { setParams(prev => ({ ...prev, ...felder })); onSave({ ...immobilie, ...params, ...felder }); },
                   }} />
                 );
               })()}

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { BarChart3, TrendingUp, Eye, CalendarDays } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../utils/format.js';
+import { nachforderungMonat, nachforderungJahr, hatNachforderungen, heuteKey } from '../utils/nachforderung.js';
 import { getAktuelleWarmmiete, getAktuelleUntermiete, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, arbitrageZusatzkostenJahr, arbitrageKostenText } from '../utils/miete.js';
 
 const ArbitrageCashflow = ({ params }) => {
@@ -18,6 +19,10 @@ const ArbitrageCashflow = ({ params }) => {
   const jahresCF = einnahmen * 12 - aktWarmmiete * 12 - zusatzkostenJahr;
   // Prognose für kommende Jahre: heutiger Stand × 12 (heutige Zahler-Regelung gilt weiter)
   const prognoseJahr = monatsCF * 12;
+  // Nachforderung mit Ratenplan (vorübergehend, getrennt von der Untermiete)
+  const nfM = hatNachforderungen(params) ? nachforderungMonat(params, heuteKey()) : null;
+  const nfJ = hatNachforderungen(params) ? nachforderungJahr(params, new Date().getFullYear()) : null;
+  const zeigeNf = nfM && (nfM.einnahmen || nfM.ausgabe || nfJ.einnahmen || nfJ.ausgabe);
 
   const mietvertragStart = params.mietvertragStart ? new Date(params.mietvertragStart) : null;
   const vertragsende = params.mietvertragEnde ? new Date(params.mietvertragEnde) : null;
@@ -132,6 +137,24 @@ const ArbitrageCashflow = ({ params }) => {
                     {jahresCF >= 0 ? '+' : ''}{formatCurrency(jahresCF)}
                   </td>
                 </tr>
+                {zeigeNf && (<>
+                  <tr><td colSpan={3} className="pt-3 pb-1 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Nachforderung · vorübergehend</td></tr>
+                  <tr>
+                    <td className="py-2 px-4 text-xs text-gray-600">+ Rückzahlungen der Mieter</td>
+                    <td className="py-2 px-3 text-right text-xs font-semibold text-emerald-600">+{formatCurrency(nfM.einnahmen)}</td>
+                    <td className="py-2 px-3 text-right text-xs font-semibold text-emerald-600">+{formatCurrency(nfJ.einnahmen)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-4 text-xs text-gray-600">− Raten an den Anbieter</td>
+                    <td className="py-2 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(nfM.ausgabe)}</td>
+                    <td className="py-2 px-3 text-right text-xs font-semibold text-red-500">−{formatCurrency(nfJ.ausgabe)}</td>
+                  </tr>
+                  <tr className="bg-gray-50 border-t border-gray-200">
+                    <td className="py-3 px-4 text-sm font-bold text-gray-800">= inkl. Nachforderung</td>
+                    <td className={`py-3 px-3 text-right text-sm font-black ${monatsCF + nfM.netto >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{monatsCF + nfM.netto >= 0 ? '+' : ''}{formatCurrency(monatsCF + nfM.netto)}</td>
+                    <td className={`py-3 px-3 text-right text-sm font-black ${jahresCF + nfJ.netto >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{jahresCF + nfJ.netto >= 0 ? '+' : ''}{formatCurrency(jahresCF + nfJ.netto)}</td>
+                  </tr>
+                </>)}
               </tbody>
             </table>
           </div>

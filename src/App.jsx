@@ -320,7 +320,7 @@ function App() {
       const saved = await saveImmobilie({ ...immo, ...felder, id: immoId });
       setPortfolio(prev => prev.map(i => i.id === immoId ? saved : i));
       if (selectedImmobilie?.id === immoId) setSelectedImmobilie(saved);
-      toast.success('Miete gebucht ✓');
+      toast.success(felder.nachforderungen ? 'Rückzahlung gebucht ✓' : 'Miete gebucht ✓');
     } catch (error) {
       console.error('Fehler beim Buchen:', error);
       toast.error('Fehler beim Buchen: ' + error.message);

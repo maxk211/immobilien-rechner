@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { nachforderungSteuerJahr } from '../utils/nachforderung.js';
 import { AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneHistorischenArbitrageCashflow, getAktuelleWarmmiete, getAktuelleUntermiete, arbitrageZusatzkosten } from '../utils/miete.js';
@@ -63,10 +64,14 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
         wkNK += anteil * zk;
         d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
       }
-      const werbungskosten = wkWarmmiete + wkNK;
+      // Nachforderung mit Ratenplan: Rückzahlungen = Einnahmen, Raten an den Anbieter anteilig Werbungskosten
+      const nfSt = nachforderungSteuerJahr(params, j);
+      einnahmen += nfSt.einnahmen;
+      const wkNF = anteil * nfSt.ausgabe;
+      const werbungskosten = wkWarmmiete + wkNK + wkNF;
       const ueberschuss = einnahmen - werbungskosten;
       const steuer = Math.max(0, ueberschuss * (steuersatz / 100));
-      return { jahr: jStr, einnahmen: Math.round(einnahmen), wkWarmmiete: Math.round(wkWarmmiete), wkNK: Math.round(wkNK), werbungskosten: Math.round(werbungskosten), ueberschuss: Math.round(ueberschuss), steuer: Math.round(steuer) };
+      return { jahr: jStr, einnahmen: Math.round(einnahmen), nfEin: Math.round(nfSt.einnahmen), nfAus: Math.round(nfSt.ausgabe), wkNF: Math.round(wkNF), wkWarmmiete: Math.round(wkWarmmiete), wkNK: Math.round(wkNK), werbungskosten: Math.round(werbungskosten), ueberschuss: Math.round(ueberschuss), steuer: Math.round(steuer) };
     });
   }, [params, steuersatz, mietvertragStart, bisWann]);
 
@@ -77,10 +82,10 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
     wkNK: Math.round(anteil * (arbitrageZusatzkosten(params)) * 12),
     werbungskosten: 0, ueberschuss: 0, steuer: 0
   };
-  const aktWerbungskosten = aktJahrDaten.wkWarmmiete + aktJahrDaten.wkNK;
+  const aktWerbungskosten = aktJahrDaten.wkWarmmiete + aktJahrDaten.wkNK + (aktJahrDaten.wkNF || 0);
   const aktUeberschuss = aktJahrDaten.einnahmen - aktWerbungskosten;
   const aktSteuer = Math.max(0, aktUeberschuss * (steuersatz / 100));
-  const aktNettoCF = aktJahrDaten.einnahmen - aktWarmmiete * 12 - (arbitrageZusatzkosten(params)) * 12;
+  const aktNettoCF = aktJahrDaten.einnahmen - aktWarmmiete * 12 - (arbitrageZusatzkosten(params)) * 12 - (aktJahrDaten.nfAus || 0);
   const aktNettoCFnachSteuer = aktNettoCF - aktSteuer;
 
   const handleSteuersatzChange = (val) => {
@@ -132,8 +137,17 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
                 Einnahmen aus Untervermietung
                 <div className="text-xs text-gray-400">{zimmerVermietet} Zimmer × Untermiete × Monate</div>
               </td>
-              <td className="py-3 px-4 text-right font-semibold text-emerald-600">+{formatCurrency(aktJahrDaten.einnahmen)}</td>
+              <td className="py-3 px-4 text-right font-semibold text-emerald-600">+{formatCurrency(aktJahrDaten.einnahmen - (aktJahrDaten.nfEin || 0))}</td>
             </tr>
+            {aktJahrDaten.nfEin > 0 && (
+              <tr>
+                <td className="py-3 px-4 text-gray-600">
+                  Rückzahlungen der Mieter (Nachforderung)
+                  <div className="text-xs text-gray-400">tatsächlich eingegangen</div>
+                </td>
+                <td className="py-3 px-4 text-right font-semibold text-emerald-600">+{formatCurrency(aktJahrDaten.nfEin)}</td>
+              </tr>
+            )}
             <tr>
               <td className="py-3 px-4 text-gray-600">
                 − Anteilige Warmmiete (Werbungskosten)
@@ -150,6 +164,15 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
               </td>
               <td className="py-3 px-4 text-right font-semibold text-red-500">−{formatCurrency(aktJahrDaten.wkNK)}</td>
             </tr>
+            {aktJahrDaten.wkNF > 0 && (
+              <tr>
+                <td className="py-3 px-4 text-gray-600">
+                  − Nachforderung an den Anbieter (Werbungskosten)
+                  <div className="text-xs text-gray-400">{Math.round(anteil * 100)} % der gezahlten Raten</div>
+                </td>
+                <td className="py-3 px-4 text-right font-semibold text-red-500">−{formatCurrency(aktJahrDaten.wkNF)}</td>
+              </tr>
+            )}
             <tr className="bg-purple-50 border-t-2 border-purple-200">
               <td className="py-3 px-4 font-bold text-gray-800">
                 = Zu versteuernder Überschuss
@@ -184,10 +207,10 @@ const ArbitrageSteuern = ({ params, onUpdateParams }) => {
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Einnahmen-Aufteilung {tabJahr}</p>
         {(() => {
           const total = aktJahrDaten.einnahmen || 1;
-          const wk = aktJahrDaten.wkWarmmiete + aktJahrDaten.wkNK;
+          const wk = aktJahrDaten.wkWarmmiete + aktJahrDaten.wkNK + (aktJahrDaten.wkNF || 0);
           const eigenkosten = Math.round(aktWarmmiete * 12 * (1 - anteil));
           const steuerBetrag = Math.round(Math.max(0, (aktJahrDaten.einnahmen - wk) * steuersatz / 100));
-          const netto = aktJahrDaten.einnahmen - aktWarmmiete * 12 - (arbitrageZusatzkosten(params)) * 12 - steuerBetrag;
+          const netto = aktJahrDaten.einnahmen - aktWarmmiete * 12 - (arbitrageZusatzkosten(params)) * 12 - (aktJahrDaten.nfAus || 0) - steuerBetrag;
           const teile = [
             { label: 'Steuer', wert: steuerBetrag, farbe: '#a855f7', pct: Math.round(steuerBetrag / total * 100) },
             { label: 'Eigene Kosten', wert: eigenkosten + Math.round((arbitrageZusatzkosten(params)) * 12 * (1 - anteil)), farbe: '#f87171', pct: 0 },

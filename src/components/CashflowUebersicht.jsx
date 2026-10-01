@@ -3,6 +3,7 @@ import { Wallet, Landmark, AlertTriangle, ParkingSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung, kostenStruktur } from '../utils/berechnung.js';
+import { nachforderungMonat, nachforderungJahr, hatNachforderungen, heuteKey } from '../utils/nachforderung.js';
 
 // ── Hilfsfunktion: Zeile in Tabelle ─────────────────────────────────────────
 function CfZeile({ label, monat, jahr, color = 'gray', einzug = false, bold = false, separator = false, plus = false, hideZero = false }) {
@@ -192,7 +193,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       const cfVorTilgung = einnahmen - betrieb - jahresZinsen - bauspar;
 
       // Cashflow nach Tilgung: Einnahmen − Betrieb − Kreditrate − Bauspar − Einmalinvestitionen
-      const cashflow = einnahmen - betrieb - kreditrate - bauspar - einmalInvest;
+      // Nachforderung mit Ratenplan (vorübergehend): Rückzahlungen der Mieter − Raten an den Anbieter
+      const nachforderung = hatNachforderungen(params) ? nachforderungJahr(params, jahr).netto : 0;
+      const cashflow = einnahmen - betrieb - kreditrate - bauspar - einmalInvest + nachforderung;
       kumuliert += cashflow;
 
       daten.push({
@@ -206,6 +209,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         jahresZinsen: Math.round(jahresZinsen),
         cfVorTilgung: Math.round(cfVorTilgung),
         cashflow: Math.round(cashflow),
+        nachforderung: Math.round(nachforderung),
         kumuliert: Math.round(kumuliert),
         istVorjahr: jahr < aktuellesJahr,
         istAktuell: jahr === aktuellesJahr,
@@ -303,6 +307,8 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       {/* ── Rechenweg Monat / Jahr (UX-Paket Teil 2, Nachtrag) ───────────────── */}
       {(tab === 'monat' || tab === 'jahr') && (() => {
         const jz = tab === 'jahr';
+        // Nachforderung: echter Wert dieses Monats bzw. Summe des Jahres (Ist bis heute, danach Plan)
+        const nf = hatNachforderungen(params) ? (jz ? nachforderungJahr(params, aktuellesJahr) : nachforderungMonat(params, heuteKey())) : null;
         const ks = jz ? ksJahr : monat.ks; // Jahr: monatsgenaue Summe des laufenden Jahres
         const f = tab === 'monat' ? 1 : 12;
         const Z = ({ label, wert, color = 'red', einzug = false, bold = false, separator = false, plus = false, hideZero = false, gedimmt = false, jahrWert }) => {
@@ -364,6 +370,14 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                 wert={monat.vorTilgung} jahrWert={vorTilgungJahr / (anteilFaktor || 1)} />
               <Z label="Cashflow nach Tilgung" color={monat.nachTilgung >= 0 ? 'green' : 'red'} plus bold
                 wert={monat.nachTilgung} jahrWert={nachTilgungJahr / (anteilFaktor || 1)} />
+
+              {nf && (nf.einnahmen > 0 || nf.ausgabe > 0) && (<>
+                {kopf(jz ? `Nachforderung ${aktuellesJahr} · vorübergehend` : 'Nachforderung · vorübergehend')}
+                <Z label="Rückzahlungen der Mieter" color="green" plus wert={nf.einnahmen} jahrWert={nf.einnahmen} />
+                <Z label="Raten an den Anbieter" wert={nf.ausgabe} jahrWert={nf.ausgabe} />
+                <Z label="Nach Tilgung inkl. Nachforderung" color={(jz ? nachTilgungJahr / (anteilFaktor || 1) : monat.nachTilgung) + nf.netto >= 0 ? 'green' : 'red'} plus bold separator
+                  wert={monat.nachTilgung + nf.netto} jahrWert={nachTilgungJahr / (anteilFaktor || 1) + nf.netto} />
+              </>)}
             </tbody>
           </table>
 
@@ -507,6 +521,12 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
             </table>
           </div>
 
+          {verlaufDaten.some(d => d.nachforderung) && (
+            <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+              Enthält die Nachforderung mit Ratenplan (Rückzahlungen der Mieter minus Raten an den Anbieter):{' '}
+              {verlaufDaten.filter(d => d.nachforderung).map(d => `${d.jahr} ${d.nachforderung > 0 ? '+' : '−'}${formatCurrency(Math.abs(d.nachforderung))}`).join(' · ')}
+            </div>
+          )}
           <div className="mt-3 p-2 bg-gray-50 rounded-lg text-xs text-gray-500">
             Mietanpassungen (geplante Mieterhöhungen) werden monatlich gewichtet eingerechnet.
             Anschlussfinanzierungen werden aus den Finanzierungsphasen übernommen.

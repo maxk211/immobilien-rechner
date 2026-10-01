@@ -17,6 +17,11 @@ export function aktionenFuer(aufgabe, h) {
     if (h.onMahnen) a.push({ label: 'Mahnen', onClick: () => h.onMahnen(aufgabe) });
     return a.length ? a : [oeffnen('Miete buchen', true)];
   }
+  if (id.startsWith('nachforderung')) {
+    return [h.onFelder && aufgabe.felder
+      ? { label: 'Eingegangen', primaer: true, onClick: () => h.onFelder(aufgabe.felder) }
+      : oeffnen('Ansehen', true)];
+  }
   if (id.startsWith('mieterhoehung')) {
     return [h.onDurchrechnen
       ? { label: 'Durchrechnen', primaer: true, onClick: () => h.onDurchrechnen(aufgabe) }

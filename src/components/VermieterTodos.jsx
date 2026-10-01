@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
+import { offeneRueckzahlungen, rateEingegangen } from '../utils/nachforderung.js';
 import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
@@ -154,6 +155,26 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         buchen: { betrag: erwartet, jahr: aktuellesJahr, monat: aktuellerMonat },
       });
     }
+  });
+
+  // ── 2c. Rückzahlung einer Nachforderung offen (z. B. Strom-Nachzahlung in Raten)
+  portfolio.forEach(immo => {
+    if (immo.aktiv === false || !(immo.nachforderungen || []).length) return;
+    offeneRueckzahlungen(immo, heute).forEach(o => {
+      todos.push({
+        id: `nachforderung-${immo.id}-${o.nf.id}-${o.mieter.id}`,
+        priority: o.tage >= 10 ? 'rot' : 'gelb',
+        icon: <TrendingDown size={16} />,
+        kategorie: 'Miete',
+        titel: `Rückzahlung ${o.nf.titel} offen · ${o.mieter.name} · ${formatCurrency(o.betrag)}`,
+        sub: `Zuschlag ${heute.toLocaleDateString('de-DE', { month: 'long' })} · noch ${formatCurrency(Math.max(0, (o.mieter.anteil || 0) - (o.mieter.zahlungen || []).reduce((s, z) => s + (Number(z.betrag) || 0), 0)))} offen`,
+        immoId: immo.id,
+        badge: 'Prüfen',
+        targetTab: 'mieteinnahmen',
+        // Direkt buchbar: fertige Felder zum Speichern
+        felder: { nachforderungen: rateEingegangen(immo.nachforderungen, o.nf.id, o.mieter.id, heute) },
+      });
+    });
   });
 
   // ── 3. Nebenkostenabrechnung fehlt (PDF Abschnitt 5): Vorjahr ohne
@@ -631,7 +652,7 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                 const gruppen = [];
                 const index = {};
                 gefilterteTodos.forEach(t => {
-                  const key = t.buchen ? t.id : `${t.kategorie}|${t.titel}`;
+                  const key = t.buchen || t.felder ? t.id : `${t.kategorie}|${t.titel}`;
                   if (index[key] === undefined) { index[key] = gruppen.length; gruppen.push([t]); } else gruppen[index[key]].push(t);
                 });
                 const zeile = (todo, eingerueckt = false) => {
@@ -647,7 +668,13 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
                         <div className="font-semibold text-gray-800 text-sm leading-snug truncate">{todo.titel}</div>
                         <div className="text-xs text-gray-400 mt-0.5 truncate">{todo.sub}</div>
                       </div>
-                      {immo && todo.buchen && onBuchen ? (
+                      {immo && todo.felder && onBuchen ? (
+                        <button
+                          onClick={() => onBuchen(immo.id, todo.felder)}
+                          className="flex-shrink-0 px-3 py-1.5 bg-gray-900 hover:bg-gray-700 text-white text-xs font-bold rounded-lg transition-colors">
+                          Eingegangen
+                        </button>
+                      ) : immo && todo.buchen && onBuchen ? (
                         <button
                           onClick={() => {
                             const b = todo.buchen;
