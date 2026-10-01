@@ -13,6 +13,7 @@ import MieterDashboard from './MieterDashboard';
 import MieterhoeungModal from './MieterhoeungModal';
 import JetztDran from './JetztDran';
 import { MietanpassungenTabelle, WasDuHierTunKannst } from './MieterSeitenleiste';
+import MietanpassungWirkung, { cashflowBeiMiete } from './MietanpassungWirkung';
 import { erstelleZahlungserinnerung } from '../utils/mahnung.js';
 import KaufnebenkostenManager from './KaufnebenkostenManager';
 import MietKostenManager from './MietKostenManager';
@@ -282,6 +283,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     mietHistorie: immobilie.mietHistorie || {},
     mietEingaenge: immobilie.mietEingaenge || [],
     nachforderungen: immobilie.nachforderungen || [],
+    kappungsgrenze: immobilie.kappungsgrenze ?? null,
     steuersatz: immobilie.steuersatz || 42,
     gebaeudeAnteilProzent: immobilie.gebaeudeAnteilProzent || 80,
     afaModus: immobilie.afaModus || 'linear',
@@ -345,6 +347,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const [activeTab, setActiveTab] = useState(() => (initialTab === 'pruefen' ? 'uebersicht' : initialTab) || 'uebersicht');
   const [showPlausi, setShowPlausi] = useState(initialTab === 'pruefen');
   const [mieterhoeungMieter, setMieterhoeungMieter] = useState(null); // Mieterhöhungs-Modal
+  const [mieterhoeungVorschlag, setMieterhoeungVorschlag] = useState(null); // aus „Was wäre, wenn?“
   const [finanzDetailsOffen, setFinanzDetailsOffen] = useState(false);
   // Abschnitt 7.3: Scrollposition sprang beim Tab-Wechsel nicht nach oben —
   // Inhalt konnte mitten in einer langen Ansicht (z.B. Finanzierung) hängen bleiben.
@@ -388,6 +391,27 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     setParams(newParams);
     setHasChanges(true);
   };
+  // Mietanpassung speichern + letzte Mieterhöhung beim aktiven Mieter nachziehen (Tabelle und „Was wäre, wenn?“)
+  const mietanpassungEintragen = async ({ datum, kaltmiete, grund }) => {
+                  const updated = { ...params, mietAnpassungen: [...(params.mietAnpassungen || []), { datum, kaltmiete, grund }] };
+                  updateParams(updated);
+                  await onSave({ ...immobilie, ...updated });
+                  setHasChanges(false);
+                  // Letzte Mieterhöhung beim aktiven Mieter nachziehen (Grundlage der Erinnerung)
+                  const mAktiv = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
+                  if (mAktiv && grund !== 'Neuvermietung' && onSaveMieter) {
+                    const bisher = mAktiv.letzte_mieterhoehung ? new Date(mAktiv.letzte_mieterhoehung) : null;
+                    if (!bisher || new Date(datum) > bisher) {
+                      await onSaveMieter({
+                        ...mAktiv,
+                        mietanpassungenMieter: mAktiv.mietanpassungen_mieter || [],
+                        naechsteAnpassungDatum: mAktiv.naechste_anpassung_datum || '',
+                        letzteMieterhoehung: datum,
+                        kaltmiete,
+                      });
+                    }
+                  }
+                };
   // Phase G: Korrekturen/Bestätigungen aus der Plausibilitätsprüfung sofort speichern
   const speichereSofort = (neu) => {
     setParams(neu);
@@ -2281,26 +2305,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <MietanpassungenTabelle
                 anpassungen={params.mietAnpassungen || []}
                 basisMiete={Number(params.kaltmiete) || 0}
-                onAdd={async ({ datum, kaltmiete, grund }) => {
-                  const updated = { ...params, mietAnpassungen: [...(params.mietAnpassungen || []), { datum, kaltmiete, grund }] };
-                  updateParams(updated);
-                  await onSave({ ...immobilie, ...updated });
-                  setHasChanges(false);
-                  // Letzte Mieterhöhung beim aktiven Mieter nachziehen (Grundlage der Erinnerung)
-                  const mAktiv = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
-                  if (mAktiv && grund !== 'Neuvermietung' && onSaveMieter) {
-                    const bisher = mAktiv.letzte_mieterhoehung ? new Date(mAktiv.letzte_mieterhoehung) : null;
-                    if (!bisher || new Date(datum) > bisher) {
-                      await onSaveMieter({
-                        ...mAktiv,
-                        mietanpassungenMieter: mAktiv.mietanpassungen_mieter || [],
-                        naechsteAnpassungDatum: mAktiv.naechste_anpassung_datum || '',
-                        letzteMieterhoehung: datum,
-                        kaltmiete,
-                      });
-                    }
-                  }
-                }}
+                cfFuerMiete={(m) => cashflowBeiMiete({ ...immobilie, ...params }, m)}
+                onAdd={mietanpassungEintragen}
+              />
+              <MietanpassungWirkung
+                params={params}
+                immobilie={immobilie}
+                onAdd={mietanpassungEintragen}
+                onKappungChange={(k) => speichereSofort({ ...params, kappungsgrenze: k })}
+                onSchreiben={(v) => { setMieterhoeungVorschlag(v); setMieterhoeungMieter(mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false) || {}); }}
               />
               </div>
 
@@ -2331,8 +2344,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           {mieterhoeungMieter !== null && (
             <MieterhoeungModal
               mieter={mieterhoeungMieter}
+              vorschlag={mieterhoeungVorschlag}
               immobilie={immobilie}
-              onClose={() => setMieterhoeungMieter(null)}
+              onClose={() => { setMieterhoeungMieter(null); setMieterhoeungVorschlag(null); }}
               onSave={async (mieterUpdate, immoUpdate) => {
                 // 1. Mieter aktualisieren — nur wenn echter Datensatz mit ID
                 // WICHTIG: mieterhoeungMieter ist ein DB-Record (snake_case), aber onSaveMieter

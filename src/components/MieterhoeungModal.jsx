@@ -29,7 +29,7 @@ const ladeGespeicherteVermieterAdresse = () => {
  * mieterUpdate : { letzte_mieterhoehung: 'YYYY-MM-DD', kaltmiete: Zahl }
  * immoUpdate   : { mietAnpassungen: [...] }
  */
-const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
+const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = null }) => {
   const heute = new Date();
   const heutStr = heute.toISOString().slice(0, 10);
 
@@ -62,8 +62,9 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave }) => {
     mieterAdresse: '',
     aktuelleKaltmiete: aktKaltmiete > 0 ? aktKaltmiete.toString() : '',
     // Mieterhöhung
-    neueKaltmiete: aktKaltmiete > 0 ? Math.ceil(aktKaltmiete * 1.05) : '',
-    wirksamkeitsDatum: frühestesWirksamkeitsDatum,
+    // A.5: Vorschlag aus „Was wäre, wenn?“ übernehmen
+    neueKaltmiete: vorschlag?.neueKaltmiete ?? (aktKaltmiete > 0 ? Math.ceil(aktKaltmiete * 1.05) : ''),
+    wirksamkeitsDatum: vorschlag?.wirksamkeitsDatum || frühestesWirksamkeitsDatum,
     begründungsTyp: 'mietspiegel',
     mietspiegelJahr: new Date().getFullYear().toString(),
     mietspiegelQuelle: 'Mietspiegel der Gemeinde',
