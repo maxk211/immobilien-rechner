@@ -230,6 +230,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       nkEinnahmen: Math.round(jahresNK),           // Z. 6 — NK vom Mieter
       nfEinnahmen: Math.round(nfSt.einnahmen),     // Umlage: Rückzahlungen Nachforderung
       nfAusgaben: Math.round(nfSt.ausgabe),        // Z. 50 — Nachforderung an den Anbieter
+      nfAusfall: Math.round(nfSt.ausfall),         // Info: Forderungsausfall (nicht eingegangen)
+      nfAusfaelle: nfSt.ausfaelle,
       gesamtEinnahmen: Math.round(gesamtEinnahmen),
       // Werbungskosten (Anlage V)
       zinsen: Math.round(jahresZinsen),            // Z. 9 — Schuldzinsen
@@ -301,6 +303,8 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       ['Sonstige Betriebskosten', 'Z. 50', ...alleJahreDaten.map(d => d.nebenkosten)],
       ...(alleJahreDaten.some(d => d.nfAusgaben) ? [['Nachforderung an den Anbieter', 'Z. 50', ...alleJahreDaten.map(d => d.nfAusgaben)]] : []),
       ['Summe Werbungskosten', 'Z. 53', ...alleJahreDaten.map(d => d.absetzbareKosten)],
+      [],
+      ...(alleJahreDaten.some(d => d.nfAusfall) ? [['Info: Forderungsausfall Nachforderung (nicht eingegangen, nicht zusätzlich absetzbar)', 'Info', ...alleJahreDaten.map(d => d.nfAusfall)]] : []),
       [],
       ['C. ERGEBNIS', '', ...verfuegbareJahre.map(() => '')],
       ['Einkünfte aus V+V (Überschuss/Verlust)', 'Z. 54', ...alleJahreDaten.map(d => d.zuVersteuern)],
@@ -448,6 +452,21 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       columnStyles: { 2: { halign: 'right' } },
       margin: { left: 14, right: 14 },
     });
+
+    if (d.nfAusfall > 0) {
+      pdf.autoTable({
+        startY: pdf.lastAutoTable.finalY + 8,
+        head: [['Hinweis: Forderungsausfall (nicht eingegangen)', 'seit', 'Betrag']],
+        body: [
+          ...d.nfAusfaelle.map(x => [`${x.titel} · ${x.name}`, new Date(x.datum).toLocaleDateString('de-DE'), formatCurrency(x.betrag)]),
+          [{ content: 'Nicht zusätzlich absetzbar: Die Raten an den Anbieter stehen schon voll in den Werbungskosten, die Rückzahlung fehlt nur bei den Einnahmen.', colSpan: 3, styles: { fontStyle: 'italic', fontSize: 7 } }],
+        ],
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [185, 28, 28] },
+        columnStyles: { 2: { halign: 'right' } },
+        margin: { left: 14, right: 14 },
+      });
+    }
 
     if (fahrtenSelectedJahr.length > 0) {
       pdf.autoTable({
@@ -625,6 +644,19 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               )}
               <AnlageVZeile zeile="Z. 53" label="Summe Werbungskosten" betrag={a(selectedDaten.absetzbareKosten)} color="red" bold />
             </div>
+
+            {selectedDaten.nfAusfall > 0 && (
+              <div className="px-4 py-3 bg-red-50/60">
+                <div className="text-[11px] font-bold text-red-700 uppercase tracking-wide mb-1">Hinweis für den Steuerberater: Forderungsausfall</div>
+                {selectedDaten.nfAusfaelle.map((x, i) => (
+                  <div key={i} className="flex justify-between text-xs text-gray-700 py-0.5">
+                    <span>{x.titel} · {x.name} zahlt nicht mehr (seit {new Date(x.datum).toLocaleDateString('de-DE')})</span>
+                    <span className="font-semibold">{formatCurrency(x.betrag)}</span>
+                  </div>
+                ))}
+                <p className="text-[11px] text-gray-500 mt-1">Nicht zusätzlich absetzbar: Die Raten an den Anbieter stehen schon voll in den Werbungskosten, die Rückzahlung fehlt nur bei den Einnahmen. Ob und wie du den Ausfall darüber hinaus geltend machen kannst, kläre bitte mit deinem Steuerberater.</p>
+              </div>
+            )}
 
             {/* C. ERGEBNIS */}
             <div className={`px-4 py-3 ${selectedDaten.zuVersteuern < 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>

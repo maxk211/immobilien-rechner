@@ -10,7 +10,8 @@
 //   id, titel, gesamt, eigenanteil, notiz,
 //   anbieter: { betragMonat, ab: 'JJJJ-MM', monate },     // was von deinem Konto abgeht
 //   mieter: [{ id, name, mieterId?, anteil, zuschlag, ab: 'JJJJ-MM',
-//              zahlungen: [{ id, monat: 'JJJJ-MM', datum, betrag, art: 'rate'|'einmal'|'sonstig' }] }]
+//              zahlungen: [{ id, monat: 'JJJJ-MM', datum, betrag, art: 'rate'|'einmal'|'sonstig' }],
+//              ausfall: { betrag, datum, monat: 'JJJJ-MM', notiz } }]   // Mieter zahlt den Rest nicht mehr
 // }
 // Bewusst getrennt von der Miete: keine Mieterhöhung, keine Rendite-Verfälschung,
 // keine falschen Fristen für die nächste Mieterhöhung.
@@ -42,13 +43,16 @@ export const anbieterEnde = (nf) => nf?.anbieter?.ab ? plusMonate(nf.anbieter.ab
 // ── Mieter-Seite ───────────────────────────────────────────────────────────
 export const gezahltBis = (m, key = '9999-12') => r2((m.zahlungen || []).filter(z => z.monat <= key).reduce((s, z) => s + n(z.betrag), 0));
 export const gezahlt = (m) => gezahltBis(m);
-export const restbetrag = (m) => Math.max(0, r2(n(m.anteil) - gezahlt(m)));
+// Forderungsausfall: der Teil, den der Mieter nicht mehr zahlt — bleibt bei dir
+export const ausfallBetrag = (m) => r2(n(m?.ausfall?.betrag));
+export const restbetrag = (m) => Math.max(0, r2(n(m.anteil) - gezahlt(m) - ausfallBetrag(m)));
 export const istImMonat = (m, key) => r2((m.zahlungen || []).filter(z => z.monat === key).reduce((s, z) => s + n(z.betrag), 0));
 
 // Was in diesem Monat fällig ist: Zuschlag, solange nach den Zahlungen der
 // Vormonate noch etwas offen ist — höchstens der Rest.
 export function sollImMonat(m, key) {
   if (!m.ab || key < m.ab || !(n(m.zuschlag) > 0)) return 0;
+  if (m.ausfall?.monat && key >= m.ausfall.monat) return 0; // ab dem Ausfall wird nichts mehr erwartet
   const restVorher = n(m.anteil) - gezahltBis(m, plusMonate(key, -1));
   return restVorher > 0.004 ? r2(Math.min(n(m.zuschlag), restVorher)) : 0;
 }
@@ -58,7 +62,7 @@ export function sollImMonat(m, key) {
 export function mieterVerlauf(m, heute = heuteKey()) {
   const out = {};
   (m.zahlungen || []).forEach(z => { if (z.monat <= heute) out[z.monat] = r2((out[z.monat] || 0) + n(z.betrag)); });
-  let rest = n(m.anteil) - gezahltBis(m, heute);
+  let rest = n(m.anteil) - gezahltBis(m, heute) - ausfallBetrag(m);
   // Zahlungen, die schon für die Zukunft erfasst sind
   (m.zahlungen || []).filter(z => z.monat > heute).forEach(z => { out[z.monat] = r2((out[z.monat] || 0) + n(z.betrag)); rest -= n(z.betrag); });
   if (rest <= 0.004 || !(n(m.zuschlag) > 0) || !m.ab) return out;
@@ -73,6 +77,7 @@ export function mieterVerlauf(m, heute = heuteKey()) {
   return out;
 }
 export function voraussichtlichFertig(m, heute = heuteKey()) {
+  if (m.ausfall) return null;
   if (restbetrag(m) <= 0.004) {
     const zs = [...(m.zahlungen || [])].sort((a, b) => a.monat.localeCompare(b.monat));
     let s = 0; for (const z of zs) { s += n(z.betrag); if (s >= n(m.anteil) - 0.004) return z.monat; }
@@ -103,11 +108,15 @@ export function nachforderungJahr(immo, jahr, heute = heuteKey()) {
 // Steuer: nur tatsächlich geflossenes Geld (Ist). Anbieter-Raten gelten bis heute als gezahlt.
 export function nachforderungSteuerJahr(immo, jahr, heute = heuteKey()) {
   let ausgabe = 0, einnahmen = 0;
+  const ausfaelle = [];
   (immo?.nachforderungen || []).forEach(nf => {
     for (let m = 1; m <= 12; m++) { const k = monatKey(jahr, m); if (k <= heute) ausgabe += anbieterImMonat(nf, k); }
     (nf.mieter || []).forEach(mi => (mi.zahlungen || []).forEach(z => { if (z.monat.startsWith(`${jahr}-`)) einnahmen += n(z.betrag); }));
+    (nf.mieter || []).forEach(mi => { if (mi.ausfall?.monat?.startsWith(`${jahr}-`)) ausfaelle.push({ titel: nf.titel, name: mi.name, betrag: ausfallBetrag(mi), datum: mi.ausfall.datum }); });
   });
-  return { ausgabe: r2(ausgabe), einnahmen: r2(einnahmen) };
+  // Ausfälle sind nur ein Hinweis: bei Einkünften aus V+V zählt, was geflossen ist.
+  // Die Raten an den Anbieter stecken schon voll in den Werbungskosten.
+  return { ausgabe: r2(ausgabe), einnahmen: r2(einnahmen), ausfall: r2(ausfaelle.reduce((x, a) => x + a.betrag, 0)), ausfaelle };
 }
 export const hatNachforderungen = (immo) => (immo?.nachforderungen || []).length > 0;
 
@@ -117,10 +126,13 @@ export function nachforderungStand(nf, heute = heuteKey()) {
   const anteile = mieter.reduce((s, m) => s + n(m.anteil), 0);
   const zurueck = mieter.reduce((s, m) => s + Math.min(n(m.anteil), gezahlt(m)), 0);
   const offen = mieter.reduce((s, m) => s + restbetrag(m), 0);
+  const ausgefallen = mieter.reduce((s, m) => s + ausfallBetrag(m), 0);
   const anbieterBezahlt = (() => { let s = 0; const a = nf.anbieter; if (!a?.ab) return 0; for (let i = 0; i < Math.max(1, n(a.monate)); i++) { const k = plusMonate(a.ab, i); if (k <= heute) s += n(a.betragMonat); } return s; })();
   return {
     anteile: r2(anteile), zurueck: r2(zurueck), offen: r2(offen),
     eigenanteil: r2(n(nf.eigenanteil)),
+    ausgefallen: r2(ausgefallen),
+    verlust: r2(n(nf.eigenanteil) + ausgefallen), // was am Ende insgesamt bei dir bleibt
     luecke: r2(n(nf.gesamt) - n(nf.eigenanteil) - anteile), // ≠ 0 → Aufteilung passt nicht zum Gesamtbetrag
     anbieterSumme: r2(anbieterSumme(nf)), anbieterBezahlt: r2(anbieterBezahlt),
     anbieterOffen: r2(Math.max(0, anbieterSumme(nf) - anbieterBezahlt)),
@@ -176,6 +188,24 @@ export function restKomplett(liste, nfId, mieterId, datum = new Date().toISOStri
   return mitZahlung(liste, nfId, mieterId, { monat: datum.slice(0, 7), datum, betrag: rest, art: 'einmal' });
 }
 
+// Mieter zahlt den Rest nicht mehr → als Forderungsausfall markieren
+export function alsAusgefallen(liste, nfId, mieterId, { betrag, datum = new Date().toISOString().slice(0, 10), notiz = '' } = {}) {
+  return (liste || []).map(nf => nf.id !== nfId ? nf : {
+    ...nf,
+    mieter: nf.mieter.map(m => {
+      if (m.id !== mieterId) return m;
+      const max = Math.max(0, r2(n(m.anteil) - gezahlt(m)));
+      const b = betrag == null ? max : Math.min(max, r2(n(betrag)));
+      return b > 0 ? { ...m, ausfall: { betrag: b, datum, monat: datum.slice(0, 7), notiz } } : m;
+    }),
+  });
+}
+export function ausfallAufheben(liste, nfId, mieterId) {
+  return (liste || []).map(nf => nf.id !== nfId ? nf : {
+    ...nf, mieter: nf.mieter.map(m => { if (m.id !== mieterId) return m; const { ausfall, ...rest } = m; return rest; }), // eslint-disable-line no-unused-vars
+  });
+}
+
 // Neue Nachforderung aus dem Formular
 export function baueNachforderung(f) {
   const namen = (f.mieter || []).filter(m => (m.name || '').trim());
@@ -190,6 +220,7 @@ export function baueNachforderung(f) {
       id: m.id || neueId(), name: m.name.trim(), mieterId: m.mieterId || null,
       anteil: r2(n(m.anteil)), zuschlag: r2(n(m.zuschlag)), ab: m.ab || f.mieterAb,
       zahlungen: m.zahlungen || [],
+      ...(m.ausfall ? { ausfall: m.ausfall } : {}),
     })),
   };
 }
