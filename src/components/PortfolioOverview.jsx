@@ -3,7 +3,7 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
 import { beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, arbitrageZusatzkosten } from '../utils/miete.js';
-import { berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert, kostenStruktur } from '../utils/berechnung.js';
+import { cashflowMonat, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert, kostenStruktur } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
 
 const PortfolioOverview = ({ portfolio }) => {
@@ -20,6 +20,7 @@ const PortfolioOverview = ({ portfolio }) => {
     let gesamtMiete = 0;
     let gesamtFlaeche = 0;
     let gesamtCashflow = 0;
+    let gesamtCfVor = 0; // Summe der Kartenwerte vor Tilgung (cashflowMonat)
     let gesamtCashflowKauf = 0; // nur Kaufimmobilien — Basis für ekRendite (Mietimmobilien nutzen kein Eigenkapital)
     let gesamtKreditrate = 0;
     let gesamtKosten = 0;
@@ -48,6 +49,7 @@ const PortfolioOverview = ({ portfolio }) => {
 
         gesamtMiete += einnahmen * 12; // Einnahmen aus Untervermietung
         gesamtCashflow += monatsCashflow * 12;
+        gesamtCfVor += monatsCashflow * 12;
         gesamtKosten += ausgaben * 12;
       } else {
         // Kaufimmobilie
@@ -81,7 +83,9 @@ const PortfolioOverview = ({ portfolio }) => {
           : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);
 
         // berechneMtlCashflow für Cashflow (inkl. Bauspar, Stellplatz, Phasenwechsel)
-        const monatsCashflow = berechneMtlCashflow(immo);
+        const cfImmo = cashflowMonat(immo);
+        const monatsCashflow = cfImmo.nach;
+        gesamtCfVor += cfImmo.vor * 12;
 
         gesamtCashflow    += monatsCashflow * 12;
         gesamtCashflowKauf += monatsCashflow * 12;
@@ -102,6 +106,7 @@ const PortfolioOverview = ({ portfolio }) => {
       gesamtMieteMonat: gesamtMiete / 12,
       gesamtCashflowJahr: gesamtCashflow,
       gesamtCashflowMonat: gesamtCashflow / 12,
+      gesamtCfVorMonat: gesamtCfVor / 12,
       gesamtKreditrateJahr: gesamtKreditrate,
       gesamtKostenJahr: gesamtKosten,
       gesamtFlaeche,
@@ -120,8 +125,8 @@ const PortfolioOverview = ({ portfolio }) => {
   // Teil 3, Abschnitt 3 + 9: vier Kennzahlen, Cashflow vor UND nach Tilgung.
   // "Vermögensaufbau pro Objekt" ist raus (steht in jedem Objekt selbst).
   const cfNach = stats.gesamtCashflowMonat;
-  const tilgungMonat = stats.gesamtTilgungJahr / 12;
-  const cfVor = cfNach + tilgungMonat;
+  const cfVor = stats.gesamtCfVorMonat; // Summe derselben Werte wie auf den Karten
+  const tilgungMonat = cfVor - cfNach;
   const vz = (v) => (v >= 0 ? '+' : '');
   const kachel = 'rounded-2xl bg-white border border-gray-200 p-3 sm:p-5 shadow-sm';
   const label = 'text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1';

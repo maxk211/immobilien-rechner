@@ -1,5 +1,6 @@
 import { Building2, Wallet, CalendarDays, TrendingUp, Clock, Check, FileText, AlertTriangle, Info, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
+import ZahlInput from './ZahlInput';
 
 const BausparManager = ({ params, updateParams }) => {
   const vertraege = params.bausparvertraege || [];
@@ -101,7 +102,7 @@ const BausparManager = ({ params, updateParams }) => {
                   <div>
                     <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><Building2 size={12} /> Bausparsumme (Vertragssumme)</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <ZahlInput
                         type="number"
                         value={v.bausparsumme || ''}
                         onChange={e => updateVertrag(v.id, 'bausparsumme', e.target.value)}
@@ -116,7 +117,7 @@ const BausparManager = ({ params, updateParams }) => {
                   <div>
                     <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><Wallet size={12} /> Aktueller Sparbetrag</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <ZahlInput
                         type="number"
                         value={v.aktuellerSparbetrag || ''}
                         onChange={e => updateVertrag(v.id, 'aktuellerSparbetrag', e.target.value)}
@@ -131,7 +132,7 @@ const BausparManager = ({ params, updateParams }) => {
                   <div>
                     <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><CalendarDays size={12} /> Monatliche Sparrate</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <ZahlInput
                         type="number"
                         value={v.monatlicheSparrate || ''}
                         onChange={e => updateVertrag(v.id, 'monatlicheSparrate', e.target.value)}
@@ -146,7 +147,7 @@ const BausparManager = ({ params, updateParams }) => {
                   <div>
                     <label className="block text-xs text-gray-500 font-semibold mb-1.5 flex items-center gap-1"><TrendingUp size={12} /> Gesicherter Zinssatz (Darlehen)</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <ZahlInput
                         type="number"
                         value={v.gesicherterZinssatz || ''}
                         onChange={e => updateVertrag(v.id, 'gesicherterZinssatz', e.target.value)}

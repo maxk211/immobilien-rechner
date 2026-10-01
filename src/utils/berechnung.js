@@ -1,6 +1,6 @@
 import { getPreisNachPLZ } from '../constants/plz.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert, zahltIchAm, zahlerAnteilJahr, arbitrageZusatzkosten } from './miete.js';
-import { darlehensVerlauf } from './darlehen.js';
+import { darlehensVerlauf, anfangsFremdkapital } from './darlehen.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
@@ -111,7 +111,7 @@ export const berechneRestschuld = (immobilie) => {
   // Geschenkt oder voll eigenfinanziert: es existiert kein Kredit, also auch
   // keine Restschuld — sonst würde unten fälschlich ein Fremdkapital in Höhe
   // der Kaufnebenkosten (Default 10 %) konstruiert und "getilgt".
-  if (immobilie.geschenkt || immobilie.vollEigenfinanziert) {
+  if (!immobilie.kreditLaeuftBereits && anfangsFremdkapital(immobilie) <= 0) {
     return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
   }
 
@@ -143,23 +143,11 @@ export const berechneRestschuld = (immobilie) => {
   const zinssatz = immobilie.zinssatz ?? 4.0;
   const tilgung = immobilie.tilgung ?? 2.0;
   const kaufnebenkosten = immobilie.kaufnebenkosten ?? 10;
-  const finanzierungsbetrag = immobilie.finanzierungsbetrag;
+  void kaufnebenkosten; void tilgung;
 
-  // Fremdkapital berechnen
-  const kaufnebenkostenAbsolut = immobilie.kaufpreis * (kaufnebenkosten / 100);
-  const gesamtinvestition = immobilie.kaufpreis + kaufnebenkostenAbsolut;
-
-  // Eigenkapital aus neuer Aufteilung oder legacy
-  const gesamtEK = (immobilie.ekFuerNebenkosten !== undefined && immobilie.ekFuerKaufpreis !== undefined)
-    ? (immobilie.ekFuerNebenkosten || 0) + (immobilie.ekFuerKaufpreis || 0)
-    : (immobilie.eigenkapital ?? immobilie.kaufpreis * 0.2);
-
-  // Finanzierungsbetrag: Entweder manuell eingegeben oder berechnet
-  const anfangsFremdkapital = finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
-    ? finanzierungsbetrag
-    : Math.max(0, gesamtinvestition - gesamtEK);
-
-  if (anfangsFremdkapital <= 0) return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
+  // Finanzierungsbetrag: gemeinsame Regel (darlehen.js)
+  const fkStart = anfangsFremdkapital(immobilie);
+  if (fkStart <= 0) return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
 
   // Monatliche Annuität: feste Rate aus erster Phase oder berechnet
   const monatszins = zinssatz / 100 / 12;
@@ -167,10 +155,10 @@ export const berechneRestschuld = (immobilie) => {
   const erstePhase = (immobilie.finanzierungsphasen || [])[0];
   const annuitaet = (erstePhase?.finanzierungsModus === 'festRate' && erstePhase?.monatlicherBetrag > 0)
     ? erstePhase.monatlicherBetrag
-    : (monatszins > 0 ? anfangsFremdkapital * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) / (Math.pow(1 + monatszins, laufzeit * 12) - 1) : 0);
+    : (monatszins > 0 ? fkStart * (monatszins * Math.pow(1 + monatszins, laufzeit * 12)) / (Math.pow(1 + monatszins, laufzeit * 12) - 1) : 0);
 
   // Restschuld iterativ berechnen
-  let restschuld = anfangsFremdkapital;
+  let restschuld = fkStart;
   for (let monat = 0; monat < monateSeitKauf && restschuld > 0; monat++) {
     const monatsZinsen = restschuld * monatszins;
     const monatsTilgung = Math.min(annuitaet - monatsZinsen, restschuld);
@@ -179,8 +167,8 @@ export const berechneRestschuld = (immobilie) => {
 
   return {
     restschuld: Math.round(restschuld),
-    anfangsFremdkapital: Math.round(anfangsFremdkapital),
-    getilgt: Math.round(anfangsFremdkapital - restschuld)
+    anfangsFremdkapital: Math.round(fkStart),
+    getilgt: Math.round(fkStart - restschuld)
   };
 };
 
@@ -224,19 +212,13 @@ export const berechneJahresRateFuerPhasen = (phasen, fremdkapital, kreditStartJa
  * Ersetzt die vereinfachte Formel fremdkapital × zinssatz im Steuerexport.
  */
 export const berechneJahresZinsenFuerSteuer = (immo, targetJahr) => {
-  if (immo.geschenkt || immo.vollEigenfinanziert || !immo.kaufpreis) return 0;
+  if (anfangsFremdkapital(immo) <= 0) return 0;
 
   const kaufjahr = immo.kaufdatum ? new Date(immo.kaufdatum).getFullYear() : null;
   if (!kaufjahr || targetJahr < kaufjahr) return 0;
 
-  // Fremdkapital
-  const kNkProzent = immo.kaufnebenkosten ?? 10;
-  const gesamtEK = (immo.ekFuerNebenkosten != null && immo.ekFuerKaufpreis != null)
-    ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
-    : (immo.eigenkapital ?? immo.kaufpreis * 0.2);
-  const fk = immo.finanzierungsbetrag != null
-    ? immo.finanzierungsbetrag
-    : Math.max(0, immo.kaufpreis * (1 + kNkProzent / 100) - gesamtEK);
+  // Fremdkapital: gemeinsame Regel
+  const fk = anfangsFremdkapital(immo);
 
   if (fk <= 0) return 0;
 
@@ -378,11 +360,7 @@ export const berechneRendite = (params) => {
   // Finanzierungsbetrag: kein Kredit bei vollEigenfinanziert/geschenkt, sonst manuell oder berechnet
   const fremdkapital = kreditLaeuftBereits
     ? (params.aktuelleRestschuld || 0)
-    : (vollEigenfinanziert || geschenkt)
-      ? 0
-      : (finanzierungsbetrag !== null && finanzierungsbetrag !== undefined
-          ? finanzierungsbetrag
-          : Math.max(0, gesamtinvestition - gesamtEK));
+    : anfangsFremdkapital({ ...params, vollEigenfinanziert, geschenkt, finanzierungsbetrag });
 
   // Einnahmen basierend auf Vermietungsmodell:
   // - kaltmiete: Nur Kaltmiete (NK werden via Abrechnung umgelegt, kein direkter Cashflow)
@@ -591,57 +569,82 @@ export const berechneRendite = (params) => {
   };
 };
 
-/**
- * berechneMtlCashflow — EINHEITLICHE Cashflow-Berechnung für alle Immobilientypen.
- * Gibt den aktuellen monatlichen Netto-Cashflow zurück.
- * Wird genutzt in: ImmobilienKarte, PortfolioOverview, Selbstauskunft-PDF.
- * (CashflowUebersicht hat eigene monatsDaten-Logik mit Jahres-Overrides + Zinsen/Tilgung-Detail.)
- */
-export const berechneMtlCashflow = (immo) => {
-  const typ = immo.immobilienTyp;
+// ─── Cashflow pro Monat — EINE Funktion für Karte, Cockpit, Zahlen-Reiter, Dashboard ───
+// UX-Gesamtpaket B12/B15: Vorher gab es drei Rechenwege (Karte ohne Darlehen bei
+// Schenkung, Cockpit ohne Bausparrate, Zahlen-Reiter korrekt). Jetzt rufen alle
+// Stellen diese Funktion auf; ein Test prüft, dass sie überall dasselbe liefert.
+//
+// Rückgabe (alles pro Monat):
+//   einnahmen   Miete (+ NK-Vorauszahlung, soweit sie im Cashflow zählt) + Stellplatz
+//   betrieb     Bewirtschaftung (nicht umlagefähiges Hausgeld, SEV, Grundsteuer, …)
+//   rate        Kreditrate des laufenden Monats (phasenbewusst)
+//   zinsen      Zinsanteil dieses Monats, tilgung = rate − zinsen
+//   bauspar     Sparraten aktiver Bausparverträge
+//   vor         Cashflow vor Tilgung  = einnahmen − betrieb − zinsen − bauspar
+//   nach        Cashflow nach Tilgung = einnahmen − betrieb − rate − bauspar
+// Kostenfelder je Wohnung im MFH (wie KOSTEN_FELDER in MehrfamilienhausDetail)
+export const MFH_KOSTEN_KEYS = ['hausverwaltung', 'instandhaltung', 'grundsteuer', 'versicherung', 'strom', 'internet', 'sonstige'];
 
-  // ── Mietimmobilie (Arbitrage-Modell) ──────────────────────────────
+export const cashflowMonat = (immo, heute = new Date()) => {
+  const typ = immo?.immobilienTyp;
   if (typ === 'mietimmobilie') {
     const vertragsEnde = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
-    if (vertragsEnde && vertragsEnde < new Date()) return 0;
+    const leer = { einnahmen: 0, betrieb: 0, rate: 0, zinsen: 0, tilgung: 0, bauspar: 0, vor: 0, nach: 0, hatKredit: false, stellplatz: 0, kaltmiete: 0, nkImCashflow: 0, ks: null };
+    if (vertragsEnde && vertragsEnde < heute) return leer;
     const einnahmen = (immo.anzahlZimmerVermietet || 0) * getAktuelleUntermiete(immo);
-    // Zusatzkosten nur, soweit ich sie selbst trage (Wer zahlt? mit Datum)
-    const ausgaben = getAktuelleWarmmiete(immo) + arbitrageZusatzkosten(immo);
-    return einnahmen - ausgaben;
+    const betrieb = getAktuelleWarmmiete(immo) + arbitrageZusatzkosten(immo, heute);
+    return { ...leer, einnahmen, betrieb, kaltmiete: einnahmen, vor: einnahmen - betrieb, nach: einnahmen - betrieb };
   }
 
-  // ── MFH / Kaufimmobilie ────────────────────────────────────────────
-  // Gesamtmiete: bei MFH Summe aller Wohnungen, sonst mietAnpassungen-aware
-  const gesamtMiete = typ === 'mehrfamilienhaus'
+  const istMFH = typ === 'mehrfamilienhaus';
+  // MFH: Miete und Kosten je Wohnung (wie in der MFH-Detailansicht), sonst Kostenstruktur
+  const kaltmiete = istMFH
     ? (immo.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0)
     : getAktuelleMiete(immo);
+  let betrieb, nkImCashflow = 0, ks = null;
+  if (istMFH) {
+    const weKosten = (immo.wohnungen || []).some(w => w.kosten && Object.keys(w.kosten).length);
+    betrieb = weKosten
+      ? (immo.wohnungen || []).reduce((s, w) => s + MFH_KOSTEN_KEYS.reduce((k, f) => k + (Number((w.kosten || {})[f]) || 0), 0), 0)
+      : (Number(immo.instandhaltung) || 0) + (Number(immo.verwaltung) || 0) + (Number(immo.hausgeld) || 0) + (Number(immo.strom) || 0) + (Number(immo.internet) || 0) + (Number(immo.nebenkosten) || 0);
+  } else {
+    ks = kostenStruktur(immo, (f) => getAktuellerWert(immo, f));
+    betrieb = ks.bewirtschaftung;
+    nkImCashflow = ks.nkImCashflow;
+  }
+  const sp = immo.stellplatz;
+  const stellplatz = (sp?.vorhanden && sp?.istVermietet) ? (Number(sp.monatlicheMiete) || 0) * (Number(sp.anzahl) || 1) : 0;
 
-  // Phase-aware Kreditrate via berechneRendite — berücksichtigt finanzierungsphasen korrekt
-  const ergebnis = berechneRendite({ ...immo, kaltmiete: gesamtMiete });
+  // Kreditrate: phasenbewusst über berechneRendite, Zinsanteil exakt für diesen Monat
+  const ergebnis = berechneRendite({ ...immo, kaltmiete, ...(istMFH ? { vermietungsmodell: 'kaltmiete', nebenkostenVomMieter: 0 } : {}) });
+  const rate = Math.max(0, ergebnis.monatlicheRate || 0);
+  let zinsen = 0;
+  if (rate > 0) {
+    const zt = berechneZinsUndTilgung(immo, heute.getFullYear(), heute.getMonth());
+    zinsen = zt ? Math.max(0, Math.min(zt.zinsen, rate))
+      : Math.max(0, Math.min(rate, (ergebnis.effRestschuld || 0) * ((ergebnis.effZinssatz || 0) / 100 / 12)));
+  }
+  const tilgung = Math.max(0, rate - zinsen);
 
-  // NK-Vorauszahlung vom Mieter (nur bei kaltmiete_nk Modell, nicht bei MFH)
-  const ksMtl = typ === 'mehrfamilienhaus' ? null : kostenStruktur(immo, (f) => getAktuellerWert(immo, f));
-  const nkVomMieter = ksMtl ? ksMtl.nkImCashflow : 0;
-
-  // Laufende Betriebskosten des Vermieters — datumsbasierte Kostenanpassungen
-  // berücksichtigen (Bug-Fix: vorher wurden immer die Basiswerte genutzt,
-  // Anpassungen aus dem "Kostenanpassungen"-Tab flossen hier nie ein)
-  const betriebskosten = (typ === 'mehrfamilienhaus')
-    ? (immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0) + (immo.nebenkosten || 0)
-    : ksMtl.bewirtschaftung;
-
-  // Bauspar-Sparraten aller noch aktiven Verträge (vor Zuteilungsreife)
   const bauspar = (immo.bausparvertraege || [])
-    .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
+    .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > heute)
     .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
 
-  // Stellplatz-Mieteinnahmen
-  const spMtl = (immo.stellplatz?.vorhanden && immo.stellplatz?.istVermietet)
-    ? (immo.stellplatz.monatlicheMiete || 0) * (immo.stellplatz.anzahl || 1)
-    : 0;
-
-  return gesamtMiete + nkVomMieter + spMtl - ergebnis.monatlicheRate - betriebskosten - bauspar;
+  const einnahmen = kaltmiete + nkImCashflow + stellplatz;
+  return {
+    kaltmiete, nkImCashflow, stellplatz, einnahmen, betrieb, ks,
+    rate, zinsen, tilgung, bauspar,
+    vor: einnahmen - betrieb - zinsen - bauspar,
+    nach: einnahmen - betrieb - rate - bauspar,
+    hatKredit: rate > 0,
+  };
 };
+
+/**
+ * berechneMtlCashflow — Cashflow nach Tilgung (monatlich). Kurzform von cashflowMonat().
+ * Wird genutzt in: ImmobilienKarte, PortfolioOverview, Selbstauskunft-PDF, Rechner-Vergleich.
+ */
+export const berechneMtlCashflow = (immo) => cashflowMonat(immo).nach;
 
 /**
  * Berechnet den exakten Zins- und Tilgungsanteil für ein Zieljahr oder Zielmonat.
@@ -694,13 +697,7 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
   const ksMonat = kreditStart.getMonth(); // 0-indexed
 
   // Anfangs-Fremdkapital (identische Logik wie berechneRendite)
-  const kNKAbs = (params.kaufpreis || 0) * ((params.kaufnebenkosten ?? 10) / 100);
-  const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
-    ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
-    : (params.eigenkapital || 0);
-  const anfangsFK = (params.finanzierungsbetrag !== null && params.finanzierungsbetrag !== undefined)
-    ? params.finanzierungsbetrag
-    : Math.max(0, (params.kaufpreis || 0) + kNKAbs - gesamtEK);
+  const anfangsFK = params.kreditLaeuftBereits ? (params.aktuelleRestschuld || 0) : anfangsFremdkapital(params);
 
   if (anfangsFK <= 0) return { zinsen: 0, tilgung: 0, restschuldAnfang: 0, restschuldEnde: 0 };
 
@@ -788,15 +785,11 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
 export const berechneImmoVermoegenswerte = (immo) => {
   if (immo.immobilienTyp === 'mietimmobilie') return null;
   const marktwertGeschenkt = getAktuellerGesamtwert(immo);
-  if (immo.geschenkt || immo.vollEigenfinanziert) {
+  // Ob ein Kredit zählt, entscheidet allein das Darlehen — nicht die Erwerbsart (B12/B7)
+  if (!immo.kreditLaeuftBereits && anfangsFremdkapital(immo) <= 0) {
     return { fremdkapital: 0, restschuld: 0, tilgungJahr: 0, freiVermoegen: marktwertGeschenkt, marktwert: marktwertGeschenkt };
   }
-  const kaufnebenkosten = immo.kaufnebenkosten ?? 10;
-  const kaufnebenkostenAbsolut = (immo.kaufpreis || 0) * (kaufnebenkosten / 100);
-  const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
-    ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)
-    : (immo.eigenkapital ?? (immo.kaufpreis || 0) * 0.2);
-  const fremdkapital = immo.finanzierungsbetrag ?? Math.max(0, (immo.kaufpreis || 0) + kaufnebenkostenAbsolut - gesamtEK);
+  const fremdkapital = anfangsFremdkapital(immo);
   const marktwert = getAktuellerGesamtwert(immo);
 
   if (immo.kreditLaeuftBereits && immo.aktuelleRestschuld != null) {

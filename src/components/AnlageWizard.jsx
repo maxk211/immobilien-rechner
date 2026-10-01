@@ -168,16 +168,28 @@ export function vollstaendigkeit(d) {
 }
 
 // ── Adresse mit Autocomplete (OpenStreetMap / Photon, frei, ohne Schlüssel) ──
-function AdressSuche({ wert, onWaehle }) {
+// UX-Gesamtpaket N2: Ein Vorschlag wird NUR übernommen, wenn er aktiv angeklickt wird.
+// Beim Verlassen des Feldes wird nie still eine andere Adresse eingesetzt — getippter
+// Text mit PLZ wird so übernommen, wie er dasteht; ohne Treffer geht es zu "Von Hand".
+export function adresseAusText(text) {
+  const m = String(text || '').trim().match(/^(.+?)[,\s]+(\d{5})\s+(.+)$/);
+  if (!m) return null;
+  return { strasse: m[1].replace(/,\s*$/, '').trim(), plz: m[2], ort: m[3].trim(), bundesland: bundeslandAusPlz(m[2]) || '' };
+}
+function AdressSuche({ wert, onWaehle, onManuell }) {
   const [q, setQ] = useState(wert || '');
   const [treffer, setTreffer] = useState([]);
   const [offen, setOffen] = useState(false);
+  const [gesucht, setGesucht] = useState(false);
+  const [hinweis, setHinweis] = useState('');
   const timer = useRef(null);
+  const blurTimer = useRef(null);
   useEffect(() => { setQ(wert || ''); }, [wert]);
+  useEffect(() => () => { clearTimeout(timer.current); clearTimeout(blurTimer.current); }, []);
   const suche = (text) => {
-    setQ(text);
+    setQ(text); setHinweis('');
     clearTimeout(timer.current);
-    if (text.trim().length < 4) { setTreffer([]); return; }
+    if (text.trim().length < 4) { setTreffer([]); setGesucht(false); return; }
     timer.current = setTimeout(async () => {
       try {
         const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(text)}&lang=de&limit=6&bbox=5.8,47.2,15.1,55.1`);
@@ -187,28 +199,46 @@ function AdressSuche({ wert, onWaehle }) {
             strasse: [p.street || p.name, p.housenumber].filter(Boolean).join(' '),
             plz: p.postcode, ort: p.city || p.town || p.village || p.district || '', bundesland: bundeslandAusName(p.state) || bundeslandAusPlz(p.postcode) || '',
           }));
-        setTreffer(t); setOffen(true);
-      } catch { setTreffer([]); }
+        setTreffer(t); setOffen(true); setGesucht(true);
+      } catch { setTreffer([]); setGesucht(true); }
     }, 300);
+  };
+  const waehle = (t) => { clearTimeout(blurTimer.current); onWaehle(t); setQ(`${t.strasse}, ${t.plz} ${t.ort}`); setOffen(false); setHinweis(''); };
+  // Verlassen ohne Auswahl: getippte Adresse übernehmen statt zu raten
+  const verlassen = () => {
+    blurTimer.current = setTimeout(() => {
+      setOffen(false);
+      const gewaehlt = wert && q === wert;
+      if (gewaehlt || !q.trim()) return;
+      const eigene = adresseAusText(q);
+      if (eigene) { onManuell(eigene, false); setHinweis('Kein Vorschlag gewählt — wir übernehmen deine Eingabe so, wie sie dasteht.'); }
+      else { onManuell(null, true); setHinweis('Bitte einen Vorschlag anklicken oder die Adresse unten von Hand eintragen (mit PLZ).'); }
+    }, 200);
   };
   return (
     <div className="relative">
       <div className="relative">
         <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={q} onChange={e => suche(e.target.value)} onFocus={() => treffer.length && setOffen(true)}
-          placeholder="Straße, Hausnummer, Ort"
+        <input value={q} onChange={e => suche(e.target.value)} onFocus={() => treffer.length && setOffen(true)} onBlur={verlassen}
+          aria-label="Adresse" placeholder="Straße, Hausnummer, Ort"
           className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-indigo-500" />
       </div>
       {offen && treffer.length > 0 && (
         <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
           {treffer.map((t, i) => (
-            <button key={i} type="button" onClick={() => { onWaehle(t); setQ(`${t.strasse}, ${t.plz} ${t.ort}`); setOffen(false); }}
+            <button key={i} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => waehle(t)}
               className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b border-gray-50 last:border-0">
               <span className="font-semibold text-gray-800">{t.strasse}</span> <span className="text-gray-500">{t.plz} {t.ort}</span>
             </button>
           ))}
         </div>
       )}
+      {gesucht && treffer.length === 0 && q.trim().length >= 4 && (
+        <button type="button" onClick={() => onManuell(adresseAusText(q), true)} className="mt-1 text-[11px] font-semibold text-indigo-600 hover:underline">
+          Keine Adresse gefunden — von Hand eintragen
+        </button>
+      )}
+      {hinweis && <div className="mt-1 text-[11px] text-amber-700">{hinweis}</div>}
     </div>
   );
 }
@@ -251,6 +281,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
     return { ...LEER, gestartetAm: Date.now() };
   });
   const [schritt, setSchritt] = useState(1);
+  const [manuellOffen, setManuellOffen] = useState(false); // "Von Hand eintragen" (N2)
   const [entwurfAngebot, setEntwurfAngebot] = useState(() => {
     if (vorbelegung) return null;
     try { const e = JSON.parse(localStorage.getItem(ENTWURF_KEY) || 'null'); return e?.d?.typ ? e : null; } catch { return null; }
@@ -415,11 +446,19 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           <Karte aktiv={istArb} onClick={() => set({ typ: 'mietimmobilie' })} icon={<ArrowLeftRight size={16} className="text-indigo-600" />} titel="Anmieten und untervermieten" sub="Gehört dir nicht — auch Arbitrage genannt" />
         </div>
       </div>
-      <Feld label="Wo steht es?" pflicht hint={blName ? `Bundesland: ${blName} — daraus kommt die Grunderwerbsteuer in Schritt 3.` : 'Tippen genügt — Straße, Hausnummer und Ort kommen als Vorschlag. Daraus leiten wir auch dein Bundesland ab.'}>
-        <AdressSuche wert={d.strasse ? `${d.strasse}${d.plz ? `, ${d.plz} ${d.ort}` : ''}` : ''}
-          onWaehle={(t) => set({ strasse: t.strasse, plz: t.plz, ort: t.ort, bundesland: t.bundesland, ...(d.nameGeaendert ? {} : { name: t.strasse }) })} />
-      </Feld>
-      <details className="text-xs text-gray-500">
+      <div className="text-xs font-semibold text-gray-600">
+        Wo steht es?<span className="text-indigo-600"> *</span>
+        <div className="mt-1">
+          <AdressSuche wert={d.strasse ? `${d.strasse}${d.plz ? `, ${d.plz} ${d.ort}` : ''}` : ''}
+            onWaehle={(t) => set({ strasse: t.strasse, plz: t.plz, ort: t.ort, bundesland: t.bundesland, ...(d.nameGeaendert ? {} : { name: t.strasse }) })}
+            onManuell={(t, oeffnen) => {
+              if (t) set({ strasse: t.strasse, plz: t.plz, ort: t.ort, bundesland: t.bundesland || d.bundesland, ...(d.nameGeaendert ? {} : { name: t.strasse }) });
+              if (oeffnen) setManuellOffen(true);
+            }} />
+        </div>
+        <span className="block text-[11px] font-normal text-gray-400 mt-0.5">{blName ? `Bundesland: ${blName} — daraus kommt die Grunderwerbsteuer in Schritt 3.` : 'Tippen genügt — Straße, Hausnummer und Ort kommen als Vorschlag. Daraus leiten wir auch dein Bundesland ab.'}</span>
+      </div>
+      <details className="text-xs text-gray-500" open={manuellOffen} onToggle={(e) => setManuellOffen(e.currentTarget.open)}>
         <summary className="cursor-pointer">Adresse wird nicht gefunden? Von Hand eintragen</summary>
         <div className="grid grid-cols-3 gap-2 mt-2">
           <input className={`${inputCls} col-span-3`} placeholder="Straße und Hausnummer" value={d.strasse} onChange={e => set({ strasse: e.target.value, ...(d.nameGeaendert ? {} : { name: e.target.value }) })} />

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Wallet, Landmark, AlertTriangle, ParkingSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
-import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung, kostenStruktur } from '../utils/berechnung.js';
+import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung, kostenStruktur, cashflowMonat } from '../utils/berechnung.js';
 import { nachforderungMonat, nachforderungJahr, hatNachforderungen, heuteKey } from '../utils/nachforderung.js';
 
 // ── Hilfsfunktion: Zeile in Tabelle ─────────────────────────────────────────
@@ -40,36 +40,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
   const a = (v) => Math.round((v || 0) * anteilFaktor);
   const isGbR = anteilFaktor !== 1;
 
-  // ── Kreditdetails (Zins/Tilgungs-Split) — aktueller Monat exakt berechnet ──
-  const kreditDetails = useMemo(() => {
-    const heute = new Date();
-    // Exakte Berechnung: tatsächliche Restschuld dieses Monats (Phasenwechsel berücksichtigt)
-    const result = berechneZinsUndTilgung(params, heute.getFullYear(), heute.getMonth());
-    if (result && ergebnis.monatlicheRate > 0) {
-      const zinsen = Math.min(result.zinsen, ergebnis.monatlicheRate); // Zinsen nie > Rate
-      return {
-        zinsen: Math.max(0, zinsen),
-        tilgung: Math.max(0, ergebnis.monatlicheRate - zinsen),
-        gesamt: ergebnis.monatlicheRate,
-      };
-    }
-    // Fallback: Phasen-Start-Restschuld (wie bisher)
-    const effZinssatz = ergebnis.effZinssatz ?? (params.zinssatz ?? 4.0);
-    const effRestschuld = ergebnis.effRestschuld ?? (() => {
-      const kauf = params.kaufnebenkosten ?? 10;
-      const kNKAbs = params.kaufpreis * (kauf / 100);
-      const gesamtEK = (params.ekFuerNebenkosten !== undefined && params.ekFuerKaufpreis !== undefined)
-        ? (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0)
-        : (params.eigenkapital ?? 0);
-      return params.finanzierungsbetrag ?? Math.max(0, params.kaufpreis + kNKAbs - gesamtEK);
-    })();
-    const monatsZinsen = effRestschuld * (effZinssatz / 100 / 12);
-    return {
-      zinsen: Math.max(0, Math.round(monatsZinsen)),
-      tilgung: Math.max(0, Math.round(ergebnis.monatlicheRate - monatsZinsen)),
-      gesamt: ergebnis.monatlicheRate,
-    };
-  }, [ergebnis, params]);
+  // ── Monatswerte: dieselbe Funktion wie Objektkarte, Cockpit und Dashboard (B12/B15) ──
+  const cfGemeinsam = useMemo(() => cashflowMonat({ ...immobilie, ...params }), [immobilie, params]);
+  const kreditDetails = { zinsen: cfGemeinsam.zinsen, tilgung: cfGemeinsam.tilgung, gesamt: cfGemeinsam.rate };
 
   // ── Jahreszins/-tilgung: exakte Summe der 12 Monate (nicht × 12!) ──────────
   const jahresKredit = useMemo(() => {
@@ -82,35 +55,20 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
     };
   }, [params, ergebnis, aktuellesJahr]);
 
-  // ── Monatswerte für aktuelles Jahr ─────────────────────────────────────────
+  // ── Monatswerte für aktuelles Jahr (aus cashflowMonat) ──────────────────────
   const monat = useMemo(() => {
+    const cf = cfGemeinsam;
     const sp = params.stellplatz;
-    const stellplatz = (sp?.vorhanden && sp?.istVermietet)
-      ? (sp.monatlicheMiete || 0) * (sp.anzahl || 1) : 0;
-    const einnahmen = getAktuelleMiete(params);
-    // Phase E: eine Kostenstruktur für alle Stellen (Hausgeld-Aufteilung, SEV, Grundsteuer, weitere)
-    const ks = kostenStruktur(params, (f) => getAktuellerWert(params, f));
-    const nkVomMieter = ks.nkVomMieter;
-    const bauspar  = (params.bausparvertraege || [])
-      .filter(b => !b.zuteilungsreifAb || new Date(b.zuteilungsreifAb) > new Date())
-      .reduce((s, b) => s + (parseFloat(b.monatlicheSparrate) || 0), 0);
-
-    const gesamtEinnahmen    = einnahmen + stellplatz + ks.nkImCashflow;
-    const gesamtBetrieb      = ks.bewirtschaftung;
-    const vorTilgung         = gesamtEinnahmen - gesamtBetrieb - kreditDetails.zinsen;
-    const vorTilgungMitBS    = vorTilgung - bauspar; // inkl. Bauspar-Sparrate
-    const nachTilgung        = gesamtEinnahmen - gesamtBetrieb - kreditDetails.gesamt - bauspar;
-
     return {
-      einnahmen, stellplatz, nkVomMieter, ks,
-      zinsen: kreditDetails.zinsen, tilgung: kreditDetails.tilgung,
-      kreditrate: kreditDetails.gesamt, bauspar,
-      gesamtEinnahmen, gesamtBetrieb,
-      vorTilgung: vorTilgungMitBS, // "vor Tilgung" = nach Zinsen, vor Tilgungsanteil
-      nachTilgung,
+      einnahmen: cf.kaltmiete, stellplatz: cf.stellplatz, nkVomMieter: cf.ks ? cf.ks.nkVomMieter : 0, ks: cf.ks,
+      zinsen: cf.zinsen, tilgung: cf.tilgung,
+      kreditrate: cf.rate, bauspar: cf.bauspar,
+      gesamtEinnahmen: cf.einnahmen, gesamtBetrieb: cf.betrieb,
+      vorTilgung: cf.vor, // "vor Tilgung" = nach Zinsen und Bausparrate, vor Tilgungsanteil
+      nachTilgung: cf.nach,
       sp, spAnzahl: sp?.anzahl || 1,
     };
-  }, [params, kreditDetails, aktuellesJahr]);
+  }, [cfGemeinsam, params.stellplatz]);
 
   // ── Jahreszahlen für die Ergebnisleiste (Abschnitt 3.3) — exakte Zinssummen,
   // nicht × 12. Auf Komponentenebene statt in einer IIFE im JSX, damit die

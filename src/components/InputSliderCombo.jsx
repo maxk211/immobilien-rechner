@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 
 // InputSliderCombo Komponente
 const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }) => {
-  const [localValue, setLocalValue] = useState(value.toString());
+  const [localValue, setLocalValue] = useState(String(value ?? ""));
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     if (!isFocused) {
-      setLocalValue(value.toString());
+      setLocalValue(String(value ?? ""));
     }
   }, [value, isFocused]);
 

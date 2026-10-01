@@ -6,6 +6,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getJahresDurchschnittFuerFeld, zahlerAnteilJahr } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
 import InfoHint from './InfoHint';
+import ZahlInput from './ZahlInput';
 
 const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilFaktor = 1 }) => {
   const aktuellesJahr = new Date().getFullYear();
@@ -841,14 +842,14 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gebäudeanteil (AfA-Bemessungsgrundlage)</label>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1">
-              <input type="number" min="0" max="100" step="0.5" value={gebaeudeAnteilProzent}
+              <ZahlInput type="number" min="0" max="100" step="0.5" value={gebaeudeAnteilProzent}
                 onChange={(e) => updateSteuerParams({ gebaeudeAnteilProzent: parseFloat(e.target.value) || 0 })}
                 className="w-16 px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right font-semibold" />
               <span className="text-sm text-gray-500">%</span>
             </div>
             <span className="text-gray-300">=</span>
             <div className="flex items-center gap-1">
-              <input type="number" min="0" step="1000"
+              <ZahlInput type="number" min="0" step="1000"
                 value={Math.round(params.kaufpreis * (gebaeudeAnteilProzent / 100))}
                 onChange={(e) => {
                   const absWert = parseFloat(e.target.value) || 0;
@@ -907,7 +908,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                   </button>
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-gray-500">Ab Jahr:</span>
-                    <input type="number" min={kaufjahr + 1} max={kaufjahr + 50} step={1}
+                    <ZahlInput type="number" min={kaufjahr + 1} max={kaufjahr + 50} step={1}
                       value={afaDegressivWechseljahr || ''}
                       placeholder={String(kaufjahr + 15)}
                       onChange={(e) => updateSteuerParams({ afaDegressivWechseljahr: parseInt(e.target.value) || null })}
@@ -933,7 +934,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               <div className="flex items-center gap-2 text-xs text-gray-500 p-2 bg-gray-50 rounded-lg">
                 <span>Nutzungsdauer-Referenz (für Wechsel zu linear):</span>
                 <div className="flex items-center gap-1">
-                  <input type="number" min="0" max="10" step="0.1" value={afaSatz}
+                  <ZahlInput type="number" min="0" max="10" step="0.1" value={afaSatz}
                     onChange={(e) => updateSteuerParams({ afaSatz: parseFloat(e.target.value) || 0 })}
                     className="w-16 px-2 py-1 border border-gray-300 rounded text-right text-xs font-semibold" />
                   <span>% = {afaSatz > 0 ? Math.round(100/afaSatz) : '∞'} Jahre</span>
@@ -952,7 +953,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
-                  <input type="number" min="0" max="10" step="0.1" value={afaSatz}
+                  <ZahlInput type="number" min="0" max="10" step="0.1" value={afaSatz}
                     onChange={(e) => updateSteuerParams({ afaSatz: parseFloat(e.target.value) || 0 })}
                     className="w-20 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-base sm:text-sm text-right font-bold focus:border-indigo-400" />
                   <span className="text-sm text-gray-600">% p.a.</span>
@@ -985,7 +986,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                           {/* Ab Jahr + Satz */}
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs text-gray-500 font-medium">Ab Jahr</span>
-                            <input type="number" min={kaufjahr} max={aktuellesJahr + 20} step={1}
+                            <ZahlInput type="number" min={kaufjahr} max={aktuellesJahr + 20} step={1}
                               value={phase.vonJahr}
                               onChange={(e) => {
                                 const updated = afaAnpassungen.map(a =>
@@ -996,7 +997,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                               className="w-20 px-2 py-1 border-2 border-gray-300 rounded-lg text-base sm:text-sm text-right font-bold focus:border-violet-400" />
                             <span className="text-gray-400">→</span>
                             <div className="flex items-center gap-1">
-                              <input type="number" min="0" max="20" step="0.1"
+                              <ZahlInput type="number" min="0" max="20" step="0.1"
                                 value={phase.afaSatz}
                                 onChange={(e) => {
                                   const updated = afaAnpassungen.map(a =>
@@ -1035,7 +1036,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                             {phase.grundlage === 'restnutzungsdauer' && (
                               <div className="flex items-center gap-1.5">
                                 <span className="text-xs text-gray-400">RND</span>
-                                <input type="number" min="1" max="80" step="1"
+                                <ZahlInput type="number" min="1" max="80" step="1"
                                   value={phase.restnutzungsdauer || ''}
                                   placeholder="z.B. 25"
                                   onChange={(e) => {
@@ -1150,7 +1151,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           <div>
             <label className="block text-xs text-gray-600 mb-1">Entfernung (einfach)</label>
             <div className="flex items-center gap-1">
-              <input type="number" min="0" value={entfernungKm}
+              <ZahlInput type="number" min="0" value={entfernungKm}
                 onChange={(e) => updateSteuerParams({ entfernungKm: parseFloat(e.target.value) || 0 })}
                 className="w-full px-2 py-1 border rounded text-base sm:text-sm text-right" />
               <span className="text-xs text-gray-500">km</span>
@@ -1159,7 +1160,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
           <div>
             <label className="block text-xs text-gray-600 mb-1">km-Pauschale</label>
             <div className="flex items-center gap-1">
-              <input type="number" min="0" max="1" step="0.01" value={kmPauschale}
+              <ZahlInput type="number" min="0" max="1" step="0.01" value={kmPauschale}
                 onChange={(e) => updateSteuerParams({ kmPauschale: parseFloat(e.target.value) || 0 })}
                 className="w-full px-2 py-1 border rounded text-base sm:text-sm text-right" />
               <span className="text-xs text-gray-500">€</span>
@@ -1170,7 +1171,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         {fahrtkostenModus === 'pauschal' ? (
           <div>
             <label className="block text-xs text-gray-600 mb-1">Fahrten pro Monat</label>
-            <input type="number" min="0" max="30" value={fahrtenProMonat}
+            <ZahlInput type="number" min="0" max="30" value={fahrtenProMonat}
               onChange={(e) => updateSteuerParams({ fahrtenProMonat: parseFloat(e.target.value) || 0 })}
               className="w-24 px-2 py-1 border rounded text-base sm:text-sm text-right" />
             {fahrtenProMonat > 0 && (
@@ -1199,7 +1200,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">km</label>
-                    <input type="number" value={neueFahrt.km}
+                    <ZahlInput type="number" value={neueFahrt.km}
                       onChange={(e) => setNeueFahrt({...neueFahrt, km: parseFloat(e.target.value) || 0})}
                       className="w-full px-2 py-1 border rounded text-xs text-right" />
                   </div>

@@ -4,6 +4,7 @@ import { getAktuellerWert } from '../utils/miete.js';
 import { formatCurrency } from '../utils/format.js';
 import { PlausiFeldHinweis } from './PlausiPruefung';
 import KostenZahler from './KostenZahler';
+import ZahlInput from './ZahlInput';
 
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges, plausi = [] }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
@@ -140,7 +141,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                   {PlausiFeldHinweis({ hinweise: plausi, feld, params, updateParams })}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <input type="number" min={0} step={step}
+                  <ZahlInput type="number" min={0} step={step}
                     value={value !== undefined ? value : (nullbar ? (params[feld] ?? '') : (params[feld] ?? 0))}
                     placeholder={nullbar ? 'leer' : undefined}
                     onChange={e => updateParams({ ...params, [feld]: e.target.value === '' ? (nullbar ? null : 0) : (parseFloat(e.target.value) || 0) })}
@@ -177,7 +178,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
               ...(feld === 'hausgeldNichtUmlagefaehig' ? { feldHerkunft: { ...(params.feldHerkunft || {}), hausgeldNichtUmlagefaehig: 'manuell' } } : {}) });
             const input = (feld, nullbar = false, step = 5) => (
               <div className="flex items-center gap-1.5 shrink-0">
-                <input type="number" min={0} step={step}
+                <ZahlInput type="number" min={0} step={step}
                   value={nullbar ? (params[feld] ?? '') : (params[feld] ?? 0)}
                   placeholder={nullbar ? 'leer' : undefined}
                   onChange={e => setFeld(feld, e.target.value, nullbar)}
@@ -317,7 +318,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                             updateParams({ ...params, mietAnpassungen: neu });
                           }}
                           className="text-xs border border-gray-300 rounded px-1 py-0.5 flex-1 min-w-0" />
-                        <input type="number" value={anp.kaltmiete}
+                        <ZahlInput type="number" value={anp.kaltmiete}
                           onChange={e => {
                             const neu = [...(params.mietAnpassungen || [])];
                             neu[anp.originalIdx] = { ...neu[anp.originalIdx], kaltmiete: parseFloat(e.target.value) || 0 };
@@ -433,7 +434,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                               {COST_FELDER.map(item => (
                                 <div key={item.key} className="flex items-center gap-1">
                                   <label className="text-[10px] text-gray-500 w-[70px] shrink-0">{item.label}</label>
-                                  <input type="number"
+                                  <ZahlInput type="number"
                                     value={anp[item.key] ?? ''}
                                     placeholder={`${getAktuellerWert(params, item.key)}`}
                                     onChange={e => updateAnpassungFeld(anp.originalIdx, item.key, e.target.value)}
@@ -516,7 +517,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                           {(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete' : 'Kaltmiete'}
                         </label>
                         <div className="flex items-center gap-1">
-                          <input
+                          <ZahlInput
                             type="number"
                             value={getWertFuerZeitraum(jahr, null, 'kaltmiete')}
                             onChange={(e) => setWertFuerZeitraum(jahr, null, 'kaltmiete', e.target.value)}
@@ -529,7 +530,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                         <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                           <label className="text-sm text-gray-700">Nebenkosten-Vorauszahlung</label>
                           <div className="flex items-center gap-1">
-                            <input
+                            <ZahlInput
                               type="number"
                               value={getWertFuerZeitraum(jahr, null, 'nebenkostenVomMieter')}
                               onChange={(e) => setWertFuerZeitraum(jahr, null, 'nebenkostenVomMieter', e.target.value)}
@@ -549,7 +550,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <label className="text-xs text-gray-600">Rücklage für Reparaturen</label>
                         <div className="flex items-center gap-1">
-                          <input
+                          <ZahlInput
                             type="number"
                             value={getWertFuerZeitraum(jahr, null, 'instandhaltung')}
                             onChange={(e) => setWertFuerZeitraum(jahr, null, 'instandhaltung', e.target.value)}
@@ -561,7 +562,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <label className="text-xs text-gray-600">Sondereigentumsverwaltung</label>
                         <div className="flex items-center gap-1">
-                          <input
+                          <ZahlInput
                             type="number"
                             value={getWertFuerZeitraum(jahr, null, 'verwaltung')}
                             onChange={(e) => setWertFuerZeitraum(jahr, null, 'verwaltung', e.target.value)}
@@ -573,7 +574,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <label className="text-xs text-gray-600">Hausgeld an die WEG</label>
                         <div className="flex items-center gap-1">
-                          <input
+                          <ZahlInput
                             type="number"
                             value={getWertFuerZeitraum(jahr, null, 'hausgeld')}
                             onChange={(e) => setWertFuerZeitraum(jahr, null, 'hausgeld', e.target.value)}
@@ -585,7 +586,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <label className="text-xs text-gray-600">Strom</label>
                         <div className="flex items-center gap-1">
-                          <input
+                          <ZahlInput
                             type="number"
                             value={getWertFuerZeitraum(jahr, null, 'strom')}
                             onChange={(e) => setWertFuerZeitraum(jahr, null, 'strom', e.target.value)}
@@ -597,7 +598,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                       <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <label className="text-xs text-gray-600">Internet</label>
                         <div className="flex items-center gap-1">
-                          <input
+                          <ZahlInput
                             type="number"
                             value={getWertFuerZeitraum(jahr, null, 'internet')}
                             onChange={(e) => setWertFuerZeitraum(jahr, null, 'internet', e.target.value)}
@@ -643,7 +644,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                                   <Wallet size={12} /> {(params.vermietungsmodell || 'kaltmiete') === 'warmmiete' ? 'Warmmiete' : 'Kaltmiete'}
                                 </label>
                                 <div className="flex items-center gap-1">
-                                  <input
+                                  <ZahlInput
                                     type="number"
                                     value={getWertFuerZeitraum(jahr, idx, 'kaltmiete')}
                                     onChange={(e) => setWertFuerZeitraum(jahr, idx, 'kaltmiete', e.target.value)}
@@ -656,7 +657,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                                 <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                                   <label className="text-sm text-green-800 flex items-center gap-1"><Wallet size={12} /> Nebenkosten-Vorauszahlung</label>
                                   <div className="flex items-center gap-1">
-                                    <input
+                                    <ZahlInput
                                       type="number"
                                       value={getWertFuerZeitraum(jahr, idx, 'nebenkostenVomMieter')}
                                       onChange={(e) => setWertFuerZeitraum(jahr, idx, 'nebenkostenVomMieter', e.target.value)}
@@ -672,7 +673,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div className="bg-gray-50 p-2 rounded">
                                 <label className="text-gray-500 block mb-1">Inst.</label>
-                                <input
+                                <ZahlInput
                                   type="number"
                                   value={getWertFuerZeitraum(jahr, idx, 'instandhaltung')}
                                   onChange={(e) => setWertFuerZeitraum(jahr, idx, 'instandhaltung', e.target.value)}
@@ -681,7 +682,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                               </div>
                               <div className="bg-gray-50 p-2 rounded">
                                 <label className="text-gray-500 block mb-1">Verw.</label>
-                                <input
+                                <ZahlInput
                                   type="number"
                                   value={getWertFuerZeitraum(jahr, idx, 'verwaltung')}
                                   onChange={(e) => setWertFuerZeitraum(jahr, idx, 'verwaltung', e.target.value)}
@@ -690,7 +691,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                               </div>
                               <div className="bg-gray-50 p-2 rounded">
                                 <label className="text-gray-500 block mb-1">Hausgeld an die WEG</label>
-                                <input
+                                <ZahlInput
                                   type="number"
                                   value={getWertFuerZeitraum(jahr, idx, 'hausgeld')}
                                   onChange={(e) => setWertFuerZeitraum(jahr, idx, 'hausgeld', e.target.value)}
@@ -699,7 +700,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                               </div>
                               <div className="bg-gray-50 p-2 rounded">
                                 <label className="text-gray-500 block mb-1">Strom</label>
-                                <input
+                                <ZahlInput
                                   type="number"
                                   value={getWertFuerZeitraum(jahr, idx, 'strom')}
                                   onChange={(e) => setWertFuerZeitraum(jahr, idx, 'strom', e.target.value)}
@@ -708,7 +709,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                               </div>
                               <div className="bg-gray-50 p-2 rounded">
                                 <label className="text-gray-500 block mb-1">Internet</label>
-                                <input
+                                <ZahlInput
                                   type="number"
                                   value={getWertFuerZeitraum(jahr, idx, 'internet')}
                                   onChange={(e) => setWertFuerZeitraum(jahr, idx, 'internet', e.target.value)}

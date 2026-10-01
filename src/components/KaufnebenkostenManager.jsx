@@ -3,6 +3,7 @@ import { GREST_HISTORIE, BUNDESLAND_KEYS, grestSatz, grestFrei, bundeslandAusPlz
 import { formatCurrency } from '../utils/format.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import InfoHint from './InfoHint';
+import ZahlInput from './ZahlInput';
 
 const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
   const [modus, setModus] = useState(params.kaufnebenkostenModus || 'prozent'); // 'prozent' oder 'manuell'
@@ -154,7 +155,7 @@ const KaufnebenkostenManager = ({ params, updateParams, kaufpreis }) => {
               <div key={key} className="flex justify-between items-center">
                 <label className="text-sm text-gray-600">{label}</label>
                 <div className="flex items-center gap-1">
-                  <input
+                  <ZahlInput
                     type="number"
                     value={Math.round(positionen[key] || 0)}
                     onChange={(e) => handlePositionChange(key, e.target.value)}
