@@ -15,34 +15,32 @@ const PLAN_ICONS = {
   pro:      Crown,
 };
 
+// Alle Tarife enthalten alle Funktionen — technisch begrenzt ist nur die Zahl der
+// Objekte (useSubscription → maxImmobilien). Die Listen sagen deshalb genau das.
 const PLAN_FEATURES = {
   starter: [
-    '1 Immobilie verwalten',
-    'Cashflow & Rendite',
-    'Mieterverwaltung',
-    'Finanzierungsrechner',
-    'Steuerübersicht',
+    'Alle Funktionen',
+    'Was steht an + Cockpit',
+    'Cashflow, Steuern, Mieter',
+    'Rechnet sich das?',
   ],
   standard: [
-    'Bis zu 10 Immobilien',
-    'Alle Starter-Features',
-    'Mehrfamilienhäuser (MFH)',
-    'NK-Abrechnung',
-    'Jahresauswertung',
+    'Alle Funktionen',
+    'Platz für dein wachsendes Portfolio',
+    'Mehrfamilienhäuser zählen als ein Objekt',
+    'Selbstauskunft-PDF für die Bank',
   ],
   pro: [
-    'Unlimitierte Immobilien',
-    'Alle Standard-Features',
+    'Alle Funktionen',
+    'Unbegrenzt viele Objekte',
     'Prioritäts-Support',
-    'Frühzeitiger Zugang zu neuen Features',
-    'Persönliches Onboarding',
   ],
 };
 
 const REASON_TEXTS = {
   limit:   { title: 'Immobilien-Limit erreicht', sub: 'Upgrade für mehr Objekte.' },
-  expired: { title: 'Dein Trial ist abgelaufen', sub: 'Wähle einen Plan, um weiter zu machen.' },
-  trial:   { title: 'Dein Trial läuft bald ab', sub: 'Sichere dir jetzt einen Plan, damit dein Portfolio nahtlos weiterläuft.' },
+  expired: { title: 'Deine Testphase ist abgelaufen', sub: 'Wähle einen Plan, um weiter zu machen.' },
+  trial:   { title: 'Deine Testphase läuft bald ab', sub: 'Wähle jetzt einen Tarif, damit dein Portfolio nahtlos weiterläuft.' },
   feature: { title: 'Feature nicht verfügbar', sub: 'Dieses Feature ist in deinem aktuellen Plan nicht enthalten.' },
   default: { title: 'Upgrade deinen Plan', sub: 'Mehr Immobilien, mehr Features.' },
 };
@@ -65,25 +63,27 @@ const UpgradeModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-canvas rounded-2xl shadow-2xl w-full max-w-3xl my-4 overflow-hidden">
 
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-0">
+        {/* Kopf wie in der App: dunkel, mit Begründung */}
+        <div className="bg-ink text-white flex items-start justify-between px-6 py-5">
           <div>
-            <h2 className="text-2xl font-black text-gray-900">{title}</h2>
-            <p className="text-gray-500 text-sm mt-1">{sub}</p>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-indigo-300">Tarif wählen</div>
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mt-0.5">{title}</h2>
+            <p className="text-white/60 text-sm mt-1">{sub}</p>
 
             {/* Trial-Banner */}
             {currentPlan === 'trial' && trialDaysLeft > 0 && (
-              <div className="flex items-center gap-1.5 mt-2 text-amber-600 text-xs font-semibold">
-                <Clock size={12}/> Noch {trialDaysLeft} {trialDaysLeft === 1 ? 'Tag' : 'Tage'} kostenlos testen
+              <div className="inline-flex items-center gap-1.5 mt-3 text-amber-200 bg-amber-400/10 border border-amber-300/30 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                <Clock size={12}/> Noch {trialDaysLeft} {trialDaysLeft === 1 ? 'Tag' : 'Tage'} kostenlos
               </div>
             )}
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100 ml-4 flex-shrink-0"
+            aria-label="Schließen"
+            className="text-white/50 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 ml-4 flex-shrink-0"
           >
             <X size={20}/>
           </button>
@@ -91,12 +91,12 @@ const UpgradeModal = ({
 
         {/* Billing Toggle */}
         <div className="flex justify-center pt-5 pb-4">
-          <div className="flex bg-gray-100 rounded-xl p-1 gap-1 text-sm font-semibold">
+          <div className="flex bg-white border border-gray-200 rounded-xl p-1 gap-1 text-sm font-semibold">
             <button
               onClick={() => setBilling('monthly')}
               className={`px-4 py-1.5 rounded-lg transition-all ${
                 billing === 'monthly'
-                  ? 'bg-white text-gray-900 shadow-sm'
+                  ? 'bg-gray-900 text-white'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -106,7 +106,7 @@ const UpgradeModal = ({
               onClick={() => setBilling('yearly')}
               className={`px-4 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
                 billing === 'yearly'
-                  ? 'bg-white text-gray-900 shadow-sm'
+                  ? 'bg-gray-900 text-white'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -130,16 +130,16 @@ const UpgradeModal = ({
             return (
               <div
                 key={key}
-                className={`relative rounded-2xl border-2 flex flex-col transition-all ${
+                className={`relative rounded-2xl bg-white flex flex-col transition-all ${
                   popular
-                    ? 'border-indigo-500 shadow-lg shadow-indigo-100'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'ring-2 ring-indigo-500 shadow-lg shadow-indigo-100'
+                    : 'border border-gray-200 hover:border-gray-300'
                 }`}
               >
                 {popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-0.5 rounded-full">
-                      Beliebt
+                    <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-0.5 rounded-full whitespace-nowrap">
+                      Am beliebtesten
                     </span>
                   </div>
                 )}
@@ -150,7 +150,7 @@ const UpgradeModal = ({
                     <div className={`p-1.5 rounded-lg ${popular ? 'bg-indigo-100' : 'bg-gray-100'}`}>
                       <Icon size={16} className={popular ? 'text-indigo-600' : 'text-gray-600'}/>
                     </div>
-                    <span className="font-black text-gray-900">{plan.label}</span>
+                    <span className="font-extrabold text-gray-900">{plan.label}</span>
                     {isCurrent && (
                       <span className="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
                         Aktuell
@@ -163,7 +163,7 @@ const UpgradeModal = ({
                     {billing === 'yearly' ? (
                       <>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-black text-gray-900">{price.perMonth}</span>
+                          <span className="text-3xl font-extrabold tracking-tight text-gray-900">{price.perMonth}</span>
                           <span className="text-gray-400 text-sm">/Mo</span>
                         </div>
                         <div className="text-xs text-gray-400 mt-0.5">
@@ -172,7 +172,7 @@ const UpgradeModal = ({
                       </>
                     ) : (
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-gray-900">{price.display}</span>
+                        <span className="text-3xl font-extrabold tracking-tight text-gray-900">{price.display}</span>
                         <span className="text-gray-400 text-sm">/Mo</span>
                       </div>
                     )}
@@ -180,7 +180,7 @@ const UpgradeModal = ({
 
                   {/* Immobilien-Limit */}
                   <div className={`text-xs font-bold mb-4 mt-1 ${popular ? 'text-indigo-600' : 'text-gray-500'}`}>
-                    {plan.maxImmobilien === Infinity ? 'Unlimitierte Immobilien' : `Bis zu ${plan.maxImmobilien} Immobili${plan.maxImmobilien === 1 ? 'e' : 'en'}`}
+                    {plan.maxImmobilien === Infinity ? 'Unlimitierte Immobilien' : (plan.maxImmobilien === 1 ? '1 Immobilie' : `Bis zu ${plan.maxImmobilien} Immobilien`)}
                   </div>
 
                   {/* Feature-Liste */}
@@ -214,9 +214,9 @@ const UpgradeModal = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-between">
+        <div className="border-t border-gray-200 bg-white px-6 py-3 flex items-center justify-between">
           <p className="text-xs text-gray-400">
-            Jederzeit kündbar · Sicher via Stripe · Keine versteckten Kosten
+            Alle Funktionen in jedem Tarif · jederzeit kündbar · sicher über Stripe
           </p>
           <button
             onClick={onClose}

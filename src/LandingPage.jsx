@@ -1,629 +1,367 @@
 import { useState } from 'react';
-import { PLANS } from './config/payments';
 import { ImpressumDatenschutzLinks } from './components/ImpressumDatenschutz';
 import {
-  Home, BarChart3, Wallet, Receipt, Users, TrendingUp, Building2,
-  Check, X, Lock, Key, ShieldCheck, Globe, Mail, ArrowRight, Monitor,
-  Eye, BellOff, Ban, Frown, Calculator, BookOpen, MapPin,
-  Landmark, Percent, CalendarClock, Hourglass, Scale
+  Check, ArrowRight, Lock, Globe, ShieldCheck, Ban, Eye, Key, BellOff, Building2,
+  LayoutDashboard, Wallet, Receipt, Users, FileText, Landmark, Home, Repeat, FileCheck2,
+  Calculator, Percent, CalendarClock, Hourglass, MapPin, BarChart3, BookOpen, Scale, Plus, Minus,
 } from 'lucide-react';
+import {
+  DashboardMockup, WasStehtAn, RechnetSichDasMockup, FinanzierungMockup, PlausiMockup,
+  WerZahltMockup, Fenster, AppKopf,
+} from './landing/AppMockups';
+import Preise from './landing/Preise';
+
+// Startseite renditly.de im Look der App (UX-Update): Plus Jakarta Sans + Violett
+// über .font-app, dunkler Kopf (bg-ink), Karten auf hellem Grund (bg-canvas).
+// Wichtig: Hero- und Feature-Aussagen müssen zum statischen Inhalt in index.html passen.
+
+export const FAQS = [
+  {
+    q: 'Wie berechne ich die Mietrendite mit renditly?',
+    a: 'Du gibst Kaufpreis, Kaufnebenkosten, Kaltmiete und laufende Kosten ein — renditly berechnet sofort Bruttomietrendite, Nettomietrendite und Cash-on-Cash-Rendite. Alle Werte werden automatisch aktualisiert wenn sich Miete oder Kosten ändern.',
+  },
+  {
+    q: 'Was ist ein guter Cashflow bei Immobilien?',
+    a: 'Als Faustregel gilt: ein positiver monatlicher Cashflow nach allen Kosten (Rate, Instandhaltung, Verwaltung, Hausgeld) ist das Ziel. renditly zeigt dir den Cashflow monatsgenau — vor und nach Tilgung, inklusive Prognose mit Anschlussfinanzierung.',
+  },
+  {
+    q: 'Woran erinnert mich renditly?',
+    a: 'Unter „Was steht an“ sammelt renditly alles, was gerade fällig ist: offene Mieten und Untermieten, mögliche Mieterhöhungen (Kappungsgrenze und 15-Monats-Frist), das Ende der Zinsbindung, fehlende Nebenkostenabrechnungen und fehlende Kautionen. Jede Zeile hat die passende Aktion, zum Beispiel „Eingegangen“ oder „Anschluss planen“.',
+  },
+  {
+    q: 'Was passiert, wenn ich mich bei einer Zahl vertippe?',
+    a: 'Die Plausibilitätsprüfung vergleicht deine Eingaben mit typischen Werten. Widersprüche wie eine Zinsbindung, die vor dem Kreditstart endet, werden rot markiert; ungewöhnliche Werte wie 38 % Sollzins gelb. Du korrigierst mit einem Klick oder bestätigst mit „Stimmt so“.',
+  },
+  {
+    q: 'Kann ich die App kostenlos testen?',
+    a: 'Ja — du kannst renditly 90 Tage kostenlos mit einer Immobilie testen, ohne Kreditkarte. Du bekommst Zugang zu allen Features: Cashflow-Analyse, Steuervorbereitung, Mieterverwaltung und mehr.',
+  },
+  {
+    q: 'Für wen ist renditly geeignet?',
+    a: 'renditly richtet sich an deutsche Vermieter und Immobilien-Investoren — vom Einsteiger mit einer Eigentumswohnung bis zum Profi mit mehreren Mehrfamilienhäusern. Der Starter-Plan eignet sich für 1 Objekt, Standard für bis zu 10 Immobilien, Pro für unlimitierte Portfolios.',
+  },
+  {
+    q: 'Welche Steuer-Daten kann renditly exportieren?',
+    a: 'renditly exportiert alle steuerlich relevanten Posten als Excel und PDF: Mieteinnahmen, Schuldzinsen (annuitätisch korrekt je Phase), Instandhaltung, Hausgeld, Verwaltungskosten, Fahrtkosten nach km-Pauschale und Erhaltungsaufwand. AfA-Daten werden als Grundlage für den Steuerberater mitgeliefert.',
+  },
+  {
+    q: 'Kann jemand mein Vermögen oder meine Immobilien sehen?',
+    a: 'Nein — absolut nicht. Jeder Account ist vollständig isoliert. Weder andere Nutzer noch wir als Betreiber können sehen, welche Immobilien du hast, was sie wert sind oder wie dein Cashflow aussieht. Die Datenbank erzwingt das technisch über Row Level Security.',
+  },
+  {
+    q: 'Sind meine Finanzdaten sicher gespeichert?',
+    a: 'Ja. Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL via Supabase). Die Verbindung ist immer TLS-verschlüsselt. Deine Daten werden nicht verkauft oder für Werbung genutzt.',
+  },
+  {
+    q: 'Was passiert wenn ich kündige?',
+    a: 'Du kannst jederzeit monatlich kündigen. Deine Daten bleiben erhalten und du kannst weiterhin eine Immobilie verwalten.',
+  },
+  {
+    q: 'Gibt es eine mobile App?',
+    a: 'Die Web-App ist vollständig mobiloptimiert und funktioniert auf iPhone und Android wie eine native App — ohne Download aus dem App Store.',
+  },
+];
+
+const FUNKTIONEN = [
+  { icon: LayoutDashboard, titel: 'Cockpit je Objekt', text: 'Kennzahlen, Mieteingänge und „Jetzt dran“ mit der passenden Aktion — auf einer Seite.' },
+  { icon: Wallet, titel: 'Cashflow mit Rechenweg', text: 'Monat, Jahr und Prognose. Vor und nach Tilgung, jede Zeile nachvollziehbar.' },
+  { icon: Receipt, titel: 'Steuern je Steuerjahr', text: 'AfA, Schuldzinsen, Werbungskosten und Überschuss — als PDF oder Excel für den Steuerberater.' },
+  { icon: Users, titel: 'Mieter und Mieterhöhung', text: 'Mieteingänge abhaken, auch rückwirkend. Mieterhöhung mit Kappungsgrenze durchrechnen, Mahnschreiben als PDF.' },
+  { icon: FileText, titel: 'Nebenkostenabrechnung', text: 'In vier Schritten zur Abrechnung, mit Anschreiben an den Mieter.' },
+  { icon: Building2, titel: 'Mehrfamilienhäuser', text: 'Jede Wohnung mit eigener Miete, eigenem Mieter und eigenen Eingängen.' },
+  { icon: Repeat, titel: 'Untervermietung', text: 'Wohnung anmieten und zimmerweise untervermieten — mit Untermieten und der Frage, wer welche Kosten zahlt.' },
+  { icon: Landmark, titel: 'Beleihbar frei', text: 'Wie viel du für den nächsten Kauf beleihen könntest — und die Selbstauskunft als PDF für die Bank.' },
+  { icon: Home, titel: 'Anlage in 4 Schritten', text: 'Adresse tippen, Grunderwerbsteuer kommt aus dem Bundesland. Die erste Zahl steht vor dem Speichern.' },
+];
+
+const SICHERHEIT = [
+  { icon: ShieldCheck, titel: 'Vollständige Datenisolierung', text: 'Jeder Account ist technisch komplett getrennt — auf Datenbankebene erzwungen, nicht nur durch Passwörter.' },
+  { icon: Building2, titel: 'Row Level Security', text: 'Der gleiche Mechanismus, den Banken für Kontentrennung nutzen. Ein fremder Link zeigt nur eine leere Seite.' },
+  { icon: Globe, titel: 'EU-Server, verschlüsselt', text: 'Daten verschlüsselt in der EU (PostgreSQL), Verbindung immer per TLS.' },
+  { icon: Eye, titel: 'Kein Einblick durch uns', text: 'Auch wir als Betreiber sehen nicht, welche Immobilien du hast oder was sie wert sind.' },
+  { icon: Key, titel: 'Deine Daten gehören dir', text: 'Jederzeit exportieren oder den Account löschen — auf Wunsch werden alle Daten entfernt.' },
+  { icon: BellOff, titel: 'Keine Werbung, kein Datenverkauf', text: 'Keine Weitergabe an Dritte, keine Verhaltensanalyse, kein Remarketing.' },
+];
+
+const TOOLS = [
+  { icon: Calculator, title: 'Mietrendite-Rechner', href: '/mietrendite-rechner' },
+  { icon: Receipt, title: 'AfA-Rechner', href: '/afa-rechner' },
+  { icon: Landmark, title: 'Grunderwerbsteuer-Rechner', href: '/grunderwerbsteuer-rechner' },
+  { icon: Percent, title: 'Kaufnebenkosten-Rechner', href: '/kaufnebenkosten-rechner' },
+  { icon: CalendarClock, title: 'Tilgungsplan-Rechner', href: '/tilgungsplan-rechner' },
+  { icon: Hourglass, title: 'Spekulationsfrist-Rechner', href: '/spekulationsfrist-rechner' },
+  { icon: MapPin, title: 'Mietrendite nach Stadt', href: '/mietrendite-staedte' },
+  { icon: BarChart3, title: 'Mietrendite-Report 2026', href: '/mietrendite-report-2026' },
+  { icon: BookOpen, title: 'Mietrendite berechnen', href: '/ratgeber/mietrendite-berechnen' },
+  { icon: Wallet, title: 'Cashflow bei Immobilien', href: '/ratgeber/cashflow-bei-immobilien' },
+  { icon: Receipt, title: 'AfA & Steuern', href: '/ratgeber/afa-und-steuern-vermietung' },
+  { icon: BookOpen, title: 'Immobilien-Lexikon', href: '/immobilien-lexikon' },
+  { icon: BookOpen, title: 'Alle Ratgeber-Artikel', href: '/ratgeber' },
+  { icon: Scale, title: 'renditly vs. ImmoAnalyse', href: '/renditly-vs-immoanalyse' },
+  { icon: FileCheck2, title: 'Hilfe-Center', href: '/hilfe' },
+];
+
+export function Logo({ hell = false }) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white text-base font-black flex items-center justify-center">r</span>
+      <span className={`font-extrabold text-lg tracking-tight ${hell ? 'text-white' : 'text-gray-900'}`}>renditly</span>
+    </span>
+  );
+}
+
+// Abschnitt "Text links, App-Ausschnitt rechts" (abwechselnd gespiegelt)
+function Vertiefung({ nr, eyebrow, titel, text, punkte, children, gespiegelt = false }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+      <div className={gespiegelt ? 'lg:order-2' : ''}>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">{nr}</span>
+          <span className="text-xs font-bold uppercase tracking-wide text-indigo-600">{eyebrow}</span>
+        </div>
+        <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{titel}</h3>
+        <p className="text-gray-600 mt-3 leading-relaxed">{text}</p>
+        <ul className="mt-5 space-y-2">
+          {punkte.map(p => (
+            <li key={p} className="flex items-start gap-2 text-sm text-gray-700"><Check size={16} className="mt-0.5 shrink-0 text-emerald-600" />{p}</li>
+          ))}
+        </ul>
+      </div>
+      <div className={gespiegelt ? 'lg:order-1' : ''}>{children}</div>
+    </div>
+  );
+}
 
 const LandingPage = ({ onGetStarted, onLogin }) => {
-  const [billingOpen, setBillingOpen] = useState(null);
-  const [billing, setBilling] = useState('jaehrlich'); // default jährlich
-  const [checkoutLoading, setCheckoutLoading] = useState(null);
-
-  const handleSelectPlan = async (planKey) => {
-    const billingKey = billing === 'jaehrlich' ? 'yearly' : 'monthly';
-    const priceId = PLANS[planKey]?.prices?.[billingKey]?.id;
-    if (!priceId) return;
-
-    setCheckoutLoading(planKey);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-anon`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({ priceId, planKey }),
-        }
-      );
-      const data = await res.json();
-      if (data?.url) window.location.href = data.url;
-      else setCheckoutLoading(null);
-    } catch (err) {
-      console.error('Checkout Fehler:', err);
-      setCheckoutLoading(null);
-    }
-    // kein finally — loading bleibt bis Stripe-Redirect
-  };
-
-  const features = [
-    {
-      icon: BarChart3,
-      title: 'Portfolio-Übersicht',
-      desc: 'Alle Immobilien auf einen Blick — Rendite, Cashflow und Vermögen in Echtzeit.',
-      color: 'blue',
-    },
-    {
-      icon: Wallet,
-      title: 'Cashflow-Analyse',
-      desc: 'Monatliche und jährliche Liquidität berechnen — inkl. Zinsen, Tilgung und Nebenkosten.',
-      color: 'emerald',
-    },
-    {
-      icon: Receipt,
-      title: 'Steuervorbereitung',
-      desc: 'AfA, Werbungskosten, Fahrtkosten — alle Posten für dein Finanzamt automatisch erfasst.',
-      color: 'amber',
-    },
-    {
-      icon: Users,
-      title: 'Mieterverwaltung',
-      desc: 'Mieter anlegen, Kautionen tracken, NK-Abrechnungen erstellen — digital und ordentlich.',
-      color: 'violet',
-    },
-    {
-      icon: TrendingUp,
-      title: 'Wertsteigerung tracken',
-      desc: 'Immobilienwert, Restschuld und aufgebautes Eigenkapital über die Jahre verfolgen.',
-      color: 'blue',
-    },
-    {
-      icon: Building2,
-      title: 'Mehrfamilienhäuser',
-      desc: 'Wohnungsmanagement für MFH-Eigentümer — jede Einheit einzeln im Blick.',
-      color: 'emerald',
-    },
-  ];
-
-  const colorMap = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-100',
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
-    violet: 'bg-violet-50 text-violet-600 border-violet-100',
-  };
-
-  const faqs = [
-    {
-      q: 'Wie berechne ich die Mietrendite mit renditly?',
-      a: 'Du gibst Kaufpreis, Kaufnebenkosten, Kaltmiete und laufende Kosten ein — renditly berechnet sofort Bruttomietrendite, Nettomietrendite und Cash-on-Cash-Rendite. Alle Werte werden automatisch aktualisiert wenn sich Miete oder Kosten ändern.',
-    },
-    {
-      q: 'Was ist ein guter Cashflow bei Immobilien?',
-      a: 'Als Faustregel gilt: ein positiver monatlicher Cashflow nach allen Kosten (Rate, Instandhaltung, Verwaltung, Hausgeld) ist das Ziel. renditly zeigt dir den Cashflow monatsgenau — inklusive 25-Jahres-Prognose mit Anschlussfinanzierung.',
-    },
-    {
-      q: 'Kann ich die App kostenlos testen?',
-      a: 'Ja — du kannst renditly 90 Tage kostenlos mit einer Immobilie testen, ohne Kreditkarte. Du bekommst Zugang zu allen Features: Cashflow-Analyse, Steuervorbereitung, Mieterverwaltung und mehr.',
-    },
-    {
-      q: 'Für wen ist renditly geeignet?',
-      a: 'renditly richtet sich an deutsche Vermieter und Immobilien-Investoren — vom Einsteiger mit einer Eigentumswohnung bis zum Profi mit mehreren Mehrfamilienhäusern. Der Starter-Plan eignet sich für 1 Objekt, Standard für bis zu 10 Immobilien, Pro für unlimitierte Portfolios.',
-    },
-    {
-      q: 'Welche Steuer-Daten kann renditly exportieren?',
-      a: 'renditly exportiert alle steuerlich relevanten Posten als Excel und PDF: Mieteinnahmen, Schuldzinsen (annuitätisch korrekt je Phase), Instandhaltung, Hausgeld, Verwaltungskosten, Fahrtkosten nach km-Pauschale und Erhaltungsaufwand. AfA-Daten werden als Grundlage für den Steuerberater mitgeliefert.',
-    },
-    {
-      q: 'Kann jemand mein Vermögen oder meine Immobilien sehen?',
-      a: 'Nein — absolut nicht. Jeder Account ist vollständig isoliert. Weder andere Nutzer noch wir als Betreiber können sehen, welche Immobilien du hast, was sie wert sind oder wie dein Cashflow aussieht. Die Datenbank erzwingt das technisch über Row Level Security.',
-    },
-    {
-      q: 'Sind meine Finanzdaten sicher gespeichert?',
-      a: 'Ja. Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL via Supabase). Die Verbindung ist immer TLS-verschlüsselt. Deine Daten werden nicht verkauft oder für Werbung genutzt.',
-    },
-    {
-      q: 'Was passiert wenn ich kündige?',
-      a: 'Du kannst jederzeit monatlich kündigen. Deine Daten bleiben erhalten und du kannst weiterhin eine Immobilie verwalten.',
-    },
-    {
-      q: 'Gibt es eine mobile App?',
-      a: 'Die Web-App ist vollständig mobiloptimiert und funktioniert auf iPhone und Android wie eine native App — ohne Download aus dem App Store.',
-    },
-  ];
-
-  const securityItems = [
-    {
-      icon: ShieldCheck,
-      title: 'Vollständige Datenisolierung',
-      desc: 'Jeder Account ist technisch komplett von anderen getrennt. Kein anderer Nutzer kann deine Immobilien, Preise oder Vermögenswerte sehen — das ist auf Datenbankebene erzwungen, nicht nur durch Passwörter.',
-    },
-    {
-      icon: Building2,
-      title: 'Bankenstandard: Row Level Security',
-      desc: 'Wir nutzen Row Level Security (RLS) — denselben Mechanismus den Banken für Kontentrennung verwenden. Selbst wenn jemand deinen Account-Link kennt, sieht er nur eine leere Seite.',
-    },
-    {
-      icon: Globe,
-      title: 'EU-Server, verschlüsselt',
-      desc: 'Alle Daten liegen verschlüsselt auf Servern in der EU (PostgreSQL). Die Verbindung ist immer TLS-gesichert. Deine Daten werden nicht verkauft, nicht analysiert, nicht für Werbung genutzt.',
-    },
-    {
-      icon: Eye,
-      title: 'Kein Einblick durch uns',
-      desc: 'Auch wir als Betreiber sehen nicht, welche Immobilien du hast oder was sie wert sind. Das ist kein Versprechen — es ist technisch so umgesetzt, dass es gar nicht anders geht.',
-    },
-    {
-      icon: Key,
-      title: 'Deine Daten gehören dir',
-      desc: 'Du kannst deine Daten jederzeit exportieren oder deinen Account löschen. Bei Kündigung werden auf Wunsch alle Daten vollständig entfernt.',
-    },
-    {
-      icon: BellOff,
-      title: 'Kein Tracking, keine Werbung',
-      desc: 'Wir verkaufen keine Daten. Keine Weitergabe an Dritte, keine Verhaltensanalyse, kein Remarketing. Was in deinem Portfolio passiert, bleibt bei dir.',
-    },
-  ];
-
-  const trustItems = [
-    { icon: Lock, label: 'TLS-Verschlüsselung' },
-    { icon: Globe, label: 'EU-Datenhaltung' },
-    { icon: ShieldCheck, label: 'Row Level Security' },
-    { icon: Ban, label: 'Kein Datenverkauf' },
-  ];
+  const [offen, setOffen] = useState(null);
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="font-app min-h-screen bg-white text-gray-900 antialiased">
 
       {/* ── NAV ── */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Home size={22} className="flex-shrink-0 text-indigo-600" />
-            <span className="font-black text-gray-900 text-base sm:text-lg truncate" style={{letterSpacing: '-0.02em'}}>
-              renditly
-            </span>
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+          <a href="/" aria-label="renditly Startseite"><Logo /></a>
+          <div className="hidden md:flex items-center gap-1 text-sm font-semibold text-gray-600">
+            <a href="#funktionen" className="px-3 py-2 rounded-lg hover:bg-gray-100 hover:text-gray-900">Funktionen</a>
+            <a href="#pricing" className="px-3 py-2 rounded-lg hover:bg-gray-100 hover:text-gray-900">Preise</a>
+            <a href="/mietrendite-rechner" className="px-3 py-2 rounded-lg hover:bg-gray-100 hover:text-gray-900">Rechner</a>
+            <a href="/ratgeber" className="px-3 py-2 rounded-lg hover:bg-gray-100 hover:text-gray-900">Ratgeber</a>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <a
-              href="/mietrendite-rechner"
-              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-indigo-600 px-2.5 sm:px-3 py-2 rounded-lg hover:bg-indigo-50 transition-all"
-            >
-              Rechner
-            </a>
-            <a
-              href="#pricing"
-              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-indigo-600 px-2.5 sm:px-3 py-2 rounded-lg hover:bg-indigo-50 transition-all"
-            >
-              Preise
-            </a>
-            <button
-              onClick={onLogin}
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 px-2.5 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-all"
-            >
-              Einloggen
-            </button>
-            <button
-              onClick={onGetStarted}
-              className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 sm:px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-sm whitespace-nowrap"
-            >
-              <span className="hidden sm:inline">Kostenlos starten</span>
-              <span className="sm:hidden">Starten</span>
+          <div className="flex items-center gap-2">
+            <button onClick={onLogin} className="text-sm font-semibold text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100">Einloggen</button>
+            <button onClick={onGetStarted} className="text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl whitespace-nowrap">
+              <span className="hidden sm:inline">Kostenlos starten</span><span className="sm:hidden">Starten</span>
             </button>
           </div>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl" />
+      <header className="relative bg-ink text-white overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute -top-32 right-0 w-[36rem] h-[36rem] bg-indigo-600/25 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 -left-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
         </div>
-
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-32">
-          <div className="max-w-3xl">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm text-blue-200 mb-5 sm:mb-6">
-              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse flex-shrink-0"></span>
-              Kostenlos starten — keine Kreditkarte nötig
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20 lg:py-24 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-3 py-1 text-xs font-semibold text-indigo-200 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Für private Vermieter in Deutschland
             </div>
-
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-tight mb-4 sm:mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.1rem] font-extrabold leading-[1.08] tracking-tight">
               Dein Immobilien&shy;portfolio.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-                Endlich im Griff.
-              </span>
+              <span className="text-indigo-300">Endlich im Griff.</span>
             </h1>
-
-            <p className="text-base sm:text-lg lg:text-xl text-slate-300 mb-6 sm:mb-8 max-w-xl leading-relaxed">
-              Rendite, Cashflow, Steuer und Mieter — alles an einem Ort.
-              Für Einsteiger mit einer Wohnung bis zum Profi mit mehreren Objekten.
+            <p className="text-lg text-white/70 mt-6 max-w-xl leading-relaxed">
+              Rendite, Cashflow, Steuer und Mieter an einem Ort — und jeden Monat auf einen Blick,
+              was ansteht: offene Mieten, Mieterhöhungen, Zinsbindung, Nebenkostenabrechnung.
             </p>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={onGetStarted}
-                className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-base sm:text-lg rounded-2xl transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 text-center flex items-center justify-center gap-2"
-              >
-                Jetzt kostenlos starten <ArrowRight size={18} />
+            <div className="flex flex-col sm:flex-row gap-3 mt-8">
+              <button onClick={onGetStarted} className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl inline-flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/40">
+                90 Tage kostenlos testen <ArrowRight size={18} />
               </button>
-              <button
-                onClick={onLogin}
-                className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-white/10 hover:bg-white/20 text-white font-semibold text-base sm:text-lg rounded-2xl border border-white/20 transition-all text-center"
-              >
-                Einloggen
-              </button>
+              <a href="#funktionen" className="px-6 py-3.5 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-semibold rounded-xl text-center">
+                So funktioniert’s
+              </a>
             </div>
-
-            {/* Social proof — stacked on mobile */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0 mt-4 text-sm text-slate-400">
-              <span className="flex items-center gap-1"><Check size={14} /> 3 Monate kostenlos testen</span>
-              <span className="hidden sm:inline">&nbsp;·&nbsp;</span>
-              <span className="flex items-center gap-1"><Check size={14} /> Alle Features inklusive</span>
-              <span className="hidden sm:inline">&nbsp;·&nbsp;</span>
-              <span className="flex items-center gap-1"><Check size={14} /> Jederzeit kündbar</span>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 mt-6 text-sm text-white/60">
+              {['Keine Kreditkarte', 'Alle Funktionen', 'Jederzeit kündbar'].map(t => (
+                <span key={t} className="flex items-center gap-1.5"><Check size={15} className="text-emerald-400" />{t}</span>
+              ))}
             </div>
           </div>
-        </div>
-
-        {/* Stats bar */}
-        <div className="relative border-t border-white/10 bg-white/5">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-6 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-            {[
-              { value: '6+', label: 'Immobilientypen' },
-              { value: '100%', label: 'Cloudbasiert' },
-              { value: '0€', label: 'Einstieg' },
-              { value: 'ab 3,99€', label: '/ Monat' },
-            ].map(stat => (
-              <div key={stat.label} className="text-center">
-                <div className="text-xl sm:text-3xl font-black text-white">{stat.value}</div>
-                <div className="text-xs sm:text-sm text-slate-400 mt-0.5">{stat.label}</div>
-              </div>
-            ))}
+          <div className="lg:pl-4">
+            <DashboardMockup />
+            <p className="text-center text-xs text-white/40 mt-3">So sieht dein Dashboard aus — mit Beispielzahlen</p>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* ── APP MOCKUPS ── */}
-      <section className="py-14 sm:py-20 lg:py-24 bg-white overflow-hidden">
+      {/* ── VERTRAUENSLEISTE ── */}
+      <div className="bg-canvas border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          {[
+            [Lock, 'TLS-verschlüsselt'], [Globe, 'Server in der EU'],
+            [ShieldCheck, 'Row Level Security'], [Ban, 'Kein Datenverkauf'],
+          ].map(([Icon, t]) => (
+            <div key={t} className="flex items-center justify-center gap-2 text-gray-600 font-semibold"><Icon size={16} className="text-indigo-600" />{t}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── VERTIEFUNG ── */}
+      <section id="funktionen" className="py-16 sm:py-24 scroll-mt-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-
-          {/* Header */}
-          <div className="text-center mb-10 sm:mb-14">
-            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 text-xs sm:text-sm text-blue-600 font-semibold mb-4">
-              <Monitor size={14} /> So sieht die App aus
-            </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-gray-900 mb-3">
-              Kein Excel-Chaos. Kein Rätselraten.
-            </h2>
-            <p className="text-gray-500 text-base sm:text-lg max-w-2xl mx-auto">
-              Alle Zahlen deiner Immobilien auf einen Blick — klar strukturiert, professionell, in Sekunden.
-            </p>
+          <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-20">
+            <div className="text-xs font-bold uppercase tracking-wide text-indigo-600 mb-2">Funktionen</div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Weniger suchen, mehr wissen</h2>
+            <p className="text-gray-500 mt-3">renditly rechnet nicht nur — es sagt dir, was zu tun ist, und prüft, ob deine Zahlen stimmen.</p>
           </div>
 
-          {/* Main dashboard mockup */}
-          <div className="relative mb-8 sm:mb-12">
-            <div className="absolute inset-x-10 bottom-0 h-16 bg-blue-100/60 blur-2xl rounded-full pointer-events-none" />
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-blue-100/80 ring-1 ring-gray-200">
-              <img src="/mockup-dashboard.svg" alt="Portfolio-Übersicht Dashboard" className="w-full h-auto block" loading="lazy" />
-            </div>
-            <p className="text-center text-xs sm:text-sm text-gray-400 mt-3">
-              Portfolio-Übersicht mit Echtzeit-KPIs, Cashflow-Chart und allen Immobilien auf einen Blick
-            </p>
-          </div>
+          <div className="space-y-20 sm:space-y-28">
+            <Vertiefung nr="1" eyebrow="Was steht an"
+              titel="Jeden Monat wissen, was dran ist"
+              text="Alle offenen Punkte deines Portfolios in einer Liste, sortiert nach Dringlichkeit. Jede Zeile hat die passende Aktion — kein Suchen in Reitern."
+              punkte={[
+                'Miete eingegangen? Ein Klick, auch rückwirkend für vergangene Monate',
+                'Mieterhöhung mit Kappungsgrenze und 15-Monats-Frist',
+                'Zinsbindungsende mit Restschuld und Anschlussrate',
+                'Nebenkostenabrechnung mit Frist, Mahnschreiben als PDF',
+              ]}>
+              <Fenster><AppKopf /><div className="p-3"><WasStehtAn /></div></Fenster>
+            </Vertiefung>
 
-          {/* Two feature mockups side by side */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
-            <div className="flex flex-col">
-              <div className="relative flex-1 rounded-2xl overflow-hidden shadow-xl shadow-gray-100 ring-1 ring-gray-200 mb-3">
-                <img src="/mockup-cashflow.svg" alt="Cashflow-Analyse" className="w-full h-auto block" loading="lazy" />
-              </div>
-              <div className="text-center px-2">
-                <p className="font-semibold text-gray-800 text-sm sm:text-base flex items-center justify-center gap-1.5"><Wallet size={16} /> Cashflow-Analyse</p>
-                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">25-Jahres-Prognose und Jahresübersicht je Immobilie</p>
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <div className="relative flex-1 rounded-2xl overflow-hidden shadow-xl shadow-gray-100 ring-1 ring-gray-200 mb-3">
-                <img src="/mockup-steuer.svg" alt="Steuerberechnung" className="w-full h-auto block" loading="lazy" />
-              </div>
-              <div className="text-center px-2">
-                <p className="font-semibold text-gray-800 text-sm sm:text-base flex items-center justify-center gap-1.5"><Receipt size={16} /> Steuerberechnung</p>
-                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">AfA, Schuldzinsen, Werbungskosten — automatisch berechnet</p>
-              </div>
-            </div>
-          </div>
+            <Vertiefung nr="2" eyebrow="Rechnet sich das?" gespiegelt
+              titel="Vor dem Kauf: ein Urteil in einem Satz"
+              text="Kaufpreis, Miete und Finanzierung eingeben — renditly sagt dir, ob sich die Wohnung trägt, und nennt die Grenzwerte, ab denen sie kippt. Auch für Anmieten und Untervermieten."
+              punkte={[
+                'Cashflow vor und nach Tilgung, nicht nur eine Rendite',
+                'Grunderwerbsteuer automatisch aus dem Bundesland',
+                'Grenzwerte für Miete, Kaufpreis, Eigenkapital und Zins',
+                'Gekauft? Mit einem Klick als Immobilie übernehmen',
+              ]}>
+              <RechnetSichDasMockup />
+            </Vertiefung>
 
-        </div>
-      </section>
+            <Vertiefung nr="3" eyebrow="Finanzierung"
+              titel="Finanzierung, die mitdenkt"
+              text="Mehrere Darlehensphasen, Sondertilgungen und Anschlussfinanzierung — monatsgenau gerechnet. Du siehst, was zum Ende der Zinsbindung noch offen ist und was die neue Rate kostet."
+              punkte={[
+                'Restschuld heute und am Zinsbindungsende',
+                'Anschlussrate für deinen Wunschzins durchspielen',
+                'Erinnerung, wenn ein Forward-Darlehen möglich wird',
+              ]}>
+              <FinanzierungMockup />
+            </Vertiefung>
 
-      {/* ── PROBLEM ── */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-3 sm:mb-4">
-            Kennst du das?
-          </h2>
-          <p className="text-slate-500 text-base sm:text-lg mb-8 sm:mb-10">Die häufigsten Probleme von Immobilienbesitzern</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { icon: BarChart3, text: 'Excel-Tabellen die niemand mehr versteht — Rendite, Cashflow und Steuer alles durcheinander.' },
-              { icon: Frown, text: 'Kein Überblick über Mieter, Kautionen und offene Zahlungen. Alles verteilt auf Mails und Zettel.' },
-              { icon: Wallet, text: 'Beim Steuerberater fehlen immer Belege — AfA, Fahrtkosten, Werbungskosten unklar.' },
-            ].map((item, i) => (
-              <div key={i} className="bg-white border border-red-100 rounded-2xl p-5 sm:p-6 text-left shadow-sm">
-                <div className="text-slate-400 mb-3"><item.icon size={28} /></div>
-                <p className="text-slate-600 text-sm leading-relaxed">{item.text}</p>
+            <Vertiefung nr="4" eyebrow="Plausibilitätsprüfung" gespiegelt
+              titel="Zahlen, denen du trauen kannst"
+              text="Ein Komma an der falschen Stelle verfälscht jede Rendite. renditly prüft deine Eingaben gegen typische Werte und gegeneinander — und zeigt, was unauffällig ist."
+              punkte={[
+                'Widersprüche rot, ungewöhnliche Werte gelb — „Stimmt so“ bestätigt dauerhaft',
+                '„Wer zahlt?“ je Kostenposition, mit Datum und auch rückwirkend',
+                'Jahreswerte monatsgenau: zählt nur, was du wirklich gezahlt hast',
+              ]}>
+              <div className="space-y-3">
+                <PlausiMockup />
+                <WerZahltMockup />
               </div>
-            ))}
-          </div>
-          <div className="mt-8 sm:mt-10 text-lg sm:text-xl font-bold text-slate-800">
-            Es gibt einen besseren Weg.
+            </Vertiefung>
           </div>
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
-      <section className="py-12 sm:py-16 lg:py-24">
+      {/* ── ALLE FUNKTIONEN ── */}
+      <section className="py-16 sm:py-24 bg-canvas">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-3">
-              Alles was du brauchst — nichts was du nicht brauchst
-            </h2>
-            <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto">
-              Gebaut von Immobilieninvestoren für Immobilieninvestoren. Kein unnötiger Ballast.
-            </p>
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Und alles andere, was Vermieten braucht</h2>
+            <p className="text-gray-500 mt-3">Von der ersten Eigentumswohnung bis zum Mehrfamilienhaus — ohne das Werkzeug zu wechseln.</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {features.map((f, i) => (
-              <div key={i} className="bg-white border border-gray-100 rounded-2xl p-5 sm:p-6 hover:shadow-md transition-all hover:-translate-y-0.5 flex gap-4 sm:block">
-                <div className={`inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl border flex-shrink-0 sm:mb-4 ${colorMap[f.color]}`}>
-                  <f.icon size={20} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FUNKTIONEN.map(f => {
+              const Icon = f.icon;
+              return (
+                <div key={f.titel} className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4"><Icon size={19} /></div>
+                  <h3 className="font-extrabold text-gray-900">{f.titel}</h3>
+                  <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">{f.text}</p>
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 mb-1 sm:mb-2">{f.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-indigo-600 to-indigo-800 text-white">
+      {/* ── SO STARTEST DU ── */}
+      <section className="py-16 sm:py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-3">In 3 Minuten startklar</h2>
-            <p className="text-blue-200 text-base sm:text-lg">Keine Einrichtung, kein Onboarding-Call, keine Kreditkarte</p>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">In wenigen Minuten startklar</h2>
+            <p className="text-gray-500 mt-3">Keine Einrichtung, kein Onboarding-Call, keine Kreditkarte.</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { step: '1', icon: Mail, title: 'Kostenlos registrieren', desc: 'Account mit E-Mail anlegen. Dauert 30 Sekunden.' },
-              { step: '2', icon: Home, title: 'Erste Immobilie anlegen', desc: 'Kaufpreis, Miete, Finanzierung eingeben — Rendite wird sofort berechnet.' },
-              { step: '3', icon: BarChart3, title: 'Portfolio im Blick behalten', desc: 'Cashflow, Steuer, Mieter — alles jederzeit griffbereit.' },
-            ].map((item) => (
-              <div key={item.step} className="relative bg-white/10 border border-white/20 rounded-2xl p-5 sm:p-6 flex sm:block items-start gap-4 sm:gap-0 sm:text-center">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center font-black text-base sm:text-lg flex-shrink-0 sm:mx-auto sm:mb-4">
-                  {item.step}
-                </div>
-                <div>
-                  <div className="flex sm:justify-center mb-1 sm:mb-3"><item.icon size={28} /></div>
-                  <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">{item.title}</h3>
-                  <p className="text-blue-200 text-sm leading-relaxed">{item.desc}</p>
-                </div>
+              ['1', 'Konto anlegen', 'Mit deiner E-Mail-Adresse. Dauert eine halbe Minute.'],
+              ['2', 'Objekt in 4 Schritten', 'Was du besitzt, die Wohnung, Kauf und Finanzierung, Miete und Kosten. Die erste Zahl steht vor dem Speichern.'],
+              ['3', 'Was steht an abarbeiten', 'Ab jetzt zeigt dir das Dashboard jeden Monat, was zu tun ist.'],
+            ].map(([nr, t, x]) => (
+              <div key={nr} className="rounded-2xl border border-gray-200 p-6">
+                <div className="w-9 h-9 rounded-full bg-ink text-white font-extrabold flex items-center justify-center mb-4">{nr}</div>
+                <h3 className="font-extrabold text-gray-900">{t}</h3>
+                <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">{x}</p>
               </div>
             ))}
           </div>
-
-          <div className="text-center mt-8 sm:mt-10">
-            <button
-              onClick={onGetStarted}
-              className="w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-indigo-700 font-bold text-base sm:text-lg rounded-2xl hover:bg-blue-50 transition-all shadow-lg inline-flex items-center gap-2"
-            >
+          <div className="text-center mt-10">
+            <button onClick={onGetStarted} className="px-7 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl inline-flex items-center gap-2">
               Jetzt kostenlos starten <ArrowRight size={18} />
             </button>
           </div>
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section className="py-12 sm:py-16 lg:py-24" id="pricing">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-3">
-              Einfache, transparente Preise
-            </h2>
-            <p className="text-slate-500 text-base sm:text-lg">Kein verstecktes Kleingedrucktes. Kein Abo-Durcheinander.</p>
-          </div>
-
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-3 mb-8 sm:mb-10">
-            <span className={`text-sm font-semibold transition-colors ${billing === 'monatlich' ? 'text-slate-900' : 'text-slate-400'}`}>Monatlich</span>
-            <button
-              onClick={() => setBilling(b => b === 'monatlich' ? 'jaehrlich' : 'monatlich')}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${billing === 'jaehrlich' ? 'bg-indigo-600' : 'bg-gray-300'}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${billing === 'jaehrlich' ? 'translate-x-6' : 'translate-x-0'}`} />
-            </button>
-            <span className={`text-sm font-semibold transition-colors ${billing === 'jaehrlich' ? 'text-slate-900' : 'text-slate-400'}`}>
-              Jährlich
-              <span className="ml-1.5 text-[11px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-full">≈ 20% Rabatt</span>
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-
-            {/* Kostenlos */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6 flex flex-col">
-              <div className="mb-4">
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Kostenlos testen</div>
-                <div className="text-3xl sm:text-4xl font-black text-slate-900">0 €</div>
-                <div className="text-gray-400 text-xs mt-1">3–4 Monate, dann Upgrade</div>
-              </div>
-              <ul className="space-y-2 mb-6 flex-1">
-                {['1 Immobilie', 'Alle Features', 'Cashflow & Rendite', 'Mieterverwaltung'].map(item => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
-                    <Check size={12} className="text-emerald-500 flex-shrink-0" /> {item}
-                  </li>
-                ))}
-                <li className="flex items-center gap-2 text-xs text-gray-400">
-                  <X size={12} className="text-gray-300 flex-shrink-0" /> Mehr als 1 Immobilie
-                </li>
-              </ul>
-              <button onClick={onGetStarted} className="w-full py-2.5 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all">
-                Kostenlos starten
-              </button>
-            </div>
-
-            {/* Starter */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6 flex flex-col">
-              <div className="mb-4">
-                <div className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2">Starter · bis 1 Immo</div>
-                <div className="flex items-end gap-1">
-                  <div className="text-3xl sm:text-4xl font-black text-slate-900">
-                    {billing === 'monatlich' ? '4,99' : '3,99'} €
-                  </div>
-                  <div className="text-gray-400 text-xs mb-1.5">/ Monat</div>
-                </div>
-                {billing === 'jaehrlich'
-                  ? <div className="text-xs text-emerald-600 font-semibold mt-1">47,88 € / Jahr · spare 12 €</div>
-                  : <div className="text-gray-400 text-xs mt-1">monatlich kündbar</div>
-                }
-              </div>
-              <ul className="space-y-2 mb-6 flex-1">
-                {['1 Immobilie', 'Alle Features', 'Cashflow & Rendite', 'Steuervorbereitung', 'Mieterverwaltung', 'Cloud-Speicherung'].map(item => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
-                    <Check size={12} className="text-emerald-500 flex-shrink-0" /> {item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={() => handleSelectPlan('starter')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-indigo-200 rounded-xl text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                {checkoutLoading === 'starter' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Starter wählen'}
-              </button>
-            </div>
-
-            {/* Standard — EMPFOHLEN */}
-            <div className="relative bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-5 sm:p-6 text-white shadow-xl shadow-indigo-500/25 flex flex-col">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow whitespace-nowrap">
-                EMPFOHLEN
-              </div>
-              <div className="mb-4">
-                <div className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-2">Standard · bis 10 Immos</div>
-                <div className="flex items-end gap-1">
-                  <div className="text-3xl sm:text-4xl font-black">
-                    {billing === 'monatlich' ? '12,49' : '9,99'} €
-                  </div>
-                  <div className="text-indigo-300 text-xs mb-1.5">/ Monat</div>
-                </div>
-                {billing === 'jaehrlich'
-                  ? <div className="text-xs text-emerald-300 font-semibold mt-1">119,88 € / Jahr · spare 30 €</div>
-                  : <div className="text-indigo-300 text-xs mt-1">monatlich kündbar</div>
-                }
-              </div>
-              <ul className="space-y-2 mb-6 flex-1">
-                {['Bis 10 Immobilien', 'Alle Features', 'Cashflow & Rendite', 'Steuervorbereitung', 'Mieterverwaltung', 'Cloud-Speicherung', 'MFH-Management', 'Stellplatz-Verwaltung'].map(item => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-indigo-100">
-                    <Check size={12} className="text-emerald-400 flex-shrink-0" /> {item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={() => handleSelectPlan('standard')} disabled={!!checkoutLoading} className="w-full py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-all shadow disabled:opacity-50 flex items-center justify-center gap-2">
-                {checkoutLoading === 'standard' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Standard wählen'}
-              </button>
-            </div>
-
-            {/* Pro */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6 flex flex-col">
-              <div className="mb-4">
-                <div className="text-xs font-bold text-violet-600 uppercase tracking-widest mb-2">Pro · ab 11 Immos</div>
-                <div className="flex items-end gap-1">
-                  <div className="text-3xl sm:text-4xl font-black text-slate-900">
-                    {billing === 'monatlich' ? '24,99' : '19,99'} €
-                  </div>
-                  <div className="text-gray-400 text-xs mb-1.5">/ Monat</div>
-                </div>
-                {billing === 'jaehrlich'
-                  ? <div className="text-xs text-emerald-600 font-semibold mt-1">239,88 € / Jahr · spare 60 €</div>
-                  : <div className="text-gray-400 text-xs mt-1">monatlich kündbar</div>
-                }
-              </div>
-              <ul className="space-y-2 mb-6 flex-1">
-                {['Unlimitierte Immobilien', 'Alle Features', 'Cashflow & Rendite', 'Steuervorbereitung', 'Mieterverwaltung', 'Cloud-Speicherung', 'MFH-Management', 'Prioritäts-Support'].map(item => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
-                    <Check size={12} className="text-emerald-500 flex-shrink-0" /> {item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={() => handleSelectPlan('pro')} disabled={!!checkoutLoading} className="w-full py-2.5 border-2 border-violet-200 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                {checkoutLoading === 'pro' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full"/> Wird geladen …</> : 'Pro wählen'}
-              </button>
-            </div>
-
-          </div>
-
-          <p className="text-center text-slate-400 text-xs sm:text-sm mt-6 px-2">
-            Alle Preise inkl. MwSt. · Monatlich oder jährlich kündbar · Sichere Zahlung via Stripe
-          </p>
-        </div>
-      </section>
+      {/* ── PREISE ── */}
+      <Preise onGetStarted={onGetStarted} />
 
       {/* ── SICHERHEIT ── */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-slate-900 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-12">
-            <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 text-sm text-emerald-400 mb-5">
-              <Lock size={14} /> Deine Daten — nur für dich
+      <section className="py-16 sm:py-24 bg-ink text-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-3 py-1 text-xs font-semibold text-emerald-300 mb-4">
+              <Lock size={13} /> Deine Daten — nur für dich
             </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-3">
-              Niemand sieht dein Vermögen außer dir
-            </h2>
-            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">
-              Immobilienvermögen ist Privatsache. Wir haben die App von Grund auf so gebaut,
-              dass kein anderer Nutzer — und auch wir als Betreiber nicht — Einblick in deine Daten bekommt.
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Niemand sieht dein Vermögen außer dir</h2>
+            <p className="text-white/60 mt-3">Immobilienvermögen ist Privatsache. Kein anderer Nutzer — und auch wir als Betreiber nicht — bekommt Einblick in deine Daten.</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-10 sm:mb-12">
-            {securityItems.map((item, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6 hover:bg-white/8 transition-all flex gap-4 sm:block">
-                <div className="text-slate-300 flex-shrink-0 sm:mb-3"><item.icon size={24} /></div>
-                <div>
-                  <h3 className="font-bold text-white mb-1 sm:mb-2 text-sm sm:text-base">{item.title}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {SICHERHEIT.map(s => {
+              const Icon = s.icon;
+              return (
+                <div key={s.titel} className="rounded-2xl bg-white/5 border border-white/10 p-5 sm:p-6">
+                  <Icon size={20} className="text-indigo-300 mb-3" />
+                  <h3 className="font-bold">{s.titel}</h3>
+                  <p className="text-sm text-white/60 mt-1.5 leading-relaxed">{s.text}</p>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Trust bar */}
-          <div className="border-t border-white/10 pt-8 sm:pt-10 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-            {trustItems.map(item => (
-              <div key={item.label} className="flex flex-col items-center gap-2">
-                <item.icon size={24} className="text-slate-300" />
-                <span className="text-xs sm:text-sm text-slate-400 font-medium">{item.label}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ── FAQ ── */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-slate-50">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 text-center mb-8 sm:mb-10">Häufige Fragen</h2>
-          <div className="space-y-3">
-            {faqs.map((faq, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                <button
-                  className="w-full text-left px-4 sm:px-6 py-4 flex items-center justify-between gap-3 hover:bg-gray-50 transition-all"
-                  onClick={() => setBillingOpen(billingOpen === i ? null : i)}
-                >
-                  <span className="font-semibold text-slate-800 text-sm sm:text-base">{faq.q}</span>
-                  <span className={`text-gray-400 text-xl flex-shrink-0 transition-transform ${billingOpen === i ? 'rotate-45' : ''}`}>+</span>
+      <section className="py-16 sm:py-24">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-center mb-10">Häufige Fragen</h2>
+          <div className="divide-y divide-gray-200 border-y border-gray-200">
+            {FAQS.map((f, i) => (
+              <div key={f.q}>
+                <button type="button" onClick={() => setOffen(offen === i ? null : i)} aria-expanded={offen === i}
+                  className="w-full flex items-center justify-between gap-4 py-4 text-left">
+                  <span className="font-bold text-gray-900">{f.q}</span>
+                  <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center shrink-0">{offen === i ? <Minus size={15} /> : <Plus size={15} />}</span>
                 </button>
-                {billingOpen === i && (
-                  <div className="px-4 sm:px-6 pb-4 sm:pb-5 text-slate-600 text-sm leading-relaxed border-t border-gray-100 pt-3 sm:pt-4">
-                    {faq.a}
-                  </div>
-                )}
+                {offen === i && <p className="pb-5 -mt-1 text-gray-600 leading-relaxed">{f.a}</p>}
               </div>
             ))}
           </div>
@@ -631,119 +369,71 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
       </section>
 
       {/* ── KOSTENLOSE TOOLS & RATGEBER ── */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-white border-t border-gray-100">
+      <section className="py-16 sm:py-20 bg-canvas">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-3">
-              Kostenlose Tools &amp; Ratgeber
-            </h2>
-            <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto">
-              Auch ohne Account nutzbar — rechne und informiere dich, bevor du dich entscheidest.
-            </p>
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Kostenlose Tools &amp; Ratgeber</h2>
+            <p className="text-gray-500 mt-2">Auch ohne Account nutzbar — rechne und informiere dich, bevor du dich entscheidest.</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {[
-              { icon: Calculator, title: 'Mietrendite-Rechner', desc: 'Brutto- und Nettomietrendite in Sekunden berechnen.', href: '/mietrendite-rechner' },
-              { icon: Receipt, title: 'AfA-Rechner', desc: 'Jährliche Abschreibung und Steuerersparnis ermitteln.', href: '/afa-rechner' },
-              { icon: Landmark, title: 'Grunderwerbsteuer-Rechner', desc: 'Grunderwerbsteuer für alle 16 Bundesländer berechnen.', href: '/grunderwerbsteuer-rechner' },
-              { icon: Percent, title: 'Kaufnebenkosten-Rechner', desc: 'Grunderwerbsteuer, Notar & Makler in einem Rechner.', href: '/kaufnebenkosten-rechner' },
-              { icon: CalendarClock, title: 'Tilgungsplan-Rechner', desc: 'Annuitätendarlehen Jahr für Jahr durchrechnen.', href: '/tilgungsplan-rechner' },
-              { icon: Hourglass, title: 'Spekulationsfrist-Rechner', desc: 'Ab wann der Immobilienverkauf steuerfrei ist berechnen.', href: '/spekulationsfrist-rechner' },
-              { icon: MapPin, title: 'Mietrendite nach Stadt', desc: 'Kaufpreise, Mieten und Renditen der 18 größten Städte im Vergleich.', href: '/mietrendite-staedte' },
-              { icon: BarChart3, title: 'Mietrendite-Report 2026', desc: 'Datenstudie mit Rangliste und zitierbaren Kennzahlen zu 18 Städten.', href: '/mietrendite-report-2026' },
-              { icon: BookOpen, title: 'Mietrendite berechnen', desc: 'Der komplette Guide mit Formeln und Beispielrechnung.', href: '/ratgeber/mietrendite-berechnen' },
-              { icon: Wallet, title: 'Cashflow bei Immobilien', desc: 'Was Cashflow ist und wie du ihn richtig kalkulierst.', href: '/ratgeber/cashflow-bei-immobilien' },
-              { icon: BarChart3, title: 'AfA & Steuern', desc: 'Abschreibung, Werbungskosten und Steuervorteile erklärt.', href: '/ratgeber/afa-und-steuern-vermietung' },
-              { icon: BookOpen, title: 'Immobilien-Lexikon', desc: '29 Begriffe zu Rendite, Steuern, Recht & Finanzierung kurz erklärt.', href: '/immobilien-lexikon' },
-              { icon: BookOpen, title: 'Alle Ratgeber-Artikel', desc: 'Nebenkosten, Mietspiegel, Grunderwerbsteuer & mehr — die komplette Übersicht.', href: '/ratgeber' },
-              { icon: Scale, title: 'renditly vs. ImmoAnalyse', desc: 'Feature- und Preisvergleich — welches Tool passt zu deiner Phase?', href: '/renditly-vs-immoanalyse' },
-              { icon: BookOpen, title: 'Hilfe-Center', desc: 'Alle Antworten zu Erste Schritte, Preisen, Steuern und Mieterverwaltung.', href: '/hilfe' },
-            ].map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="bg-white border border-gray-100 rounded-2xl p-5 sm:p-6 hover:shadow-md hover:border-gray-200 transition-all hover:-translate-y-0.5 flex gap-4 sm:block"
-              >
-                <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 flex-shrink-0 sm:mb-4">
-                  <item.icon size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 mb-1 sm:mb-2">{item.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
-                </div>
-              </a>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {TOOLS.map(t => {
+              const Icon = t.icon;
+              return (
+                <a key={t.href} href={t.href} className="group bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 hover:border-indigo-300 transition-colors">
+                  <span className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><Icon size={16} /></span>
+                  <span className="font-semibold text-sm text-gray-800 flex-1">{t.title}</span>
+                  <ArrowRight size={15} className="text-gray-300 group-hover:text-indigo-600" />
+                </a>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── FINAL CTA ── */}
-      <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-slate-900 to-blue-950 text-white text-center">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="flex justify-center mb-4">
-            <Home size={48} className="text-indigo-400" />
+      {/* ── SCHLUSS-CTA ── */}
+      <section className="py-16 sm:py-24 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="relative overflow-hidden rounded-3xl bg-ink text-white px-6 py-12 sm:px-12 sm:py-16 text-center">
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[40rem] h-72 bg-indigo-600/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Bereit, dein Portfolio im Griff zu haben?</h2>
+              <p className="text-white/60 mt-3 max-w-lg mx-auto">Starte kostenlos. Upgrade, wenn du bereit bist. Kündige, wann du willst.</p>
+              <button onClick={onGetStarted} className="mt-8 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl inline-flex items-center gap-2">
+                Jetzt kostenlos starten <ArrowRight size={20} />
+              </button>
+              <p className="text-white/40 text-sm mt-4">Keine Kreditkarte · Keine Mindestlaufzeit · Sofort loslegen</p>
+            </div>
           </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-4">
-            Bereit, dein Portfolio zu optimieren?
-          </h2>
-          <p className="text-slate-300 text-base sm:text-lg mb-6 sm:mb-8">
-            Starte kostenlos. Upgrade wenn du bereit bist. Kündige wann du willst.
-          </p>
-          <button
-            onClick={onGetStarted}
-            className="w-full sm:w-auto px-8 sm:px-10 py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-lg sm:text-xl rounded-2xl transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 inline-flex items-center gap-2"
-          >
-            Jetzt kostenlos starten <ArrowRight size={20} />
-          </button>
-          <p className="text-slate-500 text-xs sm:text-sm mt-4">
-            Keine Kreditkarte · Keine Mindestlaufzeit · Sofort loslegen
-          </p>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-slate-950 text-slate-500 py-6 sm:py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
-              <Home size={13} className="text-white" />
-            </div>
-            <span className="font-black text-slate-300" style={{letterSpacing: '-0.02em'}}>renditly</span>
-          </div>
-          <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
-            <a href="/mietrendite-rechner" className="hover:text-slate-300 transition-colors">Rechner</a>
-            <a href="/mietrendite-staedte" className="hover:text-slate-300 transition-colors">Städte</a>
-            <a href="/ratgeber" className="hover:text-slate-300 transition-colors">Ratgeber</a>
-            <a href="/hilfe" className="hover:text-slate-300 transition-colors">Hilfe</a>
-            <a href="#pricing" className="hover:text-slate-300 transition-colors">Preise</a>
-            <button onClick={onLogin} className="hover:text-slate-300 transition-colors">Einloggen</button>
-            <button onClick={onGetStarted} className="hover:text-slate-300 transition-colors">Registrieren</button>
+      <footer className="bg-ink text-white/50 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+          <Logo hell />
+          <div className="flex items-center gap-x-5 gap-y-2 flex-wrap justify-center">
+            <a href="/mietrendite-rechner" className="hover:text-white">Rechner</a>
+            <a href="/mietrendite-staedte" className="hover:text-white">Städte</a>
+            <a href="/ratgeber" className="hover:text-white">Ratgeber</a>
+            <a href="/hilfe" className="hover:text-white">Hilfe</a>
+            <a href="#pricing" className="hover:text-white">Preise</a>
+            <button onClick={onLogin} className="hover:text-white">Einloggen</button>
+            <button onClick={onGetStarted} className="hover:text-white">Registrieren</button>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs">
-            <ImpressumDatenschutzLinks className="text-slate-500 hover:text-slate-300" />
+            <ImpressumDatenschutzLinks className="text-white/50 hover:text-white" />
             <span className="hidden sm:inline opacity-40">·</span>
             <span>© {new Date().getFullYear()} renditly</span>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex justify-center mt-6 pt-6 border-t border-slate-800">
-          <a
-            href="https://www.producthunt.com/products/renditly-de/reviews/new?utm_source=badge-renditly-de&utm_medium=badge"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1289958&theme=light"
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex justify-center mt-6 pt-6 border-t border-white/10">
+          <a href="https://www.producthunt.com/products/renditly-de/reviews/new?utm_source=badge-renditly-de&utm_medium=badge" target="_blank" rel="noopener noreferrer">
+            <img src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1289958&theme=light"
               alt="renditly.de - Cashflow, Wertentwicklung & Mieter für deutsche Vermieter | Product Hunt"
-              style={{ width: 250, height: 54 }}
-              width="250"
-              height="54"
-              loading="lazy"
-            />
+              style={{ width: 250, height: 54 }} width="250" height="54" loading="lazy" />
           </a>
         </div>
       </footer>
-
     </div>
   );
 };

@@ -53,7 +53,7 @@ renditly ist die Software für deutsche Vermieter und Immobilien-Investoren, die
 
 ## Was renditly kann
 
-renditly berechnet automatisch Bruttomietrendite, Nettomietrendite und monatlichen Cashflow für jede Immobilie im Portfolio. Dazu kommen ein AfA-Rechner nach deutschem Steuerrecht, ein Grunderwerbsteuer-Rechner mit allen 16 Bundesland-Sätzen, ein Kaufnebenkosten-Rechner und ein Tilgungsplan-Rechner für Bankfinanzierungen. Alle Kennzahlen werden bei jeder Änderung automatisch neu berechnet.
+renditly berechnet automatisch Bruttomietrendite, Nettomietrendite und monatlichen Cashflow vor und nach Tilgung für jede Immobilie im Portfolio. „Was steht an“ sammelt jeden Monat alle offenen Punkte mit der passenden Aktion: offene Mieten und Untermieten, mögliche Mieterhöhungen (Kappungsgrenze, 15-Monats-Frist), das Ende der Zinsbindung, fehlende Nebenkostenabrechnungen und Kautionen. „Rechnet sich das?“ bewertet eine Wohnung vor dem Kauf in einem Satz und nennt die Grenzwerte für Miete, Kaufpreis, Eigenkapital und Zins. Die Finanzierung wird monatsgenau gerechnet, mit Restschuld zum Zinsbindungsende und Anschlussrate. Eine Plausibilitätsprüfung markiert Widersprüche und Tippfehler in den Eingaben. Dazu Steuern je Steuerjahr (AfA, Schuldzinsen, Werbungskosten) als PDF oder Excel, Mieterverwaltung, Nebenkostenabrechnung, Mehrfamilienhäuser und Untervermietung.
 
 ## Für wen renditly gebaut ist
 
