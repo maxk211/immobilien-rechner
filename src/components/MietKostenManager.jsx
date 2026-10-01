@@ -5,6 +5,7 @@ import { formatCurrency } from '../utils/format.js';
 import { PlausiFeldHinweis } from './PlausiPruefung';
 import KostenZahler from './KostenZahler';
 import ZahlInput from './ZahlInput';
+import SchaetzInfo, { nuGeschaetztInfo } from './SchaetzInfo';
 
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges, plausi = [] }) => {
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
@@ -223,7 +224,11 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                 'hausgeldNichtUmlagefaehig',
                 {
                   nullbar: true, klasse: 'pl-4 -mx-4 pr-4 bg-indigo-50/60 border-l-4 border-l-indigo-400', labelKlasse: 'text-indigo-800',
-                  extra: (params.hausgeldNichtUmlagefaehig == null || params.hausgeldNichtUmlagefaehig === '') && (
+                  extra: (params.hausgeldNichtUmlagefaehig != null && params.hausgeldNichtUmlagefaehig !== '' && params.feldHerkunft?.hausgeldNichtUmlagefaehig === 'geschaetzt') ? (
+                    <span className="mt-1 flex items-center text-[11px] text-gray-400">Schätzung · 35 % des Hausgelds
+                      <SchaetzInfo {...nuGeschaetztInfo({ hausgeld, nu: Number(params.hausgeldNichtUmlagefaehig) || 0 })} />
+                    </span>
+                  ) : (params.hausgeldNichtUmlagefaehig == null || params.hausgeldNichtUmlagefaehig === '') && (
                     <button type="button" onClick={() => updateParams({ ...params, hausgeldNichtUmlagefaehig: Math.round(hausgeld * 0.35), feldHerkunft: { ...(params.feldHerkunft || {}), hausgeldNichtUmlagefaehig: 'geschaetzt' } })}
                       className="mt-1 text-[11px] font-semibold text-indigo-700 hover:underline">
                       Mit 35 % schätzen ({formatCurrency(Math.round(hausgeld * 0.35))})

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Circle, AlertCircle, ChevronRight, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 
@@ -13,6 +13,7 @@ import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js
 const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmobilie }) => {
   const [buchtId, setBuchtId] = useState(null);
   const [bulkLaeuft, setBulkLaeuft] = useState(false);
+  const [eingeklappt, setEingeklappt] = useState(null); // null = automatisch (zu, wenn alles verbucht)
 
   const heute = new Date();
   const jahr = heute.getFullYear();
@@ -41,21 +42,34 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
     if (erwarteterBetrag <= 0) return;
 
     const { status, summe } = berechneMietStatusFuerMonat(immo.mietEingaenge, jahr, monatNr, erwarteterBetrag, immo.dauerauftrag);
-    buchbareEintraege.push({ immo, erwarteterBetrag, status, summe, restBetrag: Math.max(0, erwarteterBetrag - summe) });
+    const ueberfaellig = (status === 'offen' || status === 'teilweise') && heute.getDate() > faelligkeitstag;
+    // A.1: Mietername auf jeder Kachel — man mahnt einen Menschen, keine Adresse
+    const mieterName = aktiveMieter.map(m => m.name).filter(Boolean).join(', ');
+    buchbareEintraege.push({ immo, erwarteterBetrag, status, summe, restBetrag: Math.max(0, erwarteterBetrag - summe), ueberfaellig, mieterName, faelligkeitstag });
   });
+  // Offene zuerst (überfällige ganz oben), verbuchte danach
+  const rang = (e) => (e.status === 'nicht_bezahlt' ? 0 : e.ueberfaellig ? 1 : (e.status === 'offen' || e.status === 'teilweise') ? 2 : 3);
+  buchbareEintraege.sort((a, b) => rang(a) - rang(b));
 
   if (buchbareEintraege.length === 0 && sonstigeKacheln.length === 0) return null;
 
   const offeneEintraege = buchbareEintraege.filter(e => e.status === 'offen' || e.status === 'teilweise' || e.status === 'nicht_bezahlt');
+  const verbucht = buchbareEintraege.length - offeneEintraege.length;
+  const sollSumme = buchbareEintraege.reduce((s, e) => s + e.erwarteterBetrag, 0);
+  const istSumme = buchbareEintraege.reduce((s, e) => s + (e.status === 'dauerauftrag' ? e.erwarteterBetrag : Math.min(e.summe, e.erwarteterBetrag)), 0);
+  // A.1: Sobald alles verbucht ist, klappt der Block von selbst zu
+  const zu = eingeklappt ?? (offeneEintraege.length === 0);
 
   const buche = async (eintrag) => {
+    // nach dem letzten offenen Eintrag wieder in den Automatik-Modus (klappt zu)
+    if (offeneEintraege.length <= 1) setEingeklappt(null);
     const betrag = eintrag.status === 'teilweise' ? eintrag.restBetrag : eintrag.erwarteterBetrag;
     if (betrag <= 0) return;
     setBuchtId(eintrag.immo.id);
     try {
       const tagImMonat = jahr === heute.getFullYear() && monatNr === heute.getMonth() + 1 ? heute.getDate() : 1;
       const datumISO = new Date(jahr, monatNr - 1, tagImMonat).toISOString().split('T')[0];
-      const neuerEingang = { id: Date.now(), datum: datumISO, betrag, typ: 'kaltmiete', notiz: '' };
+      const neuerEingang = { id: Date.now() + Math.floor(Math.random() * 1000), monat: `${jahr}-${String(monatNr).padStart(2, '0')}`, datum: datumISO, betrag, typ: 'kaltmiete', notiz: '' };
       const neueMietEingaenge = [...(eintrag.immo.mietEingaenge || []), neuerEingang];
       await onBuchen(eintrag.immo.id, { mietEingaenge: neueMietEingaenge });
     } finally {
@@ -71,6 +85,7 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
       }
     } finally {
       setBulkLaeuft(false);
+      setEingeklappt(null); // alles verbucht → klappt zu
     }
   };
 
@@ -79,14 +94,26 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
     if (status === 'dauerauftrag') return { icon: <CheckCircle2 size={16} className="text-emerald-500" />, text: 'Dauerauftrag', color: 'text-emerald-600' };
     if (status === 'teilweise') return { icon: <AlertCircle size={16} className="text-amber-500" />, text: 'Teilweise', color: 'text-amber-600' };
     if (status === 'nicht_bezahlt') return { icon: <AlertCircle size={16} className="text-red-500" />, text: 'Nicht bezahlt', color: 'text-red-600' };
+    if (status === 'ueberfaellig') return { icon: <AlertCircle size={16} className="text-red-500" />, text: 'Überfällig', color: 'text-red-600' };
     return { icon: <Circle size={16} className="text-gray-300" />, text: 'Offen', color: 'text-gray-400' };
   };
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-        <span className="font-bold text-gray-800">Mieteingänge {monatsName} {jahr}</span>
-        {offeneEintraege.length > 0 && (
+      <div className={`flex items-center justify-between gap-3 px-5 py-3 ${zu ? '' : 'border-b border-gray-100'}`}>
+        <button type="button" onClick={() => setEingeklappt(!zu)} aria-expanded={!zu} className="flex items-center gap-2 min-w-0 text-left">
+          <ChevronDown size={16} className={`shrink-0 text-gray-400 transition-transform ${zu ? '-rotate-90' : ''}`} />
+          <span className="min-w-0">
+            <span className="font-bold text-gray-800">Mieteingänge {monatsName} {jahr}</span>
+            {buchbareEintraege.length > 0 && (
+              <span className="block sm:inline text-xs text-gray-500 sm:ml-2">
+                {verbucht} von {buchbareEintraege.length} verbucht · {formatCurrency(istSumme)} von {formatCurrency(sollSumme)}
+                {offeneEintraege.length > 0 ? ` · ${offeneEintraege.length} noch offen` : ' · alles da'}
+              </span>
+            )}
+          </span>
+        </button>
+        {!zu && offeneEintraege.length > 0 && (
           <button
             onClick={bucheAlle}
             disabled={bulkLaeuft}
@@ -98,17 +125,18 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+      {!zu && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
         {buchbareEintraege.map(eintrag => {
-          const info = statusInfo(eintrag.status);
+          const info = statusInfo(eintrag.ueberfaellig && eintrag.status === 'offen' ? 'ueberfaellig' : eintrag.status);
           const kannBuchen = eintrag.status === 'offen' || eintrag.status === 'teilweise' || eintrag.status === 'nicht_bezahlt';
           const laedt = buchtId === eintrag.immo.id;
           return (
-            <div key={eintrag.immo.id} className="border border-gray-100 rounded-xl p-3.5 flex flex-col gap-2">
+            <div key={eintrag.immo.id} className={`rounded-xl p-3.5 flex flex-col gap-2 ${eintrag.ueberfaellig || eintrag.status === 'nicht_bezahlt' ? 'border-2 border-red-300 bg-red-50/40' : 'border border-gray-100'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-semibold text-sm text-gray-800 truncate">{eintrag.immo.name || eintrag.immo.adresse}</div>
-                  <div className="text-xs text-gray-400">Soll {formatCurrency(eintrag.erwarteterBetrag)}</div>
+                  {eintrag.mieterName && <div className="text-xs text-gray-500 truncate">{eintrag.mieterName}</div>}
+                  <div className="text-xs text-gray-400">{formatCurrency(eintrag.erwarteterBetrag)}{(eintrag.status === 'offen' && !eintrag.ueberfaellig) ? ` · fällig am ${eintrag.faelligkeitstag}.` : ''}</div>
                 </div>
                 <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${info.color}`}>
                   {info.icon} {info.text}
@@ -150,7 +178,7 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
             </div>
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );
 };

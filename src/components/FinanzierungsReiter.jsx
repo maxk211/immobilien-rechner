@@ -4,6 +4,7 @@ import { formatCurrency } from '../utils/format.js';
 import { darlehensVerlauf, mitSondertilgung, anschlussRate, phasenZins } from '../utils/darlehen.js';
 import { beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import ZahlInput from './ZahlInput';
+import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo, zinsbindungInfo, restschuldZbInfo } from './SchaetzInfo';
 
 // Finanzierungs-Reiter (UX-Paket Teil 3, Abschnitte 5–7):
 // Kopfleiste · Phasen-Zeitstrahl · abgeschlossene Phasen eingeklappt · aktive Phase mit
@@ -74,9 +75,11 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
           ton={abbezahlt ? 'text-emerald-600' : zbRot ? 'text-red-600' : undefined}
           sub={abbezahlt ? null : monateBisZb != null ? (monateBisZb >= 0 ? `in ${monateBisZb} Monaten` : 'abgelaufen') + (aktiv.endeGeschaetzt ? ' · *ungeprüft' : '') : null} />
         <div className="col-span-2 lg:col-span-1 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-1">Beleihbar frei</div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-1 flex items-center">Beleihbar frei
+            <SchaetzInfo ausrichtung="rechts" {...beleihbarFreiInfo({ grenze, marktwert, restschuld: rsHeute, onGrenze: () => window.dispatchEvent(new Event('renditly-beleihungsgrenze-dialog')) })} />
+          </div>
           <div className="text-xl font-black text-emerald-700">{formatCurrency(beleihbarFrei(marktwert, rsHeute, grenze))}</div>
-          <div className="text-xs text-emerald-700/70 mt-0.5">so viel würde eine Bank bei {grenze} % Auslauf noch geben</div>
+          <SchaetzZeile className="text-emerald-700/70">Schätzung bei {grenze} % — so viel würde eine Bank ungefähr noch geben</SchaetzZeile>
         </div>
       </div>
 
@@ -192,7 +195,8 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
             <div className="px-4 py-4 border-t border-gray-100">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">So läuft dein Kredit ab</p>
               <p className="text-sm text-gray-700 mt-0.5 mb-3">
-                Zinsbindung endet {mmjjjj(aktiv.ende)} · Restschuld dann <strong>{formatCurrency(aktiv.restschuldBeiZinsbindung)}</strong>
+                Zinsbindung endet {mmjjjj(aktiv.ende)}{aktiv.endeGeschaetzt && <SchaetzInfo {...zinsbindungInfo({ jahre: aktiv.phase.zinsbindung || 10 })} />} · Restschuld dann <strong>{formatCurrency(aktiv.restschuldBeiZinsbindung)}</strong>
+                <SchaetzInfo {...restschuldZbInfo()} />
               </p>
               <div className="relative h-5 rounded-full bg-gray-100 overflow-hidden flex">
                 <div className="h-full bg-emerald-500" style={{ width: `${w(aktiv.start, heute)}%` }} title={`getilgt ${formatCurrency(getilgtBisHeute)}`} />

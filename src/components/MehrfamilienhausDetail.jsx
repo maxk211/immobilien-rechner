@@ -30,6 +30,7 @@ import {
   Shield, Zap, Wifi, CreditCard, MoreHorizontal, TrendingUp, TrendingDown, Search,
 } from 'lucide-react';
 import ZahlInput from './ZahlInput';
+import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 
 // ─── Dokumente-Tab (inline, identisch zu KaufimmobilieDetail) ─────────────────
 const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
@@ -825,9 +826,14 @@ const MehrfamilienhausDetail = ({
                       <div><div className="text-[10px] text-gray-400" title="Marktwert minus Restschuld">Netto-Vermögen</div><div className="text-sm font-bold text-indigo-800">{aktuellerWertMFH > 0 ? formatCurrency(nettoEK) : '—'}</div></div>
                     </div>
                     {aktuellerWertMFH > 0 && (
-                      <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2" title={`${getBeleihungsgrenze()} % vom Marktwert minus Restschuld — was eine Bank dir darauf noch geben würde. Grenze änderbar im Menü oben rechts auf der Startseite.`}>
-                        <span className="text-xs font-semibold text-emerald-700">Beleihbar frei <span className="font-normal text-gray-400">bei {getBeleihungsgrenze()} %</span></span>
-                        <span className="text-sm font-black text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWertMFH, restschuld))}</span>
+                      <div className="mt-3 pt-3 border-t border-indigo-100 flex items-baseline justify-between gap-2">
+                        <span className="text-xs font-semibold text-emerald-700 flex items-center">Beleihbar frei
+                          <SchaetzInfo {...beleihbarFreiInfo({ grenze: getBeleihungsgrenze(), marktwert: aktuellerWertMFH, restschuld, onGrenze: () => window.dispatchEvent(new Event('renditly-beleihungsgrenze-dialog')) })} />
+                        </span>
+                        <span className="text-right">
+                          <span className="block text-sm font-black text-emerald-700">{formatCurrency(beleihbarFrei(aktuellerWertMFH, restschuld))}</span>
+                          <SchaetzZeile>Schätzung bei {getBeleihungsgrenze()} %</SchaetzZeile>
+                        </span>
                       </div>
                     )}
                     <p className="text-[10px] text-gray-400 mt-2">

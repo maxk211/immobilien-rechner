@@ -95,6 +95,12 @@ function App() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showBeleihungDialog, setShowBeleihungDialog] = useState(false);
   const [beleihungsgrenzeEingabe, setBeleihungsgrenzeEingabe] = useState(getBeleihungsgrenze);
+  // A.2: Info-Kästen "beleihbar frei" öffnen den Dialog über ein Ereignis
+  useEffect(() => {
+    const oeffne = () => { setBeleihungsgrenzeEingabe(getBeleihungsgrenze()); setShowBeleihungDialog(true); };
+    window.addEventListener('renditly-beleihungsgrenze-dialog', oeffne);
+    return () => window.removeEventListener('renditly-beleihungsgrenze-dialog', oeffne);
+  }, []);
   const [exportSteuerJahr, setExportSteuerJahr] = useState(new Date().getFullYear() - 1);
   const [showSelbstauskunftModal, setShowSelbstauskunftModal] = useState(false);
   const [selbstauskunftDaten, setSelbstauskunftDaten] = useState(() => {
