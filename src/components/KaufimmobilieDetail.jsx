@@ -208,7 +208,7 @@ const DokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
 // dieselbe zusammengeführte Objekt-Seite aus und scrollen zum passenden Anker.
 const OBJEKT_TAB_IDS = ['stammdaten', 'investitionen', 'zaehler', 'dokumente'];
 
-const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [], onAlleErinnerungen }) => {
+const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [], onAlleErinnerungen, onDeleteImmobilie }) => {
   const initialWert = immobilie.geschaetzterWert || immobilie.kaufpreis;
   const initialQmPreis = immobilie.wohnflaeche > 0 ? Math.round(initialWert / immobilie.wohnflaeche) : 0;
 
@@ -559,12 +559,18 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 })()}
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
-                {params.aktiv === false ? (
+                {params.aktiv === false ? (<>
                   <button onClick={() => { updateParams({...params, aktiv: true, aufgabedatum: ''}); }}
                     className="px-3 py-1.5 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors flex items-center gap-1">
                     <Check size={14}/> Reaktivieren
                   </button>
-                ) : (
+                  {onDeleteImmobilie && (
+                    <button onClick={onDeleteImmobilie} title="Immobilie löschen" aria-label="Immobilie löschen"
+                      className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-red-500/80 text-white border border-white/30 rounded-xl transition-colors">
+                      <Trash2 size={15}/>
+                    </button>
+                  )}
+                </>) : (
                   <div className="relative" ref={ueberlaufRef}>
                     <button onClick={() => setShowUeberlaufMenu(v => !v)} title="Weitere Aktionen"
                       className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl transition-colors">
@@ -577,6 +583,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                           className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-medium">
                           Verkauft oder abgegeben
                         </button>
+                        {onDeleteImmobilie && (
+                          <button onClick={() => { setShowUeberlaufMenu(false); onDeleteImmobilie(); }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-red-50 hover:text-red-700 font-medium flex items-center gap-2 border-t border-gray-100">
+                            <Trash2 size={14}/> Immobilie löschen…
+                          </button>
+                        )}
                       </div>
                     )}
                     {showAufgebenDialog && (

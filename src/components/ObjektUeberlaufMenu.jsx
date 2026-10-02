@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Check } from 'lucide-react';
+import { MoreVertical, Check, Trash2 } from 'lucide-react';
 
 // Abschnitt 6 + 7.2 (UX-Umbau): "Verkauft oder abgegeben" nicht als Primärbutton,
 // sondern im Überlaufmenü, mit Bestätigungsdialog, Escape, Klick daneben und
 // Abbrechen. Gemeinsam genutzt von Mehrfamilienhaus- und Mietimmobilie-Detail
 // (die Kaufimmobilie hat dieselbe Logik inline).
-const ObjektUeberlaufMenu = ({ aktiv, onAufgeben, onReaktivieren, bestaetigenText = 'Daten bleiben für den Steuerexport erhalten.' }) => {
+const ObjektUeberlaufMenu = ({ aktiv, onAufgeben, onReaktivieren, onLoeschen, bestaetigenText = 'Daten bleiben für den Steuerexport erhalten.' }) => {
   const [menuOffen, setMenuOffen] = useState(false);
   const [dialogOffen, setDialogOffen] = useState(false);
   const [datum, setDatum] = useState('');
@@ -29,10 +29,18 @@ const ObjektUeberlaufMenu = ({ aktiv, onAufgeben, onReaktivieren, bestaetigenTex
 
   if (aktiv === false) {
     return (
-      <button onClick={onReaktivieren}
-        className="px-3 py-1.5 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors flex items-center gap-1">
-        <Check size={14}/> Reaktivieren
-      </button>
+      <div className="flex items-center gap-2">
+        <button onClick={onReaktivieren}
+          className="px-3 py-1.5 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors flex items-center gap-1">
+          <Check size={14}/> Reaktivieren
+        </button>
+        {onLoeschen && (
+          <button onClick={onLoeschen} title="Immobilie löschen" aria-label="Immobilie löschen"
+            className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-red-500/80 text-white border border-white/30 rounded-xl transition-colors">
+            <Trash2 size={15}/>
+          </button>
+        )}
+      </div>
     );
   }
 
@@ -49,6 +57,12 @@ const ObjektUeberlaufMenu = ({ aktiv, onAufgeben, onReaktivieren, bestaetigenTex
             className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-medium">
             Verkauft oder abgegeben
           </button>
+          {onLoeschen && (
+            <button onClick={() => { setMenuOffen(false); onLoeschen(); }}
+              className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-red-50 hover:text-red-700 font-medium flex items-center gap-2 border-t border-gray-100">
+              <Trash2 size={14}/> Immobilie löschen…
+            </button>
+          )}
         </div>
       )}
       {dialogOffen && (

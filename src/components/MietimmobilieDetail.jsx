@@ -178,7 +178,7 @@ const ArbitrageDokumenteTab = ({ immobilie, dokumente, onDokumentUpdate }) => {
   );
 };
 
-const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [], onAlleErinnerungen }) => {
+const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe = [], onSaveMieter, onDeleteMieter, nkAbrechnungen = [], onSaveNK, onDeleteNK, portfolio = [], initialTab, aufgaben = [], onAlleErinnerungen, onDeleteImmobilie }) => {
   const [params, setParams] = useState({
     eigeneWarmmiete: immobilie.eigeneWarmmiete || 0,
     anzahlZimmerVermietet: immobilie.anzahlZimmerVermietet || 0,
@@ -307,6 +307,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   aktiv={params.aktiv}
                   onAufgeben={(datum) => updateParams({ aktiv: false, aufgabedatum: datum })}
                   onReaktivieren={() => updateParams({ aktiv: true, aufgabedatum: '' })}
+                  onLoeschen={onDeleteImmobilie}
                   bestaetigenText="Die Wohnung wird aus dem aktiven Portfolio genommen. Daten bleiben für den Steuerexport erhalten."
                 />
                 {onEdit && (

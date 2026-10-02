@@ -3,8 +3,9 @@ import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calcul
 import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
-import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
+import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, deleteDokument, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
+import ImmobilieLoeschenDialog from './components/ImmobilieLoeschenDialog';
 import { isFounderEmail } from './config/payments';
 import { partnerZuordnungAbschliessen } from './utils/partner';
 const PartnerAdmin = lazy(() => import('./components/PartnerAdmin.jsx'));
@@ -74,6 +75,7 @@ function App() {
   const [wizardVorbelegung, setWizardVorbelegung] = useState(null);
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'error'
   const [showPartnerAdmin, setShowPartnerAdmin] = useState(false);
+  const [loeschKandidat, setLoeschKandidat] = useState(null); // Immobilie, die gelöscht werden soll (Dialog)
   const [activeView, setActiveView] = useState('portfolio'); // 'portfolio' | 'mieter'
   const [mieterListe, setMieterListe] = useState([]);
   const [showMieterForm, setShowMieterForm] = useState(false);
@@ -338,17 +340,41 @@ function App() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!(await showConfirm('Immobilie wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'))) return;
+  // Löschen öffnet nur den Bestätigungsdialog (Name abtippen) — gelöscht wird erst dort
+  const handleDelete = (id) => {
+    const immo = portfolio.find(i => i.id === id);
+    if (immo) setLoeschKandidat(immo);
+  };
+
+  const immobilieEndgueltigLoeschen = async (immo) => {
     try {
       setSyncStatus('syncing');
-      await deleteImmobilie(id);
-      setPortfolio(prev => prev.filter(i => i.id !== id));
+      await deleteImmobilie(immo.id); // Mieter + NK-Abrechnungen löscht die Datenbank mit (ON DELETE CASCADE)
+      // Hochgeladene Dateien im Speicher aufräumen — Fehler hier blockieren das Löschen nicht
+      await Promise.allSettled((immo.dokumente || []).filter(d => d?.path).map(d => deleteDokument(d.path)));
+      setPortfolio(prev => prev.filter(i => i.id !== immo.id));
+      setMieterListe(prev => prev.filter(m => (m.immobilie_id ?? m.immobilieId) !== immo.id));
+      setNkAbrechnungen(prev => prev.filter(a => (a.immobilie_id ?? a.immobilieId) !== immo.id));
+      if (selectedImmobilie?.id === immo.id) { setSelectedImmobilie(null); setInitialTab(null); }
+      setLoeschKandidat(null);
       setSyncStatus('idle');
+      toast.success(`„${immo.name || immo.adresse || 'Immobilie'}“ wurde gelöscht`);
     } catch (error) {
       console.error('Fehler beim Löschen:', error);
       setSyncStatus('error');
       toast.error('Fehler beim Löschen: ' + error.message);
+    }
+  };
+
+  const immobilieAlsVerkauftMarkieren = async (immo) => {
+    try {
+      const updated = await saveImmobilie({ ...immo, aktiv: false, aufgabedatum: new Date().toISOString().slice(0, 10) });
+      setPortfolio(prev => prev.map(i => i.id === immo.id ? updated : i));
+      if (selectedImmobilie?.id === immo.id) setSelectedImmobilie(updated);
+      setLoeschKandidat(null);
+      toast.success('Als verkauft markiert — Datum kannst du im Objekt anpassen');
+    } catch (error) {
+      toast.error('Fehler beim Speichern: ' + error.message);
     }
   };
 
@@ -1443,6 +1469,17 @@ function App() {
         </div>
       </header>
 
+      {loeschKandidat && (
+        <ImmobilieLoeschenDialog
+          immobilie={loeschKandidat}
+          mieterAnzahl={mieterListe.filter(m => (m.immobilie_id ?? m.immobilieId) === loeschKandidat.id).length}
+          nkAnzahl={nkAbrechnungen.filter(a => (a.immobilie_id ?? a.immobilieId) === loeschKandidat.id).length}
+          onAbbrechen={() => setLoeschKandidat(null)}
+          onLoeschen={() => immobilieEndgueltigLoeschen(loeschKandidat)}
+          onAlsVerkauft={() => immobilieAlsVerkauftMarkieren(loeschKandidat)}
+        />
+      )}
+
       {showPartnerAdmin && (
         <Suspense fallback={null}>
           <PartnerAdmin onClose={() => setShowPartnerAdmin(false)} />
@@ -1655,6 +1692,7 @@ function App() {
               setTimeout(() => document.getElementById('was-steht-an')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
             }}
             onEdit={() => {}}
+            onDeleteImmobilie={() => handleDelete(selectedImmobilie.id)}
             onSave={async (data) => {
               try {
                 setSyncStatus('syncing');
