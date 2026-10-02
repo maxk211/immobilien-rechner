@@ -1,8 +1,9 @@
+import { zahl } from './zahlen.js';
 // Gibt die aktuell gültige Kaltmiete zurück, berücksichtigt mietAnpassungen
 // Nimmt das aktuellste Datum <= heute aus mietAnpassungen[].kaltmiete
 export const getAktuelleMiete = (immobilieOrParams) => {
-  const basisMiete = immobilieOrParams.kaltmiete || 0;
-  const anpassungen = (immobilieOrParams.mietAnpassungen || []).filter(a => a.kaltmiete != null);
+  const basisMiete = zahl(immobilieOrParams.kaltmiete);
+  const anpassungen = (immobilieOrParams.mietAnpassungen || []).filter(a => a.kaltmiete != null && a.kaltmiete !== '');
   if (anpassungen.length === 0) return basisMiete;
   const heute = new Date();
   heute.setHours(23, 59, 59, 999);
@@ -12,31 +13,31 @@ export const getAktuelleMiete = (immobilieOrParams) => {
     if (new Date(anp.datum) <= heute) aktuelle = anp;
     else break;
   }
-  return aktuelle ? aktuelle.kaltmiete : basisMiete;
+  return aktuelle ? zahl(aktuelle.kaltmiete) : basisMiete;
 };
 
 // Gibt die aktuell gültige Warmmiete (Vermieter→User) zurück, berücksichtigt mietAnpassungen
 export const getAktuelleWarmmiete = (p) => {
-  const basis = p.eigeneWarmmiete || 0;
-  const anpassungen = (p.mietAnpassungen || []).filter(a => a.eigeneWarmmiete != null);
+  const basis = zahl(p.eigeneWarmmiete);
+  const anpassungen = (p.mietAnpassungen || []).filter(a => a.eigeneWarmmiete != null && a.eigeneWarmmiete !== '');
   if (anpassungen.length === 0) return basis;
   const heute = new Date(); heute.setHours(23, 59, 59, 999);
   const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
   let akt = null;
   for (const anp of sorted) { if (new Date(anp.datum) <= heute) akt = anp; else break; }
-  return akt ? akt.eigeneWarmmiete : basis;
+  return akt ? zahl(akt.eigeneWarmmiete) : basis;
 };
 
 // Gibt die aktuell gültige Untermiete pro Zimmer zurück, berücksichtigt mietAnpassungen
 export const getAktuelleUntermiete = (p) => {
-  const basis = p.untermieteProZimmer || 0;
-  const anpassungen = (p.mietAnpassungen || []).filter(a => a.untermieteProZimmer != null);
+  const basis = zahl(p.untermieteProZimmer);
+  const anpassungen = (p.mietAnpassungen || []).filter(a => a.untermieteProZimmer != null && a.untermieteProZimmer !== '');
   if (anpassungen.length === 0) return basis;
   const heute = new Date(); heute.setHours(23, 59, 59, 999);
   const sorted = [...anpassungen].sort((a, b) => new Date(a.datum) - new Date(b.datum));
   let akt = null;
   for (const anp of sorted) { if (new Date(anp.datum) <= heute) akt = anp; else break; }
-  return akt ? akt.untermieteProZimmer : basis;
+  return akt ? zahl(akt.untermieteProZimmer) : basis;
 };
 
 // Generische Version von getAktuelleMiete für beliebige Felder (Vermieterkosten,
@@ -47,11 +48,11 @@ export const getAktuelleUntermiete = (p) => {
 // manuell gesetzte Jahres-Override in mietHistorie[aktuellesJahr][feld] hat
 // weiterhin Vorrang (Bestandsdaten aus der Zeit vor der Anpassungsliste).
 export const getAktuellerWert = (params, feld) => {
-  const basis = params[feld] || 0;
+  const basis = zahl(params[feld]);
   const jahr = new Date().getFullYear();
   const histWert = (params.mietHistorie || {})[`${jahr}`]?.[feld];
-  if (histWert != null) return histWert;
-  const anpassungen = (params.mietAnpassungen || []).filter(a => a[feld] != null);
+  if (histWert != null && histWert !== '') return zahl(histWert);
+  const anpassungen = (params.mietAnpassungen || []).filter(a => a[feld] != null && a[feld] !== '');
   if (anpassungen.length === 0) return basis;
   const heute = new Date();
   heute.setHours(23, 59, 59, 999);
@@ -61,7 +62,7 @@ export const getAktuellerWert = (params, feld) => {
     if (new Date(anp.datum) <= heute) aktuelle = anp;
     else break;
   }
-  return aktuelle ? aktuelle[feld] : basis;
+  return aktuelle ? zahl(aktuelle[feld]) : basis;
 };
 
 // Monatlich gewichteter Jahresdurchschnitt für ein beliebiges Feld — berück-
@@ -73,7 +74,7 @@ export const getJahresDurchschnittFuerFeld = (params, jahr, feld) => {
   const histWert = (params.mietHistorie || {})[`${jahr}`]?.[feld];
   if (histWert != null) return histWert;
   const anpassungen = (params.mietAnpassungen || [])
-    .filter(a => a[feld] != null)
+    .filter(a => a[feld] != null && a[feld] !== '')
     .sort((a, b) => new Date(a.datum) - new Date(b.datum));
   if (anpassungen.length === 0) return params[feld] || 0;
   let summe = 0;

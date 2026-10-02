@@ -102,7 +102,7 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
             <div className="col-span-2 md:col-span-1">
               <label className="block text-xs text-gray-600 mb-1 font-semibold">Abrechnungsjahr</label>
               <input type="number" value={form.abrechnungsjahr}
-                onChange={e => setForm(f => ({...f, abrechnungsjahr: parseInt(e.target.value)}))}
+                onChange={e => setForm(f => ({...f, abrechnungsjahr: e.target.value === '' ? '' : (parseInt(e.target.value, 10) || '')}))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
             </div>
             <div>

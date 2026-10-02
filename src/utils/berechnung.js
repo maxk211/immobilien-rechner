@@ -2,9 +2,11 @@ import { getPreisNachPLZ } from '../constants/plz.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert, zahltIchAm, zahlerAnteilJahr, arbitrageZusatzkosten } from './miete.js';
 import { darlehensVerlauf, anfangsFremdkapital } from './darlehen.js';
 import { bausparMonat } from './bauspar.js';
+import { normalisiereImmobilie, zahl } from './zahlen.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
+  immobilie = normalisiereImmobilie(immobilie); // Text/leer → Zahl/null (utils/zahlen.js)
   const { preis: basisPreis, genauigkeit } = getPreisNachPLZ(immobilie.plz);
   let preisProQm = basisPreis;
 
@@ -77,6 +79,7 @@ export const schaetzeImmobilienwert = (immobilie) => {
 
 // Aktuellen Gesamtwert inkl. Stellplatz-Kaufpreis berechnen
 export const getAktuellerGesamtwert = (immo) => {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   const basis = immo.geschaetzterWert || immo.kaufpreis || 0;
   const sp = immo.stellplatz;
   const spWert = (sp?.vorhanden && sp?.kaufpreisAnteil) ? (sp.kaufpreisAnteil * (sp.anzahl || 1)) : 0;
@@ -85,6 +88,7 @@ export const getAktuellerGesamtwert = (immo) => {
 
 // Wertsteigerung seit Kauf berechnen
 export const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
+  immobilie = normalisiereImmobilie(immobilie); // Text/leer → Zahl/null (utils/zahlen.js)
   if (!immobilie.kaufdatum || !immobilie.kaufpreis) return null;
 
   const kaufdatum = new Date(immobilie.kaufdatum);
@@ -107,6 +111,7 @@ export const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
 
 // Restschuld berechnen basierend auf Kreditstartdatum (oder Kaufdatum) und Finanzierung
 export const berechneRestschuld = (immobilie) => {
+  immobilie = normalisiereImmobilie(immobilie); // Text/leer → Zahl/null (utils/zahlen.js)
   if (!immobilie.kaufpreis) return null;
 
   // Geschenkt oder voll eigenfinanziert: es existiert kein Kredit, also auch
@@ -213,6 +218,7 @@ export const berechneJahresRateFuerPhasen = (phasen, fremdkapital, kreditStartJa
  * Ersetzt die vereinfachte Formel fremdkapital × zinssatz im Steuerexport.
  */
 export const berechneJahresZinsenFuerSteuer = (immo, targetJahr) => {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   if (anfangsFremdkapital(immo) <= 0) return 0;
 
   const kaufjahr = immo.kaufdatum ? new Date(immo.kaufdatum).getFullYear() : null;
@@ -283,7 +289,9 @@ export const berechneJahresZinsenFuerSteuer = (immo, targetJahr) => {
 // Pauschalmiete: keine Abrechnung — volles Hausgeld ist echte Kosten.
 // get(feld) liefert den Monatswert eines datierbaren Kostenfelds (aktuell oder Jahresschnitt).
 // jahr (optional): für Jahreswerte — dann zählt der Anteil der Monate, in denen ich zahle.
-export const kostenStruktur = (immo, get = (f) => Number(immo?.[f]) || 0, jahr = null) => {
+export const kostenStruktur = (immo, get = (f) => zahl(immo?.[f]), jahr = null) => {
+  immo = normalisiereImmobilie(immo);
+  const getRoh = get; get = (f) => zahl(getRoh(f));
   // Wer zahlt? Positionen, die der Mieter/die Firma direkt zahlt, sind keine Kosten für mich.
   const zf = (feld) => (jahr != null ? zahlerAnteilJahr(immo, feld, jahr) : (zahltIchAm(immo, feld) ? 1 : 0));
   const modell = immo?.vermietungsmodell || 'kaltmiete';
@@ -320,6 +328,7 @@ export const kostenStruktur = (immo, get = (f) => Number(immo?.[f]) || 0, jahr =
 
 // Rendite-Berechnung
 export const berechneRendite = (params) => {
+  params = normalisiereImmobilie(params); // Text/leer → Zahl/null (utils/zahlen.js)
   // Fehlende Zahlen (leer/null) nicht als NaN durchrechnen — gleiche Defaults wie
   // berechneRestschuld/berechneImmoVermoegenswerte (Kaufnebenkosten 10 %).
   const zahl = (v, d = 0) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? d : Number(v));
@@ -330,6 +339,9 @@ export const berechneRendite = (params) => {
     kaltmiete: zahl(params?.kaltmiete),
     instandhaltung: zahl(params?.instandhaltung),
     verwaltung: zahl(params?.verwaltung),
+    // Fehlende Annahmen wie beim Laden aus der Datenbank (dbToApp): 2 % / 1,5 %
+    wertsteigerung: zahl(params?.wertsteigerung, 2),
+    mietsteigerung: zahl(params?.mietsteigerung, 1.5),
   };
   const {
     kaufpreis, zinssatz, tilgung, laufzeit,
@@ -587,6 +599,7 @@ export const berechneRendite = (params) => {
 export const MFH_KOSTEN_KEYS = ['hausverwaltung', 'instandhaltung', 'grundsteuer', 'versicherung', 'strom', 'internet', 'sonstige'];
 
 export const cashflowMonat = (immo, heute = new Date()) => {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   const typ = immo?.immobilienTyp;
   if (typ === 'mietimmobilie') {
     const vertragsEnde = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
@@ -670,6 +683,7 @@ export const berechneMtlCashflow = (immo) => cashflowMonat(immo).nach;
  * @returns {{ zinsen, tilgung, restschuldAnfang, restschuldEnde } | null}
  */
 export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) => {
+  params = normalisiereImmobilie(params); // Text/leer → Zahl/null (utils/zahlen.js)
   const phasen = params.finanzierungsphasen || [];
 
   // "Kredit läuft bereits": Zins/Tilgung aus Restschuld + Rate schätzen
@@ -798,6 +812,7 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
 // ─── Vermögenswerte-Helper ───────────────────────────────────────────────────
 // Berechnet Restschuld, Jahres-Tilgung und freies Vermögen für Kauf- und MFH-Immobilien
 export const berechneImmoVermoegenswerte = (immo) => {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   if (immo.immobilienTyp === 'mietimmobilie') return null;
   const marktwertGeschenkt = getAktuellerGesamtwert(immo);
   // Ob ein Kredit zählt, entscheidet allein das Darlehen — nicht die Erwerbsart (B12/B7)

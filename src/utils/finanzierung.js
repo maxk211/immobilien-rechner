@@ -1,3 +1,4 @@
+import { normalisiereImmobilie } from './zahlen.js';
 // Zeitliche Einordnung der Finanzierungsphasen — EINE Logik für Cockpit,
 // Finanzierungs-Reiter und Erinnerungen (UX-Paket Teil 3, Abschnitt 5.2 + 6).
 //
@@ -20,6 +21,7 @@ export const monateBis = (datum, heute = new Date()) => (datum - heute) / MS_MON
 // Liefert je Phase: start, ende (Zinsbindungsende bzw. Laufzeitende bei endfällig),
 // endeGeschaetzt (true = aus Jahren abgeleitet oder nicht bestätigt).
 export function phasenZeitraeume(immo) {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   const phasen = immo?.finanzierungsphasen || [];
   const res = [];
   let vorherEnde = null;
