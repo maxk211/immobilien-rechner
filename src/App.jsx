@@ -1,10 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X, MoreVertical, Landmark } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X, MoreVertical, Landmark, Handshake } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
+import { isFounderEmail } from './config/payments';
+import { partnerZuordnungAbschliessen } from './utils/partner';
+const PartnerAdmin = lazy(() => import('./components/PartnerAdmin.jsx'));
 import { formatCurrency, formatPercent } from './utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, getJahresDurchschnittFuerFeld, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, zahlerAnteilJahr } from './utils/miete.js';
 import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
@@ -70,6 +73,7 @@ function App() {
   // Phase I/J: Vorbelegung für den Anlage-Wizard (z. B. aus "Rechnet sich das?" → "Gekauft – übernehmen")
   const [wizardVorbelegung, setWizardVorbelegung] = useState(null);
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'error'
+  const [showPartnerAdmin, setShowPartnerAdmin] = useState(false);
   const [activeView, setActiveView] = useState('portfolio'); // 'portfolio' | 'mieter'
   const [mieterListe, setMieterListe] = useState([]);
   const [showMieterForm, setShowMieterForm] = useState(false);
@@ -190,6 +194,8 @@ function App() {
   // Daten aus Supabase laden wenn eingeloggt
   useEffect(() => {
     if (session) {
+      // Partner-QR: gemerkte Makler-Wahl einmalig mit dem Konto verknüpfen (bestehende Konten)
+      partnerZuordnungAbschliessen().catch(() => {});
       loadPortfolioFromDB();
       loadMieterFromDB();
       loadNKFromDB();
@@ -1422,6 +1428,11 @@ function App() {
                 {/* Dropdown — sichtbar auf Mobile via group-focus-within, auf Desktop via group-hover */}
                 <div className="absolute right-0 top-9 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-50 overflow-hidden">
                   <div className="px-3 py-2 text-xs text-slate-400 truncate border-b border-slate-700">{session.user.email}</div>
+                  {isFounderEmail(session.user.email) && (
+                    <button onClick={() => setShowPartnerAdmin(true)} className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-1.5 border-b border-slate-700">
+                      <Handshake size={14} /> Partner-Programm
+                    </button>
+                  )}
                   <button onClick={handleLogout} className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
                     Abmelden
                   </button>
@@ -1431,6 +1442,12 @@ function App() {
           </div>
         </div>
       </header>
+
+      {showPartnerAdmin && (
+        <Suspense fallback={null}>
+          <PartnerAdmin onClose={() => setShowPartnerAdmin(false)} />
+        </Suspense>
+      )}
 
       {isTrialing && (
         <TrialCountdownBanner

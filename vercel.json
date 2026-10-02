@@ -39,6 +39,10 @@
       "destination": "/vermieter-software.html"
     },
     {
+      "source": "/partner",
+      "destination": "/partner.html"
+    },
+    {
       "source": "/renditly-vs-immoanalyse",
       "destination": "/renditly-vs-immoanalyse.html"
     },

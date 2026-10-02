@@ -87,3 +87,21 @@ mit aktualisieren — es ist ein rechtlich relevantes Dokument (DSGVO).
 - 2026-08-09: Manueller Redeploy getriggert, um Vercel Edge-Cache für
   `/mietrendite-rechner` und `/ratgeber/afa-und-steuern-vermietung` zu
   invalidieren (lieferten trotz korrektem Build noch alten Cache-Inhalt aus).
+
+## Partner-Programm (Makler-QR-Code)
+
+- QR-Code auf Makler-Visitenkarten → `renditly.de/partner` (`partner.html`,
+  `src/partner/PartnerLanding.jsx`, noindex, nicht in der Sitemap). 3 Schritte:
+  Makler per Tippsuche wählen → Vorteil → Konto anlegen. `?m=CODE` wählt einen
+  Makler vor (persönlicher QR).
+- Daten: Migration `013_partner_makler.sql` — Tabellen `makler`,
+  `partner_zuordnungen`; öffentliche Suche nur über RPC `partner_makler_suche`
+  (nur Status 'aufgenommen'). Zuordnung per Signup-Trigger aus user_metadata
+  (`partner_makler_id`/`partner_freitext`) oder RPC `partner_zuordnen` (App-Start,
+  gemerkte Wahl in localStorage `renditly_partner`).
+- Admin: `src/components/PartnerAdmin.jsx`, im Avatar-Menü nur für Founder.
+  Admin-Liste steht doppelt: `FOUNDER_EMAILS` (payments.js) UND
+  `partner_ist_admin()` (SQL) — beide pflegen.
+- Rabatt: noch nicht festgelegt. Stripe-Coupon-ID als Secret
+  `PARTNER_STRIPE_COUPON` → `create-checkout` zieht ihn für zugeordnete Nutzer
+  ab; Text in `src/config/partner.js` (`PARTNER_ANGEBOT.rabatt`).

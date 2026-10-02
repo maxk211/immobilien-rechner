@@ -43,7 +43,8 @@ jobs:
             SMTP_PORT="${{ secrets.SMTP_PORT }}" \
             SMTP_USER="${{ secrets.SMTP_USER }}" \
             SMTP_PASS="${{ secrets.SMTP_PASS }}" \
-            SMTP_FROM="${{ secrets.SMTP_FROM }}"
+            SMTP_FROM="${{ secrets.SMTP_FROM }}" \
+            PARTNER_STRIPE_COUPON="${{ secrets.PARTNER_STRIPE_COUPON }}"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
