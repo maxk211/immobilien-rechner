@@ -7,6 +7,7 @@
 // - Erfasste Sondertilgungen (phase.sondertilgungen = [{ id, datum, betrag }]) und ein
 //   "Darlehen abbezahlt" (phase.abbezahltAm) wirken ab ihrem Monat auf alle Folgewerte.
 import { phasenZeitraeume } from './finanzierung.js';
+import { normalisiereImmobilie } from './zahlen.js';
 
 const MAX_MONATE = 60 * 12;
 const monatsIndex = (d) => d.getFullYear() * 12 + d.getMonth();
@@ -19,6 +20,7 @@ const ausIndex = (i) => new Date(Math.floor(i / 12), i % 12, 1);
 // Eigenkapital-Vorgaben wie in der Detailansicht: fehlt "EK für Nebenkosten", gelten
 // die Nebenkosten als selbst bezahlt; fehlt "EK für Kaufpreis", der Rest des Gesamt-EK.
 export const anfangsFremdkapital = (immo) => {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   if (!immo || immo.vollEigenfinanziert) return 0;
   const fb = immo.finanzierungsbetrag;
   const explizit = fb !== null && fb !== undefined && fb !== '' ? (Number(fb) || 0) : null;
@@ -50,6 +52,7 @@ export const phasenRate = (phase, startbetrag, immo) => {
  * @returns {null | { monate, phasen, restschuldAm(date), restschuldHeute, rateHeute, abbezahltHeute, schuldenfrei }}
  */
 export function darlehensVerlauf(immo, heute = new Date()) {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   const phasen = immo?.finanzierungsphasen || [];
   const fk = anfangsFremdkapital(immo || {});
   if (!phasen.length || fk <= 0) return null;

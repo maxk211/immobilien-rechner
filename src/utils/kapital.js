@@ -4,6 +4,7 @@
 //  - Cashflow vor Tilgung = Cashflow nach Tilgung + monatliche Tilgung
 // Die Beleihungsgrenze ist eine Annahme und gehört in die Einstellungen (Standard 80 %).
 import { berechneImmoVermoegenswerte, cashflowMonat } from './berechnung.js';
+import { normalisiereImmobilie } from './zahlen.js';
 
 const KEY = 'renditlyBeleihungsgrenze';
 export const BELEIHUNGSGRENZE_STANDARD = 80;
@@ -26,6 +27,7 @@ export const beleihbarFrei = (marktwert, restschuld, grenze = getBeleihungsgrenz
 
 // Kapitalwerte eines Objekts. Mietimmobilien (Arbitrage) haben weder Wert noch Kredit.
 export function kapitalWerte(immo, grenze = getBeleihungsgrenze()) {
+  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   const vw = berechneImmoVermoegenswerte(immo);
   if (!vw) return null;
   const marktwert = vw.marktwert || 0;

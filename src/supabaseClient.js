@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { toast } from 'react-hot-toast';
+import { normalisiereImmobilie, zahlAusText } from './utils/zahlen.js';
 
 // Supabase Konfiguration
 // Diese Werte findest du in deinem Supabase Dashboard:
@@ -26,12 +28,6 @@ export async function loadImmobilien() {
   return data.map(dbToApp);
 }
 
-// Felder aus Migration 001–005 (sollten in jeder DB vorhanden sein)
-const MIGRATION_FIELDS = ['aktiv', 'aufgabedatum', 'miet_anpassungen', 'mietvertrag_ende', 'dauerauftrag', 'dauerauftrag_betrag', 'zaehler', 'bausparvertraege', 'stellplatz', 'eigentumsform', 'user_anteil', 'gbr_partner', 'dokumente', 'wohnungen', 'voll_eigenfinanziert', 'geschenkt', 'afa_modus', 'afa_degressiv_wechseljahr'];
-// Felder aus Migration 006 — noch nicht bei allen Usern vorhanden
-const MIGRATION_FIELDS_006 = ['kredit_laeuft_bereits', 'aktuelle_restschuld', 'kredit_monatsrate', 'zinsbindung_bis'];
-// Felder aus Migration 012 — gebündelte Zusatzdaten (JSONB)
-const MIGRATION_FIELDS_012 = ['zusatzdaten'];
 // Gegencheck 2: diese Felder wurden bisher nie in die Datenbank geschrieben und
 // gingen nach dem Speichern verloren. Sie liegen jetzt in immobilien.zusatzdaten.
 const ZUSATZ_KEYS = [
@@ -51,7 +47,6 @@ const ZUSATZ_KEYS = [
   // Wer zahlt welche Kosten (mit Datum) + neue Positionen
   'kostenZahler', 'heizung', 'rundfunk', 'arbitrageHeizung',
 ];
-const MIETER_MIGRATION_FIELDS = ['vertragstyp', 'kuendigungsfrist', 'naechste_anpassung_datum', 'mietanpassungen_mieter', 'letzte_mieterhoehung'];
 
 // Immobilie speichern (neu oder update)
 export async function saveImmobilie(immobilie) {
@@ -82,37 +77,46 @@ export async function saveImmobilie(immobilie) {
     }
   };
 
-  try {
-    return await doSave(dbData);
-  } catch (error) {
-    const isSchemaProblem = error.message && (
-      error.message.includes('column') ||
-      error.message.includes('schema cache')
-    );
-    if (isSchemaProblem) {
-      // Stufe 1: Nur Migration-006-Felder weglassen (wohnungen etc. bleiben erhalten)
-      const fallback1 = { ...dbData };
-      MIGRATION_FIELDS_006.forEach(f => delete fallback1[f]);
-      MIGRATION_FIELDS_012.forEach(f => delete fallback1[f]);
-      console.warn('Spalte fehlt in der Datenbank — bitte Migrationen 006/012 ausführen. Zusatzdaten werden sonst nicht gespeichert.');
-      try {
-        return await doSave(fallback1);
-      } catch (e2) {
-        const isStillSchemaProblem = e2.message && (
-          e2.message.includes('column') ||
-          e2.message.includes('schema cache')
-        );
-        if (isStillSchemaProblem) {
-          // Stufe 2: Auch ältere Migrations-Felder weglassen
-          const fallback2 = { ...fallback1 };
-          MIGRATION_FIELDS.forEach(f => delete fallback2[f]);
-          return await doSave(fallback2);
-        }
-        throw e2;
-      }
+  // Fehlt eine Spalte in der Datenbank (Migration nicht eingespielt), wird NUR diese
+  // eine Spalte weggelassen und erneut gespeichert — alle anderen Daten bleiben drin.
+  // Früher fielen dabei ganze Feldgruppen weg (Zusatzdaten, Wohnungen, Dokumente …),
+  // ohne dass es jemand merkte. Jetzt gibt es zusätzlich einen sichtbaren Hinweis.
+  let daten = { ...dbData };
+  const weggelassen = [];
+  for (let versuch = 0; versuch < 12; versuch++) {
+    try {
+      const ergebnis = await doSave(daten);
+      if (weggelassen.length) fehlendeSpaltenMelden(weggelassen);
+      return ergebnis;
+    } catch (error) {
+      const spalte = fehlendeSpalte(error);
+      if (!spalte || !(spalte in daten)) throw error;
+      delete daten[spalte];
+      weggelassen.push(spalte);
     }
-    throw error;
   }
+  throw new Error('Speichern fehlgeschlagen: zu viele fehlende Datenbankspalten (' + weggelassen.join(', ') + ')');
+}
+
+// Spaltennamen aus Postgres-/PostgREST-Fehlermeldungen lesen
+export function fehlendeSpalte(error) {
+  const m = String(error?.message || '');
+  const a = m.match(/Could not find the '([a-z0-9_]+)' column/i);
+  if (a) return a[1];
+  const b = m.match(/column "([a-z0-9_]+)"(?: of relation "[a-z0-9_]+")? does not exist/i);
+  if (b) return b[1];
+  return null;
+}
+
+const schonGemeldet = new Set();
+function fehlendeSpaltenMelden(spalten) {
+  const neu = spalten.filter(s => !schonGemeldet.has(s));
+  if (!neu.length) return;
+  neu.forEach(s => schonGemeldet.add(s));
+  console.warn('Datenbank-Spalten fehlen (Migration ausführen):', neu.join(', '));
+  try {
+    toast('Gespeichert — ein Teil der Angaben (' + neu.join(', ') + ') kann erst nach einem Datenbank-Update gespeichert werden.', { icon: '⚠️', duration: 8000, id: 'spalten-fehlen' });
+  } catch { /* ohne Toaster (z. B. Tests) */ }
 }
 
 // Immobilie löschen
@@ -127,6 +131,10 @@ export async function deleteImmobilie(id) {
 
 // Konvertierung: Datenbank -> App Format
 function dbToApp(db) {
+  return normalisiereImmobilie(dbToAppRoh(db));
+}
+
+function dbToAppRoh(db) {
   return {
     id: db.id,
     name: db.name,
@@ -425,23 +433,23 @@ export async function saveMieter(mieter) {
     zimmer_bezeichnung: mieter.zimmerBezeichnung || null,
     mietbeginn: mieter.mietbeginn || null,
     mietende: mieter.mietende || null,
-    kaltmiete: mieter.kaltmiete || null,
-    nk_vorauszahlung: mieter.nkVorauszahlung || null,
-    gesamtueberweisung: mieter.gesamtueberweisung || null,
-    kaution_betrag: mieter.kautionBetrag || null,
+    kaltmiete: zahlAusText(mieter.kaltmiete) ?? null,
+    nk_vorauszahlung: zahlAusText(mieter.nkVorauszahlung) ?? null,
+    gesamtueberweisung: zahlAusText(mieter.gesamtueberweisung) ?? null,
+    kaution_betrag: zahlAusText(mieter.kautionBetrag) ?? null,
     kaution_bezahlt: mieter.kautionBezahlt || false,
     kaution_bezahlt_am: mieter.kautionBezahltAm || null,
     kaution_zurueck: mieter.kautionZurueck || false,
     kaution_zurueck_am: mieter.kautionZurueckAm || null,
-    kaution_abzug: mieter.kautionAbzug || 0,
+    kaution_abzug: zahlAusText(mieter.kautionAbzug) ?? 0,
     kaution_abzug_grund: mieter.kautionAbzugGrund || null,
     auszugsdatum: mieter.auszugsdatum || null,
-    zaehlerstand_strom: mieter.zaehlerstandStrom || null,
-    zaehlerstand_wasser: mieter.zaehlerstandWasser || null,
-    zaehlerstand_heizung: mieter.zaehlerstandHeizung || null,
+    zaehlerstand_strom: zahlAusText(mieter.zaehlerstandStrom) ?? null,
+    zaehlerstand_wasser: zahlAusText(mieter.zaehlerstandWasser) ?? null,
+    zaehlerstand_heizung: zahlAusText(mieter.zaehlerstandHeizung) ?? null,
     schluessel_zurueck: mieter.schlusselZurueck || false,
     zustand_notizen: mieter.zustandNotizen || null,
-    mahnstufe: mieter.mahnstufe || 0,
+    mahnstufe: Math.round(zahlAusText(mieter.mahnstufe) ?? 0),
     letzte_mahnung_am: mieter.letzteMahnungAm || null,
     aktiv: mieter.aktiv !== false,
     notizen: mieter.notizen || null,
@@ -464,17 +472,21 @@ export async function saveMieter(mieter) {
     }
   };
 
-  try {
-    return await doMieterSave(dbData);
-  } catch (error) {
-    const isSchemaProblem = error.message && (error.message.includes('column') || error.message.includes('schema cache'));
-    if (isSchemaProblem) {
-      const fallback = { ...dbData };
-      MIETER_MIGRATION_FIELDS.forEach(f => delete fallback[f]);
-      return await doMieterSave(fallback);
+  let daten = { ...dbData };
+  const weggelassen = [];
+  for (let versuch = 0; versuch < 8; versuch++) {
+    try {
+      const ergebnis = await doMieterSave(daten);
+      if (weggelassen.length) fehlendeSpaltenMelden(weggelassen);
+      return ergebnis;
+    } catch (error) {
+      const spalte = fehlendeSpalte(error);
+      if (!spalte || !(spalte in daten)) throw error;
+      delete daten[spalte];
+      weggelassen.push(spalte);
     }
-    throw error;
   }
+  throw new Error('Speichern fehlgeschlagen: fehlende Datenbankspalten (' + weggelassen.join(', ') + ')');
 }
 
 export async function deleteMieter(id) {
@@ -497,17 +509,23 @@ export async function saveNKAbrechnung(abrechnung) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Nicht eingeloggt');
 
+  // Abrechnungsjahr ist Pflicht (NOT NULL) — leeres/ungültiges Jahr klar melden
+  // statt eine Datenbank-Fehlermeldung zu zeigen.
+  const jahr = Math.round(zahlAusText(abrechnung.abrechnungsjahr) ?? NaN);
+  if (!Number.isFinite(jahr) || jahr < 1900 || jahr > 2200) {
+    throw new Error('Bitte ein gültiges Abrechnungsjahr eintragen (z. B. ' + (new Date().getFullYear() - 1) + ').');
+  }
   const dbData = {
     mieter_id: abrechnung.mieterId || null,
     immobilie_id: abrechnung.immobilieId || null,
-    abrechnungsjahr: abrechnung.abrechnungsjahr,
+    abrechnungsjahr: jahr,
     mieter_name: abrechnung.mieterName || '',
     immobilie_name: abrechnung.immobilieName || '',
-    mieterflaeche: abrechnung.mieterflaeche || 0,
-    gesamtflaeche: abrechnung.gesamtflaeche || 0,
-    anzahl_parteien: abrechnung.anzahlParteien || 1,
+    mieterflaeche: zahlAusText(abrechnung.mieterflaeche) ?? 0,
+    gesamtflaeche: zahlAusText(abrechnung.gesamtflaeche) ?? 0,
+    anzahl_parteien: Math.max(1, Math.round(zahlAusText(abrechnung.anzahlParteien) || 1)),
     kostenpositionen: abrechnung.kostenpositionen || [],
-    vorauszahlungen_gesamt: abrechnung.vorauszahlungenGesamt || 0,
+    vorauszahlungen_gesamt: zahlAusText(abrechnung.vorauszahlungenGesamt) ?? 0,
     status: abrechnung.status || 'entwurf',
     notizen: abrechnung.notizen || null,
   };

@@ -11,7 +11,9 @@
     "sitemap": "node scripts/generate-sitemap.js",
     "markdown": "node scripts/generate-markdown.js",
     "verify:agentic": "node scripts/verify-agentic-readiness.mjs",
-    "test:cashflow": "node tests/run.mjs tests/cashflow-gleichheit.jsx"
+    "test:cashflow": "node tests/run.mjs tests/cashflow-gleichheit.jsx",
+    "test:robust": "node tests/run.mjs tests/zahlen-robust.jsx",
+    "test": "npm run test:cashflow && npm run test:robust"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.0",
