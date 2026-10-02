@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
 import {
-  CheckCircle2, ChevronDown, Landmark, TrendingDown, ClipboardList,
+  CheckCircle2, Landmark, TrendingDown, ClipboardList,
   Key, TrendingUp, CalendarDays, AlertTriangle, Building2, ScrollText,
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import { offeneRueckzahlungen, rateEingegangen } from '../utils/nachforderung.js';
 import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
-import { darlehensVerlauf } from '../utils/darlehen.js';
+import { darlehensVerlauf, anfangsFremdkapital } from '../utils/darlehen.js';
 import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
+import KlappKopf from './KlappKopf';
 
 // Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
 // "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
@@ -40,12 +41,9 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   portfolio.forEach(immo => {
     if (immo.immobilienTyp === 'mietimmobilie') return;
 
-    // Kein Kredit vorhanden → keine Zinsbindungswarnung
-    const kaufpreis = immo.kaufpreis || 0;
-    if (immo.geschenkt || immo.vollEigenfinanziert || kaufpreis <= 0) return;
-    const ekFuerKaufpreis = immo.ekFuerKaufpreis != null ? immo.ekFuerKaufpreis : (immo.eigenkapital || 0);
-    const kreditbetrag = kaufpreis - ekFuerKaufpreis;
-    if (kreditbetrag < 1) return; // vollständig eigenfinanziert
+    // Kein Kredit vorhanden → keine Zinsbindungswarnung. Dieselbe Regel wie überall
+    // (anfangsFremdkapital): auch Erbe/Schenkung MIT Darlehen bekommt die Erinnerung.
+    if (immo.kreditLaeuftBereits ? !(immo.aktuelleRestschuld > 0) : anfangsFremdkapital(immo) < 1) return;
 
     // UX-Paket Teil 3, Abschnitt 6: Alarm nur für die aktive/letzte Phase —
     // eine Phase mit Folgephase ist Historie. Dazu Lücken-Hinweis und
@@ -83,6 +81,31 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       immoId: immo.id,
       badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis',
       targetTab: 'finanzierung',
+    });
+  });
+
+  // ── 1b. Bausparverträge: Rolle fehlt / Bausparsumme fehlt (Prüfbericht N-2, N-3) ─────
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie' || immo.aktiv === false) return;
+    const name = immo.name || immo.adresse || 'Immobilie';
+    (immo.bausparvertraege || []).forEach((v, i) => {
+      const zugeteilt = v.zuteilungsreifAb && new Date(v.zuteilungsreifAb) <= heute;
+      if (!v.rolle && !zugeteilt) {
+        todos.push({
+          id: `bauspar-rolle-${immo.id}-${v.id ?? i}`, priority: 'gelb', icon: <Landmark size={16} />,
+          kategorie: 'Finanzierung',
+          titel: `Bausparvertrag ohne Rolle — die Sparrate${Number(v.monatlicheSparrate) > 0 ? ` (${formatCurrency(Number(v.monatlicheSparrate))})` : ''} zählt bis dahin als Kosten`,
+          sub: `${name} · Tilgungsersatz oder Rücklage festlegen`, immoId: immo.id, badge: 'Festlegen', targetTab: 'bauspar',
+        });
+      }
+      if (!(Number(v.bausparsumme) > 0)) {
+        todos.push({
+          id: `bauspar-summe-${immo.id}-${v.id ?? i}`, priority: 'gelb', icon: <Landmark size={16} />,
+          kategorie: 'Finanzierung',
+          titel: 'Bausparsumme fehlt — Zuteilung und Bauspardarlehen lassen sich nicht berechnen',
+          sub: name, immoId: immo.id, badge: 'Ergänzen', targetTab: 'bauspar',
+        });
+      }
     });
   });
 
@@ -558,46 +581,22 @@ const VermieterTodos = ({ portfolio, mieterListe = [], nkAbrechnungen = [], onSe
 
   return (
     <div id="was-steht-an" className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden scroll-mt-4">
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-all select-none"
-        onClick={() => aktiv && setCollapsed(c => !c)}
-      >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <CheckCircle2 size={18} className={aktiv ? 'text-emerald-500' : 'text-gray-300'} />
-          <span className={`font-bold ${aktiv ? 'text-gray-800' : 'text-gray-400'}`}>Was steht an</span>
-          {aktiv && todos.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {anzahlRot > 0 && (
-                <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-                  {anzahlRot} dringend
-                </span>
-              )}
-              {anzahlGelb > 0 && (
-                <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                  {anzahlGelb} offen
-                </span>
-              )}
-              {anzahlGrau > 0 && (
-                <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                  {anzahlGrau} Hinweis
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-
-        {aktiv && (
-          <span className={`text-gray-400 transition-transform inline-flex ${collapsed ? '' : 'rotate-180'}`}>
-            <ChevronDown size={14} />
-          </span>
-        )}
-      </div>
+      {/* Header — einheitliches Muster (Prüfbericht N-4): Zustand farbig, Kontext grau, max. zwei Plaketten */}
+      <KlappKopf
+        id="was-steht-an-inhalt"
+        icon={anzahlRot + anzahlGelb === 0 ? CheckCircle2 : anzahlRot > 0 ? AlertTriangle : ClipboardList}
+        titel="Was steht an"
+        status={anzahlRot + anzahlGelb === 0
+          ? { text: 'alles erledigt', ton: 'gruen' }
+          : { text: anzahlRot > 0 ? `${anzahlRot + anzahlGelb} offen · ${anzahlRot} dringend` : `${anzahlGelb} offen`, ton: anzahlRot > 0 ? 'rot' : 'gelb' }}
+        kontext={anzahlGrau > 0 ? `${anzahlGrau} ${anzahlGrau === 1 ? 'Hinweis' : 'Hinweise'}` : null}
+        offen={!collapsed}
+        onToggle={() => setCollapsed(c => !c)}
+      />
 
       {/* Content — nur wenn aktiv und nicht collapsed */}
       {aktiv && !collapsed && (
-        <div className="border-t border-gray-100">
+        <div id="was-steht-an-inhalt">
           {todos.length > 0 && (
             <div className="flex gap-1.5 px-5 py-2.5 overflow-x-auto border-b border-gray-50">
               {['alle', ...KATEGORIEN].map(k => {

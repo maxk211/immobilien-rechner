@@ -3,6 +3,7 @@ import { Zap, Check, X, ChevronUp, ChevronDown, User, FileText, TrendingDown, Wa
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import ZahlungErfassenForm from './ZahlungErfassenForm';
+import ZahlInput from './ZahlInput';
 import NKAbrechnungModal from './NKAbrechnungModal';
 
 const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [] }) => {
@@ -234,7 +235,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
           {isDauerauftrag && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 font-medium">Erwarteter Betrag:</span>
-              <input
+              <ZahlInput
                 type="number"
                 value={dauerauftragBetrag}
                 onChange={e => updateParams({ ...params, dauerauftragBetrag: parseFloat(e.target.value) || 0 })}
@@ -254,7 +255,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
       {/* Fälligkeitstag der Miete — Grundlage für "verspätet" und die spätere Erinnerung "Miete offen" */}
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <span>Miete ist fällig zum</span>
-        <input
+        <ZahlInput
           type="number" min={1} max={28}
           value={params.mieteFaelligkeitstag ?? 3}
           onChange={e => updateParams({ ...params, mieteFaelligkeitstag: Math.min(28, Math.max(1, parseInt(e.target.value) || 1)) })}

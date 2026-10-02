@@ -134,6 +134,12 @@ function Vertrag({ v, immo, onAendern, onLoeschen }) {
           </div>
         ))}
       </div>
+      {!(Number(v.bausparsumme) > 0) && (
+        <div className="mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 flex flex-wrap items-center justify-between gap-2">
+          <span><strong>Bausparsumme fehlt.</strong> Ohne sie lassen sich Zuteilung und Bauspardarlehen nicht berechnen.</span>
+          <button type="button" onClick={() => setBearbeiten(true)} className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 font-bold">Jetzt eintragen</button>
+        </div>
+      )}
       {st.zuteilungGeschaetzt && <p className="px-4 pt-2 text-[11px] text-gray-400">* Geschätzt: Zuteilung, sobald {Math.round(MINDEST_GUTHABEN * 100)} % der Bausparsumme angespart sind. Das echte Datum steht im Vertrag — unter „Konditionen bearbeiten“ eintragen.</p>}
 
       {/* Zeitstrahl über den ganzen Vertrag */}

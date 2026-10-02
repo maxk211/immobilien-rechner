@@ -422,6 +422,13 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     () => pruefeImmobilie({ ...immobilie, ...params }, { portfolio, mieter: mieterListe }),
     [params, portfolio, mieterListe] // eslint-disable-line react-hooks/exhaustive-deps
   );
+  // B2: nach einer bestätigten großen Änderung in einem Zahlenfeld die Prüfung öffnen,
+  // wenn sie etwas zu melden hat
+  useEffect(() => {
+    const pruefen = () => setTimeout(() => setShowPlausi(true), 50);
+    window.addEventListener('renditly-plausi-pruefen', pruefen);
+    return () => window.removeEventListener('renditly-plausi-pruefen', pruefen);
+  }, []);
   const plausiZahl = zaehle(plausiHinweise);
 
   const handleQmPreisChange = (value) => {
@@ -662,6 +669,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     {ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite)}
                   </div>
                     {ergebnis.eigenkapitalRendite == null && <div className="text-[10px] text-gray-400">kein Eigenkapital eingesetzt</div>}
+                    {ergebnis.ekRenditeNichtAussagekraeftig && <div className="text-[10px] text-gray-400">kaum Eigenkapital eingesetzt — Kennzahl nicht aussagekräftig</div>}
                     {ergebnis.ekRenditeNichtAussagekraeftig && <div className="text-[10px] text-gray-400">kaum Eigenkapital — nicht aussagekräftig</div>}
                 </div>
                 <div className="px-2 sm:px-4 py-2 sm:py-3">

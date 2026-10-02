@@ -85,6 +85,15 @@ export function pruefeImmobilie(immo, { portfolio = [], mieter = [], heute = new
         wert: Math.round(maxRs) });
     }
   }
+  // Prüfbericht N-3: Bausparvertrag ohne Bausparsumme — die Höhe des Bauspardarlehens nach
+  // Zuteilung lässt sich dann nicht berechnen
+  (immo.bausparvertraege || []).forEach((v, i) => {
+    if (!(Number(v?.bausparsumme) > 0)) {
+      add({ id: `bauspar-summe-${v?.id ?? i}`, stufe: 'rot', titel: 'Bausparvertrag ohne Bausparsumme',
+        text: `${v?.bausparkasse ? v.bausparkasse + ': ' : ''}Bausparsumme steht auf 0 €. Ohne sie lassen sich Zuteilung und Bauspardarlehen nicht berechnen. Bitte im Reiter Bauspar aus dem Vertrag übernehmen.`,
+        wert: Number(v?.bausparsumme) || 0 });
+    }
+  });
   const nu = immo.hausgeldNichtUmlagefaehig;
   if (nu !== null && nu !== undefined && nu !== '' && Number(nu) > hausgeld && hausgeld >= 0) {
     add({ id: 'nu-ueber-hausgeld', stufe: 'rot', titel: 'Nicht umlagefähiger Anteil ist größer als das Hausgeld',
