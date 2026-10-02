@@ -5,7 +5,7 @@ globalThis.localStorage = { getItem:()=>null, setItem(){}, removeItem(){} };
 import ImmobilienDetail from '../src/components/ImmobilienDetail.jsx';
 import ImmobilienKarte from '../src/components/ImmobilienKarte.jsx';
 import PortfolioOverview from '../src/components/PortfolioOverview.jsx';
-import { cashflowMonat } from '../src/utils/berechnung.js';
+import { cashflowMonat, berechneRestschuld } from '../src/utils/berechnung.js';
 import { darlehensVerlauf } from '../src/utils/darlehen.js';
 const txt = (h) => h.replace(/<!-- -->/g,'').replace(/<[^>]+>/g,' ').replace(/&nbsp;| /g,' ').replace(/\s+/g,' ');
 const zahl = (s) => s == null ? null : Number(s.replace(/[+−\-\s€.]/g, m => (m === '−' || m === '-') ? '-' : '').replace(',', '.'));
@@ -71,6 +71,42 @@ console.log('Dashboard nach Tilgung', dN, 'Summe Karten', Math.round(summeKarten
     if (!ok) fehler++;
     console.log(`${ok ? '✓' : '✗'} Aufteilung ${n.padEnd(22)} Cashflow ${Math.round(c.zinsen)} Zins · ${Math.round(c.tilgung)} Tilgung | Finanzierung ${Math.round(v.zinsHeute)} · ${Math.round(v.tilgungHeute)}`);
   }
+}
+// PDF "Bug: Monatsrate wird nicht in Zins und Tilgung aufgeteilt" — Abnahme + Invarianten
+{
+  const heute = new Date();
+  const imMonat = new Date(heute.getFullYear(), heute.getMonth(), Math.min(heute.getDate(), 28)).toISOString().slice(0, 10);
+  const naechsterMonat = new Date(heute.getFullYear(), heute.getMonth() + 1, 15).toISOString().slice(0, 10);
+  const ph = { id:1, darlehensTyp:'annuitaet', sollzinssatz:4, anfangstilgung:2, zinsbindung:10, laufzeit:10 };
+  const abnahme = { immobilienTyp:'kaufimmobilie', name:'Abnahme', kaufpreis:100000, kaufnebenkosten:0, kaufdatum: imMonat, kaltmiete:700, finanzierungsbetrag:100000, ekFuerNebenkosten:0, ekFuerKaufpreis:0, finanzierungsphasen:[{ ...ph, kreditStartDatum: imMonat }] };
+  const c = cashflowMonat(abnahme, heute);
+  const p = (b, t) => { if (!b) fehler++; console.log(`${b ? '✓' : '✗'} ${t}`); };
+  p(Math.round(c.rate) === 500 && Math.round(c.zinsen) === 333 && Math.round(c.tilgung) === 167, `Abnahme: Rate ${Math.round(c.rate)} · Zins ${Math.round(c.zinsen)} · Tilgung ${Math.round(c.tilgung)} (erwartet 500/333/167)`);
+  p(Math.round(c.vor - c.nach) === 167, `Abnahme: vor − nach Tilgung = ${Math.round(c.vor - c.nach)} (erwartet 167)`);
+  const karte = txt(renderToString(<ImmobilienKarte immobilie={{ id:'ab', ...abnahme }} mieterListe={[]} aufgaben={[]} onClick={()=>{}} />));
+  p(!karte.includes('schuldenfrei') && karte.includes('davon 167'), 'Abnahme: Karte ohne "schuldenfrei", mit "davon 167 € Tilgung"');
+  const cock = txt(renderToString(<ImmobilienDetail immobilie={{ id:'ab', ...abnahme }} initialTab="uebersicht" onClose={()=>{}} onSave={()=>{}} portfolio={[]} mieterListe={[]} aufgaben={[]} />));
+  p(!/schuldenfrei, keine Tilgung/.test(cock), 'Abnahme: Cockpit ohne "schuldenfrei, keine Tilgung"');
+  const spaeter = cashflowMonat({ ...abnahme, finanzierungsphasen:[{ ...ph, kreditStartDatum: naechsterMonat }] }, heute);
+  p(Math.round(spaeter.zinsen) === 333 && Math.round(spaeter.tilgung) === 167, `Kredit startet nächsten Monat: erste Rate aufgeteilt (${Math.round(spaeter.zinsen)}/${Math.round(spaeter.tilgung)})`);
+  const endf = { ...abnahme, finanzierungsphasen:[{ ...ph, darlehensTyp:'endfaellig', kreditStartDatum: imMonat }] };
+  const ce = cashflowMonat(endf, heute);
+  p(ce.tilgung === 0 && !ce.schuldenfrei && Math.round(ce.zinsen) === 333, 'Endfälliges Darlehen: Tilgung 0, aber nicht schuldenfrei');
+  const ke = txt(renderToString(<ImmobilienKarte immobilie={{ id:'ef', ...endf }} mieterListe={[]} aufgaben={[]} onClick={()=>{}} />));
+  p(!ke.includes('schuldenfrei') && ke.includes('Darlehen läuft'), 'Endfällig: Karte zeigt "Darlehen läuft", nicht "schuldenfrei"');
+  const ohne = cashflowMonat({ ...abnahme, finanzierungsphasen:[], finanzierungsbetrag:0 }, heute);
+  p(ohne.schuldenfrei && ohne.rate === 0, 'Ohne Darlehen: schuldenfrei');
+  const erbe = { ...abnahme, kaufpreis:0, geschenkt:true, erwerbsart:'erbe' };
+  p((berechneRestschuld(erbe)?.restschuld || 0) > 99000, 'Erbe mit Darlehen: Restschuld vorhanden (vorher null)');
+  // Invarianten für alle Testobjekte oben
+  for (const [n, x] of Object.entries({ ...faelle, abnahme })) {
+    const cf = cashflowMonat({ id:n, ...x }, heute);
+    const okSumme = Math.abs(cf.zinsen + cf.tilgung - cf.rate) < 0.01;
+    const okDiff = Math.abs((cf.vor - cf.nach) - (cf.tilgung + cf.bausparTilgung)) < 0.01;
+    const okKenn = cf.schuldenfrei === !(cf.restschuld >= 0.5);
+    if (!(okSumme && okDiff && okKenn)) { fehler++; console.log(`✗ Invariante ${n}: Zins+Tilgung=${cf.zinsen + cf.tilgung} Rate=${cf.rate} vor−nach=${cf.vor - cf.nach}`); }
+  }
+  console.log('✓ Invarianten: Zins + Tilgung = Rate, vor − nach = Tilgung, schuldenfrei ⇔ Restschuld 0 (alle Objekte)');
 }
 console.log(fehler ? `${fehler} Abweichungen` : 'Alle Ansichten identisch');
 if (fehler) process.exit(1);

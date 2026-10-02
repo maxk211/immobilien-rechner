@@ -112,7 +112,12 @@ export const berechneWertsteigerungSeitKauf = (immobilie, aktuellerWert) => {
 // Restschuld berechnen basierend auf Kreditstartdatum (oder Kaufdatum) und Finanzierung
 export const berechneRestschuld = (immobilie) => {
   immobilie = normalisiereImmobilie(immobilie); // Text/leer → Zahl/null (utils/zahlen.js)
-  if (!immobilie.kaufpreis) return null;
+  // Phase F: datumsgenauer Verlauf (Sondertilgungen, abbezahlt) hat Vorrang — dieselbe
+  // Rechnung wie der Finanzierungs-Reiter, auch bei Erbe/Schenkung ohne Kaufpreis.
+  const verlaufRS = (immobilie.finanzierungsphasen || []).length ? darlehensVerlauf(immobilie) : null;
+  if (verlaufRS) {
+    return { restschuld: Math.round(verlaufRS.restschuldHeute), anfangsFremdkapital: verlaufRS.fk, getilgt: Math.max(0, verlaufRS.fk - verlaufRS.restschuldHeute) };
+  }
 
   // Geschenkt oder voll eigenfinanziert: es existiert kein Kredit, also auch
   // keine Restschuld — sonst würde unten fälschlich ein Fremdkapital in Höhe
@@ -121,18 +126,13 @@ export const berechneRestschuld = (immobilie) => {
     return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
   }
 
-  // "Kredit läuft bereits": Restschuld direkt bekannt
+  // "Kredit läuft bereits" (Altdaten ohne Finanzierungsphase): Restschuld direkt bekannt
   if (immobilie.kreditLaeuftBereits && immobilie.aktuelleRestschuld != null) {
     const rs = immobilie.aktuelleRestschuld || 0;
     const kp = immobilie.kaufpreis || rs;
     return { restschuld: rs, anfangsFremdkapital: kp, getilgt: Math.max(0, kp - rs) };
   }
-
-  // Phase F: datumsgenauer Verlauf (Sondertilgungen, abbezahlt) hat Vorrang
-  const verlaufRS = (immobilie.finanzierungsphasen || []).length ? darlehensVerlauf(immobilie) : null;
-  if (verlaufRS) {
-    return { restschuld: Math.round(verlaufRS.restschuldHeute), anfangsFremdkapital: verlaufRS.fk, getilgt: Math.max(0, verlaufRS.fk - verlaufRS.restschuldHeute) };
-  }
+  if (!immobilie.kaufpreis) return null;
 
   // Kreditstartdatum: aus erster Finanzierungsphase oder Fallback auf Kaufdatum
   const erstePhaseRS = (immobilie.finanzierungsphasen || [])[0];
@@ -637,11 +637,10 @@ export const cashflowMonat = (immo, heute = new Date()) => {
   // (darlehensVerlauf). Vorher konnte der Cashflow die Aufteilung über einen zweiten Weg herleiten
   // und bei frisch gestarteten Krediten "Zinsen = ganze Rate, Tilgung 0" zeigen.
   const dv = (immo.finanzierungsphasen || []).length ? darlehensVerlauf(immo, heute) : null;
-  const hIdx = heute.getFullYear() * 12 + heute.getMonth();
-  const dvMonat = dv && (dv.monate.find(e => e.idx === hIdx) || (dv.monate[0]?.idx > hIdx ? dv.monate[0] : null));
   if (dv) {
+    // Rate, Zins und Tilgung exakt aus dem Monat von heute (bzw. der ersten Rate, wenn der
+    // Kredit erst startet): Zins = Restschuld × Sollzins / 12, Tilgung = Rate − Zins.
     if (dv.abbezahltHeute) { rate = 0; zinsen = 0; }
-    else if (dvMonat && !dvMonat.abloesung) { rate = dvMonat.zins + dvMonat.tilgung; zinsen = dvMonat.zins; }
     else if (dv.rateHeute > 0) { rate = dv.rateHeute; zinsen = Math.min(rate, dv.zinsHeute || 0); }
   } else if (rate > 0) {
     const zt = berechneZinsUndTilgung(immo, heute.getFullYear(), heute.getMonth());
@@ -656,7 +655,11 @@ export const cashflowMonat = (immo, heute = new Date()) => {
   const bauspar = bs.gesamt;
 
   const einnahmen = kaltmiete + nkImCashflow + stellplatz;
+  // "schuldenfrei" hängt allein an der Restschuld — nie am Tilgungsanteil (ein endfälliges
+  // Darlehen hat Tilgung 0 und ist trotzdem nicht schuldenfrei).
+  const restschuld = dv ? Math.max(0, dv.restschuldHeute || 0) : Math.max(0, berechneRestschuld(immo)?.restschuld || 0);
   return {
+    restschuld, schuldenfrei: restschuld < 0.5,
     kaltmiete, nkImCashflow, stellplatz, einnahmen, betrieb, ks,
     rate, zinsen, tilgung, bauspar, bausparTilgung: bs.tilgung, bausparKosten: bs.kosten,
     vermoegensaufbau: tilgung + bs.tilgung,

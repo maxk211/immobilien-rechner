@@ -147,7 +147,9 @@ export function darlehensVerlauf(immo, heute = new Date()) {
   let aktivIdx = 0;
   info.forEach(p => { if (monatsIndex(p.start) <= heuteIdx) aktivIdx = p.idx; });
   const restschuldHeute = restschuldAm(heute);
-  const monatHeute = monate.find(e => e.idx === heuteIdx);
+  // Monat null: Ein Kredit, der erst in einem späteren Monat startet, zeigt bereits die
+  // Aufteilung seiner ersten Rate (Zins + Tilgung) — nie "0 € Zins · 0 € Tilgung".
+  const monatHeute = monate.find(e => e.idx === heuteIdx) || (monate[0] && monate[0].idx > heuteIdx ? monate[0] : undefined);
   const letzte = info[info.length - 1];
   return {
     monate, phasen: info, fk,
