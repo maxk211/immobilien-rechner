@@ -618,9 +618,19 @@ export const cashflowMonat = (immo, heute = new Date()) => {
 
   // Kreditrate: phasenbewusst über berechneRendite, Zinsanteil exakt für diesen Monat
   const ergebnis = berechneRendite({ ...immo, kaltmiete, ...(istMFH ? { vermietungsmodell: 'kaltmiete', nebenkostenVomMieter: 0 } : {}) });
-  const rate = Math.max(0, ergebnis.monatlicheRate || 0);
+  let rate = Math.max(0, ergebnis.monatlicheRate || 0);
   let zinsen = 0;
-  if (rate > 0) {
+  // Darlehen mit Phasen: Rate, Zins und Tilgung aus derselben Quelle wie der Finanzierungs-Reiter
+  // (darlehensVerlauf). Vorher konnte der Cashflow die Aufteilung über einen zweiten Weg herleiten
+  // und bei frisch gestarteten Krediten "Zinsen = ganze Rate, Tilgung 0" zeigen.
+  const dv = (immo.finanzierungsphasen || []).length ? darlehensVerlauf(immo, heute) : null;
+  const hIdx = heute.getFullYear() * 12 + heute.getMonth();
+  const dvMonat = dv && (dv.monate.find(e => e.idx === hIdx) || (dv.monate[0]?.idx > hIdx ? dv.monate[0] : null));
+  if (dv) {
+    if (dv.abbezahltHeute) { rate = 0; zinsen = 0; }
+    else if (dvMonat && !dvMonat.abloesung) { rate = dvMonat.zins + dvMonat.tilgung; zinsen = dvMonat.zins; }
+    else if (dv.rateHeute > 0) { rate = dv.rateHeute; zinsen = Math.min(rate, dv.zinsHeute || 0); }
+  } else if (rate > 0) {
     const zt = berechneZinsUndTilgung(immo, heute.getFullYear(), heute.getMonth());
     zinsen = zt ? Math.max(0, Math.min(zt.zinsen, rate))
       : Math.max(0, Math.min(rate, (ergebnis.effRestschuld || 0) * ((ergebnis.effZinssatz || 0) / 100 / 12)));
@@ -669,16 +679,17 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
     const mzins = (params.zinssatz || 3.5) / 100 / 12;
     const monatlicheZinsen = rs * mzins;
     const monatlicheTilgung = Math.max(0, rate - monatlicheZinsen);
+    const f = targetMonat !== null ? 1 : 12; // Monatsabfrage liefert einen Monat, nicht das Jahr
     return {
-      zinsen: Math.round(monatlicheZinsen * 12),
-      tilgung: Math.round(monatlicheTilgung * 12),
+      zinsen: Math.round(monatlicheZinsen * f),
+      tilgung: Math.round(monatlicheTilgung * f),
       restschuldAnfang: rs,
       restschuldEnde: Math.max(0, rs - monatlicheTilgung * 12),
     };
   }
 
   const kreditStartStr = phasen[0]?.kreditStartDatum || params.kaufdatum;
-  if (!kreditStartStr || !params.kaufpreis) return null;
+  if (!kreditStartStr) return null;
 
   // Phase F: datumsgenauer Verlauf (Zinsbindung-bis-Daten, erfasste Sondertilgungen,
   // "Darlehen abbezahlt") — eine Rechnung für Finanzierungs-Reiter, Cashflow und Steuer.
@@ -694,6 +705,7 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
       return { zinsen: Math.round(z), tilgung: Math.round(t), restschuldAnfang: Math.round(v.restschuldAm(d0)), restschuldEnde: Math.round(v.restschuldAm(d1)) };
     }
   }
+  if (!params.kaufpreis) return null;
 
   const kreditStart = new Date(kreditStartStr);
   const ksJahr = kreditStart.getFullYear();

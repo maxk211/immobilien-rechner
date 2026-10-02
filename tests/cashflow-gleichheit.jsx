@@ -6,6 +6,7 @@ import ImmobilienDetail from '../src/components/ImmobilienDetail.jsx';
 import ImmobilienKarte from '../src/components/ImmobilienKarte.jsx';
 import PortfolioOverview from '../src/components/PortfolioOverview.jsx';
 import { cashflowMonat } from '../src/utils/berechnung.js';
+import { darlehensVerlauf } from '../src/utils/darlehen.js';
 const txt = (h) => h.replace(/<!-- -->/g,'').replace(/<[^>]+>/g,' ').replace(/&nbsp;| /g,' ').replace(/\s+/g,' ');
 const zahl = (s) => s == null ? null : Number(s.replace(/[+−\-\s€.]/g, m => (m === '−' || m === '-') ? '-' : '').replace(',', '.'));
 const nach = (t, re) => { const m = t.match(re); return m ? zahl(m[1]) : null; };
@@ -52,5 +53,24 @@ const portfolio = Object.entries(faelle).map(([n, x]) => ({ id:n, name:n, ...x }
 const dash = txt(renderToString(<PortfolioOverview portfolio={portfolio} />));
 const dN = nach(dash, /([+−\-]?[\d.]+ ?€) NACH TILGUNG/i) ?? nach(dash, /([+−\-]?[\d.]+ ?€) nach Tilgung/);
 console.log('Dashboard nach Tilgung', dN, 'Summe Karten', Math.round(summeKarten), dN === Math.round(summeKarten) ? '✓' : '✗ (Rundung prüfen)');
+// Zins/Tilgung im Cashflow = Finanzierungs-Reiter (darlehensVerlauf), auch bei frischem Kredit
+// mit Start mitten im Monat und bei Altdaten mit "Kredit läuft bereits"
+{
+  const heute = new Date(); const vor = (m, tag) => { const d = new Date(heute.getFullYear(), heute.getMonth() - m, tag); return d.toISOString().slice(0, 10); };
+  const ph = { id:1, darlehensTyp:'annuitaet', sollzinssatz:4.08, anfangstilgung:2, zinsbindung:10, laufzeit:10 };
+  const k = { immobilienTyp:'kaufimmobilie', kaufpreis:120000, kaufnebenkosten:9.83, kaltmiete:700, finanzierungsbetrag:131800, ekFuerNebenkosten:0, ekFuerKaufpreis:0 };
+  const split = {
+    frischMonatsmitte: { ...k, kaufdatum: vor(1, 21), finanzierungsphasen:[{ ...ph, kreditStartDatum: vor(1, 21) }] },
+    frischMonatserster: { ...k, kaufdatum: vor(1, 1), finanzierungsphasen:[{ ...ph, kreditStartDatum: vor(1, 1) }] },
+    altdatenLaeuftBereits: { ...k, kaufdatum: vor(1, 21), kreditLaeuftBereits:true, aktuelleRestschuld:131800, kreditMonatsrate:669, zinssatz:4.08, finanzierungsphasen:[{ ...ph, kreditStartDatum: vor(1, 21) }] },
+    ohneKaufpreis: { ...k, kaufpreis:0, geschenkt:true, erwerbsart:'erbe', kaufdatum: vor(1, 21), finanzierungsphasen:[{ ...ph, kreditStartDatum: vor(1, 21) }] },
+  };
+  for (const [n, x] of Object.entries(split)) {
+    const c = cashflowMonat(x, heute); const v = darlehensVerlauf(x, heute);
+    const ok = Math.round(c.zinsen) === Math.round(v.zinsHeute) && Math.round(c.tilgung) === Math.round(v.tilgungHeute) && c.tilgung > 0;
+    if (!ok) fehler++;
+    console.log(`${ok ? '✓' : '✗'} Aufteilung ${n.padEnd(22)} Cashflow ${Math.round(c.zinsen)} Zins · ${Math.round(c.tilgung)} Tilgung | Finanzierung ${Math.round(v.zinsHeute)} · ${Math.round(v.tilgungHeute)}`);
+  }
+}
 console.log(fehler ? `${fehler} Abweichungen` : 'Alle Ansichten identisch');
 if (fehler) process.exit(1);
