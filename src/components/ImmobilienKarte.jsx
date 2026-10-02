@@ -121,7 +121,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
         <div className="rounded-xl bg-white border border-gray-200 shadow-sm grid grid-cols-2 divide-x divide-gray-100">
           {[
             ['Nach Tilgung', cf.nach, `${cf.nach >= 0 ? '+' : ''}${formatCurrency(cf.nach * 12)} pro Jahr`],
-            ['Vor Tilgung', cf.vor, isMietimmobilie ? 'kein Kredit' : cf.hatKredit ? `davon ${formatCurrency(cf.tilgung)} Tilgung` : 'schuldenfrei, keine Tilgung'],
+            ['Vor Tilgung', cf.vor, isMietimmobilie ? 'kein Kredit' : cf.schuldenfrei ? 'schuldenfrei, keine Tilgung' : cf.tilgung > 0 ? `davon ${formatCurrency(cf.tilgung)} Tilgung` : 'Darlehen läuft, keine Tilgung'],
           ].map(([label, wert, sub]) => (
             <div key={label} className="px-3 py-2.5">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</div>

@@ -5,13 +5,14 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, deleteDokument, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
+import { anfangsFremdkapital } from './utils/darlehen.js';
 import ImmobilieLoeschenDialog from './components/ImmobilieLoeschenDialog';
 import { isFounderEmail } from './config/payments';
 import { partnerZuordnungAbschliessen } from './utils/partner';
 const PartnerAdmin = lazy(() => import('./components/PartnerAdmin.jsx'));
 import { formatCurrency, formatPercent } from './utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, getJahresDurchschnittFuerFeld, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, zahlerAnteilJahr } from './utils/miete.js';
-import { schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
+import { cashflowMonat, schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
 import { showConfirm, ConfirmDialog } from './utils/confirm.jsx';
 import { ZAEHLER_TYPEN, NK_KOSTENPOSITIONEN_DEFAULTS, NK_STANDARD_POSITIONEN, CHANGELOG_VERSION, CHANGELOG_EINTRAEGE } from './constants/index.js';
 import InputSliderCombo from './components/InputSliderCombo.jsx';
@@ -454,14 +455,15 @@ function App() {
       // Zinsbindungsende der laufenden Phase als Datum (Teil 3, Abschnitt 5.2)
       const finSt = finanzierungsStatus(immo);
       let zinsbindungBisStr = '—';
-      if (finSt?.letzte?.ende && immo.kaufpreis) {
+      const fkImmo = anfangsFremdkapital(immo); // Darlehensbetrag — auch bei Erbe/Schenkung mit Kredit
+      if (finSt?.letzte?.ende && fkImmo > 0) {
         const d = finSt.letzte.ende;
         zinsbindungBisStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
       }
       const miete = getAktuelleMiete(immo);
-      const rendite = berechneRendite({ ...immo, kaltmiete: miete });
-      const rate = rendite.monatlicheRate || 0;
-      const nominalbetrag = immo.kaufpreis ? Math.max(0, Math.round(immo.kaufpreis - (immo.eigenkapital || 0))) : 0;
+      // Rate aus derselben Rechnung wie Objektkarte/Cashflow/Finanzierung
+      const rate = cashflowMonat(immo).rate || 0;
+      const nominalbetrag = Math.round(fkImmo);
       const bank = phase0?.kreditinstitut || '—';
       const tilgPA = phase0?.anfangstilgung ?? immo.tilgung ?? 2;
       const zinsPA = phase0?.sollzinssatz ?? immo.zinssatz ?? 4;
@@ -482,8 +484,8 @@ function App() {
         bank,
         nominalbetrag > 0 ? `${nominalbetrag.toLocaleString('de-DE')} €` : '—',
         rate > 0 ? `${rate.toFixed(0)} €` : '—',
-        immo.kaufpreis ? `${tilgPA.toFixed(2)} %` : '—',
-        immo.kaufpreis ? `${zinsPA.toFixed(2)} %` : '—',
+        fkImmo > 0 ? `${Number(tilgPA).toFixed(2)} %` : '—',
+        fkImmo > 0 ? `${Number(zinsPA).toFixed(2)} %` : '—',
         zinsbindungBisStr,
       ];
     });
@@ -491,10 +493,7 @@ function App() {
     const gesamtKaufpreis = kaufimmos.reduce((s, i) => s + (i.kaufpreis || 0), 0);
     const gesamtVerkehrswert = kaufimmos.reduce((s, i) => s + getAktuellerGesamtwert(i), 0);
     const gesamtMiete = kaufimmos.reduce((s, i) => s + getAktuelleMiete(i), 0);
-    const gesamtRate = kaufimmos.reduce((s, i) => {
-      const r = berechneRendite({ ...i, kaltmiete: getAktuelleMiete(i) });
-      return s + (r.monatlicheRate || 0);
-    }, 0);
+    const gesamtRate = kaufimmos.reduce((s, i) => s + (cashflowMonat(i).rate || 0), 0);
 
     immoRows.push([
       { content: 'Summe', colSpan: 6, styles: { fontStyle: 'bold', fillColor: ORANGE_LIGHT } },

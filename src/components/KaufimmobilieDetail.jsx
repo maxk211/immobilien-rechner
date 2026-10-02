@@ -907,7 +907,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-baseline justify-between gap-2 text-xs">
                       <span className="text-gray-500">Nach Tilgung <strong className={monatlichesErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}>{monatlichesErgebnis >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis)}</strong></span>
                       <span className="text-gray-500">Vor Tilgung <strong className={cfCockpit.vor >= 0 ? 'text-emerald-600' : 'text-red-600'}>{cfCockpit.vor >= 0 ? '+' : ''}{formatCurrency(cfCockpit.vor)}</strong></span>
-                      <span className="text-gray-400">{cfCockpit.tilgung > 0 ? `davon ${formatCurrency(cfCockpit.tilgung)} Tilgung — baut Eigenkapital auf` : 'schuldenfrei, keine Tilgung'}</span>
+                      <span className="text-gray-400">{cfCockpit.schuldenfrei ? 'schuldenfrei, keine Tilgung' : cfCockpit.tilgung > 0 ? `davon ${formatCurrency(cfCockpit.tilgung)} Tilgung — baut Eigenkapital auf` : 'Darlehen läuft, keine Tilgung (endfällig)'}</span>
                     </div>
                   </button>
 

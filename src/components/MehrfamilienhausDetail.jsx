@@ -20,6 +20,7 @@ import KaufnebenkostenManager from './KaufnebenkostenManager';
 import ObjektUeberlaufMenu from './ObjektUeberlaufMenu';
 import { DetailNavigation, ZurueckZumCockpit, KennzahlenZeile } from './DetailNavigation';
 import { phasenZeitraeume, finanzierungsStatus } from '../utils/finanzierung.js';
+import { darlehensVerlauf } from '../utils/darlehen.js';
 import { beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
@@ -313,39 +314,23 @@ const MehrfamilienhausDetail = ({
     aktuellerWertMFH
   );
 
-  // Aktive Finanzierungsphase berechnen — identische Logik wie Finanzierung-Tab
-  // Ergebnis: { rate, zinsen, tilgung, kreditbetrag, typ, zinssatz }
+  // Aktive Finanzierung — dieselbe Quelle wie Finanzierungs-Reiter, Cockpit und Objektkarte
+  // (darlehensVerlauf/cashflowMonat). Vorher eine eigene Rechnung: immer Phase 1, Zins auf den
+  // Anfangsbetrag statt auf die heutige Restschuld, Anschlussfinanzierung ignoriert.
+  // Ergebnis: { rate, zinsen, tilgung, zinsenJahr, kreditbetrag, restschuld, typ, zinssatz, phaseName }
   const aktivePhaseBerechnung = useMemo(() => {
-    const phasen = params.finanzierungsphasen;
-    if (!phasen || phasen.length === 0) return null;
-    const kaufnebenkostenAbsolut = (params.kaufpreis || 0) * ((params.kaufnebenkosten ?? 10) / 100);
-    const gesamtinvestition = (params.kaufpreis || 0) + kaufnebenkostenAbsolut;
-    const ekGesamt = (params.ekFuerNebenkosten ?? kaufnebenkostenAbsolut) + (params.ekFuerKaufpreis ?? 0);
-    const berechneterKredit = Math.max(0, gesamtinvestition - ekGesamt);
-    const kreditbetrag = params.finanzierungsbetrag ?? berechneterKredit;
-    if (kreditbetrag <= 0) return null;
-    const phase = phasen[0];
-    const typ = phase.darlehensTyp || 'annuitaet';
-    const monatszins = (phase.sollzinssatz || 0) / 100 / 12;
-    let rate = 0, zinsen = 0, tilgung = 0;
-    if (typ === 'annuitaet') {
-      zinsen = Math.round(kreditbetrag * monatszins);
-      rate = phase.monatlicherBetrag > 0
-        ? phase.monatlicherBetrag
-        : Math.round(kreditbetrag * (monatszins + (phase.anfangstilgung || 2) / 100 / 12));
-      tilgung = Math.max(0, rate - zinsen);
-    } else if (typ === 'tilgung') {
-      zinsen = Math.round(kreditbetrag * monatszins);
-      const mt = phase.monatlicheTilgung > 0
-        ? phase.monatlicheTilgung
-        : Math.round(kreditbetrag * (phase.tilgungssatz || 2) / 100 / 12);
-      tilgung = mt; rate = zinsen + tilgung;
-    } else { // endfaellig
-      zinsen = Math.round(kreditbetrag * monatszins);
-      tilgung = 0; rate = zinsen;
-    }
-    return { rate, zinsen, tilgung, kreditbetrag, typ, zinssatz: phase.sollzinssatz, phaseName: phase.name || 'Erstfinanzierung' };
-  }, [params]);
+    const voll = { ...immobilie, ...params, wohnungen };
+    const v = darlehensVerlauf(voll);
+    if (!v || !(v.fk > 0)) return null;
+    const cf = cashflowMonat(voll);
+    const p = v.phasen[v.aktivIdx] || v.phasen[0];
+    return {
+      rate: cf.rate, zinsen: cf.zinsen, tilgung: cf.tilgung,
+      zinsenJahr: v.zinsenImJahr(new Date().getFullYear()),
+      kreditbetrag: v.fk, restschuld: v.restschuldHeute,
+      typ: p?.typ, zinssatz: p?.sollzins, phaseName: p?.phase?.name || (v.aktivIdx > 0 ? `Anschlussfinanzierung ${v.aktivIdx}` : 'Erstfinanzierung'),
+    };
+  }, [immobilie, params, wohnungen]);
 
   // Auto-Save: Wohnungsänderung sofort persistieren + Aggregat aktualisieren
   const aggregiereUndSpeichere = (neueWohnungen) => {
@@ -697,16 +682,19 @@ const MehrfamilienhausDetail = ({
             const monatlicheKosten = cfMFH.betrieb;
             const monatlicheRate = cfMFH.rate;
             const monatlichesErgebnis = cfMFH.nach;
-            const restschuld = ergebnis.effRestschuld || 0;
-            const fremdkapital = ergebnis.fremdkapital || aktivePhaseBerechnung?.kreditbetrag || 0;
+            // Restschuld/Tilgung/Schuldenfrei aus dem datumsgenauen Darlehensverlauf — wie bei der Kaufimmobilie
+            const verlaufMFH = darlehensVerlauf({ ...immobilie, ...params, wohnungen });
+            const restschuld = verlaufMFH ? verlaufMFH.restschuldHeute : (ergebnis.effRestschuld || 0);
+            const fremdkapital = verlaufMFH ? verlaufMFH.fk : (ergebnis.fremdkapital || 0);
             const tilgungsfortschritt = fremdkapital > 0 ? Math.max(0, Math.min(100, 100 - (restschuld / fremdkapital) * 100)) : 0;
             const finStatusCockpit = finanzierungsStatus(params);
             const zinsbindungBisText = finStatusCockpit?.letzte?.ende
               ? finStatusCockpit.letzte.ende.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) + (finStatusCockpit.letzte.endeGeschaetzt ? ' (ungeprüft)' : '')
               : null;
-            const jaehrlicheZinsen = restschuld * (ergebnis.effZinssatz || 0) / 100;
-            const jaehrlicheTilgung = Math.max(0, monatlicheRate * 12 - jaehrlicheZinsen);
-            const schuldenfreiCa = jaehrlicheTilgung > 0 && restschuld > 0 ? `ca. ${heute.getFullYear() + Math.round(restschuld / jaehrlicheTilgung)}` : null;
+            const jaehrlicheZinsen = verlaufMFH ? verlaufMFH.zinsenImJahr(heute.getFullYear()) : restschuld * (ergebnis.effZinssatz || 0) / 100;
+            const jaehrlicheTilgung = verlaufMFH ? verlaufMFH.tilgungImJahr(heute.getFullYear()) : Math.max(0, monatlicheRate * 12 - jaehrlicheZinsen);
+            const schuldenfreiCa = verlaufMFH?.abbezahltHeute ? 'bereits' : verlaufMFH?.schuldenfrei ? `ca. ${verlaufMFH.schuldenfrei.getFullYear()}`
+              : (jaehrlicheTilgung > 0 && restschuld > 0 ? `ca. ${heute.getFullYear() + Math.round(restschuld / jaehrlicheTilgung)}` : null);
             const nettoEK = aktuellerWertMFH - restschuld;
             const offeneWE = belegteWohnungenListe.filter(w => berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, Number(w.kaltmiete) || 0, false).status !== 'bezahlt');
             return (
@@ -806,7 +794,7 @@ const MehrfamilienhausDetail = ({
                     <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-baseline justify-between gap-2 text-xs">
                       <span className="text-gray-500">Nach Tilgung <strong className={monatlichesErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}>{monatlichesErgebnis >= 0 ? '+' : ''}{formatCurrency(monatlichesErgebnis)}</strong></span>
                       <span className="text-gray-500">Vor Tilgung <strong className={cfMFH.vor >= 0 ? 'text-emerald-600' : 'text-red-600'}>{cfMFH.vor >= 0 ? '+' : ''}{formatCurrency(cfMFH.vor)}</strong></span>
-                      <span className="text-gray-400">{cfMFH.tilgung > 0 ? `davon ${formatCurrency(cfMFH.tilgung)} Tilgung — baut Eigenkapital auf` : 'schuldenfrei, keine Tilgung'}</span>
+                      <span className="text-gray-400">{cfMFH.schuldenfrei ? 'schuldenfrei, keine Tilgung' : cfMFH.tilgung > 0 ? `davon ${formatCurrency(cfMFH.tilgung)} Tilgung — baut Eigenkapital auf` : 'Darlehen läuft, keine Tilgung (endfällig)'}</span>
                     </div>
                   </button>
 
@@ -902,16 +890,6 @@ const MehrfamilienhausDetail = ({
           {/* ── FINANZEN: CASHFLOW (per Wohneinheit) ─────────────────────── */}
           {activeTab === 'cashflow' && (() => {
             // Aktuelle Kreditrate aus Finanzierungsphase oder Fallback
-            const kreditrate = (() => {
-              const ph = params.finanzierungsphasen?.[0];
-              if (ph?.rate) return ph.rate;
-              if (ph?.sollzinssatz && ph?.anfangstilgung) {
-                const sk = params.finanzierungsbetrag ?? 0;
-                const mz = ph.sollzinssatz / 100 / 12;
-                return sk > 0 ? Math.round(sk * (mz + (ph.anfangstilgung / 100 / 12))) : 0;
-              }
-              return params.kredit_monatsrate || 0;
-            })();
 
             // Aggregierte Werte für Gesamt-Tab
             const weKosten = wohnungen.map((w, idx) => {
@@ -1237,7 +1215,7 @@ const MehrfamilienhausDetail = ({
                             {aktivePhaseBerechnung && (
                               <div className="flex justify-between items-center pl-3 text-xs text-gray-400">
                                 <span>davon Zinsen (steuerlich absetzbar):</span>
-                                <span className="font-medium text-emerald-500">{formatCurrency(aktivePhaseBerechnung.zinsen * 12)} / Jahr</span>
+                                <span className="font-medium text-emerald-500">{formatCurrency(aktivePhaseBerechnung.zinsenJahr)} / Jahr</span>
                               </div>
                             )}
                           </>
