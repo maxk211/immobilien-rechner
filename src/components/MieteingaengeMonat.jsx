@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle2, Circle, AlertCircle, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, ChevronRight, Loader2, CalendarCheck, CalendarClock } from 'lucide-react';
+import KlappKopf from './KlappKopf';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 
@@ -100,32 +101,29 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
-      <div className={`flex items-center justify-between gap-3 px-5 py-3 ${zu ? '' : 'border-b border-gray-100'}`}>
-        <button type="button" onClick={() => setEingeklappt(!zu)} aria-expanded={!zu} className="flex items-center gap-2 min-w-0 text-left">
-          <ChevronDown size={16} className={`shrink-0 text-gray-400 transition-transform ${zu ? '-rotate-90' : ''}`} />
-          <span className="min-w-0">
-            <span className="font-bold text-gray-800">Mieteingänge {monatsName} {jahr}</span>
-            {buchbareEintraege.length > 0 && (
-              <span className="block sm:inline text-xs text-gray-500 sm:ml-2">
-                {verbucht} von {buchbareEintraege.length} verbucht · {formatCurrency(istSumme)} von {formatCurrency(sollSumme)}
-                {offeneEintraege.length > 0 ? ` · ${offeneEintraege.length} noch offen` : ' · alles da'}
-              </span>
-            )}
-          </span>
-        </button>
-        {!zu && offeneEintraege.length > 0 && (
+      <KlappKopf
+        id="mieteingaenge-inhalt"
+        icon={offeneEintraege.length === 0 ? CalendarCheck : CalendarClock}
+        titel={`Mieteingänge ${monatsName} ${jahr}`}
+        status={buchbareEintraege.length > 0
+          ? { text: `${verbucht} von ${buchbareEintraege.length} verbucht`, ton: offeneEintraege.length === 0 ? 'gruen' : buchbareEintraege.some(e => e.ueberfaellig && e.status === 'offen') || buchbareEintraege.some(e => e.status === 'nicht_bezahlt') ? 'rot' : 'gelb' }
+          : { text: 'keine Miete erwartet', ton: 'grau' }}
+        kontext={buchbareEintraege.length > 0 ? `${formatCurrency(istSumme)} von ${formatCurrency(sollSumme)}` : null}
+        offen={!zu}
+        onToggle={() => setEingeklappt(!zu)}
+        rechts={!zu && offeneEintraege.length > 0 ? (
           <button
             onClick={bucheAlle}
             disabled={bulkLaeuft}
             className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {bulkLaeuft && <Loader2 size={12} className="animate-spin" />}
-            Alle als eingegangen buchen
+            <span className="hidden sm:inline">Alle als eingegangen buchen</span><span className="sm:hidden">Alle buchen</span>
           </button>
-        )}
-      </div>
+        ) : null}
+      />
 
-      {!zu && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+      {!zu && <div id="mieteingaenge-inhalt" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
         {buchbareEintraege.map(eintrag => {
           const info = statusInfo(eintrag.ueberfaellig && eintrag.status === 'offen' ? 'ueberfaellig' : eintrag.status);
           const kannBuchen = eintrag.status === 'offen' || eintrag.status === 'teilweise' || eintrag.status === 'nicht_bezahlt';

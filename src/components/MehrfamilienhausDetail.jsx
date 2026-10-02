@@ -561,6 +561,7 @@ const MehrfamilienhausDetail = ({
                       {ergebnis.eigenkapitalRendite == null || ergebnis.ekRenditeNichtAussagekraeftig ? 'n. v.' : fmtKPI(ergebnis.eigenkapitalRendite)}
                     </div>
                     {ergebnis.eigenkapitalRendite == null && <div className="text-[10px] text-gray-400">kein Eigenkapital eingesetzt</div>}
+                    {ergebnis.ekRenditeNichtAussagekraeftig && <div className="text-[10px] text-gray-400">kaum Eigenkapital eingesetzt — Kennzahl nicht aussagekräftig</div>}
                     {ergebnis.ekRenditeNichtAussagekraeftig && <div className="text-[10px] text-gray-400">kaum Eigenkapital — nicht aussagekräftig</div>}
                   </div>
                   <div className="px-2 sm:px-4 py-2 sm:py-3">
@@ -1026,7 +1027,7 @@ const MehrfamilienhausDetail = ({
                                 {f.label}
                               </label>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <input id={`kosten-${cfWE}-${f.key}`} type="number" min={0} step={1}
+                                <ZahlInput id={`kosten-${cfWE}-${f.key}`} type="number" min={0} step={1}
                                   value={k[f.key] || ''}
                                   placeholder="0"
                                   onChange={e => updateWohnungKosten(cfWE, { ...k, [f.key]: parseFloat(e.target.value) || 0 })}

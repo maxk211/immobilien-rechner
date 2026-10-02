@@ -474,18 +474,23 @@ export const berechneRendite = (params) => {
   const jahresannuitaet = annuitaet * 12;
 
   const cashflowVorSteuern = nettoEinnahmen - jahresannuitaet;
-  const cashOnCash = gesamtEK > 0 ? (cashflowVorSteuern / gesamtEK) * 100 : 0;
+  // B4: Für Renditen zählt das tatsächlich eingesetzte Eigenkapital = Gesamtinvestition
+  // minus Darlehen. Die einzelnen EK-Felder können dem Darlehensbetrag widersprechen
+  // (z. B. Vollfinanzierung inkl. Nebenkosten, alte EK-Angabe noch gesetzt) — dann
+  // entstanden Werte wie 111 % auf einen Eigenkapital-Anteil, den es so nicht gab.
+  const ekEingesetzt = kreditLaeuftBereits ? gesamtEK : Math.max(0, gesamtinvestition - fremdkapital);
+  const cashOnCash = ekEingesetzt > 0 ? (cashflowVorSteuern / ekEingesetzt) * 100 : 0;
 
   // Abschnitt 7.5: bei 0€ Eigenkapital ist die EK-Rendite nicht 0%, sondern nicht
   // definiert (Division durch 0) — nur bei echtem 0-EK-Fall wird null zurückgegeben,
   // damit die UI "n. v." statt eines irreführenden "0,00%" in Rot anzeigen kann.
-  const eigenkapitalRenditeRoh = gesamtEK > 0 ? ((nettoEinnahmen + (kaufpreis * wertsteigerung / 100)) / gesamtEK) * 100 : 0;
-  const eigenkapitalRendite = gesamtEK > 0 ? eigenkapitalRenditeRoh : null;
+  const eigenkapitalRenditeRoh = ekEingesetzt > 0 ? ((nettoEinnahmen + (kaufpreis * wertsteigerung / 100)) / ekEingesetzt) * 100 : 0;
+  const eigenkapitalRendite = ekEingesetzt > 0 ? eigenkapitalRenditeRoh : null;
   // Teil 3, Abschnitt 5.6: unter 5 % Eigenkapitalquote ist die EK-Rendite mathematisch
   // richtig, als Kennzahl aber nicht aussagekräftig (winziger Nenner) — die UI zeigt
   // dann einen Hinweis statt einer Prozentzahl.
-  const eigenkapitalQuote = gesamtinvestition > 0 ? gesamtEK / gesamtinvestition : 0;
-  const ekRenditeNichtAussagekraeftig = gesamtEK > 0 && eigenkapitalQuote < 0.05;
+  const eigenkapitalQuote = gesamtinvestition > 0 ? ekEingesetzt / gesamtinvestition : 0;
+  const ekRenditeNichtAussagekraeftig = ekEingesetzt > 0 && eigenkapitalQuote < 0.05;
 
   const leverageEffekt = eigenkapitalRenditeRoh - nettorendite;
 
