@@ -77,6 +77,21 @@ serve(async (req) => {
       customerId = customer.id;
     }
 
+    // Partner-Programm: Nutzer, die über den Makler-QR-Code kamen, bekommen den
+    // Partner-Gutschein automatisch (Secret PARTNER_STRIPE_COUPON). Ohne Secret
+    // oder ohne Zuordnung bleibt alles wie bisher (Promo-Codes erlaubt).
+    // Gelesen mit dem Nutzer-JWT — RLS erlaubt nur die eigene Zuordnung.
+    const partnerCoupon = Deno.env.get('PARTNER_STRIPE_COUPON') ?? '';
+    let partnerRabatt = false;
+    if (partnerCoupon) {
+      const { data: zuordnung } = await supabase
+        .from('partner_zuordnungen')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      partnerRabatt = !!zuordnung;
+    }
+
     // Origin für Redirect-URLs
     const origin = req.headers.get('origin') ?? 'https://www.renditly.de';
 
@@ -94,9 +109,12 @@ serve(async (req) => {
       cancel_url:  `${origin}/app?checkout=cancel`,
       locale:      'de',
       subscription_data: {
-        metadata: { supabase_user_id: user.id },
+        metadata: { supabase_user_id: user.id, ...(partnerRabatt ? { partner: 'makler-qr' } : {}) },
       },
-      allow_promotion_codes: true,
+      // Stripe erlaubt entweder einen festen Gutschein ODER die Eingabe von Promo-Codes
+      ...(partnerRabatt
+        ? { discounts: [{ coupon: partnerCoupon }] }
+        : { allow_promotion_codes: true }),
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { Home, Check } from 'lucide-react';
+import { partnerMetadaten } from './utils/partner';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,8 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          // Partner-QR: gemerkte Makler-Wahl geht als Metadaten mit (Trigger legt die Zuordnung an)
+          options: { data: partnerMetadaten() },
         });
         if (error) throw error;
         setMessage('Registrierung erfolgreich! Du kannst dich jetzt einloggen.');

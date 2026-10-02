@@ -14,6 +14,7 @@ const KaufnebenkostenRechner = lazy(() => import('./rechner/KaufnebenkostenRechn
 const TilgungsplanRechner = lazy(() => import('./rechner/TilgungsplanRechner.jsx'))
 const SpekulationsfristRechner = lazy(() => import('./rechner/SpekulationsfristRechner.jsx'))
 const VermieterSoftwareLanding = lazy(() => import('./landing/VermieterSoftwareLanding.jsx'))
+const PartnerLanding = lazy(() => import('./partner/PartnerLanding.jsx'))
 const RenditlyVsImmoAnalyse = lazy(() => import('./vergleich/RenditlyVsImmoAnalyse.jsx'))
 const HilfeCenter = lazy(() => import('./hilfe/HilfeCenter.jsx'))
 const AboutPage = lazy(() => import('./trust/TrustPages.jsx').then((m) => ({ default: m.AboutPage })))
@@ -62,6 +63,7 @@ const ROUTES = {
   '/tilgungsplan-rechner': { Component: TilgungsplanRechner },
   '/spekulationsfrist-rechner': { Component: SpekulationsfristRechner },
   '/vermieter-software': { Component: VermieterSoftwareLanding },
+  '/partner': { Component: PartnerLanding },
   '/renditly-vs-immoanalyse': { Component: RenditlyVsImmoAnalyse },
   '/hilfe': { Component: HilfeCenter },
   '/about': { Component: AboutPage },

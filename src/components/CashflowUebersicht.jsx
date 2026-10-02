@@ -50,9 +50,10 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
     const result = berechneZinsUndTilgung(params, aktuellesJahr);
     if (!result || ergebnis.monatlicheRate <= 0) return null;
     return {
+      // Dieselbe Monatsliste wie der Finanzierungs-Reiter — auch im Startjahr nur die echten Monate
       zinsen: result.zinsen,
-      tilgung: Math.max(0, ergebnis.monatlicheRate * 12 - result.zinsen),
-      gesamt: ergebnis.monatlicheRate * 12,
+      tilgung: result.tilgung,
+      gesamt: result.zinsen + result.tilgung,
     };
   }, [params, ergebnis, aktuellesJahr]);
 
