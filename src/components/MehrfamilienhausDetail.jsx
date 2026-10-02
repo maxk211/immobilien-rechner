@@ -1358,9 +1358,10 @@ const MehrfamilienhausDetail = ({
             const addPhase = () => {
               const letzte = phasenBerechnet[phasenBerechnet.length - 1];
               updateParams({ ...params, finanzierungsphasen: [...finanzierungsphasen, {
-                id: Date.now(), name: `Anschlussfinanzierung ${finanzierungsphasen.length}`,
+                id: Date.now(), name: finanzierungsphasen.length ? `Anschlussfinanzierung ${finanzierungsphasen.length}` : 'Erstfinanzierung',
+                ...(finanzierungsphasen.length ? {} : { kreditStartDatum: new Date().toISOString().slice(0, 10) }),
                 darlehensTyp: letzte?.darlehensTyp || 'annuitaet',
-                sollzinssatz: (letzte?.sollzinssatz ?? 4) + 0.5,
+                sollzinssatz: letzte ? (letzte.sollzinssatz ?? 4) + 0.5 : 4,
                 anfangstilgung: letzte?.anfangstilgung ?? 2, monatlicherBetrag: null, zinsbindung: 10,
                 monatlicheTilgung: null, tilgungssatz: letzte?.tilgungssatz ?? 2, laufzeit: 10,
                 sondertilgungJaehrlich: 0, restschuldOverride: letzte?.restschuldNachZinsbindung ?? null,
@@ -1691,7 +1692,7 @@ const MehrfamilienhausDetail = ({
                   })}
                 </div>
                 <button onClick={addPhase} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm font-semibold transition-all">
-                  + Anschlussfinanzierung planen
+                  {finanzierungsphasen.length ? '+ Anschlussfinanzierung planen' : '+ Darlehen hinzufügen'}
                 </button>
 
                 {/* A.7: Bausparvertrag hat einen eigenen Reiter */}

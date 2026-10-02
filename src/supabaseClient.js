@@ -223,8 +223,43 @@ function dbToApp(db) {
   };
 }
 
+// Zahl- und Datumsspalten der Tabelle immobilien. Leere Eingabefelder liefern ""
+// — Postgres lehnt das für NUMERIC/INTEGER/DATE ab ("invalid input syntax for
+// type numeric"). Vor dem Speichern deshalb "" → null und Text → Zahl.
+const ZAHL_SPALTEN = new Set(['wohnflaeche', 'grundstueck', 'zimmer', 'kaufpreis', 'eigenkapital', 'ek_fuer_nebenkosten',
+  'ek_fuer_kaufpreis', 'kaltmiete', 'geschaetzter_wert', 'zinssatz', 'tilgung', 'finanzierungsbetrag', 'kaufnebenkosten',
+  'nebenkosten', 'instandhaltung', 'verwaltung', 'hausgeld', 'strom', 'internet', 'nebenkosten_vom_mieter', 'wertsteigerung',
+  'mietsteigerung', 'steuersatz', 'gebaeude_anteil_prozent', 'afa_satz', 'grundsteuer_monat', 'versicherung_monat',
+  'entfernung_km', 'km_pauschale', 'eigene_warmmiete', 'untermiete_pro_zimmer', 'arbitrage_strom', 'arbitrage_internet',
+  'arbitrage_gez', 'dauerauftrag_betrag', 'user_anteil', 'aktuelle_restschuld', 'kredit_monatsrate']);
+const GANZZAHL_SPALTEN = new Set(['baujahr', 'stockwerk', 'laufzeit', 'fahrten_pro_monat', 'anzahl_zimmer_vermietet',
+  'afa_degressiv_wechseljahr', 'zinsbindung_bis']);
+const DATUM_SPALTEN = new Set(['kaufdatum', 'aufgabedatum', 'mietvertrag_start', 'mietvertrag_ende']);
+
+export function zahlenBereinigen(row) {
+  const out = { ...row };
+  for (const [k, v] of Object.entries(out)) {
+    const zahl = ZAHL_SPALTEN.has(k), ganz = GANZZAHL_SPALTEN.has(k);
+    if (zahl || ganz) {
+      if (v === '' || v === null || v === undefined) { out[k] = v === undefined ? undefined : null; continue; }
+      if (typeof v === 'number') { out[k] = Number.isFinite(v) ? (ganz ? Math.round(v) : v) : null; continue; }
+      const t = String(v).trim();
+      if (t === '') { out[k] = null; continue; }
+      const n = Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t); // "1.234,5" oder "1234.5"
+      out[k] = Number.isFinite(n) ? (ganz ? Math.round(n) : n) : null;
+    } else if (DATUM_SPALTEN.has(k) && v === '') {
+      out[k] = null;
+    }
+  }
+  return out;
+}
+
 // Konvertierung: App -> Datenbank Format
 function appToDb(app) {
+  return zahlenBereinigen(appToDbRoh(app));
+}
+
+function appToDbRoh(app) {
   return {
     name: app.name,
     plz: app.plz,

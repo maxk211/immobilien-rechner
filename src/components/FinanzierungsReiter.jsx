@@ -4,6 +4,7 @@ import { formatCurrency } from '../utils/format.js';
 import { darlehensVerlauf, mitSondertilgung, anschlussRate, phasenZins } from '../utils/darlehen.js';
 import { beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import ZahlInput from './ZahlInput';
+import { showConfirm } from '../utils/confirm.jsx';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo, zinsbindungInfo, restschuldZbInfo } from './SchaetzInfo';
 
 // Finanzierungs-Reiter (UX-Paket Teil 3, Abschnitte 5–7):
@@ -54,6 +55,18 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
   const abbezahlt = v.abbezahltHeute;
   // Plausibilität (Teil 3, 8): Widerspruch → abhängige Werte aussetzen statt falsch zu rechnen
   const zbWiderspruch = !!(aktiv.ende && aktiv.start && aktiv.ende.getTime() <= aktiv.start.getTime() + 36 * 3600 * 1000);
+
+  // Darlehen komplett entfernen (falsch angelegt, z. B. Schenkung ohne Kredit) —
+  // nicht dasselbe wie "abbezahlt": danach gibt es weder Rate noch Restschuld noch Historie.
+  const darlehenEntfernen = async () => {
+    setMenuOffen(false);
+    const ok = await showConfirm('Darlehen komplett entfernen? Rate, Restschuld, Zinsen und Sondertilgungen dieses Objekts werden gelöscht. Nur nutzen, wenn das Darlehen falsch angelegt wurde — ein zurückgezahltes Darlehen bitte über „Darlehen abschließen → abbezahlt“ erfassen.');
+    if (!ok) return;
+    updateParams({
+      ...params, finanzierungsphasen: [], finanzierungsbetrag: 0,
+      kreditLaeuftBereits: false, aktuelleRestschuld: 0, kreditMonatsrate: 0,
+    });
+  };
 
   const setPhasen = (neu, extra = {}) => updateParams({ ...params, ...extra, finanzierungsphasen: neu, zinssatz: neu[0]?.sollzinssatz ?? params.zinssatz });
 
@@ -162,6 +175,10 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
             {menuOffen && (
               <div className="absolute right-0 top-9 w-56 bg-white border border-gray-200 rounded-xl shadow-xl z-30 overflow-hidden">
                 <button onClick={() => { setAbschlussIdx(aktiv.idx); setMenuOffen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">Darlehen abschließen</button>
+                <button onClick={darlehenEntfernen} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100">
+                  Darlehen entfernen
+                  <span className="block text-[11px] text-gray-400 font-normal">falls es falsch angelegt wurde</span>
+                </button>
               </div>
             )}
           </div>
