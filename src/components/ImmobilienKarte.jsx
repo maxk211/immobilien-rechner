@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Users, ChevronDown, ChevronUp, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { Home, Building2, ArrowLeftRight, MapPin, User, CircleDot, Pencil, X, Trash2, Users, ChevronDown, ChevronUp, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete } from '../utils/miete.js';
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, getAktuellerGesamtwert } from '../utils/berechnung.js';
@@ -107,10 +107,10 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="w-7 h-7 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
-              title="Löschen"
+              className="w-7 h-7 flex items-center justify-center text-white/50 hover:text-white hover:bg-red-500/70 rounded-lg transition-colors"
+              title="Immobilie löschen" aria-label="Immobilie löschen"
             >
-              <X size={16}/>
+              <Trash2 size={14}/>
             </button>
           </div>
         </div>

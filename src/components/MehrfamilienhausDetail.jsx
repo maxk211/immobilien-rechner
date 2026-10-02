@@ -176,7 +176,7 @@ const MFH_OBJEKT_IDS = ['stammdaten', 'kaufwert', 'investitionen', 'zaehler', 'd
 
 // ─── MehrfamilienhausDetail ───────────────────────────────────────────────────
 const MehrfamilienhausDetail = ({
-  immobilie, onClose, onEdit, onSave, initialTab, onAlleErinnerungen,
+  immobilie, onClose, onEdit, onSave, initialTab, onAlleErinnerungen, onDeleteImmobilie,
   mieterListe = [], onSaveMieter, onDeleteMieter,
   nkAbrechnungen = [], onSaveNK, onDeleteNK,
   portfolio = [], aufgaben = [],
@@ -511,6 +511,7 @@ const MehrfamilienhausDetail = ({
                   aktiv={params.aktiv}
                   onAufgeben={(datum) => updateParams({ ...params, aktiv: false, aufgabedatum: datum })}
                   onReaktivieren={() => updateParams({ ...params, aktiv: true, aufgabedatum: '' })}
+                  onLoeschen={onDeleteImmobilie}
                 />
                 {onEdit && (
                   <button onClick={() => setActiveTab('stammdaten')}
