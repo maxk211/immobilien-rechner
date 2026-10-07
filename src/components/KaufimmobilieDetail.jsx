@@ -6,6 +6,7 @@ import { berechneWertsteigerungSeitKauf, berechneRendite, kostenStruktur, berech
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import FinanzierungsReiter from './FinanzierungsReiter';
 import PlausiPruefung from './PlausiPruefung';
+import SonderumlagenManager from './SonderumlagenManager';
 import NachforderungenManager from './NachforderungenManager';
 import { pruefeImmobilie, zaehle, brauchtErinnerung, unauffaelligeWerte } from '../utils/plausibilitaet.js';
 import InputSliderCombo from './InputSliderCombo.jsx';
@@ -1030,6 +1031,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   ['objekt-stammdaten', 'Stammdaten'],
                   ['objekt-kaufwert', 'Kauf & Wert'],
                   ['objekt-weg', 'WEG & Verwaltung'],
+                  ['objekt-sonderumlagen', 'Sonderumlagen'],
                   ['objekt-investitionen', 'Investitionen'],
                   ['objekt-zaehler', 'Zähler'],
                   ['objekt-dokumente', 'Dokumente'],
@@ -1284,6 +1286,9 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 </div>
               </div>
 
+              {/* Sonderumlagen + Erhaltungsrücklage der WEG — Cashflow und Steuer */}
+              <SonderumlagenManager params={params} updateParams={updateParams} />
+
               {/* Stellplatz */}
               {(() => {
                 const sp = params.stellplatz || {};
@@ -1407,7 +1412,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <div id="objekt-investitionen">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Investitionen</h3>
                 <ReparaturenInvestitionen
-                  immobilie={{...immobilie, investitionen: params.investitionen}}
+                  immobilie={{...immobilie, ...params}}
                   onUpdate={(updated) => {
                     updateParams({...params, investitionen: updated.investitionen});
                   }}

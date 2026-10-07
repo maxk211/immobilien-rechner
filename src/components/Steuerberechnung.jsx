@@ -5,6 +5,7 @@ import { getXLSX, getJsPDF } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
 import { getJahresDurchschnittFuerFeld, zahlerAnteilJahr } from '../utils/miete.js';
 import { berechneZinsUndTilgung } from '../utils/berechnung.js';
+import { hausgeldSteuerJahr, steuerEintraege } from '../utils/sonderumlage.js';
 import InfoHint from './InfoHint';
 import ZahlInput from './ZahlInput';
 
@@ -35,7 +36,9 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
   const entfernungKm = params.entfernungKm || 0;
   const kmPauschale = params.kmPauschale || 0.30;
   const fahrtenListe = params.fahrtenListe || [];
-  const investitionen = params.investitionen || [];
+  // Steuerlich relevante Einträge: eigene Investitionen + Sonderumlagen der WEG
+  // (Erhaltung/Rücklage im Jahr der Verwendung, Modernisierung über die AfA), 15-%-Regel angewandt.
+  const investitionen = steuerEintraege(params);
   // Neue Anlage-V-Felder
   const grundsteuerMonat = params.grundsteuerMonat || 0;
   const versicherungMonat = params.versicherungMonat || 0;
@@ -145,7 +148,11 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     // Strom, Heizung, Internet, Rundfunk bei Warm-/Pauschalmiete sind ebenfalls Werbungskosten.
     const jahresNebenkosten = ['nebenkosten', 'strom', 'heizung', 'internet', 'rundfunk']
       .reduce((sum, f) => sum + getJahresDurchschnittFuerFeld(params, jahr, f) * 12 * zahlerAnteilJahr(params, f, jahr), 0);
-    const laufendeKosten = jahresInstandhaltung + jahresVerwaltung + jahresHausgeld + jahresGrundsteuer + jahresVersicherung + jahresNebenkosten;
+    // Eigene Rücklage für Reparaturen (instandhaltung) ist KEIN Werbungskostenabzug — absetzbar
+    // ist erst die bezahlte Reparatur (unter Reparaturen & Investitionen erfassen).
+    // Hausgeld: Zuführung zur Erhaltungsrücklage erst bei Verwendung (BFH IX R 19/24).
+    const hgSteuer = hausgeldSteuerJahr(params, jahr, jahresHausgeld);
+    const laufendeKosten = jahresVerwaltung + hgSteuer.abziehbar + jahresGrundsteuer + jahresVersicherung + jahresNebenkosten;
 
     // Finanzierungskosten (nur Zinsen - Tilgung ist nicht absetzbar!)
     // Exakte Berechnung mit Anschlussfinanzierungs-Unterstützung (monatsgenaue Iteration)
@@ -240,9 +247,14 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       afaBemessungsgrundlage: Math.round(afaBemessungsgrundlage),
       gueltigerAfaSatz,
       restbuchwert: restbuchwert !== null ? Math.round(restbuchwert) : null,
-      instandhaltung: Math.round(jahresInstandhaltung), // Z. 33 — Erhaltungsaufwand laufend
+      eigeneRuecklage: Math.round(jahresInstandhaltung), // Info — nicht absetzbar (private Rücklage)
       verwaltung: Math.round(jahresVerwaltung),    // Z. 34 — Verwaltungskosten
-      hausgeld: Math.round(jahresHausgeld),        // Z. 35 — Hausgeld/WEG
+      hausgeld: Math.round(hgSteuer.abziehbar),    // Z. 36 — Hausgeld/WEG ohne Rücklagenzuführung, + Verwendung
+      hausgeldGezahlt: Math.round(jahresHausgeld),
+      ruecklageZufuehrung: Math.round(hgSteuer.zufuehrung),
+      ruecklageVerwendung: Math.round(hgSteuer.verwendung),
+      ruecklageAnteilUnbekannt: !hgSteuer.bekannt && jahresHausgeld > 0,
+      anschaffungsnah: investitionenDiesesJahr.some(i => i.anschaffungsnah),
       grundsteuer: Math.round(jahresGrundsteuer),  // Z. 34 — Grundsteuer
       versicherung: Math.round(jahresVersicherung),// Z. 35 — Versicherungen
       nebenkosten: Math.round(jahresNebenkosten),  // Z. 50 — Sonstige Werbungskosten
@@ -294,11 +306,10 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
       ['Schuldzinsen', 'Z. 9', ...alleJahreDaten.map(d => d.zinsen)],
       ['AfA Gebäude', 'Z. 13', ...alleJahreDaten.map(d => d.afa)],
       [`AfA-Satz: ${afaSatz}% | Bemessungsgrundlage: ${formatCurrency(params.kaufpreis * (gebaeudeAnteilProzent / 100))}`, 'Info', ...verfuegbareJahre.map(() => '')],
-      ['Erhaltungsaufwand (laufend)', 'Z. 33a', ...alleJahreDaten.map(d => d.instandhaltung)],
-      ['Erhaltungsaufwand (einmalig)', 'Z. 33b', ...alleJahreDaten.map(d => d.investitionenSofort)],
+      ['Erhaltungsaufwand', 'Z. 33', ...alleJahreDaten.map(d => d.investitionenSofort)],
       ['Grundsteuer', 'Z. 34', ...alleJahreDaten.map(d => d.grundsteuer)],
       ['Versicherungen', 'Z. 35', ...alleJahreDaten.map(d => d.versicherung)],
-      ['Hausgeld / WEG-Rücklagen', 'Z. 36', ...alleJahreDaten.map(d => d.hausgeld)],
+      ['Hausgeld / WEG (ohne Zuführung Erhaltungsrücklage, inkl. deren Verwendung)', 'Z. 36', ...alleJahreDaten.map(d => d.hausgeld)],
       ['Verwaltungskosten', 'Z. 37', ...alleJahreDaten.map(d => d.verwaltung)],
       ['Fahrtkosten (§ 9 Abs. 1 EStG)', 'Z. 40', ...alleJahreDaten.map(d => d.fahrtkosten)],
       ['Sonstige Betriebskosten', 'Z. 50', ...alleJahreDaten.map(d => d.nebenkosten)],
@@ -342,8 +353,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
         ['B. WERBUNGSKOSTEN'],
         ['Schuldzinsen (Z. 9)', d.zinsen],
         [`AfA Gebäude (Z. 13) — ${d.gueltigerAfaSatz}% von ${formatCurrency(d.afaBemessungsgrundlage)}`, d.afa],
-        ['Erhaltungsaufwand laufend (Z. 33)', d.instandhaltung],
-        ['Erhaltungsaufwand einmalig (Z. 33)', d.investitionenSofort],
+        ['Erhaltungsaufwand (Z. 33)', d.investitionenSofort],
         ['Grundsteuer (Z. 34)', d.grundsteuer],
         ['Versicherungen (Z. 35)', d.versicherung],
         ['Hausgeld / WEG (Z. 36)', d.hausgeld],
@@ -418,8 +428,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
     const werbungskostenRows = [
       ['Schuldzinsen', 'Z. 9', d.zinsen],
       [`AfA Gebäude (${d.gueltigerAfaSatz}%)`, 'Z. 13', d.afa],
-      ...(d.investitionenSofort > 0 ? [['Erhaltungsaufwand (einmalig)', 'Z. 33', d.investitionenSofort]] : []),
-      ...(d.instandhaltung > 0 ? [['Erhaltungsaufwand (laufend)', 'Z. 33', d.instandhaltung]] : []),
+      ...(d.investitionenSofort > 0 ? [['Erhaltungsaufwand', 'Z. 33', d.investitionenSofort]] : []),
       ...(d.grundsteuer > 0 ? [['Grundsteuer', 'Z. 34', d.grundsteuer]] : []),
       ...(d.versicherung > 0 ? [['Versicherungen', 'Z. 35', d.versicherung]] : []),
       ...(d.hausgeld > 0 ? [['Hausgeld / WEG', 'Z. 36', d.hausgeld]] : []),
@@ -619,9 +628,7 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
               {selectedDaten.investitionenSofort > 0 && (
                 <AnlageVZeile zeile="Z. 33" label="Erhaltungsaufwand (einmalig)" betrag={a(selectedDaten.investitionenSofort)} color="orange" badge="Einmaleffekt" />
               )}
-              {selectedDaten.instandhaltung > 0 && (
-                <AnlageVZeile zeile="Z. 33" label="Erhaltungsaufwand (laufend)" betrag={a(selectedDaten.instandhaltung)} color="red" />
-              )}
+
               {selectedDaten.grundsteuer > 0 && (
                 <AnlageVZeile zeile="Z. 34" label="Grundsteuer" betrag={a(selectedDaten.grundsteuer)} color="red" />
               )}
@@ -629,7 +636,16 @@ const Steuerberechnung = ({ params, ergebnis, immobilie, onUpdateParams, anteilF
                 <AnlageVZeile zeile="Z. 35" label="Versicherungen" betrag={a(selectedDaten.versicherung)} color="red" />
               )}
               {selectedDaten.hausgeld > 0 && (
-                <AnlageVZeile zeile="Z. 36" label="Hausgeld / WEG" betrag={a(selectedDaten.hausgeld)} color="red" />
+                <AnlageVZeile zeile="Z. 36" label={selectedDaten.ruecklageZufuehrung > 0 || selectedDaten.ruecklageVerwendung > 0 ? 'Hausgeld / WEG (ohne Rücklagenzuführung)' : 'Hausgeld / WEG'} betrag={a(selectedDaten.hausgeld)} color="red" />
+              )}
+              {(selectedDaten.ruecklageZufuehrung > 0 || selectedDaten.ruecklageVerwendung > 0 || selectedDaten.ruecklageAnteilUnbekannt || selectedDaten.eigeneRuecklage > 0 || selectedDaten.anschaffungsnah) && (
+                <div className="mt-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900 space-y-1">
+                  {selectedDaten.ruecklageZufuehrung > 0 && <p>Hausgeld {formatCurrency(a(selectedDaten.hausgeldGezahlt))} gezahlt, davon {formatCurrency(a(selectedDaten.ruecklageZufuehrung))} Zuführung zur Erhaltungsrücklage — erst absetzbar, wenn die WEG das Geld ausgibt (BFH IX R 19/24).</p>}
+                  {selectedDaten.ruecklageVerwendung > 0 && <p>Enthalten: {formatCurrency(a(selectedDaten.ruecklageVerwendung))} dein Anteil an Entnahmen aus der Rücklage für Erhaltung (laut Jahresabrechnung).</p>}
+                  {selectedDaten.ruecklageAnteilUnbekannt && <p>Der Anteil der Erhaltungsrücklage am Hausgeld ist nicht eingetragen — das Hausgeld ist deshalb voll angesetzt. Laut BFH ist die Zuführung erst bei Verwendung absetzbar. Wert aus dem Wirtschaftsplan unter Objekt → WEG eintragen.</p>}
+                  {selectedDaten.eigeneRuecklage > 0 && <p>Deine eigene Rücklage für Reparaturen ({formatCurrency(a(selectedDaten.eigeneRuecklage))}) ist nicht absetzbar — absetzbar ist die bezahlte Reparatur unter „Reparaturen & Investitionen“.</p>}
+                  {selectedDaten.anschaffungsnah && <p>15-%-Grenze in den ersten drei Jahren nach dem Kauf überschritten: Erhaltungsaufwand in diesem Zeitraum gilt als anschaffungsnahe Herstellungskosten und läuft über die AfA.</p>}
+                </div>
               )}
               {selectedDaten.verwaltung > 0 && (
                 <AnlageVZeile zeile="Z. 37" label="Verwaltungskosten" betrag={a(selectedDaten.verwaltung)} color="red" />

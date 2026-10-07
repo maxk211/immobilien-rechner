@@ -3,6 +3,7 @@ import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktue
 import { darlehensVerlauf, anfangsFremdkapital } from './darlehen.js';
 import { bausparMonat } from './bauspar.js';
 import { normalisiereImmobilie, zahl } from './zahlen.js';
+import { sonderumlageImMonat } from './sonderumlage.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
@@ -660,6 +661,8 @@ export const cashflowMonat = (immo, heute = new Date()) => {
   const bauspar = bs.gesamt;
 
   const einnahmen = kaltmiete + nkImCashflow + stellplatz;
+  // Sonderumlage der WEG: einmalige Zahlung im Monat der Fälligkeit (beide Cashflow-Werte)
+  const sonderumlage = immo.immobilienTyp === 'mietimmobilie' ? 0 : sonderumlageImMonat(immo, heute);
   // "schuldenfrei" hängt allein an der Restschuld — nie am Tilgungsanteil (ein endfälliges
   // Darlehen hat Tilgung 0 und ist trotzdem nicht schuldenfrei).
   const restschuld = dv ? Math.max(0, dv.restschuldHeute || 0) : Math.max(0, berechneRestschuld(immo)?.restschuld || 0);
@@ -667,9 +670,9 @@ export const cashflowMonat = (immo, heute = new Date()) => {
     restschuld, schuldenfrei: restschuld < 0.5,
     kaltmiete, nkImCashflow, stellplatz, einnahmen, betrieb, ks,
     rate, zinsen, tilgung, bauspar, bausparTilgung: bs.tilgung, bausparKosten: bs.kosten,
-    vermoegensaufbau: tilgung + bs.tilgung,
-    vor: einnahmen - betrieb - zinsen - bs.kosten,
-    nach: einnahmen - betrieb - rate - bauspar,
+    vermoegensaufbau: tilgung + bs.tilgung, sonderumlage,
+    vor: einnahmen - betrieb - zinsen - bs.kosten - sonderumlage,
+    nach: einnahmen - betrieb - rate - bauspar - sonderumlage,
     hatKredit: rate > 0,
   };
 };

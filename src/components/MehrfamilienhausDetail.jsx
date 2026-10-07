@@ -2110,7 +2110,7 @@ const MehrfamilienhausDetail = ({
                 <div id="mfh-objekt-investitionen">
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide pt-2 mb-3">Investitionen</h3>
                   <ReparaturenInvestitionen
-                    immobilie={{ ...immobilie, investitionen: params.investitionen }}
+                    immobilie={{ ...immobilie, ...params }}
                     onUpdate={(updated) => updateParams({ ...params, investitionen: updated.investitionen })}
                   />
                 </div>

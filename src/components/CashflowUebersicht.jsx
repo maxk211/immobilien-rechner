@@ -3,6 +3,7 @@ import { Wallet, Landmark, AlertTriangle, ParkingSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung, kostenStruktur, cashflowMonat } from '../utils/berechnung.js';
+import { sonderumlageImJahr } from '../utils/sonderumlage.js';
 import { bausparMonat } from '../utils/bauspar.js';
 import { nachforderungMonat, nachforderungJahr, hatNachforderungen, heuteKey } from '../utils/nachforderung.js';
 
@@ -83,8 +84,9 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
   const einnahmenJahr = (monat.einnahmen + monat.stellplatz + ksJahr.nkImCashflow) * 12;
   const jZinsenJahr = jahresKredit?.zinsen ?? monat.zinsen * 12;
   const jGesamtJahr = jahresKredit?.gesamt ?? monat.kreditrate * 12;
-  const vorTilgungJahr = a(einnahmenJahr) - a(betriebJahr) - a(jZinsenJahr) - a(cfGemeinsam.bausparKosten) * 12;
-  const nachTilgungJahr = a(einnahmenJahr) - a(betriebJahr) - a(jGesamtJahr) - a(monat.bauspar) * 12;
+  const sonderumlageJahr = sonderumlageImJahr(params, aktuellesJahr);
+  const vorTilgungJahr = a(einnahmenJahr) - a(betriebJahr) - a(jZinsenJahr) - a(cfGemeinsam.bausparKosten) * 12 - a(sonderumlageJahr);
+  const nachTilgungJahr = a(einnahmenJahr) - a(betriebJahr) - a(jGesamtJahr) - a(monat.bauspar) * 12 - a(sonderumlageJahr);
 
   // ── Jahresverlaufsdaten ────────────────────────────────────────────────────
   const verlaufDaten = useMemo(() => {
@@ -143,14 +145,16 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       const bsJ = bausparMonat(params, new Date(jahr, 5, 15));
       const bauspar = bsJ.gesamt * 12;
       const bausparKosten = bsJ.kosten * 12; // Rücklage zählt auch "vor Tilgung", Tilgungsersatz nicht
+      // Einmalausgaben: eigene Investitionen + Sonderumlagen der WEG (im Jahr der Zahlung)
+      const sonderumlage = sonderumlageImJahr(params, jahr);
       const einmalInvest = investitionen
         .filter(inv => new Date(inv.datum).getFullYear() === jahr)
-        .reduce((sum, inv) => sum + inv.betrag, 0);
+        .reduce((sum, inv) => sum + inv.betrag, 0) + sonderumlage;
 
       // Cashflow vor Tilgung: Einnahmen − Betrieb − Zinsen (exakt, phasenaware) − Bauspar
       const zinsResult = berechneZinsUndTilgung(params, jahr);
       const jahresZinsen = zinsResult?.zinsen ?? 0;
-      const cfVorTilgung = einnahmen - betrieb - jahresZinsen - bausparKosten;
+      const cfVorTilgung = einnahmen - betrieb - jahresZinsen - bausparKosten - sonderumlage;
 
       // Cashflow nach Tilgung: Einnahmen − Betrieb − Kreditrate − Bauspar − Einmalinvestitionen
       // Nachforderung mit Ratenplan (vorübergehend): Rückzahlungen der Mieter − Raten an den Anbieter
@@ -326,6 +330,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
               <Z label="Tilgung (Eigenkapitalaufbau)" color="blue" einzug wert={monat.tilgung} jahrWert={jahresKredit?.tilgung} />
               {cfGemeinsam.bausparTilgung > 0 && <Z label="Bausparrate · Tilgungsersatz (Vermögensaufbau)" color="blue" einzug wert={cfGemeinsam.bausparTilgung} />}
               {cfGemeinsam.bausparKosten > 0 && <Z label="Bausparrate · Rücklage fürs Objekt" color="orange" wert={cfGemeinsam.bausparKosten} />}
+              {(cfGemeinsam.sonderumlage > 0 || sonderumlageJahr > 0) && <Z label="Sonderumlage der WEG (einmalig)" color="orange" wert={cfGemeinsam.sonderumlage} jahrWert={sonderumlageJahr} />}
 
               <Z label="Cashflow vor Tilgung" color={monat.vorTilgung >= 0 ? 'green' : 'red'} plus bold separator
                 wert={monat.vorTilgung} jahrWert={vorTilgungJahr / (anteilFaktor || 1)} />
@@ -435,7 +440,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
                   <th className="text-right p-2 text-emerald-600 font-semibold">Einnahmen</th>
                   <th className="text-right p-2 text-red-500 font-semibold">Betrieb</th>
                   <th className="text-right p-2 text-red-600 font-semibold">Kreditrate</th>
-                  <th className="text-right p-2 text-orange-500 font-semibold">Invest.</th>
+                  <th className="text-right p-2 text-orange-500 font-semibold" title="Einmalausgaben: Investitionen und Sonderumlagen">Einmal</th>
                   <th className="text-right p-2 text-emerald-500 font-semibold">CF vor Tilg.</th>
                   <th className="text-right p-2 font-bold text-gray-800">CF nach Tilg.</th>
                   <th className="text-right p-2 text-indigo-600 font-semibold rounded-r">Kumuliert</th>

@@ -10,6 +10,7 @@ import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
 import { darlehensVerlauf, anfangsFremdkapital } from '../utils/darlehen.js';
 import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
 import KlappKopf from './KlappKopf';
+import { sonderumlageHinweise } from '../utils/sonderumlage.js';
 
 // Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
 // "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
@@ -104,6 +105,29 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
           kategorie: 'Finanzierung',
           titel: 'Bausparsumme fehlt — Zuteilung und Bauspardarlehen lassen sich nicht berechnen',
           sub: name, immoId: immo.id, badge: 'Ergänzen', targetTab: 'bauspar',
+        });
+      }
+    });
+  });
+
+  // ── 1c. Sonderumlagen: Zahlung fällig / Verwendung für die Steuer eintragen ────────
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie' || immo.aktiv === false) return;
+    const name = immo.name || immo.adresse || 'Immobilie';
+    sonderumlageHinweise(immo, heute).forEach((h, i) => {
+      if (h.typ === 'faellig') {
+        todos.push({
+          id: `sonderumlage-faellig-${immo.id}-${h.su.id ?? i}-${h.zahlung.datum}`, priority: 'gelb', icon: <Landmark size={16} />,
+          kategorie: 'Finanzierung',
+          titel: `Sonderumlage ${formatCurrency(h.zahlung.betrag)} fällig am ${new Date(h.zahlung.datum).toLocaleDateString('de-DE')}`,
+          sub: `${name} · ${h.su.titel || 'Sonderumlage'}`, immoId: immo.id, badge: 'Bald', targetTab: 'stammdaten',
+        });
+      } else {
+        todos.push({
+          id: `sonderumlage-verwendung-${immo.id}-${h.su.id ?? i}`, priority: 'grau', icon: <ScrollText size={16} />,
+          kategorie: 'Steuer',
+          titel: `Sonderumlage: ${formatCurrency(h.offen)} noch ohne Verwendung — Jahresabrechnung prüfen`,
+          sub: `${name} · ${h.su.titel || 'Sonderumlage'} · erst absetzbar, wenn die WEG das Geld ausgibt`, immoId: immo.id, badge: 'Steuer', targetTab: 'stammdaten',
         });
       }
     });
