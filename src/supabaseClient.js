@@ -46,6 +46,8 @@ const ZUSATZ_KEYS = [
   'nachforderungen', // Nachforderung mit Ratenplan (z. B. Strom-Nachzahlung, von Mietern in Raten zurückgezahlt)
   // Wer zahlt welche Kosten (mit Datum) + neue Positionen
   'kostenZahler', 'heizung', 'rundfunk', 'arbitrageHeizung',
+  // Sonderumlagen der WEG + Erhaltungsrücklage über das Hausgeld (steuerlich erst bei Verwendung)
+  'sonderumlagen', 'hausgeldRuecklage', 'ruecklageVerwendung',
 ];
 
 // Immobilie speichern (neu oder update)

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Wrench, Home, ClipboardList, Leaf, Package, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
+import { regel15 as regel15Berechnen, sonderumlagenAlsInvestitionen } from '../utils/sonderumlage.js';
 
 const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
   const [investitionen, setInvestitionen] = useState(immobilie.investitionen || []);
@@ -59,44 +60,23 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
   // Reparaturen innerhalb von 3 Jahren nach Kauf dürfen max. 15% des
   // Gebäudewerts (Kaufpreis ohne Grundstück) betragen — sonst werden sie
   // zu "anschaffungsnahen Herstellungskosten" (nur noch via AfA absetzbar).
+  // Dieselbe Rechnung wie die Steuer (utils/sonderumlage.js): Basis = Gebäudeanteil am Kaufpreis
+  // inkl. Nebenkosten (vorher: Kaufpreis minus Grundstücks-m² — die Grenze war viel zu hoch),
+  // Sonderumlagen der WEG zählen mit.
   const regel15 = useMemo(() => {
-    const kaufdatum = immobilie.kaufdatum;
-    const kaufpreis = immobilie.kaufpreis || 0;
-    const grundstueck = immobilie.grundstueck || 0;
-    const gebaeudewert = kaufpreis - grundstueck;
-
-    if (!kaufdatum || gebaeudewert <= 0) return null;
-
-    const kauf = new Date(kaufdatum);
-    const fensterEnde = new Date(kauf);
-    fensterEnde.setFullYear(fensterEnde.getFullYear() + 3);
+    const r = regel15Berechnen(immobilie, [...investitionen, ...sonderumlagenAlsInvestitionen(immobilie)]);
+    if (!r || !(r.gebaeudewert > 0)) return null;
     const heute = new Date();
-
-    // Nur relevant wenn noch im 3-Jahres-Fenster oder kürzlich abgelaufen
-    const nochImFenster = heute <= fensterEnde;
-    const abgelaufenSeit = nochImFenster ? 0 : Math.floor((heute - fensterEnde) / (1000 * 60 * 60 * 24 * 30.44));
-    if (abgelaufenSeit > 6) return null; // Fenster vor >6 Monaten abgelaufen → ausblenden
-
-    // Relevante Kosten: Erhaltungsaufwand, Modernisierung, Herstellungskosten
-    // (nicht: Anschaffungsnebenkosten, nicht_relevant)
-    const relevantKategorien = ['erhaltung', 'modernisierung', 'herstellung'];
-    const relevantKosten = investitionen
-      .filter(inv => {
-        const d = new Date(inv.datum);
-        return d >= kauf && d <= fensterEnde && relevantKategorien.includes(inv.kategorie);
-      })
-      .reduce((sum, inv) => sum + inv.betrag, 0);
-
-    const grenze = gebaeudewert * 0.15;
-    const prozent = grenze > 0 ? Math.min((relevantKosten / grenze) * 100, 100) : 0;
-    const restBis15 = Math.max(0, grenze - relevantKosten);
-    const ueberschritten = relevantKosten > grenze;
-    const warnung = !ueberschritten && prozent >= 75;
-
-    const monate = Math.max(0, Math.ceil((fensterEnde - heute) / (1000 * 60 * 60 * 24 * 30.44)));
-
-    return { gebaeudewert, grenze, relevantKosten, prozent, restBis15, ueberschritten, warnung, nochImFenster, monate };
-  }, [investitionen, immobilie.kaufdatum, immobilie.kaufpreis, immobilie.grundstueck]);
+    const abgelaufenSeit = r.nochImFenster ? 0 : Math.floor((heute - r.fensterEnde) / (1000 * 60 * 60 * 24 * 30.44));
+    if (abgelaufenSeit > 6) return null; // Fenster vor > 6 Monaten abgelaufen → ausblenden
+    const prozent = r.grenze > 0 ? Math.min((r.summe / r.grenze) * 100, 100) : 0;
+    return {
+      gebaeudewert: r.gebaeudewert, grenze: r.grenze, relevantKosten: r.summe, prozent,
+      restBis15: Math.max(0, r.grenze - r.summe), ueberschritten: r.ueberschritten,
+      warnung: !r.ueberschritten && prozent >= 75, nochImFenster: r.nochImFenster,
+      monate: Math.max(0, Math.ceil((r.fensterEnde - heute) / (1000 * 60 * 60 * 24 * 30.44))),
+    };
+  }, [investitionen, immobilie]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -147,7 +127,7 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
             />
           </div>
           <div className="text-[10px] text-gray-400 mt-1">
-            Gebäudewert (ohne Grundstück): {formatCurrency(regel15.gebaeudewert)} · Grenze: 15% = {formatCurrency(regel15.grenze)}
+            Gebäude-Anschaffungskosten (Gebäudeanteil inkl. Nebenkosten): {formatCurrency(regel15.gebaeudewert)} · Grenze: 15% = {formatCurrency(regel15.grenze)}
           </div>
         </div>
       )}

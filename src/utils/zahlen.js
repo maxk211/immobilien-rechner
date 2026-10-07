@@ -47,7 +47,7 @@ const IMMO_FELDER = [
   'versicherungMonat', 'entfernungKm', 'kmPauschale', 'fahrtenProMonat', 'eigeneWarmmiete', 'anzahlZimmerVermietet',
   'untermieteProZimmer', 'arbitrageStrom', 'arbitrageInternet', 'arbitrageGEZ', 'arbitrageSonstige', 'arbitrageHeizung',
   'dauerauftragBetrag', 'userAnteil', 'aktuelleRestschuld', 'kreditMonatsrate',
-  'hausgeldNichtUmlagefaehig', 'kontofuehrung', 'heizung', 'rundfunk', 'kappungsgrenze', 'mieteFaelligkeitstag',
+  'hausgeldNichtUmlagefaehig', 'hausgeldRuecklage', 'kontofuehrung', 'heizung', 'rundfunk', 'kappungsgrenze', 'mieteFaelligkeitstag',
 ];
 const PHASEN_FELDER = ['sollzinssatz', 'zinssatz', 'effektivzins', 'anfangstilgung', 'tilgungssatz', 'zinsbindung', 'laufzeit',
   'monatlicherBetrag', 'monatlicheTilgung', 'restschuldOverride', 'sondertilgungErlaubtProzent', 'sondertilgungJaehrlich',

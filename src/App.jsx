@@ -6,6 +6,7 @@ import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, deleteDokument, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
 import { anfangsFremdkapital } from './utils/darlehen.js';
+import { hausgeldSteuerJahr, erhaltungsaufwandJahr } from './utils/sonderumlage.js';
 import ImmobilieLoeschenDialog from './components/ImmobilieLoeschenDialog';
 import { isFounderEmail } from './config/payments';
 import { partnerZuordnungAbschliessen } from './utils/partner';
@@ -902,7 +903,10 @@ function App() {
     // Einzelne Kostentöpfe für detaillierte Übersicht
     let gesamtEinnahmen = 0;
     let sumSchuldzinsen = 0;
-    let sumInstandhaltung = 0;
+    let sumEigeneRuecklage = 0; // nur Info — nicht absetzbar
+    let sumUmlagen = 0;          // NK-Vorauszahlungen der Mieter (Einnahme)
+    let sumGrundsteuer = 0;
+    let sumVersicherung = 0;
     let sumVerwaltung = 0;
     let sumHausgeld = 0;
     let sumStrom = 0;
@@ -917,15 +921,22 @@ function App() {
       const kaufpreis = immo.kaufpreis || 0;
 
       const kaltmiete = berechneJahresmiete(immo, jahr);
-      gesamtEinnahmen += kaltmiete;
+      // Umlagen (NK-Vorauszahlungen) sind Einnahmen — das Hausgeld dafür steht in den Werbungskosten
+      const umlagen = (immo.vermietungsmodell === 'kaltmiete_nk' ? getJahresDurchschnittFuerFeld(immo, jahr, 'nebenkostenVomMieter') * 12 * faktor : 0);
+      sumUmlagen += umlagen;
+      gesamtEinnahmen += kaltmiete + umlagen;
 
       // Annuitätisch korrekte Schuldzinsen (sinken mit steigender Tilgung, phasenbewusst)
       sumSchuldzinsen   += berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
       // Jahresgenau via getJahresDurchschnittFuerFeld: berücksichtigt Kostenanpassungen
       // (Bug-Fix: vorher wurde immer der aktuelle Basiswert genutzt, unabhängig vom Exportjahr)
-      sumInstandhaltung += getJahresDurchschnittFuerFeld(immo, jahr, 'instandhaltung') * 12 * faktor;
+      // Eigene Rücklage für Reparaturen ist nicht absetzbar (nur Info); Hausgeld ohne Zuführung
+      // zur Erhaltungsrücklage, dafür mit deren Verwendung (BFH IX R 19/24)
+      sumEigeneRuecklage += getJahresDurchschnittFuerFeld(immo, jahr, 'instandhaltung') * 12 * faktor;
       sumVerwaltung     += getJahresDurchschnittFuerFeld(immo, jahr, 'verwaltung') * 12 * faktor;
-      sumHausgeld       += getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') * 12 * faktor;
+      sumHausgeld       += hausgeldSteuerJahr(immo, jahr, getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') * 12 * faktor, faktor).abziehbar;
+      sumGrundsteuer    += (Number(immo.grundsteuerMonat) || 0) * 12 * faktor;
+      sumVersicherung   += (Number(immo.versicherungMonat) || 0) * 12 * faktor;
       sumStrom          += getJahresDurchschnittFuerFeld(immo, jahr, 'strom') * 12 * faktor;
       sumInternet       += getJahresDurchschnittFuerFeld(immo, jahr, 'internet') * 12 * faktor;
 
@@ -934,13 +945,11 @@ function App() {
       const kmPauschale = immo.kmPauschale || 0.30;
       sumFahrtkosten += fahrtenProMonat * 12 * faktor * entfernungKm * 2 * kmPauschale;
 
-      const investitionen = immo.investitionen || [];
-      sumErhaltungsaufwand += investitionen
-        .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
-        .reduce((sum, inv) => sum + inv.betrag, 0);
+      // Erhaltungsaufwand inkl. Sonderumlagen (Jahr der Verwendung) und 15-%-Regel
+      sumErhaltungsaufwand += erhaltungsaufwandJahr(immo, jahr);
     });
 
-    const gesamtWerbungskosten = sumSchuldzinsen + sumInstandhaltung + sumVerwaltung + sumHausgeld + sumStrom + sumInternet + sumFahrtkosten + sumErhaltungsaufwand;
+    const gesamtWerbungskosten = sumSchuldzinsen + sumVerwaltung + sumHausgeld + sumGrundsteuer + sumVersicherung + sumStrom + sumInternet + sumFahrtkosten + sumErhaltungsaufwand;
 
     // Arbitrage-Einkünfte (pro-rata ab Mietbeginn)
     let arbitrageEinnahmen = 0;
@@ -966,19 +975,22 @@ function App() {
     if (kaufimmobilien.length > 0) {
       uebersichtData.push(
         ['── KAUFIMMOBILIEN ──', '', ''],
-        ['Mieteinnahmen', gesamtEinnahmen.toFixed(2), 'Kaltmiete (Summe aller Kaufimmobilien)'],
+        ['Mieteinnahmen', (gesamtEinnahmen - sumUmlagen).toFixed(2), 'Kaltmiete (Summe aller Kaufimmobilien)'],
+        ['Umlagen (NK-Vorauszahlungen)', sumUmlagen.toFixed(2), 'Einnahme — Hausgeld steht in den Werbungskosten'],
         ['', '', ''],
         ['  Schuldzinsen', (-sumSchuldzinsen).toFixed(2), 'Fremdkapitalzinsen'],
-        ['  Rücklage für Reparaturen', (-sumInstandhaltung).toFixed(2), 'Rücklagen & lfd. Instandhaltung'],
+        ['  Grundsteuer', (-sumGrundsteuer).toFixed(2), ''],
+        ['  Versicherungen', (-sumVersicherung).toFixed(2), ''],
         ['  Verwaltungskosten', (-sumVerwaltung).toFixed(2), 'Hausverwaltung'],
-        ['  Hausgeld / WEG', (-sumHausgeld).toFixed(2), 'Monatliches Hausgeld'],
+        ['  Hausgeld / WEG', (-sumHausgeld).toFixed(2), 'ohne Zuführung zur Erhaltungsrücklage, inkl. deren Verwendung'],
         ['  Strom', (-sumStrom).toFixed(2), 'Stromkosten (Vermieter)'],
         ['  Internet', (-sumInternet).toFixed(2), 'Internetkosten (Vermieter)'],
         ['  Fahrtkosten', (-sumFahrtkosten).toFixed(2), 'Km-Pauschale für Fahrten zur Immobilie'],
-        ['  Erhaltungsaufwand', (-sumErhaltungsaufwand).toFixed(2), 'Tatsächliche Reparaturen im Jahr'],
+        ['  Erhaltungsaufwand', (-sumErhaltungsaufwand).toFixed(2), 'Reparaturen + Sonderumlagen (Jahr der Verwendung)'],
         ['  AfA', '(Steuerberater)', 'Wird durch Steuerberater berechnet'],
         ['Werbungskosten gesamt', (-gesamtWerbungskosten).toFixed(2), 'ohne AfA'],
         ['Ergebnis Kaufimmobilien', (gesamtEinnahmen - gesamtWerbungskosten).toFixed(2), ''],
+        ['Info: eigene Rücklage für Reparaturen', sumEigeneRuecklage.toFixed(2), 'nicht absetzbar — nur bezahlte Reparaturen zählen'],
         ['', '', '']
       );
     }
@@ -1010,8 +1022,8 @@ function App() {
     if (kaufimmobilien.length > 0) {
       const detailHeader = [
         'Immobilie', 'Adresse', 'Kaufpreis €', 'Kaltmiete/Jahr €',
-        'Schuldzinsen €', 'Rücklage für Reparaturen €', 'Verwaltung €',
-        'Hausgeld €', 'Strom €', 'Internet €', 'Fahrtkosten €',
+        'Umlagen €', 'Schuldzinsen €', 'Grundsteuer €', 'Versicherung €', 'Verwaltung €',
+        'Hausgeld (abziehbar) €', 'Strom €', 'Internet €', 'Fahrtkosten €',
         'Erhaltungsaufwand €', 'Summe Werbungskosten €', 'Ergebnis €',
         'Hinweis'
       ];
@@ -1030,9 +1042,11 @@ function App() {
         const schuldzinsenJahr = berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
 
         // Kosten (pro-rata, jahresgenau — berücksichtigt Kostenanpassungen)
-        const instandhaltung = getJahresDurchschnittFuerFeld(immo, jahr, 'instandhaltung') * 12 * faktor;
+        const umlagen = (immo.vermietungsmodell === 'kaltmiete_nk' ? getJahresDurchschnittFuerFeld(immo, jahr, 'nebenkostenVomMieter') * 12 * faktor : 0);
+        const grundsteuer = (Number(immo.grundsteuerMonat) || 0) * 12 * faktor;
+        const versicherung = (Number(immo.versicherungMonat) || 0) * 12 * faktor;
         const verwaltung = getJahresDurchschnittFuerFeld(immo, jahr, 'verwaltung') * 12 * faktor;
-        const hausgeld = getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') * 12 * faktor;
+        const hausgeld = hausgeldSteuerJahr(immo, jahr, getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') * 12 * faktor, faktor).abziehbar;
         const strom = getJahresDurchschnittFuerFeld(immo, jahr, 'strom') * 12 * faktor;
         const internet = getJahresDurchschnittFuerFeld(immo, jahr, 'internet') * 12 * faktor;
 
@@ -1043,21 +1057,20 @@ function App() {
         const fahrtkosten = fahrtenProMonat * 12 * faktor * entfernungKm * 2 * kmPauschale;
 
         // Erhaltungsaufwand: tatsächliche Ausgaben (kein pro-rata)
-        const investitionen = immo.investitionen || [];
-        const erhaltungsaufwand = investitionen
-          .filter(inv => inv.kategorie === 'erhaltung' && new Date(inv.datum).getFullYear() === jahr)
-          .reduce((sum, inv) => sum + inv.betrag, 0);
+        const erhaltungsaufwand = erhaltungsaufwandJahr(immo, jahr);
 
-        const summeWerbungskosten = schuldzinsenJahr + instandhaltung + verwaltung + hausgeld + strom + internet + fahrtkosten + erhaltungsaufwand;
-        const ergebnisVorAfa = kaltmieteJahr - summeWerbungskosten;
+        const summeWerbungskosten = schuldzinsenJahr + grundsteuer + versicherung + verwaltung + hausgeld + strom + internet + fahrtkosten + erhaltungsaufwand;
+        const ergebnisVorAfa = kaltmieteJahr + umlagen - summeWerbungskosten;
 
         detailData.push([
           immo.name || 'Unbenannt',
           `${immo.plz || ''} ${immo.adresse || ''}`,
           kaufpreis.toFixed(2),
           kaltmieteJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
+          umlagen.toFixed(2),
           schuldzinsenJahr.toFixed(2) + (faktor < 1 ? ` (${monate} Mon.)` : ''),
-          instandhaltung.toFixed(2),
+          grundsteuer.toFixed(2),
+          versicherung.toFixed(2),
           verwaltung.toFixed(2),
           hausgeld.toFixed(2),
           strom.toFixed(2),
@@ -1071,7 +1084,7 @@ function App() {
       });
 
       const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
-      wsDetail['!cols'] = Array(15).fill({ wch: 14 });
+      wsDetail['!cols'] = Array(18).fill({ wch: 14 });
       wsDetail['!cols'][0] = { wch: 20 };
       wsDetail['!cols'][1] = { wch: 25 };
       wsDetail['!cols'][14] = { wch: 35 };
@@ -1187,7 +1200,7 @@ function App() {
       startY: 50,
       head: [['Position', 'Betrag', 'Hinweis']],
       body: [
-        ['Mieteinnahmen (Kaufimmobilien)', formatCurrency(gesamtEinnahmen), 'Kaltmiete × 12 Monate'],
+        ['Einnahmen (Kaufimmobilien)', formatCurrency(gesamtEinnahmen), 'Kaltmiete + Umlagen (NK-Vorauszahlungen)'],
         ['Werbungskosten', formatCurrency(-gesamtWerbungskosten), 'Zinsen, Kosten (AfA durch Steuerberater)'],
         ['Arbitrage-Einnahmen', formatCurrency(arbitrageEinnahmen), 'Untervermietung'],
         ['Arbitrage-Ausgaben', formatCurrency(-arbitrageAusgaben), 'Miete + Nebenkosten'],
@@ -1208,12 +1221,17 @@ function App() {
       pdf.text('Kaufimmobilien - Details', 14, 20);
 
       const kaufRows = kaufimmobilien.map(immo => {
-        const kaltmieteJahr = berechneJahresmiete(immo, jahr);
+        const umlagenJahr = immo.vermietungsmodell === 'kaltmiete_nk' ? getJahresDurchschnittFuerFeld(immo, jahr, 'nebenkostenVomMieter') * 12 : 0;
+        const kaltmieteJahr = berechneJahresmiete(immo, jahr) + umlagenJahr;
         const kaufpreis = immo.kaufpreis || 0;
         const afaJahr = kaufpreis * ((immo.gebaeudeAnteilProzent || 80) / 100) * ((immo.afaSatz || 2) / 100);
         // Schuldzinsen annuitätisch korrekt für das ausgewählte Jahr
         const schuldzinsen = berechneJahresZinsenFuerSteuer(immo, jahr);
-        const sonstigeKosten = (getJahresDurchschnittFuerFeld(immo, jahr, 'instandhaltung') + getJahresDurchschnittFuerFeld(immo, jahr, 'verwaltung') + getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') + getJahresDurchschnittFuerFeld(immo, jahr, 'strom') + getJahresDurchschnittFuerFeld(immo, jahr, 'internet')) * 12;
+        // Ohne eigene Rücklage (nicht absetzbar); Hausgeld ohne Rücklagenzuführung; + Erhaltungsaufwand
+        const sonstigeKosten = (getJahresDurchschnittFuerFeld(immo, jahr, 'verwaltung') + getJahresDurchschnittFuerFeld(immo, jahr, 'strom') + getJahresDurchschnittFuerFeld(immo, jahr, 'internet')) * 12
+          + hausgeldSteuerJahr(immo, jahr, getJahresDurchschnittFuerFeld(immo, jahr, 'hausgeld') * 12).abziehbar
+          + ((Number(immo.grundsteuerMonat) || 0) + (Number(immo.versicherungMonat) || 0)) * 12
+          + erhaltungsaufwandJahr(immo, jahr);
 
         return [
           immo.name || 'Unbenannt',
