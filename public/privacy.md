@@ -1,6 +1,6 @@
 # Datenschutzerklärung / Privacy Policy
 
-Gemäß DSGVO (EU) 2016/679 · Stand: 4. August 2026
+Gemäß DSGVO (EU) 2016/679 · Stand: 25. Oktober 2026
 
 ## 1. Verantwortlicher
 
@@ -16,11 +16,11 @@ Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung) sowie Art. 6 Abs. 1 lit. f DSGVO
 
 ## 4. Auftragsverarbeiter
 
-Supabase, Inc. (Authentifizierung & Datenbank, EU-West Frankfurt gehostet), Vercel Inc. (Hosting & CDN), neue Medien Münnich (transaktionaler E-Mail-Versand, Server in Deutschland). Datenübertragung in die USA jeweils auf Grundlage der EU-Standardvertragsklauseln gemäß Art. 46 DSGVO.
+Supabase, Inc. (Authentifizierung & Datenbank, EU-West Frankfurt gehostet), Vercel Inc. (Hosting & CDN), neue Medien Münnich (transaktionaler E-Mail-Versand, Server in Deutschland), Cloudflare, Inc. (Betrieb unseres Analyse-Tools Minilytics). Datenübertragung in die USA jeweils auf Grundlage der EU-Standardvertragsklauseln gemäß Art. 46 DSGVO.
 
 ## 5. Cookies & Google Analytics
 
-Technisch notwendiger Session-Token via Supabase (localStorage). Google Analytics 4 wird erst nach Zustimmung im Cookie-Banner aktiviert (Google Consent Mode v2, Rechtsgrundlage Art. 6 Abs. 1 lit. a DSGVO).
+Technisch notwendiger Session-Token via Supabase (localStorage). Google Analytics 4 wird erst nach Zustimmung im Cookie-Banner aktiviert (Google Consent Mode v2, Rechtsgrundlage Art. 6 Abs. 1 lit. a DSGVO). Ebenfalls erst nach Zustimmung lädt unser Analyse-Tool Minilytics; es setzt die Cookies ml_vid (12 Monate) und ml_sid (30 Minuten), verknüpft Besuche angemeldeter Nutzer mit Nutzer-ID und E-Mail-Adresse und übermittelt beim Abo-Abschluss die Besucher-ID an Stripe.
 
 ## 6. Speicherdauer
 

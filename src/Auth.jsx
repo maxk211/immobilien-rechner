@@ -55,6 +55,7 @@ export default function Auth() {
           options: { data: partnerMetadaten() },
         });
         if (error) throw error;
+        window.minilytics?.('goal', 'signup_completed');
         setMessage('Registrierung erfolgreich! Du kannst dich jetzt einloggen.');
         setIsLogin(true);
       }

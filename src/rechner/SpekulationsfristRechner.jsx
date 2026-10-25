@@ -56,7 +56,7 @@ export default function SpekulationsfristRechner() {
           </a>
           <div className="flex items-center gap-2">
             <a href="/app" className="text-xs sm:text-sm font-medium text-slate-600 px-3 py-2 rounded-xl hover:bg-gray-100 transition-all">Login</a>
-            <a href="/app" className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-indigo-700 transition-all">Kostenlos testen</a>
+            <a href="/app" data-ml-goal="signup_click" data-ml-goal-position="nav" className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-indigo-700 transition-all">Kostenlos testen</a>
           </div>
         </div>
       </nav>

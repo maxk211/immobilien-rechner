@@ -195,6 +195,14 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Minilytics: eingeloggten Nutzer mit seinen bisherigen (anonymen) Besuchen verknüpfen
+  const userId = session?.user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    const u = session.user;
+    window.minilytics?.('identify', { user_id: u.id, email: u.email, name: u.user_metadata?.full_name || u.user_metadata?.name });
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Daten aus Supabase laden wenn eingeloggt
   useEffect(() => {
     if (session) {

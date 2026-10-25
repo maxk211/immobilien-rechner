@@ -40,6 +40,11 @@ Mieterverwaltung) für deutsche Vermieter/Investoren.
 - **Analytics**: GA4 (`G-K3VNNVZPS7`) mit Google Consent Mode v2, eigener
   vanilla-JS Cookie-Consent-Banner (`public/consent-banner.js`), Consent
   standardmäßig verweigert bis Nutzer zustimmt.
+  Zusätzlich Minilytics (selbst gehostet, `minilytics.hs24.workers.dev`,
+  Website-ID `6i07223c6m6y331y`): wird von `consent-banner.js` erst nach
+  "Akzeptieren" geladen. Besucher-IDs gehen über den Request-Body an
+  `create-checkout(-anon)` und landen als `ml_visitor_id`/`ml_session_id` in
+  den Stripe-Metadaten. Ziele per `data-ml-goal` an CTAs.
 
 ## Rechtliches
 

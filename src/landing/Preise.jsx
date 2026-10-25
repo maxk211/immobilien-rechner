@@ -35,7 +35,8 @@ export default function Preise({ onGetStarted, id = 'pricing' }) {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-anon`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY },
-        body: JSON.stringify({ priceId, planKey }),
+        // Minilytics-Besucher-ID: die Function liegt auf supabase.co, Cookies von renditly.de kommen dort nicht an
+        body: JSON.stringify({ priceId, planKey, ...window.minilytics?.attribution?.() }),
       });
       const data = await res.json();
       if (data?.url) window.location.href = data.url; else setLaedt(null);
@@ -77,7 +78,7 @@ export default function Preise({ onGetStarted, id = 'pricing' }) {
             <div className="mt-4 text-4xl font-extrabold text-gray-900 tracking-tight">0 €</div>
             <div className="text-xs text-gray-500 mt-1">90 Tage, ohne Kreditkarte</div>
             <p className="text-sm text-gray-600 mt-5 flex-1">Leg dein erstes Objekt an und sieh dir alles an. Danach entscheidest du.</p>
-            <button type="button" onClick={onGetStarted} className="mt-6 w-full py-2.5 rounded-xl border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50">
+            <button type="button" onClick={onGetStarted} data-ml-goal="start_trial" className="mt-6 w-full py-2.5 rounded-xl border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50">
               Kostenlos starten
             </button>
           </div>
@@ -100,6 +101,7 @@ export default function Preise({ onGetStarted, id = 'pricing' }) {
                 {t.extra && <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-indigo-600" /><span className="text-gray-600">{t.extra}</span></li>}
               </ul>
               <button type="button" onClick={() => waehle(t.key)} disabled={!!laedt}
+                data-ml-goal="checkout_click" data-ml-goal-plan={t.key} data-ml-goal-billing={billing}
                 className={`mt-6 w-full py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-60 flex items-center justify-center gap-2 ${t.beliebt ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-900 hover:bg-gray-700 text-white'}`}>
                 {laedt === t.key
                   ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/60 border-t-transparent rounded-full" /> Wird geladen …</>

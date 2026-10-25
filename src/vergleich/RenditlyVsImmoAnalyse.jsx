@@ -60,6 +60,7 @@ function CTAButton({ children, className = '' }) {
   return (
     <a
       href="/app"
+      data-ml-goal="signup_click"
       className={`inline-flex items-center justify-center px-6 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all text-sm sm:text-base ${className}`}
     >
       {children}
