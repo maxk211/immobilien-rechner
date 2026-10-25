@@ -150,7 +150,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onLogin} className="text-sm font-semibold text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100">Einloggen</button>
-            <button onClick={onGetStarted} className="text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl whitespace-nowrap">
+            <button onClick={onGetStarted} data-ml-goal="signup_click" data-ml-goal-position="nav" className="text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl whitespace-nowrap">
               <span className="hidden sm:inline">Kostenlos starten</span><span className="sm:hidden">Starten</span>
             </button>
           </div>
@@ -177,7 +177,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
               was ansteht: offene Mieten, Mieterhöhungen, Zinsbindung, Nebenkostenabrechnung.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mt-8">
-              <button onClick={onGetStarted} className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl inline-flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/40">
+              <button onClick={onGetStarted} data-ml-goal="signup_click" data-ml-goal-position="hero" className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl inline-flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/40">
                 90 Tage kostenlos testen <ArrowRight size={18} />
               </button>
               <a href="#funktionen" className="px-6 py-3.5 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-semibold rounded-xl text-center">
@@ -314,7 +314,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             ))}
           </div>
           <div className="text-center mt-10">
-            <button onClick={onGetStarted} className="px-7 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl inline-flex items-center gap-2">
+            <button onClick={onGetStarted} data-ml-goal="signup_click" data-ml-goal-position="mid" className="px-7 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl inline-flex items-center gap-2">
               Jetzt kostenlos starten <ArrowRight size={18} />
             </button>
           </div>
@@ -398,7 +398,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Bereit, dein Portfolio im Griff zu haben?</h2>
               <p className="text-white/60 mt-3 max-w-lg mx-auto">Starte kostenlos. Upgrade, wenn du bereit bist. Kündige, wann du willst.</p>
-              <button onClick={onGetStarted} className="mt-8 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl inline-flex items-center gap-2">
+              <button onClick={onGetStarted} data-ml-goal="signup_click" data-ml-goal-position="final" className="mt-8 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl inline-flex items-center gap-2">
                 Jetzt kostenlos starten <ArrowRight size={20} />
               </button>
               <p className="text-white/40 text-sm mt-4">Keine Kreditkarte · Keine Mindestlaufzeit · Sofort loslegen</p>
@@ -418,7 +418,7 @@ const LandingPage = ({ onGetStarted, onLogin }) => {
             <a href="/hilfe" className="hover:text-white">Hilfe</a>
             <a href="#pricing" className="hover:text-white">Preise</a>
             <button onClick={onLogin} className="hover:text-white">Einloggen</button>
-            <button onClick={onGetStarted} className="hover:text-white">Registrieren</button>
+            <button onClick={onGetStarted} data-ml-goal="signup_click" data-ml-goal-position="footer" className="hover:text-white">Registrieren</button>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs">
             <ImpressumDatenschutzLinks className="text-white/50 hover:text-white" />

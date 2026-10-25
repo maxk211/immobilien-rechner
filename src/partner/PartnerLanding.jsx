@@ -206,6 +206,7 @@ function KontoSchritt({ wahl, fertig, zurueck }) {
       if (modus === 'neu') {
         const { data, error } = await supabase.auth.signUp({ email, password: pw, options: { data: partnerMetadaten(wahl) } });
         if (error) throw error;
+        window.minilytics?.('goal', 'signup_completed', { source: 'partner' });
         fertig({ eingeloggt: !!data.session, email });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password: pw });

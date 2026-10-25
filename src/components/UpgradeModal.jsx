@@ -197,6 +197,9 @@ const UpgradeModal = ({
                   <button
                     onClick={() => handleSelect(key)}
                     disabled={isCurrent}
+                    data-ml-goal="checkout_click"
+                    data-ml-goal-plan={key}
+                    data-ml-goal-billing={billing}
                     className={`mt-5 w-full py-2.5 rounded-xl font-bold text-sm transition-all ${
                       isCurrent
                         ? 'bg-gray-100 text-gray-400 cursor-default'

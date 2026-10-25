@@ -149,7 +149,7 @@ export function useSubscription(session, portfolioCount = 0) {
 
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId },
+        body: { priceId, ...window.minilytics?.attribution?.() },
       });
 
       if (error) throw error;

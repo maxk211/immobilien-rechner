@@ -26,6 +26,11 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const { priceId } = body;
+    // Minilytics-Besucher/Session (nur für Analytics, beeinflusst weder Plan noch Preis)
+    const mlMetadata = {
+      ml_visitor_id: String(body.ml_visitor_id ?? '').slice(0, 64),
+      ml_session_id: String(body.ml_session_id ?? '').slice(0, 64),
+    };
 
     if (!priceId) {
       return new Response(JSON.stringify({ error: 'priceId fehlt' }), {
@@ -45,6 +50,8 @@ serve(async (req) => {
       // Hinweis: Der tatsächliche Plan wird im Webhook ausschließlich aus
       // priceId/PRICE_PLAN_MAP abgeleitet, nie aus client-seitigen Angaben —
       // ein hier gesetztes Plan-Metadatum wäre sonst manipulierbar.
+      metadata: mlMetadata,
+      subscription_data: { metadata: mlMetadata },
       allow_promotion_codes: true,
     });
 

@@ -46,6 +46,11 @@ serve(async (req) => {
     // priceId aus Request Body
     const body = await req.json().catch(() => ({}));
     const priceId = body.priceId;
+    // Minilytics-Besucher/Session (nur für Analytics, beeinflusst weder Plan noch Preis)
+    const mlMetadata = {
+      ml_visitor_id: String(body.ml_visitor_id ?? '').slice(0, 64),
+      ml_session_id: String(body.ml_session_id ?? '').slice(0, 64),
+    };
 
     if (!priceId) {
       return new Response(JSON.stringify({ error: 'priceId fehlt' }), {
@@ -108,8 +113,9 @@ serve(async (req) => {
       success_url: `${origin}/app?checkout=success`,
       cancel_url:  `${origin}/app?checkout=cancel`,
       locale:      'de',
+      metadata: mlMetadata,
       subscription_data: {
-        metadata: { supabase_user_id: user.id, ...(partnerRabatt ? { partner: 'makler-qr' } : {}) },
+        metadata: { ...mlMetadata, supabase_user_id: user.id, ...(partnerRabatt ? { partner: 'makler-qr' } : {}) },
       },
       // Stripe erlaubt entweder einen festen Gutschein ODER die Eingabe von Promo-Codes
       ...(partnerRabatt

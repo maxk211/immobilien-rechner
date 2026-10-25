@@ -110,6 +110,10 @@ export const DatenschutzModal = ({ onClose }) => (
       <p className="font-semibold text-gray-700 mt-3 mb-1">all-inkl.com / neue Medien Münnich (E-Mail-Versand)</p>
       <p>Für den transaktionalen E-Mail-Versand (Kontobestätigung, Passwort-Reset, Erinnerungen zum Ablauf Ihrer Testphase) nutzen wir den SMTP-Dienst von <strong>neue Medien Münnich</strong> (Hauptstraße 68, 02742 Friedersdorf, Deutschland). Dabei wird Ihre E-Mail-Adresse zum Zweck der Zustellung verarbeitet. Die Daten verbleiben auf deutschen Servern.</p>
       <p className="mt-1">Datenschutzrichtlinie: <a href="https://all-inkl.com/datenschutzerklaerung/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">all-inkl.com/datenschutzerklaerung</a></p>
+
+      <p className="font-semibold text-gray-700 mt-3 mb-1">Cloudflare, Inc. (Betrieb von Minilytics)</p>
+      <p>Unser selbst betriebenes Analyse-Tool Minilytics läuft auf der Infrastruktur von <strong>Cloudflare, Inc.</strong> (San Francisco, USA). Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
+      <p className="mt-1">Datenschutzrichtlinie: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">cloudflare.com/privacypolicy</a></p>
     </Section>
 
     <Section title="5. Cookies, lokaler Speicher & Google Analytics">
@@ -117,6 +121,7 @@ export const DatenschutzModal = ({ onClose }) => (
       <p className="mt-1">Zusätzlich nutzen wir <strong>Google Analytics 4</strong> (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland) zur statistischen Auswertung der Websitenutzung (z. B. aufgerufene Seiten, Verweildauer, Herkunft der Besucher). Google Analytics wird erst aktiviert, nachdem Sie im Cookie-Banner zugestimmt haben (Google Consent Mode v2) — die Rechtsgrundlage ist Ihre Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO. Sie können Ihre Einwilligung jederzeit widerrufen, indem Sie die Cookie-Einstellungen Ihres Browsers löschen und die Seite neu laden.</p>
       <p className="mt-1">Google Analytics verarbeitet Daten teilweise auf Servern in den USA. Die Datenübertragung erfolgt auf Grundlage der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
       <p className="mt-1">Datenschutzrichtlinie: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">policies.google.com/privacy</a></p>
+      <p className="mt-1">Ebenfalls erst nach Ihrer Zustimmung im Cookie-Banner laden wir unser selbst betriebenes Analyse-Tool <strong>Minilytics</strong>. Es setzt zwei Cookies (<code>ml_vid</code>, Speicherdauer 12 Monate; <code>ml_sid</code>, 30 Minuten), um wiederkehrende Besuche und die Herkunft eines Besuchs (z. B. Suchmaschine oder verweisende Website) zu erkennen. Bei angemeldeten Nutzern wird der Besuch mit Nutzer-ID und E-Mail-Adresse verknüpft; beim Abschluss eines Abos wird die Besucher-ID an Stripe übermittelt, um den Kauf dem Besuch zuzuordnen. Rechtsgrundlage ist Ihre Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO; der Widerruf ist wie bei Google Analytics möglich.</p>
     </Section>
 
     <Section title="6. Speicherdauer">
@@ -143,7 +148,7 @@ export const DatenschutzModal = ({ onClose }) => (
     </Section>
 
     <Section title="9. Änderungen dieser Erklärung">
-      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: 4. August 2026.</p>
+      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die jeweils aktuelle Version ist in der Anwendung abrufbar. Stand: 25. Oktober 2026.</p>
     </Section>
   </Modal>
 );

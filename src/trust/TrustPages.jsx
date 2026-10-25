@@ -25,7 +25,7 @@ const Nav = () => (
       </a>
       <div className="flex items-center gap-2">
         <a href="/app" className="text-xs sm:text-sm font-medium text-slate-600 px-3 py-2 rounded-xl hover:bg-gray-100 transition-all">Login</a>
-        <a href="/app" className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-indigo-700 transition-all">Kostenlos testen</a>
+        <a href="/app" data-ml-goal="signup_click" data-ml-goal-position="nav" className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-indigo-700 transition-all">Kostenlos testen</a>
       </div>
     </div>
   </nav>
@@ -129,7 +129,7 @@ export function ContactPage() {
 
 export function PrivacyPage() {
   return (
-    <Shell eyebrow="Datenschutz" title="Privacy Policy / Datenschutzerklärung" intro="Gemäß DSGVO (EU) 2016/679 · Stand: 4. August 2026">
+    <Shell eyebrow="Datenschutz" title="Privacy Policy / Datenschutzerklärung" intro="Gemäß DSGVO (EU) 2016/679 · Stand: 25. Oktober 2026">
       <h2>1. Verantwortlicher</h2>
       <p>
         {FIRMA}
@@ -178,6 +178,11 @@ export function PrivacyPage() {
         E-Mail-Versand — die Daten verbleiben auf deutschen Servern. Datenschutzrichtlinie:{' '}
         <a href="https://all-inkl.com/datenschutzerklaerung/" target="_blank" rel="noopener noreferrer">all-inkl.com/datenschutzerklaerung</a>
       </p>
+      <p>
+        <strong>Cloudflare, Inc.</strong> (Betrieb unseres Analyse-Tools Minilytics, San Francisco, USA;
+        Datenübertragung auf Grundlage der EU-Standardvertragsklauseln gemäß Art. 46 DSGVO). Datenschutzrichtlinie:{' '}
+        <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">cloudflare.com/privacypolicy</a>
+      </p>
 
       <h2>5. Cookies, lokaler Speicher &amp; Google Analytics</h2>
       <p>
@@ -186,6 +191,13 @@ export function PrivacyPage() {
         der Websitenutzung — aktiviert erst nach deiner Zustimmung im Cookie-Banner (Google Consent Mode v2),
         Rechtsgrundlage Art. 6 Abs. 1 lit. a DSGVO. Datenschutzrichtlinie:{' '}
         <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">policies.google.com/privacy</a>
+      </p>
+      <p>
+        Ebenfalls erst nach deiner Zustimmung laden wir unser selbst betriebenes Analyse-Tool Minilytics. Es setzt
+        zwei Cookies (ml_vid, 12 Monate; ml_sid, 30 Minuten), um wiederkehrende Besuche und deren Herkunft zu
+        erkennen. Bei angemeldeten Nutzern wird der Besuch mit Nutzer-ID und E-Mail-Adresse verknüpft; beim
+        Abo-Abschluss wird die Besucher-ID an Stripe übermittelt, um den Kauf dem Besuch zuzuordnen.
+        Rechtsgrundlage Art. 6 Abs. 1 lit. a DSGVO.
       </p>
 
       <h2>6. Speicherdauer</h2>
@@ -210,7 +222,7 @@ export function PrivacyPage() {
       </p>
 
       <h2>9. Änderungen dieser Erklärung</h2>
-      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Stand: 4. August 2026.</p>
+      <p>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Stand: 25. Oktober 2026.</p>
     </Shell>
   );
 }

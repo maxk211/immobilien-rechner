@@ -118,6 +118,8 @@ export default function MietrenditeRechner() {
             </a>
             <a
               href="/app"
+              data-ml-goal="signup_click"
+              data-ml-goal-position="nav"
               className="text-xs sm:text-sm font-semibold bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-indigo-700 transition-all"
             >
               Kostenlos testen
