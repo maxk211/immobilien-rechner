@@ -4,6 +4,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
 import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung, kostenStruktur, cashflowMonat } from '../utils/berechnung.js';
 import { sonderumlageImJahr } from '../utils/sonderumlage.js';
+import { darlehensVerlauf, weitereDarlehen } from '../utils/darlehen.js';
 import { bausparMonat } from '../utils/bauspar.js';
 import { nachforderungMonat, nachforderungJahr, hatNachforderungen, heuteKey } from '../utils/nachforderung.js';
 
@@ -140,8 +141,11 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
       // unterjährige, datumsbasierte Anpassungen (analog getMieteForJahr oben).
       const betrieb = ksJ.bewirtschaftung * 12;
 
-      const monatsRate = berechneJahresRateFuerPhasen(phasen, cfFK, kreditStartJahr, jahr, ergebnis.monatlicheRate);
-      const kreditrate = monatsRate * 12;
+      // Darlehen 1 über seine Phasen; weitere Darlehen über ihre eigenen Verläufe (Jahressumme)
+      const verlaufGesamt = weitereDarlehen(params).length ? darlehensVerlauf(params) : null;
+      const extraJahr = verlaufGesamt?.darlehen ? verlaufGesamt.darlehen.filter(d => d.idx > 0).reduce((x, d) => x + d.verlauf.zinsenImJahr(jahr) + d.verlauf.tilgungImJahr(jahr), 0) : 0;
+      const monatsRate = (phasen || []).length || !verlaufGesamt ? berechneJahresRateFuerPhasen(phasen, cfFK, kreditStartJahr, jahr, ergebnis.monatlicheRate) : 0;
+      const kreditrate = monatsRate * 12 + extraJahr;
       const bsJ = bausparMonat(params, new Date(jahr, 5, 15));
       const bauspar = bsJ.gesamt * 12;
       const bausparKosten = bsJ.kosten * 12; // Rücklage zählt auch "vor Tilgung", Tilgungsersatz nicht

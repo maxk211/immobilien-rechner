@@ -7,10 +7,11 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import { offeneRueckzahlungen, rateEingegangen } from '../utils/nachforderung.js';
 import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
-import { darlehensVerlauf, anfangsFremdkapital } from '../utils/darlehen.js';
+import { darlehensVerlauf, anfangsFremdkapital, weitereDarlehen, darlehenAlsObjekt } from '../utils/darlehen.js';
 import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
 import KlappKopf from './KlappKopf';
 import { sonderumlageHinweise } from '../utils/sonderumlage.js';
+import { einheitenStatus } from '../utils/belegung.js';
 
 // Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
 // "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
@@ -85,6 +86,29 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     });
   });
 
+  // ── 1a. Weitere Darlehen: Zinsbindung je Darlehen ───────────────────────────
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie' || immo.aktiv === false) return;
+    const name = immo.name || immo.adresse || 'Immobilie';
+    weitereDarlehen(immo).forEach((d, i) => {
+      const obj = darlehenAlsObjekt(immo, d);
+      const st = finanzierungsStatus(obj, heute);
+      if (!st || st.stufe === 'neutral' || st.monate == null) return;
+      const v = darlehensVerlauf(obj, heute);
+      if (v?.abbezahltHeute) return;
+      const ende = formatMonatJahr(st.letzte.ende);
+      const ungeprueft = st.letzte.endeGeschaetzt ? ' (Datum ungeprüft)' : '';
+      const dn = d.name || `Darlehen ${i + 2}`;
+      todos.push({
+        id: `zinsbindung-${immo.id}-d${d.id ?? i}`, priority: st.stufe, icon: <Landmark size={16} />, kategorie: 'Finanzierung',
+        titel: st.stufe === 'rot' ? `${dn}: Zinsbindung seit ${ende} abgelaufen — keine Anschlussfinanzierung hinterlegt${ungeprueft}`
+          : st.stufe === 'gelb' ? `${dn}: Zinsbindung endet ${ende} — noch ${Math.ceil(st.monate)} Monate${ungeprueft}`
+            : `${dn}: Zinsbindung endet ${ende} — Forward-Darlehen wäre jetzt möglich${ungeprueft}`,
+        sub: name, immoId: immo.id, badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis', targetTab: 'finanzierung',
+      });
+    });
+  });
+
   // ── 1b. Bausparverträge: Rolle fehlt / Bausparsumme fehlt (Prüfbericht N-2, N-3) ─────
   portfolio.forEach(immo => {
     if (immo.immobilienTyp === 'mietimmobilie' || immo.aktiv === false) return;
@@ -139,6 +163,27 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   // Teilzahlung als "verbucht", was zum gemeldeten Widerspruch führte.
   portfolio.forEach(immo => {
     if (immo.immobilienTyp === 'mietimmobilie') return;
+    // Mehrfamilienhaus: Mieteingänge werden je Wohnung geführt — eigene Prüfung je vermieteter WE
+    if (immo.immobilienTyp === 'mehrfamilienhaus') {
+      if (immo.aktiv === false) return;
+      const ftag = immo.mieteFaelligkeitstag ?? 3;
+      if (heute.getDate() < ftag) return;
+      if (!zeitraumNachEigentum(immo, new Date(aktuellesJahr, aktuellerMonat - 1, ftag))) return;
+      const offen = einheitenStatus(immo, mieterListe, heute).einheiten
+        .filter(e => e.status === 'vermietet' && Number(e.wohnung?.kaltmiete) > 0)
+        .filter(e => ['offen', 'teilweise', 'nicht_bezahlt'].includes(berechneMietStatusFuerMonat(e.wohnung.mietEingaenge, aktuellesJahr, aktuellerMonat, Number(e.wohnung.kaltmiete), false).status));
+      if (offen.length) {
+        const summe = offen.reduce((s, e) => s + Number(e.wohnung.kaltmiete), 0);
+        const tage = heute.getDate() - ftag;
+        todos.push({
+          id: `miete-ausstehend-${immo.id}`, priority: tage >= 10 ? 'rot' : 'gelb', icon: <TrendingDown size={16} />, kategorie: 'Miete',
+          titel: `Miete ${heute.toLocaleDateString('de-DE', { month: 'long' })} offen · ${offen.length} ${offen.length === 1 ? 'Wohnung' : 'Wohnungen'} · ${formatCurrency(summe)}`,
+          sub: `${immo.name || immo.adresse || 'Immobilie'} · ${offen.map(e => e.mieterName ? `${e.name} (${e.mieterName})` : e.name).join(', ')}`,
+          immoId: immo.id, badge: tage >= 10 ? `${heute.getDate()}. des Monats` : 'Prüfen', targetTab: 'mieteinnahmen',
+        });
+      }
+      return;
+    }
     const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
     if (aktiveMieter.length === 0) return;
 
@@ -391,23 +436,36 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     });
   });
 
-  // ── 6. Leerstehende Immobilie ─────────────────────────────────────────────
+  // ── 6. Belegung je Wohneinheit (voll · teilweise · leer · offen) ──────────────
+  // Gleiche Regel wie Vermietung/Karte (utils/belegung.js): Mieter an der Wohnung zählen als
+  // vermietet, auch ohne Datensatz in der Mieterverwaltung. Fehlende Angaben sind kein Leerstand.
   portfolio.forEach(immo => {
     if (immo.immobilienTyp === 'mietimmobilie') return;
-    if (!immo.aktiv) return;
-    const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
-    if (aktiveMieter.length === 0 && immo.kaltmiete > 0) {
-      todos.push({
-        id: `leerstand-${immo.id}`,
-        priority: 'gelb',
-        icon: <Building2 size={16} />,
-        kategorie: 'Mieter',
-        titel: 'Immobilie steht leer',
-        sub: immo.name || immo.adresse || 'Immobilie',
-        immoId: immo.id,
-        badge: 'Leerstand',
-        targetTab: 'mieter',
-      });
+    if (immo.aktiv === false) return;
+    const b = einheitenStatus(immo, mieterListe, heute);
+    const name = immo.name || immo.adresse || 'Immobilie';
+    const istMFH = immo.immobilienTyp === 'mehrfamilienhaus';
+    if (b.gesamt === 'leer') {
+      todos.push({ id: `leerstand-${immo.id}`, priority: 'gelb', icon: <Building2 size={16} />, kategorie: 'Mieter',
+        titel: istMFH ? `Alle ${b.anzahl} Wohnungen stehen leer` : 'Immobilie steht leer', sub: name, immoId: immo.id, badge: 'Leerstand', targetTab: istMFH ? 'wohnungen' : 'mieter' });
+    } else if (b.leer > 0) {
+      todos.push({ id: `leerstand-${immo.id}`, priority: 'gelb', icon: <Building2 size={16} />, kategorie: 'Mieter',
+        titel: `${b.leer} von ${b.anzahl} Wohnungen ${b.leer === 1 ? 'steht' : 'stehen'} leer`,
+        sub: `${name} · ${b.einheiten.filter(e => e.status === 'leer').map(e => e.name).join(', ')}`, immoId: immo.id, badge: 'Leerstand', targetTab: 'wohnungen' });
+    }
+    if (b.unbekannt > 0) {
+      todos.push({ id: `belegung-offen-${immo.id}`, priority: 'grau', icon: <Building2 size={16} />, kategorie: 'Daten',
+        titel: istMFH ? `Belegung von ${b.unbekannt} ${b.unbekannt === 1 ? 'Wohnung' : 'Wohnungen'} offen — Mieter eintragen oder als leer markieren` : 'Vermietet oder leer? Bitte Mieter eintragen',
+        sub: istMFH ? `${name} · ${b.einheiten.filter(e => e.status === 'unbekannt').map(e => e.name).join(', ')}` : name,
+        immoId: immo.id, badge: 'Ergänzen', targetTab: istMFH ? 'wohnungen' : 'mieter' });
+    }
+    if (b.ohneMieterdatensatz.length > 0) {
+      todos.push({ id: `mieter-uebernehmen-${immo.id}`, priority: 'grau', icon: <Key size={16} />, kategorie: 'Mieter',
+        titel: `${b.ohneMieterdatensatz.length} ${b.ohneMieterdatensatz.length === 1 ? 'Mieter' : 'Mieter'} aus den Wohnungen in die Mieterverwaltung übernehmen`,
+        sub: `${name} · ${b.ohneMieterdatensatz.map(e => e.mieterName).join(', ')}`, immoId: immo.id, badge: 'Übernehmen', targetTab: 'mieter' });
+    } else if (!istMFH && b.gesamt === 'voll' && b.einheiten[0]?.quelle === 'objekt') {
+      todos.push({ id: `mieter-anlegen-${immo.id}`, priority: 'grau', icon: <Key size={16} />, kategorie: 'Mieter',
+        titel: 'Vermietet, aber noch kein Mieter angelegt', sub: name, immoId: immo.id, badge: 'Anlegen', targetTab: 'mieter' });
     }
   });
 

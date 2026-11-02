@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import ZahlInput from './ZahlInput';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
+import { mieterAusWohnungen, einheitenStatus } from '../utils/belegung.js';
+import WeitereDarlehen, { HauptDarlehenReiter } from './WeitereDarlehen';
 
 // ─── Dokumente-Tab (inline, identisch zu KaufimmobilieDetail) ─────────────────
 const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
@@ -220,8 +222,10 @@ const MehrfamilienhausDetail = ({
   const gesamtFlaeche   = wohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
   // Leerstand nur anzeigen wenn schon mal ein Mieter eingetragen war
   const hatteJeMieter   = (w) => !!(w.mieterName || w.mietende || w.mietbeginn);
-  const belegtWE        = wohnungen.filter(w => w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date())).length;
-  const leerstandWE     = wohnungen.filter(w => hatteJeMieter(w) && !(w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()))).length;
+  // Belegung je Wohnung: dieselbe Regel wie Karte und „Was steht an“ (utils/belegung.js)
+  const belegungMFH     = einheitenStatus({ ...immobilie, wohnungen }, mieterListe || []);
+  const belegtWE        = belegungMFH.vermietet;
+  const leerstandWE     = belegungMFH.leer;
 
   // Vermieter-Aufgaben, gefiltert auf diese Immobilie (bereits rot→gelb→grau sortiert)
   const eigeneAufgaben = aufgaben.filter(t => t.immoId === immobilie.id);
@@ -348,12 +352,18 @@ const MehrfamilienhausDetail = ({
 
   const saveWohnung = () => {
     const neu = [...wohnungen];
-    if (editWohnungIdx !== null) neu[editWohnungIdx] = { ...neu[editWohnungIdx], ...wohnungForm };
-    else neu.push({ id: Date.now(), forderungen: [], mietAnpassungen: [], ...wohnungForm });
+    const form = wohnungForm.mieterName ? { ...wohnungForm, leer: false } : wohnungForm;
+    if (editWohnungIdx !== null) neu[editWohnungIdx] = { ...neu[editWohnungIdx], ...form };
+    else neu.push({ id: Date.now(), forderungen: [], mietAnpassungen: [], ...form });
     setWohnungen(neu);
     setShowWohnungForm(false);
     setHasChanges(false);
     aggregiereUndSpeichere(neu);
+    // Neuer Mieter an der Wohnung → auch in der Mieterverwaltung anlegen (einheitliche Belegung)
+    if (onSaveMieter) {
+      mieterAusWohnungen({ ...immobilie, ...params, wohnungen: neu }, mieterListe || [])
+        .forEach(m => { Promise.resolve(onSaveMieter(m)).catch(() => {}); });
+    }
   };
 
   const deleteWohnung = (idx) => {
@@ -630,15 +640,15 @@ const MehrfamilienhausDetail = ({
                           const ausgezogen = w.mietende && new Date(w.mietende) < new Date();
                           return (
                             <div key={w.id || w.originalIdx}
-                              className={`rounded-2xl border-2 p-3 sm:p-4 transition-all hover:shadow-md cursor-pointer ${belegt ? 'border-emerald-200 bg-emerald-50/50' : ausgezogen ? 'border-gray-200 bg-gray-50' : hatteJeMieter(w) ? 'border-red-200 bg-red-50/50' : 'border-blue-100 bg-blue-50/30'}`}
+                              className={`rounded-2xl border-2 p-3 sm:p-4 transition-all hover:shadow-md cursor-pointer ${belegt ? 'border-emerald-200 bg-emerald-50/50' : ausgezogen ? 'border-gray-200 bg-gray-50' : (w.leer === true || hatteJeMieter(w)) ? 'border-red-200 bg-red-50/50' : 'border-blue-100 bg-blue-50/30'}`}
                               onClick={() => openWohnungForm(w.originalIdx)}>
                               <div className="flex items-start justify-between mb-2">
                                 {(() => {
-                                  const jeMieter = hatteJeMieter(w);
+                                  const jeMieter = w.leer === true || hatteJeMieter(w);
                                   if (belegt) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-0.5"><Check size={10}/>Vermietet</span>;
                                   if (ausgezogen) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Ausgezogen</span>;
                                   if (jeMieter) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex items-center gap-0.5"><AlertTriangle size={10}/>Leerstand</span>;
-                                  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-400">Noch kein Mieter</span>;
+                                  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-400">Belegung offen</span>;
                                 })()}
                                 <button onClick={e => { e.stopPropagation(); deleteWohnung(w.originalIdx); }}
                                   className="text-gray-300 hover:text-red-500 p-0.5 rounded" title="Löschen">
@@ -847,7 +857,7 @@ const MehrfamilienhausDetail = ({
                           return (
                             <div key={w.id || idx} className="flex items-center justify-between gap-2 py-1.5">
                               <span className="font-semibold text-gray-800 truncate">{w.name || `WE ${idx + 1}`}</span>
-                              <span className={`truncate ${belegt ? 'text-gray-600' : 'text-red-400'}`}>{belegt ? w.mieterName : (hatteJeMieter(w) ? 'Leerstand' : 'noch nie vermietet')}</span>
+                              <span className={`truncate ${belegt ? 'text-gray-600' : 'text-red-400'}`}>{belegt ? w.mieterName : (w.leer === true || hatteJeMieter(w) ? 'Leerstand' : 'Belegung offen')}</span>
                               <span className="text-gray-500 shrink-0">{w.mietbeginn && belegt ? `seit ${new Date(w.mietbeginn).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : ''}</span>
                               <span className="font-semibold text-gray-700 shrink-0">{Number(w.kaltmiete) > 0 ? formatCurrency(Number(w.kaltmiete)) : '—'}</span>
                               <span className="text-[10px] shrink-0">{Number(w.kautionBetrag) > 0 ? (w.kautionBezahlt ? <span className="text-emerald-600">Kaution ✓</span> : <span className="text-red-500">Kaution offen</span>) : <span className="text-gray-300">keine Kaution</span>}</span>
@@ -1357,7 +1367,10 @@ const MehrfamilienhausDetail = ({
             return (
               <div className="space-y-5">
                 {/* Teil 3: Finanzierungs-Reiter (Kopfleiste, Verlauf, Szenarien, Sondertilgung, Konditionen, Abschluss) */}
-                <FinanzierungsReiter params={params} updateParams={updateParams} marktwert={aktuellerWertMFH}
+                <HauptDarlehenReiter params={params} updateParams={updateParams} marktwert={aktuellerWertMFH}
+                  cashflowNachTilgung={ergebnis.cashflowMonatlich || 0} />
+                {/* Beliebig viele parallel laufende Darlehen — jedes mit eigenen Konditionen und Anschlüssen */}
+                <WeitereDarlehen params={params} updateParams={updateParams} marktwert={aktuellerWertMFH}
                   cashflowNachTilgung={ergebnis.cashflowMonatlich || 0} />
                 {/* Abschnitt 3.4: Gesamtinvestition mit Warnung, wenn ein Teil weder als
                     Eigenkapital noch über den Kredit abgebildet ist */}
@@ -1897,6 +1910,20 @@ const MehrfamilienhausDetail = ({
           {activeTab === 'mieter' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
             <div className="lg:col-span-2 min-w-0">
+            {(() => {
+              const fehlend = mieterAusWohnungen({ ...immobilie, ...params, wohnungen }, mieterListe || []);
+              if (!fehlend.length || !onSaveMieter) return null;
+              return (
+                <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm text-indigo-900">
+                    <strong>{fehlend.length} {fehlend.length === 1 ? 'Mieter steht' : 'Mieter stehen'} nur an den Wohnungen</strong> ({fehlend.map(m => `${m.name} · ${m.zimmerBezeichnung}`).join(', ')}) und {fehlend.length === 1 ? 'fehlt' : 'fehlen'} noch in der Mieterverwaltung.
+                    <span className="block text-xs text-indigo-700/80">Übernehmen legt sie mit Wohnung, Kaltmiete und Mietbeginn an — danach funktionieren Kaution, Mieterhöhung und Nebenkosten auch für sie.</span>
+                  </div>
+                  <button type="button" onClick={async () => { for (const m of fehlend) { await onSaveMieter(m); } }}
+                    className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700">Mieter übernehmen</button>
+                </div>
+              );
+            })()}
             <MieterDashboard
               mieterListe={(mieterListe || []).filter(m => m.immobilie_id === immobilie.id)}
               portfolio={[{ ...immobilie, wohnungen }]}
@@ -2193,6 +2220,13 @@ const MehrfamilienhausDetail = ({
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Mieter/in</label>
                   <input value={wohnungForm.mieterName || ''} onChange={e => setWohnungForm({...wohnungForm, mieterName: e.target.value})}
                     className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm" placeholder="Name des Mieters"/>
+                  {!wohnungForm.mieterName && (
+                    <label className="mt-2 flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                      <input type="checkbox" checked={!!wohnungForm.leer} onChange={e => setWohnungForm({ ...wohnungForm, leer: e.target.checked })} className="w-4 h-4 rounded" />
+                      Wohnung steht leer
+                      <span className="text-[11px] text-gray-400">— sonst gilt die Belegung als offen, nicht als Leerstand</span>
+                    </label>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

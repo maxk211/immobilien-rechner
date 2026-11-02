@@ -5,6 +5,7 @@ import { berechneMtlCashflow } from '../utils/berechnung.js';
 import { cashflowVorNach } from '../utils/kapital.js';
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import { GREST_HISTORIE, grestSatz, bundeslandAusName, bundeslandAusPlz } from '../config/grunderwerbsteuer.js';
+import { mieterAusWohnungen } from '../utils/belegung.js';
 
 // Anlage-Wizard (UX-Paket Teil 2): vier Schritte statt einer Maske.
 //  1 Was besitzt du? · 2 Das Objekt · 3 Kaufpreis, Eigenkapital, Kredit · 4 Miete rein, Kosten raus
@@ -364,6 +365,12 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           kaltmiete: kalt, nkVorauszahlung: nk || null, gesamtueberweisung: kalt + nk,
           letzteMieterhoehung: d.letzteErhoehung ? monatZuDatum(d.letzteErhoehung) : (d.nieErhoeht && d.mieterSeit ? monatZuDatum(d.mieterSeit) : null),
         });
+      }
+      // Mehrfamilienhaus: die je Wohnung eingetragenen Mieter in die Mieterverwaltung übernehmen
+      if (istMFH && onSaveMieter) {
+        for (const m of mieterAusWohnungen(saved, [])) {
+          try { await onSaveMieter(m); } catch { /* einzelner Fehler: Hinweis kommt aus onSaveMieter */ }
+        }
       }
       try { localStorage.removeItem(ENTWURF_KEY); } catch { /* egal */ }
       setFertig(saved);
