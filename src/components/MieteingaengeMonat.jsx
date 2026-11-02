@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, Circle, AlertCircle, ChevronRight, Loader2, CalendarCheck, CalendarClock } from 'lucide-react';
 import KlappKopf from './KlappKopf';
+import { einheitenStatus } from '../utils/belegung.js';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 
@@ -28,7 +29,9 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
 
   aktivePortfolio.forEach(immo => {
     const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
-    if (aktiveMieter.length === 0) return;
+    // Mehrfamilienhaus: Mieter stehen (auch) an den Wohnungen — gleiche Belegungsregel wie überall
+    const hatMieter = immo.immobilienTyp === 'mehrfamilienhaus' ? einheitenStatus(immo, mieterListe).vermietet > 0 : aktiveMieter.length > 0;
+    if (!hatMieter) return;
 
     if (immo.immobilienTyp === 'mehrfamilienhaus' || immo.immobilienTyp === 'mietimmobilie') {
       sonstigeKacheln.push(immo);
@@ -59,7 +62,7 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
   const sollSumme = buchbareEintraege.reduce((s, e) => s + e.erwarteterBetrag, 0);
   const istSumme = buchbareEintraege.reduce((s, e) => s + (e.status === 'dauerauftrag' ? e.erwarteterBetrag : Math.min(e.summe, e.erwarteterBetrag)), 0);
   // A.1: Sobald alles verbucht ist, klappt der Block von selbst zu
-  const zu = eingeklappt ?? (offeneEintraege.length === 0);
+  const zu = eingeklappt ?? (buchbareEintraege.length > 0 && offeneEintraege.length === 0); // nur Objekte mit Wohnungen: offen lassen, damit sie sichtbar sind
 
   const buche = async (eintrag) => {
     // nach dem letzten offenen Eintrag wieder in den Automatik-Modus (klappt zu)
@@ -107,7 +110,7 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
         titel={`Mieteingänge ${monatsName} ${jahr}`}
         status={buchbareEintraege.length > 0
           ? { text: `${verbucht} von ${buchbareEintraege.length} verbucht`, ton: offeneEintraege.length === 0 ? 'gruen' : buchbareEintraege.some(e => e.ueberfaellig && e.status === 'offen') || buchbareEintraege.some(e => e.status === 'nicht_bezahlt') ? 'rot' : 'gelb' }
-          : { text: 'keine Miete erwartet', ton: 'grau' }}
+          : { text: sonstigeKacheln.length ? `${sonstigeKacheln.length} ${sonstigeKacheln.length === 1 ? 'Objekt' : 'Objekte'} mit eigener Übersicht` : 'keine Miete erwartet', ton: 'grau' }}
         kontext={buchbareEintraege.length > 0 ? `${formatCurrency(istSumme)} von ${formatCurrency(sollSumme)}` : null}
         offen={!zu}
         onToggle={() => setEingeklappt(!zu)}

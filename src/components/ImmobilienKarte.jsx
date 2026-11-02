@@ -5,6 +5,7 @@ import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete } from '.
 import { berechneWertsteigerungSeitKauf, berechneRestschuld, getAktuellerGesamtwert } from '../utils/berechnung.js';
 import { cashflowVorNach, beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
+import { einheitenStatus } from '../utils/belegung.js';
 
 const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, onOpenAufgabe, onDelete, onEdit }) => {
   const [mfhExpanded, setMfhExpanded] = useState(false);
@@ -26,6 +27,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
 
   // MFH: Wohnungen mit Mieterinfos
   const mfhWohnungen = isMFH ? (immobilie.wohnungen || []) : [];
+  const mfhBelegung = isMFH ? einheitenStatus(immobilie, mieterListe) : null;
 
   // Monatlicher Cashflow — einheitliche Berechnung via berechneMtlCashflow
   // Teil 3, Abschnitt 9: Cashflow vor UND nach Tilgung nebeneinander
@@ -206,21 +208,19 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
               className="w-full flex items-center justify-between text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
               title={mfhExpanded ? 'Mieterliste einklappen' : 'Mieterliste aufklappen'}
             >
-              <span className="flex items-center gap-1" title="Vermietungsstand"><Users size={14}/>Mieter ({mfhWohnungen.filter(w => w.mieterName && !w.mietende).length}/{mfhWohnungen.length} vermietet)</span>
+              <span className="flex items-center gap-1" title="Vermietungsstand"><Users size={14}/>Mieter ({mfhBelegung.vermietet}/{mfhBelegung.anzahl} vermietet)</span>
               <span className="text-gray-400">{mfhExpanded ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
             </button>
             {mfhExpanded && (
               <div className="mt-2 space-y-1">
-                {mfhWohnungen.map((w, i) => (
+                {mfhBelegung.einheiten.map((e, i) => (
                   <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0">
-                    <span className="text-gray-500 truncate mr-2">{w.name || `WE ${i + 1}`}</span>
-                    {(() => {
-                      const belegt = w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date());
-                      const jeMieter = !!(w.mieterName || w.mietende || w.mietbeginn);
-                      if (belegt) return <span className="font-medium truncate flex items-center gap-0.5 text-gray-800"><User size={12} className="inline"/>{w.mieterName}</span>;
-                      if (jeMieter) return <span className="font-medium flex items-center gap-0.5 text-red-400"><CircleDot size={10} className="text-red-400"/>Leerstand</span>;
-                      return <span className="text-gray-300 text-xs">Noch kein Mieter</span>;
-                    })()}
+                    <span className="text-gray-500 truncate mr-2">{e.name}</span>
+                    {e.status === 'vermietet'
+                      ? <span className="font-medium truncate flex items-center gap-0.5 text-gray-800"><User size={12} className="inline"/>{e.mieterName || 'vermietet'}</span>
+                      : e.status === 'leer'
+                        ? <span className="font-medium flex items-center gap-0.5 text-red-400"><CircleDot size={10} className="text-red-400"/>Leerstand</span>
+                        : <span className="text-gray-300 text-xs">Belegung offen</span>}
                   </div>
                 ))}
               </div>
