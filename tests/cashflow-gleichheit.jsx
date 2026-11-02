@@ -22,6 +22,7 @@ const faelle = {
   vollEigen: { ...basis, vollEigenfinanziert:true, finanzierungsphasen:[] },
   bauspar: { ...basis, ekFuerNebenkosten:20000, ekFuerKaufpreis:0, bausparvertraege:[{ id:1, monatlicheSparrate:350, zuteilungsreifAb:'2031-03-01' }] },
   festeRate: { ...basis, ekFuerNebenkosten:20000, ekFuerKaufpreis:0, finanzierungsphasen:[{ ...basis.finanzierungsphasen[0], monatlicherBetrag: 700 }] },
+  zweiDarlehen: { ...basis, ekFuerNebenkosten:20000, ekFuerKaufpreis:0, weitereDarlehen:[{ id:2, name:'KfW', zweck:'kauf', betrag:40000, phasen:[{ id:21, darlehensTyp:'annuitaet', sollzinssatz:1.5, anfangstilgung:2, zinsbindung:10, kreditStartDatum:'2022-03-01', zinsbindungBis:'2032-02-28' }] }] },
   stellplatzKaltmiete: { ...basis, vermietungsmodell:'kaltmiete', ekFuerNebenkosten:20000, ekFuerKaufpreis:0, stellplatz:{ vorhanden:true, istVermietet:true, monatlicheMiete:50, anzahl:2 } },
   mfh: { immobilienTyp:'mehrfamilienhaus', kaufpreis:800000, kaufnebenkosten:10, kaufdatum:'2019-01-01', geschaetzterWert:1000000, ekFuerNebenkosten:80000, ekFuerKaufpreis:0,
     finanzierungsphasen:[{ id:1, sollzinssatz:1.8, anfangstilgung:2.5, zinsbindung:10, kreditStartDatum:'2019-02-01', darlehensTyp:'annuitaet' }],

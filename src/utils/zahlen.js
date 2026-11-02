@@ -65,6 +65,9 @@ export function normalisiereImmobilie(immo) {
   setze('finanzierungsphasen', normListe(immo.finanzierungsphasen, PHASEN_FELDER,
     (p) => Array.isArray(p?.sondertilgungen) ? { ...p, sondertilgungen: normListe(p.sondertilgungen, ['betrag']) } : p));
   setze('bausparvertraege', normListe(immo.bausparvertraege, BAUSPAR_FELDER));
+  setze('weitereDarlehen', normListe(immo.weitereDarlehen, ['betrag'], (d) => Array.isArray(d?.phasen)
+    ? { ...d, phasen: normListe(d.phasen, PHASEN_FELDER, (p) => Array.isArray(p?.sondertilgungen) ? { ...p, sondertilgungen: normListe(p.sondertilgungen, ['betrag']) } : p) }
+    : d));
   setze('mietAnpassungen', normListe(immo.mietAnpassungen, ANPASSUNG_FELDER));
   setze('investitionen', normListe(immo.investitionen, ['betrag']));
   setze('wohnungen', normListe(immo.wohnungen, ['kaltmiete', 'wohnflaeche', 'nebenkosten', 'nkVorauszahlung'],

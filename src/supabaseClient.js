@@ -48,6 +48,8 @@ const ZUSATZ_KEYS = [
   'kostenZahler', 'heizung', 'rundfunk', 'arbitrageHeizung',
   // Sonderumlagen der WEG + Erhaltungsrücklage über das Hausgeld (steuerlich erst bei Verwendung)
   'sonderumlagen', 'hausgeldRuecklage', 'ruecklageVerwendung',
+  // Weitere, parallel laufende Darlehen (je mit eigenen Phasen/Anschlussfinanzierungen)
+  'weitereDarlehen',
 ];
 
 // Immobilie speichern (neu oder update)

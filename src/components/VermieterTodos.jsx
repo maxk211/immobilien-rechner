@@ -7,7 +7,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleUntermiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
 import { offeneRueckzahlungen, rateEingegangen } from '../utils/nachforderung.js';
 import { finanzierungsStatus, formatMonatJahr } from '../utils/finanzierung.js';
-import { darlehensVerlauf, anfangsFremdkapital } from '../utils/darlehen.js';
+import { darlehensVerlauf, anfangsFremdkapital, weitereDarlehen, darlehenAlsObjekt } from '../utils/darlehen.js';
 import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilitaet.js';
 import KlappKopf from './KlappKopf';
 import { sonderumlageHinweise } from '../utils/sonderumlage.js';
@@ -83,6 +83,29 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       immoId: immo.id,
       badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis',
       targetTab: 'finanzierung',
+    });
+  });
+
+  // ── 1a. Weitere Darlehen: Zinsbindung je Darlehen ───────────────────────────
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp === 'mietimmobilie' || immo.aktiv === false) return;
+    const name = immo.name || immo.adresse || 'Immobilie';
+    weitereDarlehen(immo).forEach((d, i) => {
+      const obj = darlehenAlsObjekt(immo, d);
+      const st = finanzierungsStatus(obj, heute);
+      if (!st || st.stufe === 'neutral' || st.monate == null) return;
+      const v = darlehensVerlauf(obj, heute);
+      if (v?.abbezahltHeute) return;
+      const ende = formatMonatJahr(st.letzte.ende);
+      const ungeprueft = st.letzte.endeGeschaetzt ? ' (Datum ungeprüft)' : '';
+      const dn = d.name || `Darlehen ${i + 2}`;
+      todos.push({
+        id: `zinsbindung-${immo.id}-d${d.id ?? i}`, priority: st.stufe, icon: <Landmark size={16} />, kategorie: 'Finanzierung',
+        titel: st.stufe === 'rot' ? `${dn}: Zinsbindung seit ${ende} abgelaufen — keine Anschlussfinanzierung hinterlegt${ungeprueft}`
+          : st.stufe === 'gelb' ? `${dn}: Zinsbindung endet ${ende} — noch ${Math.ceil(st.monate)} Monate${ungeprueft}`
+            : `${dn}: Zinsbindung endet ${ende} — Forward-Darlehen wäre jetzt möglich${ungeprueft}`,
+        sub: name, immoId: immo.id, badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis', targetTab: 'finanzierung',
+      });
     });
   });
 
