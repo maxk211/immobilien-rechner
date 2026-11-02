@@ -4,14 +4,14 @@ import KlappKopf from './KlappKopf';
 import { einheitenStatus } from '../utils/belegung.js';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
+import { mfhMonatsStatus, alleMietenBuchen } from '../utils/mfh.js';
 
 // Abschnitt 3.1 (Dashboard-Block "Mieteingänge des aktuellen Monats"): eine Kachel
 // pro aktivem Objekt mit Mieter(n), Sollbetrag + Status über dieselbe
 // berechneMietStatusFuerMonat()-Quelle wie Mieteinnahmen-Tab und Cockpit-Ampel.
-// Direktes Verbuchen ist bewusst auf Kaufimmobilien beschränkt — dort ist die
-// Miet-Logik (Fälligkeitstag, Dauerauftrag, ein Betrag pro Monat) klar definiert.
-// Mehrfamilienhäuser (mehrere Wohnungen) und Mietimmobilien (Untervermietung mit
-// Arbitrage-Logik) bekommen stattdessen eine einfache Kachel, die zum Objekt führt.
+// Direkt verbuchen: Eigentumswohnungen (ein Betrag pro Monat) und Mehrfamilienhäuser
+// (eine Kachel je Haus, bucht alle Wohnungen ohne Zahlung — Teilzahlungen bleiben).
+// Mietimmobilien (Untervermietung mit Arbitrage-Logik) führen zum Objekt.
 const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmobilie }) => {
   const [buchtId, setBuchtId] = useState(null);
   const [bulkLaeuft, setBulkLaeuft] = useState(false);
@@ -33,7 +33,26 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
     const hatMieter = immo.immobilienTyp === 'mehrfamilienhaus' ? einheitenStatus(immo, mieterListe).vermietet > 0 : aktiveMieter.length > 0;
     if (!hatMieter) return;
 
-    if (immo.immobilienTyp === 'mehrfamilienhaus' || immo.immobilienTyp === 'mietimmobilie') {
+    // Mehrfamilienhaus: eine Kachel je Haus, ein Klick bucht alle Wohnungen ohne Zahlung
+    // (gleiche Regel wie die Sammelbuchung im Objekt, utils/mfh.js)
+    if (immo.immobilienTyp === 'mehrfamilienhaus') {
+      const st = mfhMonatsStatus(immo.wohnungen, jahr, monatNr).filter(x => x.status !== 'keine');
+      if (!st.length) { sonstigeKacheln.push(immo); return; }
+      const faelligkeitstag = immo.mieteFaelligkeitstag ?? 3;
+      const soll = st.reduce((a, x) => a + x.soll, 0);
+      const ist = st.reduce((a, x) => a + Math.min(x.ist, x.soll), 0);
+      const offen = st.filter(x => x.status === 'offen');
+      const ok = st.filter(x => x.status === 'bezahlt').length;
+      const status = st.some(x => x.status === 'nicht_bezahlt') ? 'nicht_bezahlt'
+        : ok === st.length ? 'bezahlt' : (ist > 0 ? 'teilweise' : 'offen');
+      buchbareEintraege.push({
+        immo, mfh: true, erwarteterBetrag: soll, status, summe: ist, restBetrag: offen.reduce((a, x) => a + x.soll, 0),
+        offeneWE: offen.length, ueberfaellig: status !== 'bezahlt' && heute.getDate() > faelligkeitstag,
+        mieterName: `${ok} von ${st.length} Wohnungen eingegangen`, faelligkeitstag,
+      });
+      return;
+    }
+    if (immo.immobilienTyp === 'mietimmobilie') {
       sonstigeKacheln.push(immo);
       return;
     }
@@ -67,6 +86,13 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
   const buche = async (eintrag) => {
     // nach dem letzten offenen Eintrag wieder in den Automatik-Modus (klappt zu)
     if (offeneEintraege.length <= 1) setEingeklappt(null);
+    if (eintrag.mfh) {
+      if (!eintrag.offeneWE) { onOpenImmobilie(eintrag.immo, 'mieteinnahmen'); return; }
+      setBuchtId(eintrag.immo.id);
+      try { await onBuchen(eintrag.immo.id, { wohnungen: alleMietenBuchen(eintrag.immo.wohnungen, jahr, monatNr).wohnungen }); }
+      finally { setBuchtId(null); }
+      return;
+    }
     const betrag = eintrag.status === 'teilweise' ? eintrag.restBetrag : eintrag.erwarteterBetrag;
     if (betrag <= 0) return;
     setBuchtId(eintrag.immo.id);
@@ -84,7 +110,7 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
   const bucheAlle = async () => {
     setBulkLaeuft(true);
     try {
-      for (const eintrag of offeneEintraege) {
+      for (const eintrag of offeneEintraege.filter(e => !e.mfh || e.offeneWE)) {
         await buche(eintrag);
       }
     } finally {
@@ -150,7 +176,9 @@ const MieteingaengeMonat = ({ portfolio, mieterListe = [], onBuchen, onOpenImmob
                   className="mt-auto text-xs font-bold bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {laedt && <Loader2 size={12} className="animate-spin" />}
-                  {eintrag.status === 'teilweise' ? `Rest (${formatCurrency(eintrag.restBetrag)}) buchen` : 'Als eingegangen buchen'}
+                  {eintrag.mfh
+                    ? (eintrag.offeneWE ? `${eintrag.offeneWE} ${eintrag.offeneWE === 1 ? 'Wohnung' : 'Wohnungen'} als eingegangen buchen (${formatCurrency(eintrag.restBetrag)})` : 'Teilzahlungen ansehen')
+                    : eintrag.status === 'teilweise' ? `Rest (${formatCurrency(eintrag.restBetrag)}) buchen` : 'Als eingegangen buchen'}
                 </button>
               ) : (
                 <button

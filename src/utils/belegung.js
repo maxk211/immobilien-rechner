@@ -9,6 +9,8 @@
 //   • unbekannt     — keine Angaben. Fehlende Mieterdatensätze sind KEIN bestätigter Leerstand.
 // Gesamt: voll · teilweise · leer · unbekannt · eigennutzung
 
+import { weMieteAm } from './mfh.js';
+
 const norm = (s) => String(s || '').trim().toLocaleLowerCase('de-DE');
 const laeuft = (ende, heute) => !ende || new Date(ende) >= heute;
 
@@ -64,7 +66,7 @@ export function einheitenStatus(immo, mieterListe = [], heute = new Date()) {
 export function mieterAusWohnungen(immo, mieterListe = [], heute = new Date()) {
   if (immo?.immobilienTyp !== 'mehrfamilienhaus') return [];
   return einheitenStatus(immo, mieterListe, heute).ohneMieterdatensatz.map(e => {
-    const kalt = Number(e.wohnung?.kaltmiete) || 0;
+    const kalt = weMieteAm(e.wohnung) || 0; // aktuelle Miete inkl. Mieterhöhungen
     return {
       immobilieId: immo.id,
       name: e.mieterName,
@@ -73,6 +75,7 @@ export function mieterAusWohnungen(immo, mieterListe = [], heute = new Date()) {
       gesamtueberweisung: kalt || null,
       mietbeginn: e.wohnung?.mietbeginn || null,
       mietende: e.wohnung?.mietende || null,
+      letzteMieterhoehung: e.wohnung?.letzteMieterhoehung || null,
       aktiv: true,
     };
   });

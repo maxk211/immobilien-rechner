@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'react-hot-toast';
 import { normalisiereImmobilie, zahlAusText } from './utils/zahlen.js';
+import { mfhMietAggregat, hatWeAnpassungen } from './utils/mfh.js';
 
 // Supabase Konfiguration
 // Diese Werte findest du in deinem Supabase Dashboard:
@@ -161,7 +162,8 @@ function dbToAppRoh(db) {
     eigenkapital: Number(db.eigenkapital) || 0,
     ekFuerNebenkosten: db.ek_fuer_nebenkosten != null ? Number(db.ek_fuer_nebenkosten) : undefined,
     ekFuerKaufpreis: db.ek_fuer_kaufpreis != null ? Number(db.ek_fuer_kaufpreis) : undefined,
-    kaltmiete: Number(db.kaltmiete) || 0,
+    // MFH: Miete kommt aus den Wohnungen (Ausgangsmiete + Mieterhöhungen je Wohnung)
+    kaltmiete: (db.immobilien_typ === 'mehrfamilienhaus' && (db.wohnungen || []).length) ? mfhMietAggregat(db.wohnungen).kaltmiete : (Number(db.kaltmiete) || 0),
     geschaetzterWert: Number(db.geschaetzter_wert) || 0,
     // Bug-Fix: != null statt || bei allen Feldern, wo 0 ein gültiger, bewusst
     // gesetzter Wert sein kann (z.B. 0 % Tilgung in der Tilgungsfreistellung,
@@ -210,7 +212,7 @@ function dbToAppRoh(db) {
     kaufnebenkostenPositionen: db.kaufnebenkosten_positionen,
     aktiv: db.aktiv !== false,
     aufgabedatum: db.aufgabedatum || '',
-    mietAnpassungen: db.miet_anpassungen || [],
+    mietAnpassungen: (db.immobilien_typ === 'mehrfamilienhaus' && hatWeAnpassungen(db.wohnungen)) ? mfhMietAggregat(db.wohnungen).mietAnpassungen : (db.miet_anpassungen || []),
     mietvertragEnde: db.mietvertrag_ende || '',
     dauerauftrag: db.dauerauftrag || false,
     dauerauftragBetrag: Number(db.dauerauftrag_betrag) || 0,

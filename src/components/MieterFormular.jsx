@@ -164,7 +164,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
       // Mietanpassung erst JETZT (nach erfolgreichem Mieter-Speichern) an die
       // Immobilie weiterreichen — siehe pendingImmoSync-Kommentar oben.
       if (pendingImmoSync && onMietanpassungFuerImmobilie) {
-        await onMietanpassungFuerImmobilie(pendingImmoSync);
+        await onMietanpassungFuerImmobilie(pendingImmoSync, { ...(mieter || {}), ...(savedMieter || {}), name: form.name, zimmer_bezeichnung: form.zimmerBezeichnung ?? mieter?.zimmer_bezeichnung });
         setPendingImmoSync(null);
       }
       // Gepufferte Dokumente für neuen Mieter jetzt hochladen

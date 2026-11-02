@@ -4,6 +4,7 @@ import { darlehensVerlauf, anfangsFremdkapital, hatDarlehen, fremdkapitalGesamt,
 import { bausparMonat } from './bauspar.js';
 import { normalisiereImmobilie, zahl } from './zahlen.js';
 import { sonderumlageImMonat } from './sonderumlage.js';
+import { mfhMieteAm } from './mfh.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
@@ -574,7 +575,7 @@ export const cashflowMonat = (immo, heute = new Date()) => {
   const istMFH = typ === 'mehrfamilienhaus';
   // MFH: Miete und Kosten je Wohnung (wie in der MFH-Detailansicht), sonst Kostenstruktur
   const kaltmiete = istMFH
-    ? (immo.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0)
+    ? mfhMieteAm(immo.wohnungen, heute)
     : getAktuelleMiete(immo);
   let betrieb, nkImCashflow = 0, ks = null;
   if (istMFH) {
