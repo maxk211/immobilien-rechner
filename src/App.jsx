@@ -5,7 +5,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { getXLSX, getJsPDF } from './utils/lazyLibs.js';
 import { supabase, loadImmobilien, saveImmobilie, deleteImmobilie, deleteDokument, loadMieter, saveMieter, deleteMieter, loadNKAbrechnungen, saveNKAbrechnung, deleteNKAbrechnung, loadKalkulationen, saveKalkulation, deleteKalkulation } from './supabaseClient';
 import Auth from './Auth';
-import { anfangsFremdkapital } from './utils/darlehen.js';
+import { anfangsFremdkapital, fremdkapitalGesamt } from './utils/darlehen.js';
 import { hausgeldSteuerJahr, erhaltungsaufwandJahr } from './utils/sonderumlage.js';
 import ImmobilieLoeschenDialog from './components/ImmobilieLoeschenDialog';
 import { isFounderEmail } from './config/payments';
@@ -464,7 +464,7 @@ function App() {
       // Zinsbindungsende der laufenden Phase als Datum (Teil 3, Abschnitt 5.2)
       const finSt = finanzierungsStatus(immo);
       let zinsbindungBisStr = '—';
-      const fkImmo = anfangsFremdkapital(immo); // Darlehensbetrag — auch bei Erbe/Schenkung mit Kredit
+      const fkImmo = fremdkapitalGesamt(immo); // Darlehensbetrag aller Darlehen — auch bei Erbe/Schenkung mit Kredit
       if (finSt?.letzte?.ende && fkImmo > 0) {
         const d = finSt.letzte.ende;
         zinsbindungBisStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
@@ -935,7 +935,7 @@ function App() {
       gesamtEinnahmen += kaltmiete + umlagen;
 
       // Annuitätisch korrekte Schuldzinsen (sinken mit steigender Tilgung, phasenbewusst)
-      sumSchuldzinsen   += berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
+      sumSchuldzinsen   += berechneJahresZinsenFuerSteuer(immo, jahr); // monatsgenau, Teiljahre schon enthalten
       // Jahresgenau via getJahresDurchschnittFuerFeld: berücksichtigt Kostenanpassungen
       // (Bug-Fix: vorher wurde immer der aktuelle Basiswert genutzt, unabhängig vom Exportjahr)
       // Eigene Rücklage für Reparaturen ist nicht absetzbar (nur Info); Hausgeld ohne Zuführung
@@ -1047,7 +1047,7 @@ function App() {
         const kaltmieteJahr = berechneJahresmiete(immo, jahr);
 
         // Schuldzinsen (annuitätisch korrekt, phasenbewusst)
-        const schuldzinsenJahr = berechneJahresZinsenFuerSteuer(immo, jahr) * faktor;
+        const schuldzinsenJahr = berechneJahresZinsenFuerSteuer(immo, jahr); // monatsgenau, alle Darlehen
 
         // Kosten (pro-rata, jahresgenau — berücksichtigt Kostenanpassungen)
         const umlagen = (immo.vermietungsmodell === 'kaltmiete_nk' ? getJahresDurchschnittFuerFeld(immo, jahr, 'nebenkostenVomMieter') * 12 * faktor : 0);

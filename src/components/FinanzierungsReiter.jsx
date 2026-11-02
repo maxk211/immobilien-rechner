@@ -32,7 +32,7 @@ function Kachel({ label, wert, sub, ton }) {
   );
 }
 
-export default function FinanzierungsReiter({ params, updateParams, marktwert, cashflowNachTilgung = 0 }) {
+export default function FinanzierungsReiter({ params, updateParams, marktwert, cashflowNachTilgung = 0, bezeichnung = 'Darlehen 1' }) {
   const heute = new Date();
   const v = useMemo(() => darlehensVerlauf(params, heute), [params]); // eslint-disable-line react-hooks/exhaustive-deps
   const [panelIdx, setPanelIdx] = useState(null);
@@ -163,7 +163,7 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
         <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">{phasen.length > 1 ? `Phase ${aktiv.idx + 1}` : 'Darlehen 1'}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">{phasen.length > 1 ? `${bezeichnung} · Phase ${aktiv.idx + 1}` : bezeichnung}</span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${abbezahlt ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{abbezahlt ? 'abbezahlt' : 'läuft'}</span>
             </div>
             <div className="text-sm font-bold text-gray-900 truncate">{aktiv.phase.kreditinstitut || 'Bank nicht hinterlegt'} · {TYP_LABEL[aktiv.phase.darlehensTyp] || 'Annuität'}</div>

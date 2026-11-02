@@ -51,7 +51,7 @@ export const phasenRate = (phase, startbetrag, immo) => {
 /**
  * @returns {null | { monate, phasen, restschuldAm(date), restschuldHeute, rateHeute, abbezahltHeute, schuldenfrei }}
  */
-export function darlehensVerlauf(immo, heute = new Date()) {
+function darlehensVerlaufEinzeln(immo, heute = new Date()) {
   immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   const phasen = immo?.finanzierungsphasen || [];
   const fk = anfangsFremdkapital(immo || {});
@@ -178,3 +178,79 @@ export function mitSondertilgung(immo, phaseIdx, betrag, datum = new Date()) {
 // Neue Monatsrate bei Anschlusszins: Restschuld × (Zins + Tilgung) / 12
 export const anschlussRate = (restschuld, zinsProzent, tilgungProzent) =>
   restschuld * ((zinsProzent + tilgungProzent) / 100) / 12;
+
+// ── Mehrere parallele Darlehen ─────────────────────────────────────────────────────
+// immo.finanzierungsphasen = Darlehen 1 (mit seinen Anschlussfinanzierungen).
+// immo.weitereDarlehen = [{ id, name, zweck: 'kauf'|'modernisierung'|'sonstiges', betrag,
+//                           phasen: [...] }] — jedes mit eigenen Phasen/Anschlüssen.
+// Anschlussfinanzierungen hängen immer am eigenen Darlehen; abgelöste Phasen laufen
+// in der Kette weiter und werden nie doppelt gerechnet.
+
+// Ein weiteres Darlehen als eigenständiges „Objekt“ für die Einzelrechnung
+export const darlehenAlsObjekt = (immo, d) => ({
+  ...immo,
+  finanzierungsphasen: d?.phasen || [],
+  finanzierungsbetrag: d?.betrag ?? 0,
+  geschenkt: false, vollEigenfinanziert: false, kreditLaeuftBereits: false,
+  ekFuerNebenkosten: undefined, ekFuerKaufpreis: undefined,
+  weitereDarlehen: [], bausparvertraege: [],
+});
+
+export const weitereDarlehen = (immo) => (immo?.weitereDarlehen || []).filter(d => d && (d.phasen || []).length);
+
+// Verlauf je Darlehen: [{ idx, name, zweck, darlehen, verlauf }] — Darlehen 1 zuerst
+export function darlehensListe(immo, heute = new Date()) {
+  const liste = [];
+  const haupt = darlehensVerlaufEinzeln(immo, heute);
+  if (haupt) liste.push({ idx: 0, name: (immo?.finanzierungsphasen || [])[0]?.kreditinstitut || 'Darlehen 1', zweck: 'kauf', darlehen: null, verlauf: haupt });
+  weitereDarlehen(immo).forEach((d, i) => {
+    const v = darlehensVerlaufEinzeln(darlehenAlsObjekt(immo, d), heute);
+    if (v) liste.push({ idx: i + 1, name: d.name || `Darlehen ${i + 2}`, zweck: d.zweck, darlehen: d, verlauf: v });
+  });
+  return liste;
+}
+
+// Gesamtverlauf: Raten, Zinsen, Tilgung und Restschuld aller Darlehen zusammengeführt.
+// Gleiche Felder wie der Einzelverlauf, damit Cashflow, Steuer, Cockpit und Karte
+// unverändert damit rechnen. `phasen`/`aktivIdx` beziehen sich auf Darlehen 1.
+export function darlehensVerlauf(immo, heute = new Date()) {
+  immo = normalisiereImmobilie(immo);
+  const haupt = darlehensVerlaufEinzeln(immo, heute);
+  if (!weitereDarlehen(immo).length) return haupt;
+  const liste = darlehensListe(immo, heute);
+  if (!liste.length) return null;
+  if (liste.length === 1) return { ...liste[0].verlauf, darlehen: liste };
+  const vs = liste.map(x => x.verlauf);
+  const proIdx = new Map();
+  vs.forEach(v => v.monate.forEach(e => {
+    const a = proIdx.get(e.idx) || { idx: e.idx, zins: 0, tilgung: 0, sonder: 0, rsVor: 0, rsNach: 0 };
+    a.zins += e.zins; a.tilgung += e.tilgung; a.sonder += e.sonder; a.rsVor += e.rsVor; a.rsNach += e.rsNach;
+    proIdx.set(e.idx, a);
+  }));
+  const monate = [...proIdx.values()].sort((a, b) => a.idx - b.idx);
+  const summe = (f) => vs.reduce((s, v) => s + (f(v) || 0), 0);
+  const restschuldAm = (d) => vs.reduce((s, v) => s + v.restschuldAm(d), 0);
+  const restschuldHeute = summe(v => v.restschuldHeute);
+  const alleFrei = vs.every(v => v.schuldenfrei || v.abbezahltHeute);
+  const basis = haupt || vs[0];
+  return {
+    ...basis,
+    monate,
+    fk: summe(v => v.fk),
+    restschuldAm,
+    restschuldHeute,
+    rateHeute: summe(v => (v.abbezahltHeute ? 0 : v.rateHeute)),
+    zinsHeute: summe(v => (v.abbezahltHeute ? 0 : v.zinsHeute)),
+    tilgungHeute: summe(v => (v.abbezahltHeute ? 0 : v.tilgungHeute)),
+    abbezahltHeute: restschuldHeute <= 0.5,
+    schuldenfrei: alleFrei ? new Date(Math.max(...vs.map(v => (v.schuldenfrei || heute).getTime()))) : null,
+    tilgungImJahr: (jahr) => summe(v => v.tilgungImJahr(jahr)),
+    zinsenImJahr: (jahr) => summe(v => v.zinsenImJahr(jahr)),
+    darlehen: liste,
+  };
+}
+
+// Darlehenssumme gesamt (Anfangswerte) und der Teil, der den Kauf finanziert hat
+export const fremdkapitalGesamt = (immo) => anfangsFremdkapital(immo || {}) + weitereDarlehen(immo).reduce((s, d) => s + (Number(d.betrag) || 0), 0);
+export const fremdkapitalKauf = (immo) => anfangsFremdkapital(immo || {}) + weitereDarlehen(immo).filter(d => d.zweck === 'kauf').reduce((s, d) => s + (Number(d.betrag) || 0), 0);
+export const hatDarlehen = (immo) => anfangsFremdkapital(immo || {}) > 0 || weitereDarlehen(immo).length > 0;

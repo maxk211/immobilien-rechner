@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import ZahlInput from './ZahlInput';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo, marktwertInfo } from './SchaetzInfo';
+import WeitereDarlehen, { HauptDarlehenReiter } from './WeitereDarlehen';
 
 // ─── Dokumente-Tab ────────────────────────────────────────────────────────────
 const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
@@ -285,6 +286,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     mietEingaenge: immobilie.mietEingaenge || [],
     nachforderungen: immobilie.nachforderungen || [],
     kappungsgrenze: immobilie.kappungsgrenze ?? null,
+    // Sonderumlagen/Erhaltungsrücklage und weitere Darlehen — müssen in params stehen, sonst
+    // zeigt die Oberfläche nach dem Neuladen nichts an und eine neue Eingabe überschreibt sie
+    sonderumlagen: immobilie.sonderumlagen || [],
+    hausgeldRuecklage: immobilie.hausgeldRuecklage ?? null,
+    ruecklageVerwendung: immobilie.ruecklageVerwendung || [],
+    weitereDarlehen: immobilie.weitereDarlehen || [],
     steuersatz: immobilie.steuersatz || 42,
     gebaeudeAnteilProzent: immobilie.gebaeudeAnteilProzent || 80,
     afaModus: immobilie.afaModus || 'linear',
@@ -1720,7 +1727,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
 
             return (
               <div className="space-y-5">
-                <FinanzierungsReiter params={params} updateParams={updateParams} marktwert={aktuellerWert}
+                <HauptDarlehenReiter params={params} updateParams={updateParams} marktwert={aktuellerWert}
+                  cashflowNachTilgung={berechneMtlCashflow({ ...immobilie, ...params })} />
+                {/* Beliebig viele parallel laufende Darlehen — jedes mit eigenen Konditionen und Anschlüssen */}
+                <WeitereDarlehen params={params} updateParams={updateParams} marktwert={aktuellerWert}
                   cashflowNachTilgung={berechneMtlCashflow({ ...immobilie, ...params })} />
 
 

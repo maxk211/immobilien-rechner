@@ -1,6 +1,6 @@
 import { getPreisNachPLZ } from '../constants/plz.js';
 import { getAktuelleMiete, getAktuelleUntermiete, getAktuelleWarmmiete, getAktuellerWert, zahltIchAm, zahlerAnteilJahr, arbitrageZusatzkosten } from './miete.js';
-import { darlehensVerlauf, anfangsFremdkapital } from './darlehen.js';
+import { darlehensVerlauf, anfangsFremdkapital, hatDarlehen, fremdkapitalGesamt, fremdkapitalKauf, weitereDarlehen } from './darlehen.js';
 import { bausparMonat } from './bauspar.js';
 import { normalisiereImmobilie, zahl } from './zahlen.js';
 import { sonderumlageImMonat } from './sonderumlage.js';
@@ -115,7 +115,7 @@ export const berechneRestschuld = (immobilie) => {
   immobilie = normalisiereImmobilie(immobilie); // Text/leer → Zahl/null (utils/zahlen.js)
   // Phase F: datumsgenauer Verlauf (Sondertilgungen, abbezahlt) hat Vorrang — dieselbe
   // Rechnung wie der Finanzierungs-Reiter, auch bei Erbe/Schenkung ohne Kaufpreis.
-  const verlaufRS = (immobilie.finanzierungsphasen || []).length ? darlehensVerlauf(immobilie) : null;
+  const verlaufRS = ((immobilie.finanzierungsphasen || []).length || weitereDarlehen(immobilie).length) ? darlehensVerlauf(immobilie) : null;
   if (verlaufRS) {
     return { restschuld: Math.round(verlaufRS.restschuldHeute), anfangsFremdkapital: verlaufRS.fk, getilgt: Math.max(0, verlaufRS.fk - verlaufRS.restschuldHeute) };
   }
@@ -123,7 +123,7 @@ export const berechneRestschuld = (immobilie) => {
   // Geschenkt oder voll eigenfinanziert: es existiert kein Kredit, also auch
   // keine Restschuld — sonst würde unten fälschlich ein Fremdkapital in Höhe
   // der Kaufnebenkosten (Default 10 %) konstruiert und "getilgt".
-  if (!immobilie.kreditLaeuftBereits && anfangsFremdkapital(immobilie) <= 0) {
+  if (!immobilie.kreditLaeuftBereits && !hatDarlehen(immobilie)) {
     return { restschuld: 0, anfangsFremdkapital: 0, getilgt: 0 };
   }
 
@@ -219,65 +219,12 @@ export const berechneJahresRateFuerPhasen = (phasen, fremdkapital, kreditStartJa
  * Ersetzt die vereinfachte Formel fremdkapital × zinssatz im Steuerexport.
  */
 export const berechneJahresZinsenFuerSteuer = (immo, targetJahr) => {
-  immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
-  if (anfangsFremdkapital(immo) <= 0) return 0;
-
-  const kaufjahr = immo.kaufdatum ? new Date(immo.kaufdatum).getFullYear() : null;
-  if (!kaufjahr || targetJahr < kaufjahr) return 0;
-
-  // Fremdkapital: gemeinsame Regel
-  const fk = anfangsFremdkapital(immo);
-
-  if (fk <= 0) return 0;
-
-  // Phasen-Timeline vorberechnen (startRelJahr, zinssatz, monthlyRate)
-  const phasen = immo.finanzierungsphasen || [];
-  const timeline = [];
-  let tempRS = fk;
-  let offset = 0;
-  if (phasen.length > 0) {
-    for (let p = 0; p < phasen.length; p++) {
-      const ph = phasen[p];
-      const pz = ph.sollzinssatz ?? ph.zinssatz ?? (immo.zinssatz || 4);
-      const phaseLaufzeit = ph.zinsbindung || 10;
-      const startRS = (p > 0 && ph.restschuldOverride != null) ? ph.restschuldOverride : tempRS;
-      const at = ph.anfangstilgung || (immo.tilgung || 2.0);
-      const mz = pz / 100 / 12;
-      const rate = ph.monatlicherBetrag > 0 ? ph.monatlicherBetrag : startRS * (mz + at / 100 / 12);
-      timeline.push({ startRelJahr: offset, zinssatz: pz, monthlyRate: rate });
-      let pr = startRS;
-      for (let m = 0; m < phaseLaufzeit * 12 && pr > 0; m++) {
-        const mzM = pr * mz;
-        pr = Math.max(0, pr - Math.min(rate - mzM, pr));
-      }
-      tempRS = pr;
-      offset += phaseLaufzeit;
-    }
-  } else {
-    const pz = immo.zinssatz || 4;
-    const mz = pz / 100 / 12;
-    const lauf = immo.laufzeit || 25;
-    const rate = mz > 0 ? fk * mz * Math.pow(1 + mz, lauf * 12) / (Math.pow(1 + mz, lauf * 12) - 1) : fk * (immo.tilgung || 2) / 100 / 12;
-    timeline.push({ startRelJahr: 0, zinssatz: pz, monthlyRate: rate });
-  }
-
-  // Jahresweise simulieren und Zinsanteil für targetJahr ermitteln
-  let rs = fk;
-  for (let yr = kaufjahr; yr <= targetJahr && rs > 0; yr++) {
-    const relJahr = yr - kaufjahr;
-    // Aktive Phase: letzter Eintrag mit startRelJahr ≤ relJahr
-    let active = timeline[timeline.length - 1];
-    for (const t of timeline) { if (relJahr >= t.startRelJahr) active = t; }
-    const monatszins = active.zinssatz / 100 / 12;
-    let jahresZinsen = 0;
-    for (let m = 0; m < 12 && rs > 0; m++) {
-      const mzM = rs * monatszins;
-      jahresZinsen += mzM;
-      rs = Math.max(0, rs - Math.min(active.monthlyRate - mzM, rs));
-    }
-    if (yr === targetJahr) return Math.round(jahresZinsen);
-  }
-  return 0;
+  // Dieselbe monatsgenaue Rechnung wie Steuer-Reiter und Finanzierung (alle Darlehen,
+  // Kreditstart, Zinsbindungsdaten, Sondertilgungen). Vorher eine eigene Jahresnäherung ab
+  // dem Kaufjahr, die vom Steuer-Reiter abwich. Teiljahre sind bereits monatsgenau enthalten.
+  immo = normalisiereImmobilie(immo);
+  if (!immo.kreditLaeuftBereits && !hatDarlehen(immo)) return 0;
+  return Math.round(berechneZinsUndTilgung(immo, targetJahr)?.zinsen ?? 0);
 };
 
 // ── Kostenstruktur (UX-Paket Teil 2, Nachtrag + Rechenregeln) ────────────────
@@ -472,14 +419,19 @@ export const berechneRendite = (params) => {
   const annuitaet = (aktivePhaseDaten?.monatlicherBetrag > 0)
     ? aktivePhaseDaten.monatlicherBetrag
     : (effKredit > 0 && monatszins > 0 ? effKredit * (monatszins * Math.pow(1 + monatszins, effLaufzeit * 12)) / (Math.pow(1 + monatszins, effLaufzeit * 12) - 1) : 0);
-  const jahresannuitaet = annuitaet * 12;
+  // Rate für die Renditen aus derselben Quelle wie Cashflow und Finanzierung — inkl. aller
+  // weiteren Darlehen. Ohne Finanzierungsphasen (Altdaten) bleibt die Näherung oben.
+  const dvRendite = ((params.finanzierungsphasen || []).length || weitereDarlehen(params).length) ? darlehensVerlauf(params) : null;
+  const rateGesamt = dvRendite ? (dvRendite.abbezahltHeute ? 0 : dvRendite.rateHeute) : annuitaet;
+  const jahresannuitaet = rateGesamt * 12;
 
   const cashflowVorSteuern = nettoEinnahmen - jahresannuitaet;
   // B4: Für Renditen zählt das tatsächlich eingesetzte Eigenkapital = Gesamtinvestition
   // minus Darlehen. Die einzelnen EK-Felder können dem Darlehensbetrag widersprechen
   // (z. B. Vollfinanzierung inkl. Nebenkosten, alte EK-Angabe noch gesetzt) — dann
   // entstanden Werte wie 111 % auf einen Eigenkapital-Anteil, den es so nicht gab.
-  const ekEingesetzt = kreditLaeuftBereits ? gesamtEK : Math.max(0, gesamtinvestition - fremdkapital);
+  // Weitere Darlehen zählen hier nur, wenn sie den Kauf mitfinanziert haben (z. B. KfW-Kredit).
+  const ekEingesetzt = kreditLaeuftBereits ? gesamtEK : Math.max(0, gesamtinvestition - (fremdkapital + fremdkapitalKauf(params) - anfangsFremdkapital(params)));
   const cashOnCash = ekEingesetzt > 0 ? (cashflowVorSteuern / ekEingesetzt) * 100 : 0;
 
   // Abschnitt 7.5: bei 0€ Eigenkapital ist die EK-Rendite nicht 0%, sondern nicht
@@ -548,14 +500,17 @@ export const berechneRendite = (params) => {
     const jahresZinsen = restschuld * (jahresZinssatz / 100);
     const jahresTilgung = Math.min(jahresrate - jahresZinsen, restschuld);
 
+    // Weitere Darlehen (eigene Verläufe) in Restschuld und Rate des Jahres
+    const extraRS = dvRendite?.darlehen ? dvRendite.darlehen.slice(1).reduce((x, d) => x + d.verlauf.restschuldAm(new Date(kaufjahr + i, 0, 1)), 0) : 0;
+    const extraRate = dvRendite?.darlehen ? dvRendite.darlehen.slice(1).reduce((x, d) => x + d.verlauf.zinsenImJahr(kaufjahr + i) + d.verlauf.tilgungImJahr(kaufjahr + i), 0) : 0;
     entwicklung.push({
       jahr: kaufjahr + i,
       jahrRelativ: i,
       immobilienwert: Math.round(aktuellerWert),
-      restschuld: Math.round(restschuld),
-      eigenkapital: Math.round(aktuellerWert - restschuld),
+      restschuld: Math.round(restschuld + extraRS),
+      eigenkapital: Math.round(aktuellerWert - restschuld - extraRS),
       jahresmiete: Math.round(aktuelleMiete * 12),
-      cashflow: Math.round((aktuelleMiete * 12) + jahresNKVomMieter - jahresVermieterKosten - jahresrate)
+      cashflow: Math.round((aktuelleMiete * 12) + jahresNKVomMieter - jahresVermieterKosten - jahresrate - extraRate)
     });
 
     aktuellerWert *= (1 + wertsteigerung / 100);
@@ -573,12 +528,12 @@ export const berechneRendite = (params) => {
     ekRenditeNichtAussagekraeftig,
     cashOnCash,
     leverageEffekt,
-    monatlicheRate: annuitaet,
+    monatlicheRate: rateGesamt,
     cashflowMonatlich: cashflowVorSteuern / 12,
     entwicklung,
     gesamtTilgung,
     gesamtZinsen,
-    fremdkapital,
+    fremdkapital: fremdkapital + fremdkapitalGesamt(params) - anfangsFremdkapital(params),
     kaufnebenkostenAbsolut,
     // Aktive Phase für CashflowUebersicht
     effZinssatz,
@@ -642,7 +597,7 @@ export const cashflowMonat = (immo, heute = new Date()) => {
   // Darlehen mit Phasen: Rate, Zins und Tilgung aus derselben Quelle wie der Finanzierungs-Reiter
   // (darlehensVerlauf). Vorher konnte der Cashflow die Aufteilung über einen zweiten Weg herleiten
   // und bei frisch gestarteten Krediten "Zinsen = ganze Rate, Tilgung 0" zeigen.
-  const dv = (immo.finanzierungsphasen || []).length ? darlehensVerlauf(immo, heute) : null;
+  const dv = ((immo.finanzierungsphasen || []).length || weitereDarlehen(immo).length) ? darlehensVerlauf(immo, heute) : null;
   if (dv) {
     // Rate, Zins und Tilgung exakt aus dem Monat von heute (bzw. der ersten Rate, wenn der
     // Kredit erst startet): Zins = Restschuld × Sollzins / 12, Tilgung = Rate − Zins.
@@ -718,7 +673,7 @@ export const berechneZinsUndTilgung = (params, targetJahr, targetMonat = null) =
 
   // Phase F: datumsgenauer Verlauf (Zinsbindung-bis-Daten, erfasste Sondertilgungen,
   // "Darlehen abbezahlt") — eine Rechnung für Finanzierungs-Reiter, Cashflow und Steuer.
-  if (phasen.length > 0) {
+  if (phasen.length > 0 || weitereDarlehen(params).length) {
     const v = darlehensVerlauf(params);
     if (v) {
       const von = targetJahr * 12 + (targetMonat !== null ? targetMonat : 0);
@@ -827,10 +782,10 @@ export const berechneImmoVermoegenswerte = (immo) => {
   if (immo.immobilienTyp === 'mietimmobilie') return null;
   const marktwertGeschenkt = getAktuellerGesamtwert(immo);
   // Ob ein Kredit zählt, entscheidet allein das Darlehen — nicht die Erwerbsart (B12/B7)
-  if (!immo.kreditLaeuftBereits && anfangsFremdkapital(immo) <= 0) {
+  if (!immo.kreditLaeuftBereits && !hatDarlehen(immo)) {
     return { fremdkapital: 0, restschuld: 0, tilgungJahr: 0, freiVermoegen: marktwertGeschenkt, marktwert: marktwertGeschenkt };
   }
-  const fremdkapital = anfangsFremdkapital(immo);
+  const fremdkapital = fremdkapitalGesamt(immo);
   const marktwert = getAktuellerGesamtwert(immo);
 
   if (immo.kreditLaeuftBereits && immo.aktuelleRestschuld != null) {
@@ -861,10 +816,10 @@ export const berechneImmoVermoegenswerte = (immo) => {
   const aktuellesJahr = jetzt.getFullYear();
 
   // Phase F: datumsgenauer Verlauf inkl. Sondertilgungen und "abbezahlt"
-  const verlauf = (phasen && phasen.length > 0) ? darlehensVerlauf(immo, jetzt) : null;
+  const verlauf = ((phasen && phasen.length > 0) || weitereDarlehen(immo).length) ? darlehensVerlauf(immo, jetzt) : null;
   if (verlauf) {
     const rsHeute = verlauf.restschuldHeute;
-    return { fremdkapital, restschuld: rsHeute, tilgungJahr: Math.round(verlauf.tilgungImJahr(aktuellesJahr)), freiVermoegen: Math.max(0, marktwert - rsHeute), marktwert };
+    return { fremdkapital: verlauf.fk, restschuld: rsHeute, tilgungJahr: Math.round(verlauf.tilgungImJahr(aktuellesJahr)), freiVermoegen: Math.max(0, marktwert - rsHeute), marktwert };
   }
 
   if (phasen && phasen.length > 0 && immo.kaufdatum) {

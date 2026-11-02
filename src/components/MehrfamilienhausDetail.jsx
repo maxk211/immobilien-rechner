@@ -33,6 +33,7 @@ import {
 import ZahlInput from './ZahlInput';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 import { mieterAusWohnungen, einheitenStatus } from '../utils/belegung.js';
+import WeitereDarlehen, { HauptDarlehenReiter } from './WeitereDarlehen';
 
 // ─── Dokumente-Tab (inline, identisch zu KaufimmobilieDetail) ─────────────────
 const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
@@ -1366,7 +1367,10 @@ const MehrfamilienhausDetail = ({
             return (
               <div className="space-y-5">
                 {/* Teil 3: Finanzierungs-Reiter (Kopfleiste, Verlauf, Szenarien, Sondertilgung, Konditionen, Abschluss) */}
-                <FinanzierungsReiter params={params} updateParams={updateParams} marktwert={aktuellerWertMFH}
+                <HauptDarlehenReiter params={params} updateParams={updateParams} marktwert={aktuellerWertMFH}
+                  cashflowNachTilgung={ergebnis.cashflowMonatlich || 0} />
+                {/* Beliebig viele parallel laufende Darlehen — jedes mit eigenen Konditionen und Anschlüssen */}
+                <WeitereDarlehen params={params} updateParams={updateParams} marktwert={aktuellerWertMFH}
                   cashflowNachTilgung={ergebnis.cashflowMonatlich || 0} />
                 {/* Abschnitt 3.4: Gesamtinvestition mit Warnung, wenn ein Teil weder als
                     Eigenkapital noch über den Kredit abgebildet ist */}
