@@ -6,6 +6,7 @@ import { berechneWertsteigerungSeitKauf, berechneRestschuld, getAktuellerGesamtw
 import { cashflowVorNach, beleihbarFrei, getBeleihungsgrenze } from '../utils/kapital.js';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 import { einheitenStatus } from '../utils/belegung.js';
+import { mfhMieteAm } from '../utils/mfh.js';
 
 const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, onOpenAufgabe, onDelete, onEdit }) => {
   const [mfhExpanded, setMfhExpanded] = useState(false);
@@ -16,7 +17,7 @@ const ImmobilienKarte = ({ immobilie, mieterListe = [], aufgaben = [], onClick, 
   const restschuldInfo = (!isMietimmobilie && !isMFH) ? berechneRestschuld(immobilie) : null;
 
   // MFH: Gesamtmiete aller Wohnungen (auch für Anzeige in der Karte genutzt)
-  const mfhGesamtMiete = isMFH ? (immobilie.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0) : 0;
+  const mfhGesamtMiete = isMFH ? mfhMieteAm(immobilie.wohnungen) : 0;
 
   // Mieter-Anzeige: aktiver Mieter für Kauf-/Mietimmobilien
   const aktiverMieter = (!isMFH)

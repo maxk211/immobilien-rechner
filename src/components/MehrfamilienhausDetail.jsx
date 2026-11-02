@@ -34,6 +34,9 @@ import ZahlInput from './ZahlInput';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 import { mieterAusWohnungen, einheitenStatus } from '../utils/belegung.js';
 import WeitereDarlehen, { HauptDarlehenReiter } from './WeitereDarlehen';
+import MieterhoeungModal from './MieterhoeungModal';
+import NachforderungenManager from './NachforderungenManager';
+import { weMieteAm, weMieteImMonat, mfhMietAggregat, hatWeAnpassungen, mfhMonatsStatus, alleMietenBuchen, sammelbuchungZurueck, weMieteBuchen, letzteErhoehungWE, weMieterhoehung } from '../utils/mfh.js';
 
 // ─── Dokumente-Tab (inline, identisch zu KaufimmobilieDetail) ─────────────────
 const DOK_TYPEN = ['Kaufvertrag', 'Teilungserklärung', 'WEG-Protokoll', 'Grundbuchauszug', 'Darlehensvertrag', 'Mietvertrag', 'NK-Abrechnung', 'Grundriss', 'Energieausweis', 'Versicherung', 'Handwerker-Rechnung', 'Fotos', 'Sonstiges'];
@@ -177,6 +180,81 @@ const MFH_TAB_MAP = {
 // Sprungziele innerhalb dieser Seite (Deep-Links aus Erinnerungen/Cockpit).
 const MFH_OBJEKT_IDS = ['stammdaten', 'kaufwert', 'investitionen', 'zaehler', 'dokumente'];
 
+// ─── Mieterhöhung je Wohnung (im Wohnungsformular) ───────────────────────────
+// Wie bei der Eigentumswohnung: Datum der letzten Erhöhung (Kappungsgrenze § 558 BGB) und
+// eingetragene Erhöhungen mit neuer Miete ab Datum. Nichts wird still vorbelegt.
+function WeMieterhoehungFelder({ form, setForm, kappung = 20, onSchreiben }) {
+  const [neu, setNeu] = useState({ datum: '', kaltmiete: '' });
+  const [fehler, setFehler] = useState('');
+  const anp = [...(form.mietAnpassungen || [])].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  const letzte = letzteErhoehungWE(form);
+  const nieErhoeht = !!form.nieErhoeht;
+  const ab = letzte ? new Date(letzte.getFullYear(), letzte.getMonth() + 15, letzte.getDate()) : null;
+  const eintragen = () => {
+    const k = parseFloat(String(neu.kaltmiete).replace(',', '.'));
+    const fehlt = [!neu.datum && 'ab wann', !(k > 0) && 'neue Kaltmiete'].filter(Boolean);
+    if (fehlt.length) { setFehler(`Bitte ausfüllen: ${fehlt.join(', ')}`); return; }
+    setForm(weMieterhoehung({ ...form, nieErhoeht: false }, neu.datum, k));
+    setNeu({ datum: '', kaltmiete: '' }); setFehler('');
+  };
+  const entfernen = (datum) => {
+    const rest = (form.mietAnpassungen || []).filter(a => a.datum !== datum);
+    setForm({ ...form, mietAnpassungen: rest, letzteMieterhoehung: form.letzteMieterhoehung === datum ? null : form.letzteMieterhoehung });
+  };
+  return (
+    <div className="border-t pt-3 space-y-2">
+      <p className="text-xs font-semibold text-gray-600 flex items-center gap-1"><TrendingUp size={12}/> Mieterhöhung</p>
+      <div className="grid grid-cols-2 gap-3 items-end">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Letzte Mieterhöhung</label>
+          <input type="date" value={form.letzteMieterhoehung || ''} disabled={nieErhoeht}
+            onChange={e => setForm({ ...form, letzteMieterhoehung: e.target.value || null, nieErhoeht: false })}
+            className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm disabled:bg-gray-50 disabled:text-gray-400"/>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer pb-2">
+          <input type="checkbox" checked={nieErhoeht} disabled={!form.mietbeginn}
+            onChange={e => setForm({ ...form, nieErhoeht: e.target.checked, letzteMieterhoehung: e.target.checked ? form.mietbeginn : null })}
+            className="w-4 h-4 rounded"/>
+          <span>Seit Einzug nicht erhöht{!form.mietbeginn && <span className="block text-[10px] text-gray-400">braucht den Mietbeginn</span>}</span>
+        </label>
+      </div>
+      {letzte ? (
+        <p className="text-[11px] text-gray-500">
+          Nächste Erhöhung frühestens wirksam ab <strong>{ab.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}</strong> (15 Monate, § 558 BGB) · höchstens +{kappung} % in 3 Jahren und bis zur ortsüblichen Vergleichsmiete
+        </p>
+      ) : (
+        <p className="text-[11px] text-amber-600">Nicht hinterlegt — ohne Datum kann renditly nicht sagen, wann die nächste Erhöhung möglich ist.</p>
+      )}
+      {anp.length > 0 && (
+        <div className="rounded-lg border border-gray-100 divide-y divide-gray-50 text-xs">
+          {anp.map(a => (
+            <div key={a.datum} className="flex items-center justify-between px-2.5 py-1.5">
+              <span className="text-gray-600">ab {new Date(a.datum).toLocaleDateString('de-DE')}{new Date(a.datum) > new Date() ? ' · angekündigt' : ''}</span>
+              <span className="flex items-center gap-2"><strong className="text-gray-800">{formatCurrency(Number(a.kaltmiete) || 0)}</strong>
+                <button type="button" onClick={() => entfernen(a.datum)} className="text-gray-300 hover:text-red-500" title="Erhöhung entfernen"><X size={12}/></button></span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+        <div>
+          <label className="block text-[10px] text-gray-400 mb-0.5">Neue Miete ab</label>
+          <input type="date" value={neu.datum} onChange={e => setNeu({ ...neu, datum: e.target.value })} className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm"/>
+        </div>
+        <div>
+          <label className="block text-[10px] text-gray-400 mb-0.5">Neue Kaltmiete (€)</label>
+          <input type="text" inputMode="decimal" value={neu.kaltmiete} onChange={e => setNeu({ ...neu, kaltmiete: e.target.value })} className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right"/>
+        </div>
+        <button type="button" onClick={eintragen} className="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold">Eintragen</button>
+      </div>
+      {fehler && <p className="text-[11px] text-red-600">{fehler}</p>}
+      {onSchreiben && (
+        <button type="button" onClick={onSchreiben} className="text-xs font-semibold text-indigo-600 hover:underline">Mieterhöhungsschreiben erstellen →</button>
+      )}
+    </div>
+  );
+}
+
 // ─── MehrfamilienhausDetail ───────────────────────────────────────────────────
 const MehrfamilienhausDetail = ({
   immobilie, onClose, onEdit, onSave, initialTab, onAlleErinnerungen, onDeleteImmobilie,
@@ -200,7 +278,11 @@ const MehrfamilienhausDetail = ({
   const [params, setParams] = useState(immobilie);
   const [hasChanges, setHasChanges] = useState(false);
   const [cfWE, setCfWE] = useState('gesamt');       // aktive WE im Cashflow-Tab
-  const [einnahmenWE, setEinnahmenWE] = useState(0); // aktive WE im Einnahmen-Tab
+  // Mieteingänge: bei mehreren Wohnungen startet die Gesamtansicht (dort wird gesammelt gebucht)
+  const [einnahmenWE, setEinnahmenWE] = useState(() => ((immobilie.wohnungen || []).length > 1 ? 'gesamt' : 0));
+  const [sammelMonat, setSammelMonat] = useState(() => { const d = new Date(); return { jahr: d.getFullYear(), monat: d.getMonth() + 1 }; });
+  const [sammelErgebnis, setSammelErgebnis] = useState(null); // { ids, anzahl, summe, label, uebrig }
+  const [mhWE, setMhWE] = useState(null); // Index der Wohnung für das Mieterhöhungsschreiben
   const [gJahr, setGJahr] = useState(new Date().getFullYear()); // Jahr der Gesamt-Einnahmen-Übersicht (Hook muss auf oberster Ebene stehen)
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
@@ -218,7 +300,9 @@ const MehrfamilienhausDetail = ({
   });
 
   // Aggregierte Werte aus Wohnungen
-  const gesamtKaltmiete = wohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
+  // Aktuelle Miete je Wohnung inkl. Mieterhöhungen (utils/mfh.js)
+  const gesamtKaltmiete = wohnungen.reduce((s, w) => s + weMieteAm(w), 0);
+  const mietAgg = mfhMietAggregat(wohnungen);
   const gesamtFlaeche   = wohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
   // Leerstand nur anzeigen wenn schon mal ein Mieter eingetragen war
   const hatteJeMieter   = (w) => !!(w.mieterName || w.mietende || w.mietbeginn);
@@ -238,37 +322,71 @@ const MehrfamilienhausDetail = ({
   const heute = new Date();
   const belegteWohnungenListe = wohnungen.filter(w => w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date()));
   const wohnungenMitMieteImMonat = belegteWohnungenListe.filter(w => {
-    const status = berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, Number(w.kaltmiete) || 0, false).status;
-    return status === 'bezahlt';
+    return mfhMonatsStatus([w], heute.getFullYear(), heute.getMonth() + 1)[0].status === 'bezahlt';
   }).length;
   const alleMietenEingegangen = belegteWohnungenListe.length > 0 && wohnungenMitMieteImMonat === belegteWohnungenListe.length;
 
-  // Ein-Klick Abhaken pro Wohnung direkt aus der Übersicht — kein Umweg über den
-  // Einnahmen-Tab nötig. Speichert sofort (aggregiereUndSpeichere persistiert direkt).
+  // Ein-Klick Abhaken pro Wohnung direkt aus der Übersicht — bucht den offenen Rest des
+  // laufenden Monats (Soll inkl. Mieterhöhungen, utils/mfh.js). Speichert sofort.
   const handleWohnungMieteAbhaken = (wIdx) => {
-    const heuteISO = new Date().toISOString().split('T')[0];
-    const w = wohnungen[wIdx];
-    const neuerEingang = { id: Date.now(), datum: heuteISO, betrag: Number(w.kaltmiete) || 0, typ: 'kaltmiete', notiz: '' };
-    const neu = [...wohnungen];
-    neu[wIdx] = { ...neu[wIdx], mietEingaenge: [...(neu[wIdx].mietEingaenge || []), neuerEingang] };
+    const neu = weMieteBuchen(wohnungen, wIdx, heute.getFullYear(), heute.getMonth() + 1);
+    if (neu === wohnungen) return;
     setWohnungen(neu);
     aggregiereUndSpeichere(neu);
   };
 
-  // Cockpit: alle noch offenen Wohnungen des laufenden Monats in einem Schritt buchen
-  const handleAlleWohnungenAbhaken = () => {
-    const heuteISO = new Date().toISOString().split('T')[0];
-    const neu = wohnungen.map((w, i) => {
-      const belegt = w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date());
-      if (!belegt) return w;
-      const erwartet = Number(w.kaltmiete) || 0;
-      const st = berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, erwartet, false);
-      if (st.status === 'bezahlt' || erwartet <= 0) return w;
-      const rest = Math.max(0, erwartet - (st.summe || 0));
-      return { ...w, mietEingaenge: [...(w.mietEingaenge || []), { id: Date.now() + i, datum: heuteISO, betrag: rest, typ: 'kaltmiete', notiz: '' }] };
-    });
+  // Alle Wohnungen eines Monats in einem Schritt buchen. Nur Wohnungen ohne jede Buchung —
+  // Teilzahlungen und „nicht bezahlt“ bleiben, wie sie erfasst sind. Mit Rückgängig.
+  const sammelBuchen = (jahr, monat) => {
+    const r = alleMietenBuchen(wohnungen, jahr, monat);
+    const label = new Date(jahr, monat - 1, 15).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    if (!r.gebucht.length) { setSammelErgebnis({ ids: [], anzahl: 0, summe: 0, label, uebrig: r.uebrig }); return; }
+    setWohnungen(r.wohnungen);
+    aggregiereUndSpeichere(r.wohnungen);
+    setSammelErgebnis({ ids: r.gebucht.map(g => g.id), anzahl: r.gebucht.length, summe: r.summe, label, uebrig: r.uebrig });
+  };
+  const sammelRueckgaengig = () => {
+    if (!sammelErgebnis?.ids?.length) return;
+    const neu = sammelbuchungZurueck(wohnungen, sammelErgebnis.ids);
     setWohnungen(neu);
     aggregiereUndSpeichere(neu);
+    setSammelErgebnis(null);
+  };
+  // Cockpit: alle noch offenen Wohnungen des laufenden Monats
+  const handleAlleWohnungenAbhaken = () => sammelBuchen(heute.getFullYear(), heute.getMonth() + 1);
+
+  // Mieterdatensatz zu einer Wohnung (gleiche Zuordnung wie die Belegung)
+  const mieterFuerWE = (idx) => {
+    const id = belegungMFH.einheiten[idx]?.mieterId;
+    return id ? (mieterListe || []).find(m => m.id === id) || null : null;
+  };
+  const weIdxFuerMieter = (m) => {
+    if (!m) return -1;
+    const i = belegungMFH.einheiten.findIndex(e => e.mieterId === m.id);
+    if (i >= 0) return i;
+    const norm = (x) => String(x || '').trim().toLowerCase();
+    return wohnungen.findIndex(w => (m.zimmer_bezeichnung && norm(w.name) === norm(m.zimmer_bezeichnung)) || (w.mieterName && norm(w.mieterName) === norm(m.name)));
+  };
+  // Mieterhöhung für eine Wohnung eintragen: Anpassung + letzte Erhöhung an der Wohnung,
+  // dazu am Mieterdatensatz (wie bei der Eigentumswohnung)
+  const mieterhoehungFuerWE = async (idx, datum, kaltmiete, { mieterMitnehmen = true } = {}) => {
+    if (idx < 0 || !wohnungen[idx] || !datum || !(Number(kaltmiete) > 0)) return;
+    const neu = [...wohnungen];
+    neu[idx] = weMieterhoehung(neu[idx], datum, kaltmiete);
+    setWohnungen(neu);
+    aggregiereUndSpeichere(neu);
+    const m = mieterFuerWE(idx);
+    if (mieterMitnehmen && m?.id && onSaveMieter) {
+      try {
+        await onSaveMieter({
+          ...m,
+          mietanpassungenMieter: m.mietanpassungen_mieter || [],
+          naechsteAnpassungDatum: m.naechste_anpassung_datum || '',
+          letzteMieterhoehung: (!m.letzte_mieterhoehung || new Date(datum) > new Date(m.letzte_mieterhoehung)) ? datum : m.letzte_mieterhoehung,
+          kaltmiete: Number(kaltmiete),
+        });
+      } catch { /* Hinweis kommt aus onSaveMieter */ }
+    }
   };
 
   const auslastung      = wohnungen.length > 0 ? Math.round(belegtWE / wohnungen.length * 100) : 0;
@@ -338,27 +456,45 @@ const MehrfamilienhausDetail = ({
 
   // Auto-Save: Wohnungsänderung sofort persistieren + Aggregat aktualisieren
   const aggregiereUndSpeichere = (neueWohnungen) => {
-    const kaltmiete   = neueWohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
+    // Objektmiete = Summe der Wohnungen; Mieterhöhungen je Wohnung als Zeitreihe aufs Objekt,
+    // damit Steuer, Prognose und Export dieselbe Rechnung wie bei der Eigentumswohnung nutzen
+    const agg = mfhMietAggregat(neueWohnungen);
+    const kaltmiete   = agg.kaltmiete;
     const wohnflaeche = neueWohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
     const zimmer      = neueWohnungen.length;
     // params-Snapshot zum Zeitpunkt des Calls in updated einfrieren
     setParams(prev => {
-      const updated = { ...prev, wohnungen: neueWohnungen, kaltmiete, wohnflaeche, zimmer };
+      const mietAnpassungen = hatWeAnpassungen(neueWohnungen) ? agg.mietAnpassungen : (prev.mietAnpassungen || []);
+      const updated = { ...prev, wohnungen: neueWohnungen, kaltmiete, wohnflaeche, zimmer, mietAnpassungen };
       onSave(updated);       // mit aktuellem prev (nicht stale closure)
-      return { ...prev, kaltmiete, wohnflaeche, zimmer };
+      return { ...prev, kaltmiete, wohnflaeche, zimmer, mietAnpassungen };
     });
     setHasChanges(false);    // alles ist persistiert
   };
 
   const saveWohnung = () => {
     const neu = [...wohnungen];
-    const form = wohnungForm.mieterName ? { ...wohnungForm, leer: false } : wohnungForm;
+    const basis = wohnungForm.mieterName ? { ...wohnungForm, leer: false } : wohnungForm;
+    // „Seit Einzug nicht erhöht“ folgt einem geänderten Mietbeginn
+    const form = basis.nieErhoeht && basis.mietbeginn ? { ...basis, letzteMieterhoehung: basis.mietbeginn } : basis;
     if (editWohnungIdx !== null) neu[editWohnungIdx] = { ...neu[editWohnungIdx], ...form };
     else neu.push({ id: Date.now(), forderungen: [], mietAnpassungen: [], ...form });
     setWohnungen(neu);
     setShowWohnungForm(false);
     setHasChanges(false);
     aggregiereUndSpeichere(neu);
+    // Letzte Mieterhöhung an der Wohnung geändert → auch am Mieterdatensatz (Kappungsgrenze)
+    const idxGespeichert = editWohnungIdx !== null ? editWohnungIdx : neu.length - 1;
+    const mDatensatz = editWohnungIdx !== null ? mieterFuerWE(editWohnungIdx) : null;
+    const lmNeu = neu[idxGespeichert]?.letzteMieterhoehung || null;
+    if (onSaveMieter && mDatensatz?.id && lmNeu && lmNeu !== (mDatensatz.letzte_mieterhoehung || null)) {
+      Promise.resolve(onSaveMieter({
+        ...mDatensatz,
+        mietanpassungenMieter: mDatensatz.mietanpassungen_mieter || [],
+        naechsteAnpassungDatum: mDatensatz.naechste_anpassung_datum || '',
+        letzteMieterhoehung: lmNeu,
+      })).catch(() => {});
+    }
     // Neuer Mieter an der Wohnung → auch in der Mieterverwaltung anlegen (einheitliche Belegung)
     if (onSaveMieter) {
       mieterAusWohnungen({ ...immobilie, ...params, wohnungen: neu }, mieterListe || [])
@@ -383,10 +519,11 @@ const MehrfamilienhausDetail = ({
   };
 
   const handleSave = () => {
-    const kaltmiete  = wohnungen.reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0);
+    const agg = mfhMietAggregat(wohnungen);
+    const kaltmiete  = agg.kaltmiete;
     const wohnflaeche = wohnungen.reduce((s, w) => s + (Number(w.wohnflaeche) || 0), 0);
     const zimmer     = wohnungen.length;
-    onSave({ ...params, wohnungen, kaltmiete, wohnflaeche, zimmer });
+    onSave({ ...params, wohnungen, kaltmiete, wohnflaeche, zimmer, ...(hatWeAnpassungen(wohnungen) ? { mietAnpassungen: agg.mietAnpassungen } : {}) });
     setHasChanges(false);
   };
 
@@ -657,20 +794,29 @@ const MehrfamilienhausDetail = ({
                               </div>
                               <p className="font-bold text-gray-900 text-sm sm:text-base leading-tight">{w.name || `WE ${w.originalIdx + 1}`}</p>
                               {w.wohnflaeche > 0 && <p className="text-xs text-gray-400 mt-0.5">{w.wohnflaeche} m²</p>}
-                              <p className={`text-base sm:text-xl font-black mt-2 ${belegt ? 'text-emerald-700' : (Number(w.kaltmiete) > 0 ? 'text-slate-500' : 'text-gray-300')}`}>
-                                {Number(w.kaltmiete) > 0 ? formatCurrency(Number(w.kaltmiete)) : '—'}
-                                {Number(w.kaltmiete) > 0 && <span className="text-xs font-normal text-gray-400">/mo</span>}
+                              <p className={`text-base sm:text-xl font-black mt-2 ${belegt ? 'text-emerald-700' : (weMieteAm(w) > 0 ? 'text-slate-500' : 'text-gray-300')}`}>
+                                {weMieteAm(w) > 0 ? formatCurrency(weMieteAm(w)) : '—'}
+                                {weMieteAm(w) > 0 && <span className="text-xs font-normal text-gray-400">/mo</span>}
                               </p>
                               {w.mieterName && <p className="text-xs text-gray-600 mt-1 truncate flex items-center gap-1"><User size={10}/> {w.mieterName}</p>}
                               {w.mietbeginn && belegt && <p className="text-[10px] text-gray-400">seit {new Date(w.mietbeginn).toLocaleDateString('de-DE')}</p>}
+                              {belegt && (() => {
+                                const le = letzteErhoehungWE(w, mieterFuerWE(w.originalIdx));
+                                return le
+                                  ? <p className="text-[10px] text-gray-400">letzte Erhöhung {le.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}</p>
+                                  : <p className="text-[10px] text-amber-600">letzte Erhöhung fehlt</p>;
+                              })()}
                               {w.kautionBetrag > 0 && (
                                 <span className={`mt-2 inline-block text-[10px] px-1.5 py-0.5 rounded-full ${w.kautionBezahlt ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
                                   {w.kautionBezahlt ? <CheckCircle2 size={12} className='text-emerald-600 inline mr-0.5'/> : <span className='inline-block w-2 h-2 rounded-full bg-red-500 mr-0.5'/>}
                                   Kaution {formatCurrency(w.kautionBetrag)}
                                 </span>
                               )}
-                              <div className="mt-2 pt-2 border-t border-current border-opacity-10 flex justify-between items-center">
-                                <span className="text-[10px] text-gray-400">Klicken zum Bearbeiten</span>
+                              <div className="mt-2 pt-2 border-t border-current border-opacity-10 flex justify-between items-center gap-2">
+                                {belegt ? (
+                                  <button type="button" onClick={e => { e.stopPropagation(); setMhWE(w.originalIdx); }}
+                                    className="text-[10px] font-semibold text-indigo-600 hover:underline flex items-center gap-0.5"><TrendingUp size={10}/> Mieterhöhung</button>
+                                ) : <span className="text-[10px] text-gray-400">Klicken zum Bearbeiten</span>}
                                 <Pencil size={12} className="text-gray-300"/>
                               </div>
                             </div>
@@ -707,7 +853,7 @@ const MehrfamilienhausDetail = ({
             const schuldenfreiCa = verlaufMFH?.abbezahltHeute ? 'bereits' : verlaufMFH?.schuldenfrei ? `ca. ${verlaufMFH.schuldenfrei.getFullYear()}`
               : (jaehrlicheTilgung > 0 && restschuld > 0 ? `ca. ${heute.getFullYear() + Math.round(restschuld / jaehrlicheTilgung)}` : null);
             const nettoEK = aktuellerWertMFH - restschuld;
-            const offeneWE = belegteWohnungenListe.filter(w => berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, Number(w.kaltmiete) || 0, false).status !== 'bezahlt');
+            const offeneWE = belegteWohnungenListe.filter(w => mfhMonatsStatus([w], heute.getFullYear(), heute.getMonth() + 1)[0].status === 'offen');
             return (
             <div className="space-y-4">
               {/* Jetzt dran — je Aufgabe die passende Handlung (Teil 1) */}
@@ -737,8 +883,9 @@ const MehrfamilienhausDetail = ({
                   <div className="divide-y divide-gray-50">
                     {belegteWohnungenListe.map((w) => {
                       const wIdx = wohnungen.indexOf(w);
-                      const erwartet = Number(w.kaltmiete) || 0;
-                      const mietStatus = berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, erwartet, false);
+                      const erwartet = weMieteImMonat(w, heute.getFullYear(), heute.getMonth() + 1);
+                      const roh = berechneMietStatusFuerMonat(w.mietEingaenge, heute.getFullYear(), heute.getMonth() + 1, erwartet, !!w.dauerauftrag);
+                      const mietStatus = roh.status === 'dauerauftrag' ? { ...roh, status: 'bezahlt', summe: erwartet, dauerauftrag: true } : roh;
                       const eintrag = mietStatus.zahlungen[mietStatus.zahlungen.length - 1] || null;
                       return (
                         <div key={w.id || wIdx} className="flex items-center justify-between gap-3 px-4 py-2.5">
@@ -749,7 +896,7 @@ const MehrfamilienhausDetail = ({
                           {mietStatus.status === 'bezahlt' ? (
                             <div className="text-right shrink-0">
                               <div className="text-sm font-semibold text-emerald-600 flex items-center gap-1 justify-end"><CheckCircle2 size={14}/> {formatCurrency(mietStatus.summe)}</div>
-                              {eintrag && <div className="text-[10px] text-gray-400">{new Date(eintrag.datum).toLocaleDateString('de-DE')}</div>}
+                              {mietStatus.dauerauftrag ? <div className="text-[10px] text-gray-400">Dauerauftrag</div> : eintrag && <div className="text-[10px] text-gray-400">{new Date(eintrag.datum).toLocaleDateString('de-DE')}</div>}
                             </div>
                           ) : mietStatus.status === 'teilweise' ? (
                             <div className="text-right shrink-0 flex items-center gap-2">
@@ -859,7 +1006,7 @@ const MehrfamilienhausDetail = ({
                               <span className="font-semibold text-gray-800 truncate">{w.name || `WE ${idx + 1}`}</span>
                               <span className={`truncate ${belegt ? 'text-gray-600' : 'text-red-400'}`}>{belegt ? w.mieterName : (w.leer === true || hatteJeMieter(w) ? 'Leerstand' : 'Belegung offen')}</span>
                               <span className="text-gray-500 shrink-0">{w.mietbeginn && belegt ? `seit ${new Date(w.mietbeginn).toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}` : ''}</span>
-                              <span className="font-semibold text-gray-700 shrink-0">{Number(w.kaltmiete) > 0 ? formatCurrency(Number(w.kaltmiete)) : '—'}</span>
+                              <span className="font-semibold text-gray-700 shrink-0">{weMieteAm(w) > 0 ? formatCurrency(weMieteAm(w)) : '—'}</span>
                               <span className="text-[10px] shrink-0">{Number(w.kautionBetrag) > 0 ? (w.kautionBezahlt ? <span className="text-emerald-600">Kaution ✓</span> : <span className="text-red-500">Kaution offen</span>) : <span className="text-gray-300">keine Kaution</span>}</span>
                             </div>
                           );
@@ -917,10 +1064,10 @@ const MehrfamilienhausDetail = ({
               const tilgungAnteilig = aktivePhaseBerechnung ? Math.round(aktivePhaseBerechnung.tilgung * anteil) : 0;
               return {
                 idx, name: w.name || `WE ${idx + 1}`,
-                kaltmiete: Number(w.kaltmiete) || 0,
+                kaltmiete: weMieteAm(w),
                 kosten: k, sumKosten: sumK,
                 anteil, kreditAnteilig, zinsenAnteilig, tilgungAnteilig,
-                cashflow: (Number(w.kaltmiete) || 0) - sumK - kreditAnteilig,
+                cashflow: (weMieteAm(w)) - sumK - kreditAnteilig,
               };
             });
             const totalKaltmiete = weKosten.reduce((s, wk) => s + wk.kaltmiete, 0);
@@ -979,7 +1126,7 @@ const MehrfamilienhausDetail = ({
                           {w.mieterName && <p className="text-sm text-gray-600 flex items-center gap-1 mt-0.5"><User size={12}/>{w.mieterName}</p>}
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-black text-emerald-600">{formatCurrency(Number(w.kaltmiete) || 0)}</p>
+                          <p className="text-2xl font-black text-emerald-600">{formatCurrency(weMieteAm(w))}</p>
                           <p className="text-xs text-gray-400">Kaltmiete / Monat</p>
                           {Number(w.wohnflaeche) > 0 && <p className="text-xs text-gray-400">{w.wohnflaeche} m²</p>}
                         </div>
@@ -999,7 +1146,7 @@ const MehrfamilienhausDetail = ({
                         <div className="text-xs text-gray-500 space-y-1 border-t border-gray-200/60 pt-2">
                           <div className="flex justify-between">
                             <span>Einnahmen (Kaltmiete):</span>
-                            <span className="text-emerald-600 font-semibold">+{formatCurrency(Number(w.kaltmiete)||0)}</span>
+                            <span className="text-emerald-600 font-semibold">+{formatCurrency(weMieteAm(w))}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Betriebskosten:</span>
@@ -1703,7 +1850,7 @@ const MehrfamilienhausDetail = ({
           )}
 
           {activeTab === 'steuern' && (
-            <Steuerberechnung params={{ ...params, kaltmiete: gesamtKaltmiete }} ergebnis={ergebnis} immobilie={{ ...immobilie, ...params, kaltmiete: gesamtKaltmiete }} onUpdateParams={updateParams} anteilFaktor={1}/>
+            <Steuerberechnung params={{ ...params, kaltmiete: mietAgg.kaltmiete, ...(hatWeAnpassungen(wohnungen) ? { mietAnpassungen: mietAgg.mietAnpassungen } : {}) }} ergebnis={ergebnis} immobilie={{ ...immobilie, ...params, wohnungen, kaltmiete: mietAgg.kaltmiete, ...(hatWeAnpassungen(wohnungen) ? { mietAnpassungen: mietAgg.mietAnpassungen } : {}) }} onUpdateParams={updateParams} anteilFaktor={1}/>
           )}
 
           {/* ── VERMIETUNG: EINNAHMEN (per Wohneinheit) ──────────────────── */}
@@ -1722,6 +1869,49 @@ const MehrfamilienhausDetail = ({
                   </div>
                 ) : (
                   <>
+                    {(() => {
+                      // Sammelbuchung: alle Wohnungen eines Monats auf einmal als eingegangen markieren
+                      const { jahr: sJ, monat: sM } = sammelMonat;
+                      const st = mfhMonatsStatus(wohnungen, sJ, sM).filter(x => x.status !== 'keine');
+                      if (!st.length) return null;
+                      const offen = st.filter(x => x.status === 'offen');
+                      const ok = st.filter(x => x.status === 'bezahlt').length;
+                      const andere = st.filter(x => x.status === 'teilweise' || x.status === 'nicht_bezahlt');
+                      const label = new Date(sJ, sM - 1, 15).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+                      const istAktuell = sJ === heute.getFullYear() && sM === heute.getMonth() + 1;
+                      const verschiebe = (d) => { const n = new Date(sJ, sM - 1 + d, 15); if (n > heute) return; setSammelMonat({ jahr: n.getFullYear(), monat: n.getMonth() + 1 }); setSammelErgebnis(null); };
+                      return (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <button type="button" onClick={() => verschiebe(-1)} className="w-7 h-7 rounded-lg bg-white border border-emerald-200 text-emerald-700 font-bold" title="Vormonat">‹</button>
+                              <div className="text-sm text-emerald-900">
+                                <strong>Miete {label}</strong>
+                                <span className="block text-xs text-emerald-800/80">{ok} von {st.length} vermieteten Wohnungen eingegangen{andere.length ? ` · ${andere.length} mit Teilzahlung/Vermerk` : ''}</span>
+                              </div>
+                              <button type="button" onClick={() => verschiebe(1)} disabled={istAktuell} className="w-7 h-7 rounded-lg bg-white border border-emerald-200 text-emerald-700 font-bold disabled:opacity-30" title="Nächster Monat">›</button>
+                            </div>
+                            {offen.length > 0 ? (
+                              <button type="button" onClick={() => sammelBuchen(sJ, sM)}
+                                className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 flex items-center gap-1.5">
+                                <Check size={14}/> {offen.length === st.length ? 'Alle' : `Alle ${offen.length} offenen`} als eingegangen markieren ({formatCurrency(offen.reduce((a, x) => a + x.soll, 0))})
+                              </button>
+                            ) : (
+                              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1"><CheckCircle2 size={14}/> Nichts mehr offen</span>
+                            )}
+                          </div>
+                          {offen.length > 0 && <p className="text-[11px] text-emerald-800/70">Bucht je Wohnung die Soll-Miete inkl. Mieterhöhungen: {offen.map(x => `${x.name} ${formatCurrency(x.soll)}`).join(' · ')}{andere.length ? ` — ${andere.map(x => x.name).join(', ')} ${andere.length === 1 ? 'bleibt' : 'bleiben'} wie erfasst` : ''}</p>}
+                          {sammelErgebnis && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white border border-emerald-200 px-3 py-2 text-xs">
+                              <span className="text-emerald-800">{sammelErgebnis.anzahl
+                                ? <><CheckCircle2 size={12} className="inline mr-1"/>{sammelErgebnis.anzahl} {sammelErgebnis.anzahl === 1 ? 'Miete' : 'Mieten'} für {sammelErgebnis.label} gebucht ({formatCurrency(sammelErgebnis.summe)})</>
+                                : `Für ${sammelErgebnis.label} war nichts mehr offen.`}</span>
+                              {sammelErgebnis.anzahl > 0 && <button type="button" onClick={sammelRueckgaengig} className="font-semibold text-gray-600 hover:text-gray-900 underline">Rückgängig</button>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex gap-1 overflow-x-auto bg-indigo-50 rounded-xl p-1 -mx-1 px-1">
                       {wohnungen.map((w, idx) => {
                         const eingaenge = w.mietEingaenge || [];
@@ -1752,7 +1942,8 @@ const MehrfamilienhausDetail = ({
                         kaltmiete: Number(w.kaltmiete) || 0,
                         mietAnpassungen: w.mietAnpassungen || [],
                         mietEingaenge: w.mietEingaenge || [],
-                        dauerauftrag: false,
+                        dauerauftrag: !!w.dauerauftrag,
+                        dauerauftragBetrag: Number(w.kaltmiete) || 0, // Ausgangsmiete; Erhöhungen kommen aus mietAnpassungen
                         vermietungsmodell: 'kaltmiete',
                       };
                       // Mietbeginn als Startdatum für die Jahresauswahl im Tracker
@@ -1781,17 +1972,22 @@ const MehrfamilienhausDetail = ({
                               {w.mieterName && <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5"><User size={12}/>{w.mieterName}{w.mietbeginn && ` · seit ${new Date(w.mietbeginn).toLocaleDateString('de-DE')}`}</p>}
                             </div>
                             <div className="text-right">
-                              <p className="text-xl font-black text-emerald-600">{formatCurrency(Number(w.kaltmiete) || 0)}</p>
+                              <p className="text-xl font-black text-emerald-600">{formatCurrency(weMieteAm(w))}</p>
                               <p className="text-xs text-gray-400">Kaltmiete / Monat</p>
+                              <label className="mt-1 flex items-center justify-end gap-1.5 text-xs text-gray-600 cursor-pointer" title="Miete kommt per Dauerauftrag — jeder Monat gilt als eingegangen, nur Ausnahmen erfassen">
+                                <input type="checkbox" checked={!!w.dauerauftrag} className="w-3.5 h-3.5 rounded accent-emerald-500"
+                                  onChange={e => { const neu = [...wohnungen]; neu[einnahmenWE] = { ...neu[einnahmenWE], dauerauftrag: e.target.checked }; setWohnungen(neu); aggregiereUndSpeichere(neu); }} />
+                                Dauerauftrag
+                              </label>
                             </div>
                           </div>
                           {/* key erzwingt Re-Mount beim WE-Wechsel → frischer useState-Zustand */}
                           <MieteinnahmenTracker
-                            key={`we-einnahmen-${einnahmenWE}`}
+                            key={`we-einnahmen-${einnahmenWE}-${w.dauerauftrag ? 'da' : 'm'}`}
                             params={weParams}
                             updateParams={weUpdateParams}
                             immobilie={weImmobilie}
-                            mieterListe={[]}
+                            mieterListe={mieterFuerWE(einnahmenWE) ? [mieterFuerWE(einnahmenWE)] : []}
                           />
                         </div>
                       );
@@ -1800,22 +1996,16 @@ const MehrfamilienhausDetail = ({
                     {/* Gesamt-Einnahmen-Übersicht */}
                     {einnahmenWE === 'gesamt' && (() => {
                       const MONATE = Array.from({ length: 12 }, (_, i) => i + 1);
+                      // Gleiche Regel wie Einzel-Wohnung und Sammelbuchung (utils/mfh.js): Soll inkl.
+                      // Mieterhöhungen, Buchungen nach gebuchtem Monat, Vermerke zählen nicht als Zahlung
                       const rows = MONATE.map(m => {
-                        const erwartet = wohnungen.reduce((s, w) => {
-                          const belegt = w.mieterName && (!w.mietende || new Date(w.mietende) >= new Date(gJahr, m - 1, 15));
-                          const gestartet = !w.mietbeginn || new Date(w.mietbeginn) <= new Date(gJahr, m - 1, 28);
-                          return s + (belegt && gestartet ? (Number(w.kaltmiete) || 0) : 0);
-                        }, 0);
-                        const erhalten = wohnungen.reduce((s, w) => {
-                          const we = (w.mietEingaenge || []).filter(e => {
-                            const d = new Date(e.datum);
-                            return d.getFullYear() === gJahr && d.getMonth() + 1 === m;
-                          });
-                          return s + we.reduce((ss, e) => ss + (Number(e.betrag) || 0), 0);
-                        }, 0);
+                        const st = mfhMonatsStatus(wohnungen, gJahr, m).filter(x => x.status !== 'keine');
+                        const erwartet = st.reduce((a, x) => a + x.soll, 0);
+                        const erhalten = st.reduce((a, x) => a + x.ist, 0);
+                        const offen = st.filter(x => x.status === 'offen').length;
                         const diff = erhalten - erwartet;
                         const istVergangen = gJahr < aktJahr || (gJahr === aktJahr && m <= new Date().getMonth() + 1);
-                        return { m, erwartet, erhalten, diff, istVergangen };
+                        return { m, erwartet, erhalten, diff, istVergangen, offen };
                       });
                       const totalErwartet = rows.reduce((s, r) => s + (r.istVergangen ? r.erwartet : 0), 0);
                       const totalErhalten = rows.reduce((s, r) => s + r.erhalten, 0);
@@ -1876,9 +2066,19 @@ const MehrfamilienhausDetail = ({
                                         : r.erwartet === 0 ? <span className="text-gray-300">—</span>
                                         : r.erhalten >= r.erwartet
                                           ? <span className="text-emerald-600 font-bold flex items-center gap-0.5 justify-end"><Check size={11}/>OK</span>
-                                          : r.erhalten > 0
-                                            ? <span className="text-orange-500 font-semibold">Teilzahlung</span>
-                                            : <span className="text-red-500 font-semibold flex items-center gap-0.5 justify-end"><AlertTriangle size={11}/>Offen</span>
+                                          : (
+                                            <span className="flex items-center gap-2 justify-end">
+                                              {r.erhalten > 0
+                                                ? <span className="text-orange-500 font-semibold">Teilweise</span>
+                                                : <span className="text-red-500 font-semibold flex items-center gap-0.5"><AlertTriangle size={11}/>Offen</span>}
+                                              {r.offen > 0 && (
+                                                <button type="button" onClick={() => { setSammelMonat({ jahr: gJahr, monat: r.m }); sammelBuchen(gJahr, r.m); }}
+                                                  className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold hover:bg-emerald-700" title={`${r.offen} offene Wohnungen als eingegangen markieren`}>
+                                                  Alle buchen
+                                                </button>
+                                              )}
+                                            </span>
+                                          )
                                       }
                                     </td>
                                   </tr>
@@ -1896,12 +2096,21 @@ const MehrfamilienhausDetail = ({
                               </tfoot>
                             </table>
                           </div>
-                          <p className="text-xs text-gray-400 text-center">Zahlungen pro WE erfassen → WE-Tab anklicken</p>
+                          <p className="text-xs text-gray-400 text-center">Abweichungen (verspätet, falscher Betrag) je Wohnung erfassen → Wohnung oben anklicken</p>
                         </div>
                       );
                     })()}
                   </>
                 )}
+                {/* Nachforderungen/Rückzahlungen aus der NK-Abrechnung mit Ratenplan — wie bei der Eigentumswohnung */}
+                <NachforderungenManager
+                  liste={params.nachforderungen || []}
+                  onChange={(liste) => { const neu = { ...params, nachforderungen: liste }; setParams(neu); onSave({ ...immobilie, ...neu, wohnungen }); }}
+                  mieterNamen={[...new Set([
+                    ...(mieterListe || []).filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).map(m => m.name),
+                    ...wohnungen.map(w => w.mieterName),
+                  ].filter(Boolean))]}
+                />
               </div>
             );
           })()}
@@ -1940,7 +2149,14 @@ const MehrfamilienhausDetail = ({
                 setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
               }}
               onMieteingaengeClick={() => setActiveTab('mieteinnahmen')}
-                onNebenkostenClick={() => setActiveTab('nkabrechnung')}
+              onNebenkostenClick={() => setActiveTab('nkabrechnung')}
+              // Mieterhöhung je Mieter → Schreiben für dessen Wohnung (wie bei der Eigentumswohnung)
+              onMieterhoeungClick={(m) => { const i = weIdxFuerMieter(m); if (i >= 0) setMhWE(i); else setActiveTab('wohnungen'); }}
+              // Im Mieter-Formular erfasste Mietanpassung → Miete der Wohnung ab Datum
+              onMietanpassungFuerImmobilie={async ({ datum, kaltmiete }, m) => {
+                const i = weIdxFuerMieter(m);
+                if (i >= 0) await mieterhoehungFuerWE(i, datum, kaltmiete, { mieterMitnehmen: false });
+              }}
             />
             </div>
             <WasDuHierTunKannst
@@ -1952,7 +2168,8 @@ const MehrfamilienhausDetail = ({
 
           {/* ── VERMIETUNG: NK-ABRECHNUNG ────────────────────────────────────── */}
           {activeTab === 'nkabrechnung' && (
-            <NKAbrechnungTab params={params} updateParams={updateParams} immobilie={immobilie}/>
+            <NKAbrechnungTab params={params} updateParams={updateParams} immobilie={immobilie}
+              mieterListe={(mieterListe || []).filter(m => m.immobilie_id === immobilie.id)}/>
           )}
 
           {/* ── VERMIETUNG: KAUTION — Abschnitt 3.7: Block auf der Mieter-Seite ── */}
@@ -2181,6 +2398,24 @@ const MehrfamilienhausDetail = ({
       </div>
 
       {/* ── Wohnung bearbeiten / hinzufügen ──────────────────────────────────── */}
+      {mhWE !== null && wohnungen[mhWE] && (() => {
+        const w = wohnungen[mhWE];
+        const m = mieterFuerWE(mhWE);
+        const weName = w.name || `WE ${mhWE + 1}`;
+        return (
+          <MieterhoeungModal
+            mieter={{ ...(m || {}), name: m?.name || w.mieterName || '', kaltmiete: weMieteAm(w) }}
+            immobilie={{ ...immobilie, ...params, name: `${params.name || immobilie.name || 'Mehrfamilienhaus'} · ${weName}`, kaltmiete: weMieteAm(w), wohnflaeche: w.wohnflaeche }}
+            onClose={() => setMhWE(null)}
+            onSave={async (_mieterUpdate, immoUpdate) => {
+              const a = immoUpdate?.neueAnpassung;
+              if (a) await mieterhoehungFuerWE(mhWE, a.datum, a.kaltmiete);
+              setMhWE(null);
+            }}
+          />
+        );
+      })()}
+
       {showWohnungForm && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
           <div className="bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-xl sm:max-w-md max-h-[92vh] sm:max-h-[90vh] flex flex-col">
@@ -2211,9 +2446,12 @@ const MehrfamilienhausDetail = ({
                       className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm text-right"/>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Kaltmiete (€/mo)</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">{(wohnungForm.mietAnpassungen || []).length ? 'Miete bei Einzug (€/mo)' : 'Kaltmiete (€/mo)'}</label>
                     <ZahlInput type="number" value={wohnungForm.kaltmiete ?? ''} onChange={e => setWohnungForm({...wohnungForm, kaltmiete: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0)})}
                       className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm text-right"/>
+                    {(wohnungForm.mietAnpassungen || []).length > 0 && (
+                      <p className="text-[11px] text-gray-500 mt-1">Aktuell {formatCurrency(weMieteAm(wohnungForm))} nach Mieterhöhung</p>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -2240,6 +2478,14 @@ const MehrfamilienhausDetail = ({
                       className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm"/>
                   </div>
                 </div>
+                {wohnungForm.mieterName && (
+                  <WeMieterhoehungFelder
+                    form={wohnungForm}
+                    setForm={setWohnungForm}
+                    kappung={Number(params.kappungsgrenze) === 15 ? 15 : 20}
+                    onSchreiben={editWohnungIdx !== null ? () => { setShowWohnungForm(false); setMhWE(editWohnungIdx); } : null}
+                  />
+                )}
                 <div className="border-t pt-3">
                   <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1"><Key size={12}/> Kaution</p>
                   <div className="grid grid-cols-2 gap-3">

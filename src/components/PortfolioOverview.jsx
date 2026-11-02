@@ -5,6 +5,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, arbitrageZusatzkosten } from '../utils/miete.js';
 import { cashflowMonat, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert, kostenStruktur } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
+import { mfhMieteAm } from '../utils/mfh.js';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 
 const PortfolioOverview = ({ portfolio }) => {
@@ -71,7 +72,7 @@ const PortfolioOverview = ({ portfolio }) => {
 
         // Einheitliche Berechnung — eine Quelle für Rate + Cashflow
         const immoGesamtMiete = immo.immobilienTyp === 'mehrfamilienhaus'
-          ? (immo.wohnungen || []).reduce((s, w) => s + (Number(w.kaltmiete) || 0), 0)
+          ? mfhMieteAm(immo.wohnungen)
           : getAktuelleMiete(immo);
         const rendite = berechneRendite({ ...immo, kaltmiete: immoGesamtMiete });
 

@@ -12,6 +12,7 @@ import { pruefeImmobilie, zaehle, brauchtErinnerung } from '../utils/plausibilit
 import KlappKopf from './KlappKopf';
 import { sonderumlageHinweise } from '../utils/sonderumlage.js';
 import { einheitenStatus } from '../utils/belegung.js';
+import { weMieteAm, weMieteImMonat, letzteErhoehungWE, alleMietenBuchen } from '../utils/mfh.js';
 
 // Abschnitt 5 (Erinnerungs-Engine): 3 Stufen statt der alten rot/gelb/grün-Logik —
 // "grün" suggerierte fälschlich "erledigt", dabei sind das offene, nur unkritische
@@ -170,16 +171,20 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       if (heute.getDate() < ftag) return;
       if (!zeitraumNachEigentum(immo, new Date(aktuellesJahr, aktuellerMonat - 1, ftag))) return;
       const offen = einheitenStatus(immo, mieterListe, heute).einheiten
-        .filter(e => e.status === 'vermietet' && Number(e.wohnung?.kaltmiete) > 0)
-        .filter(e => ['offen', 'teilweise', 'nicht_bezahlt'].includes(berechneMietStatusFuerMonat(e.wohnung.mietEingaenge, aktuellesJahr, aktuellerMonat, Number(e.wohnung.kaltmiete), false).status));
+        .map(e => ({ ...e, soll: e.wohnung ? weMieteImMonat(e.wohnung, aktuellesJahr, aktuellerMonat) : 0 }))
+        .filter(e => e.status === 'vermietet' && e.soll > 0)
+        .map(e => ({ ...e, st: berechneMietStatusFuerMonat(e.wohnung.mietEingaenge, aktuellesJahr, aktuellerMonat, e.soll, !!e.wohnung.dauerauftrag) }))
+        .filter(e => ['offen', 'teilweise', 'nicht_bezahlt'].includes(e.st.status));
       if (offen.length) {
-        const summe = offen.reduce((s, e) => s + Number(e.wohnung.kaltmiete), 0);
+        const summe = offen.reduce((s, e) => s + Math.max(0, e.soll - e.st.summe), 0);
         const tage = heute.getDate() - ftag;
         todos.push({
           id: `miete-ausstehend-${immo.id}`, priority: tage >= 10 ? 'rot' : 'gelb', icon: <TrendingDown size={16} />, kategorie: 'Miete',
           titel: `Miete ${heute.toLocaleDateString('de-DE', { month: 'long' })} offen · ${offen.length} ${offen.length === 1 ? 'Wohnung' : 'Wohnungen'} · ${formatCurrency(summe)}`,
           sub: `${immo.name || immo.adresse || 'Immobilie'} · ${offen.map(e => e.mieterName ? `${e.name} (${e.mieterName})` : e.name).join(', ')}`,
           immoId: immo.id, badge: tage >= 10 ? `${heute.getDate()}. des Monats` : 'Prüfen', targetTab: 'mieteinnahmen',
+          // Ein Klick „Eingegangen“ bucht alle Wohnungen ohne Zahlung (Teilzahlungen bleiben)
+          ...(offen.some(e => e.st.status === 'offen') ? { felder: { wohnungen: alleMietenBuchen(immo.wohnungen, aktuellesJahr, aktuellerMonat).wohnungen } } : {}),
         });
       }
       return;
@@ -374,7 +379,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     const monate = (heute - letzte) / (1000 * 60 * 60 * 24 * 30.44);
     const aktuell = getAktuelleMiete(immo);
     const vor3 = new Date(heute); vor3.setFullYear(vor3.getFullYear() - 3);
-    const kappung = Math.max(0, Math.round(mieteAm(immo, vor3) * 1.2 - aktuell));
+    const kappung = Math.max(0, Math.round(mieteAm(immo, vor3) * (Number(immo.kappungsgrenze) === 15 ? 1.15 : 1.2) - aktuell));
     const mmjj = letzte.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' });
     if (monate >= 15) {
       todos.push({
@@ -404,9 +409,66 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     }
   });
 
+  // ── 5a. Mehrfamilienhaus: Mieterhöhung je Wohnung (gleiche Regeln wie 5/5b) ──
+  // Je Objekt EINE Aufgabe mit den betroffenen Wohnungen, statt einer pro Wohnung.
+  portfolio.forEach(immo => {
+    if (immo.immobilienTyp !== 'mehrfamilienhaus' || immo.aktiv === false) return;
+    const b = einheitenStatus(immo, mieterListe, heute);
+    const name = immo.name || immo.adresse || 'Mehrfamilienhaus';
+    const kappProz = Number(immo.kappungsgrenze) === 15 ? 15 : 20;
+    const vor3 = new Date(heute); vor3.setFullYear(vor3.getFullYear() - 3);
+    const seit = gehoertSeit(immo);
+    const moeglich = [], bald = [], fehlt = [];
+    b.einheiten.forEach(e => {
+      if (e.status !== 'vermietet' || !e.wohnung) return;
+      const w = e.wohnung;
+      const mieter = e.mieterId ? mieterListe.find(m => m.id === e.mieterId) : null;
+      const beginn = w.mietbeginn ? new Date(w.mietbeginn) : (mieter?.mietbeginn ? new Date(mieter.mietbeginn) : null);
+      const bezug = beginn && seit ? (beginn > seit ? beginn : seit) : (beginn || seit);
+      const letzteErh = letzteErhoehungWE(w, mieter);
+      if (!letzteErh) {
+        const monateDrin = bezug ? (heute - bezug) / (1000 * 60 * 60 * 24 * 30.44) : 999;
+        if (monateDrin >= 12) fehlt.push(e.name);
+        return;
+      }
+      let letzte = letzteErh;
+      if (bezug && bezug > letzte) letzte = bezug;
+      const monate = (heute - letzte) / (1000 * 60 * 60 * 24 * 30.44);
+      const spielraum = Math.max(0, Math.round(weMieteAm(w, vor3) * (1 + kappProz / 100) - weMieteAm(w, heute)));
+      if (monate >= 15) moeglich.push({ name: e.name, spielraum, letzte });
+      else if (monate >= 12) { const ab = new Date(letzte); ab.setMonth(ab.getMonth() + 15); bald.push({ name: e.name, ab }); }
+    });
+    if (moeglich.length) {
+      const summe = moeglich.reduce((s, x) => s + x.spielraum, 0);
+      todos.push({
+        id: `mieterhoehung-${immo.id}`, priority: 'gelb', icon: <TrendingUp size={16} />, kategorie: 'Mieter',
+        titel: `Mieterhöhung möglich bei ${moeglich.length} ${moeglich.length === 1 ? 'Wohnung' : 'Wohnungen'} · Spielraum bis Kappungsgrenze ca. +${formatCurrency(summe)}/Mo`,
+        sub: `${name} · ${moeglich.map(x => `${x.name} (zuletzt ${x.letzte.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })})`).join(', ')} · Obergrenze ist auch die ortsübliche Vergleichsmiete`,
+        immoId: immo.id, badge: 'Möglich', targetTab: 'wohnungen',
+      });
+    }
+    if (bald.length) {
+      const frueh = bald.reduce((a, x) => (x.ab < a ? x.ab : a), bald[0].ab);
+      todos.push({
+        id: `mieterhoehung-bald-${immo.id}`, priority: 'grau', icon: <CalendarDays size={16} />, kategorie: 'Mieter',
+        titel: `Mieterhöhung ab ${frueh.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })} wirksam möglich — jetzt vorbereiten`,
+        sub: `${name} · ${bald.map(x => `${x.name} ab ${x.ab.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' })}`).join(', ')}`,
+        immoId: immo.id, badge: 'Vorbereiten', targetTab: 'wohnungen',
+      });
+    }
+    if (fehlt.length) {
+      todos.push({
+        id: `mieterhoehung-datum-${immo.id}`, priority: 'gelb', icon: <ScrollText size={16} />, kategorie: 'Mieter',
+        titel: `Letzte Mieterhöhung bei ${fehlt.length} ${fehlt.length === 1 ? 'Wohnung' : 'Wohnungen'} nicht hinterlegt`,
+        sub: `${name} · ${fehlt.join(', ')} — Datum für Kappungsgrenze und 15-Monats-Frist fehlt`,
+        immoId: immo.id, badge: 'Eintragen', targetTab: 'wohnungen',
+      });
+    }
+  });
+
   // ── 5b. Letzte Mieterhöhung nach § 558 BGB — 3-Jahres-Kappungsgrenze ────────
   portfolio.forEach(immo => {
-    if (immo.immobilienTyp === 'mietimmobilie') return;
+    if (immo.immobilienTyp === 'mietimmobilie' || immo.immobilienTyp === 'mehrfamilienhaus') return; // MFH: 5a je Wohnung
     const aktiveMieter = mieterListe.filter(m => m.immobilie_id === immo.id && m.aktiv !== false);
     if (aktiveMieter.length === 0) return;
 
