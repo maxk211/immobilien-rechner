@@ -5,7 +5,7 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, arbitrageZusatzkosten } from '../utils/miete.js';
 import { cashflowMonat, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneRendite, getAktuellerGesamtwert, kostenStruktur } from '../utils/berechnung.js';
 import PortfolioZiele from './PortfolioZiele';
-import { mfhMieteAm } from '../utils/mfh.js';
+import { mfhMieteAm, mfhKosten } from '../utils/mfh.js';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
 
 const PortfolioOverview = ({ portfolio }) => {
@@ -78,7 +78,7 @@ const PortfolioOverview = ({ portfolio }) => {
 
         // Datumsbasierte Kostenanpassungen berücksichtigen (Bug-Fix: vorher immer Basiswerte)
         const monatlicheKosten = immo.immobilienTyp === 'mehrfamilienhaus'
-          ? (immo.instandhaltung || 0) + (immo.verwaltung || 0) + (immo.hausgeld || 0) + (immo.strom || 0) + (immo.internet || 0)
+          ? mfhKosten(immo).summe // Hauskosten + Wohnungskosten (utils/mfh.js)
           : kostenStruktur(immo, (f) => getAktuellerWert(immo, f)).bewirtschaftung;
         const gesamtEK = (immo.ekFuerNebenkosten !== undefined && immo.ekFuerKaufpreis !== undefined)
           ? (immo.ekFuerNebenkosten || 0) + (immo.ekFuerKaufpreis || 0)

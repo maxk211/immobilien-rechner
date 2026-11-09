@@ -51,6 +51,8 @@ const ZUSATZ_KEYS = [
   'sonderumlagen', 'hausgeldRuecklage', 'ruecklageVerwendung',
   // Weitere, parallel laufende Darlehen (je mit eigenen Phasen/Anschlussfinanzierungen)
   'weitereDarlehen',
+  // Mehrfamilienhaus: Kosten fürs ganze Haus + Verteilschlüssel auf die Wohnungen
+  'hauskosten', 'hauskostenVerteilung',
 ];
 
 // Immobilie speichern (neu oder update)

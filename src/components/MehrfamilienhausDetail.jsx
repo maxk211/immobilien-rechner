@@ -36,6 +36,7 @@ import { mieterAusWohnungen, einheitenStatus } from '../utils/belegung.js';
 import WeitereDarlehen, { HauptDarlehenReiter } from './WeitereDarlehen';
 import MieterhoeungModal from './MieterhoeungModal';
 import NachforderungenManager from './NachforderungenManager';
+import { mfhKosten, ungenutzteAltkosten, hauskostenVon, MFH_KOSTEN, mfhAlsKostenObjekt } from '../utils/mfh.js';
 import { weMieteAm, weMieteImMonat, mfhMietAggregat, hatWeAnpassungen, mfhMonatsStatus, alleMietenBuchen, sammelbuchungZurueck, weMieteBuchen, weMieterhoehung } from '../utils/mfh.js';
 import { erhoehungWE, erhoehungKurz, anpassungsListe, tag, GRUENDE, kappungsgrenze, pruefeVorhaben } from '../utils/kappung.js';
 import ErhoehungAngaben, { anpassungAusAngaben } from './ErhoehungAngaben';
@@ -419,20 +420,23 @@ const MehrfamilienhausDetail = ({
   const kautionOffenAnzahl = wohnungen.filter(w => w.kautionBetrag > 0 && !w.kautionBezahlt).length;
   const aktiveMieterAnzahl = (mieterListe || []).filter(m => m.immobilie_id === immobilie.id && m.aktiv !== false).length;
 
-  // Aggregierte Kosten aus allen WE-kosten-Objekten (für berechneRendite)
-  const aggregierteWEKosten = useMemo(() => wohnungen.reduce((acc, w) => {
-    const k = w.kosten || {};
-    return {
-      instandhaltung: acc.instandhaltung + (Number(k.instandhaltung) || 0),
-      verwaltung:     acc.verwaltung     + (Number(k.hausverwaltung) || 0),
-      strom:          acc.strom          + (Number(k.strom)          || 0),
-      internet:       acc.internet       + (Number(k.internet)       || 0),
-      // Grundsteuer + Versicherung → hausgeld (monatlich)
-      hausgeld:       acc.hausgeld       + (Number(k.grundsteuer)    || 0) + (Number(k.versicherung) || 0),
-      // Sonstige → nebenkosten (monatlich)
-      nebenkosten:    acc.nebenkosten    + (Number(k.sonstige)       || 0),
-    };
-  }, { instandhaltung: 0, verwaltung: 0, strom: 0, internet: 0, hausgeld: 0, nebenkosten: 0 }), [wohnungen]);
+  // Kosten: ganzes Haus + je Wohnung (utils/mfh.js) — gleiche Rechnung wie Cashflow/Portfolio/Steuer
+  const mk = useMemo(() => mfhKosten({ ...params, wohnungen }), [params, wohnungen]);
+  const aggregierteWEKosten = useMemo(() => ({
+    instandhaltung: mk.proKategorie.instandhaltung,
+    verwaltung:     mk.proKategorie.hausverwaltung,
+    strom:          mk.proKategorie.strom,
+    internet:       mk.proKategorie.internet,
+    // Grundsteuer + Versicherung → hausgeld (monatlich), Sonstige → nebenkosten
+    hausgeld:       mk.proKategorie.grundsteuer + mk.proKategorie.versicherung,
+    nebenkosten:    mk.proKategorie.sonstige,
+  }), [mk]);
+  // Kosten fürs ganze Haus speichern (erste Bearbeitung übernimmt die bisher gerechneten Werte)
+  const speichereHauskosten = (aenderung) => {
+    const neu = { ...params, ...aenderung, hauskosten: { ...hauskostenVon({ ...params, wohnungen }), ...(aenderung.hauskosten || {}) } };
+    setParams(neu);
+    onSave({ ...immobilie, ...neu, wohnungen });
+  };
 
   // Rendite-Berechnung: kaltmiete + alle per-WE-Kosten korrekt aggregiert
   // Bug-Fix: vermietungsmodell/nebenkostenVomMieter auf Gebäudeebene werden bei MFH
@@ -540,6 +544,11 @@ const MehrfamilienhausDetail = ({
 
   // Kosten einer einzelnen WE updaten + sofort persistieren
   const updateWohnungKosten = (idx, neueKosten) => {
+    // Erste Wohnungskosten: bisher gerechnete Hauskosten (aus dem Anlegen) festhalten, statt sie fallen zu lassen
+    if (!params.hauskosten) {
+      const hk = hauskostenVon({ ...params, wohnungen });
+      if (MFH_KOSTEN.some(key => hk[key] > 0)) setParams(p => ({ ...p, hauskosten: hk }));
+    }
     const neu = [...wohnungen];
     neu[idx] = { ...neu[idx], kosten: neueKosten };
     setWohnungen(neu);
@@ -1081,7 +1090,8 @@ const MehrfamilienhausDetail = ({
             // Aggregierte Werte für Gesamt-Tab
             const weKosten = wohnungen.map((w, idx) => {
               const k = w.kosten || {};
-              const sumK = KOSTEN_FELDER.reduce((s, f) => s + (Number(k[f.key]) || 0), 0);
+              // eigene Kosten der Wohnung + ihr Anteil an den Hauskosten
+              const sumK = mk.je[idx]?.summe || 0;
               // Flächenanteil: Basis für Kredit-Aufteilung
               const anteil = gesamtFlaeche > 0 && Number(w.wohnflaeche) > 0
                 ? Number(w.wohnflaeche) / gesamtFlaeche
@@ -1094,7 +1104,7 @@ const MehrfamilienhausDetail = ({
               return {
                 idx, name: w.name || `WE ${idx + 1}`,
                 kaltmiete: weMieteAm(w),
-                kosten: k, sumKosten: sumK,
+                kosten: k, sumKosten: sumK, eigenSumme: mk.je[idx]?.eigenSumme || 0, hausAnteil: mk.je[idx]?.hausAnteil || {}, hausAnteilSumme: mk.je[idx]?.hausAnteilSumme || 0, kostenAnteil: mk.je[idx]?.anteil || 0,
                 anteil, kreditAnteilig, zinsenAnteilig, tilgungAnteilig,
                 cashflow: (weMieteAm(w)) - sumK - kreditAnteilig,
               };
@@ -1201,16 +1211,19 @@ const MehrfamilienhausDetail = ({
                       </div>
                       {/* Kosteneingabe */}
                       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center justify-between gap-2">
                           <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Monatliche Kosten</p>
+                          <span className="text-[10px] text-gray-400">Spalte links: nur diese Wohnung · rechts: Anteil an den Hauskosten</span>
                         </div>
                         {KOSTEN_FELDER.map(f => {
                           const Icon = f.icon;
+                          const hausTeil = wk.hausAnteil?.[f.key] || 0;
                           return (
                             <div key={f.key} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                               <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer" htmlFor={`kosten-${cfWE}-${f.key}`}>
                                 <Icon size={14} className="text-gray-400 flex-shrink-0"/>
                                 {f.label}
+                                {hausTeil > 0 && <span className="text-[11px] text-indigo-500 whitespace-nowrap">+ {formatCurrency(hausTeil)} Haus</span>}
                               </label>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <ZahlInput id={`kosten-${cfWE}-${f.key}`} type="number" min={0} step={1}
@@ -1223,8 +1236,14 @@ const MehrfamilienhausDetail = ({
                             </div>
                           );
                         })}
+                        {wk.hausAnteilSumme > 0 && (
+                          <div className="flex items-center justify-between px-4 py-2 bg-indigo-50/60 border-t border-indigo-100 text-xs">
+                            <span className="text-indigo-800">Anteil an den Kosten fürs ganze Haus ({Math.round(wk.kostenAnteil * 100)} % {mk.nachFlaeche ? 'nach Wohnfläche' : 'je Einheit'})</span>
+                            <button type="button" onClick={() => setCfWE('gesamt')} className="font-semibold text-indigo-700 hover:underline whitespace-nowrap">−{formatCurrency(wk.hausAnteilSumme)} · bearbeiten</button>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between px-4 py-3 bg-red-50 border-t border-red-100">
-                          <span className="text-sm font-semibold text-gray-700 flex items-center gap-1"><TrendingDown size={14} className="text-red-500"/>Summe Kosten</span>
+                          <span className="text-sm font-semibold text-gray-700 flex items-center gap-1"><TrendingDown size={14} className="text-red-500"/>Summe Kosten{wk.hausAnteilSumme > 0 ? ' inkl. Hausanteil' : ''}</span>
                           <span className="font-black text-red-600 text-base">−{formatCurrency(wk.sumKosten)}</span>
                         </div>
                       </div>
@@ -1356,29 +1375,69 @@ const MehrfamilienhausDetail = ({
                       </table>
                     </div>
 
-                    {/* Kostenkategorien-Übersicht */}
+                    {/* Kostenaufstellung: ganzes Haus (hier erfassen) + je Wohnung (in der Wohnung) */}
                     <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Kostenaufstellung Gesamt</p>
+                        <div className="flex items-center gap-1 text-[11px]">
+                          <span className="text-gray-500">Hauskosten verteilen nach</span>
+                          {[['flaeche', 'Wohnfläche'], ['einheiten', 'Einheiten']].map(([v, l]) => (
+                            <button key={v} type="button" onClick={() => speichereHauskosten({ hauskostenVerteilung: v })}
+                              className={`px-2 py-0.5 rounded-md border font-semibold ${(params.hauskostenVerteilung || 'flaeche') === v ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-indigo-300'}`}>{l}</button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="divide-y divide-gray-50">
-                        {KOSTEN_FELDER.map(f => {
-                          const Icon = f.icon;
-                          const sumKat = weKosten.reduce((s, wk) => s + (Number(wk.kosten[f.key]) || 0), 0);
-                          if (sumKat === 0) return null;
-                          return (
-                            <div key={f.key} className="flex items-center justify-between px-4 py-2.5">
-                              <span className="text-sm text-gray-600 flex items-center gap-2"><Icon size={13} className="text-gray-400"/>{f.label}</span>
-                              <span className="text-sm font-semibold text-red-500">−{formatCurrency(sumKat)}</span>
-                            </div>
-                          );
-                        })}
-                        {KOSTEN_FELDER.every(f => weKosten.every(wk => !wk.kosten[f.key])) && (
-                          <div className="px-4 py-6 text-center text-sm text-gray-400">
-                            Noch keine Kosten eingetragen — WE anklicken zum Bearbeiten
+                      {(() => {
+                        const alt = ungenutzteAltkosten({ ...params, wohnungen });
+                        if (!alt) return null;
+                        const sAlt = MFH_KOSTEN.reduce((x, key) => x + (alt[key] || 0), 0);
+                        return (
+                          <div className="px-4 py-3 bg-amber-50 border-b border-amber-200 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2">
+                            <span>Beim Anlegen hast du Hauskosten von <strong>{formatCurrency(sAlt)}/Monat</strong> erfasst (z. B. Hausverwaltung, Grundsteuer). Sie wurden bisher nicht gezählt, weil Kosten an einzelnen Wohnungen stehen.</span>
+                            <button type="button" onClick={() => speichereHauskosten({ hauskosten: alt })} className="px-3 py-1.5 rounded-lg bg-amber-600 text-white font-bold">Als Hauskosten übernehmen</button>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })()}
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-[11px] text-gray-400 border-b border-gray-100">
+                            <th className="text-left py-2 px-4 font-semibold">Kostenart</th>
+                            <th className="text-right py-2 px-2 font-semibold">Ganzes Haus €/Monat</th>
+                            <th className="text-right py-2 px-2 font-semibold hidden sm:table-cell">Einzelne Wohnungen</th>
+                            <th className="text-right py-2 px-4 font-semibold">Summe</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {KOSTEN_FELDER.map(f => {
+                            const Icon = f.icon;
+                            const haus = mk.haus[f.key] || 0;
+                            const einzeln = mk.je.reduce((x, j) => x + (j.eigen[f.key] || 0), 0);
+                            return (
+                              <tr key={f.key}>
+                                <td className="py-2 px-4 text-gray-600"><span className="flex items-center gap-2"><Icon size={13} className="text-gray-400"/>{f.label.replace(' (Anteil)', '')}</span></td>
+                                <td className="py-1.5 px-2 text-right">
+                                  <ZahlInput type="number" min={0} step={1} value={haus || ''} placeholder="0" aria-label={`${f.label} ganzes Haus`}
+                                    onChange={e => speichereHauskosten({ hauskosten: { [f.key]: parseFloat(e.target.value) || 0 } })}
+                                    className="w-24 px-2 py-1 border border-gray-200 rounded-lg text-right text-base sm:text-sm focus:ring-2 focus:ring-indigo-300"/>
+                                </td>
+                                <td className="py-2 px-2 text-right text-gray-500 hidden sm:table-cell">{einzeln > 0 ? `−${formatCurrency(einzeln)}` : '—'}</td>
+                                <td className="py-2 px-4 text-right font-semibold text-red-500">{haus + einzeln > 0 ? `−${formatCurrency(haus + einzeln)}` : '—'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-gray-50 border-t-2 border-gray-200 font-bold">
+                            <td className="py-2 px-4 text-gray-700">Gesamt</td>
+                            <td className="py-2 px-2 text-right text-gray-700">−{formatCurrency(mk.hausSumme)}</td>
+                            <td className="py-2 px-2 text-right text-gray-700 hidden sm:table-cell">−{formatCurrency(mk.summe - mk.hausSumme)}</td>
+                            <td className="py-2 px-4 text-right text-red-600">−{formatCurrency(mk.summe)}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                      <p className="px-4 py-2 text-[11px] text-gray-400 border-t border-gray-100">
+                        Kosten, die alle Wohnungen betreffen (Hausverwaltung, Grundsteuer, Gebäudeversicherung, Allgemeinstrom …), hier fürs ganze Haus eintragen — renditly verteilt sie {mk.nachFlaeche ? 'nach Wohnfläche' : 'gleich je Einheit'} auf die Wohnungen. Kosten nur einer Wohnung in der Wohnung erfassen.
+                      </p>
                     </div>
 
                     {/* Jahresübersicht */}
@@ -1879,7 +1938,12 @@ const MehrfamilienhausDetail = ({
           )}
 
           {activeTab === 'steuern' && (
-            <Steuerberechnung params={{ ...params, kaltmiete: mietAgg.kaltmiete, ...(hatWeAnpassungen(wohnungen) ? { mietAnpassungen: mietAgg.mietAnpassungen } : {}) }} ergebnis={ergebnis} immobilie={{ ...immobilie, ...params, wohnungen, kaltmiete: mietAgg.kaltmiete, ...(hatWeAnpassungen(wohnungen) ? { mietAnpassungen: mietAgg.mietAnpassungen } : {}) }} onUpdateParams={updateParams} anteilFaktor={1}/>
+            (() => {
+              // Steuer rechnet mit den Hauskosten + Wohnungskosten; zurück kommen nur echte Änderungen
+              const steuerObj = mfhAlsKostenObjekt({ ...immobilie, ...params, immobilienTyp: 'mehrfamilienhaus', wohnungen, kaltmiete: mietAgg.kaltmiete, ...(hatWeAnpassungen(wohnungen) ? { mietAnpassungen: mietAgg.mietAnpassungen } : {}) });
+              return <Steuerberechnung params={steuerObj} ergebnis={ergebnis} immobilie={steuerObj} anteilFaktor={1}
+                onUpdateParams={(neu) => updateParams({ ...params, ...Object.fromEntries(Object.entries(neu || {}).filter(([k, v]) => v !== steuerObj[k])) })}/>;
+            })()
           )}
 
           {/* ── VERMIETUNG: EINNAHMEN (per Wohneinheit) ──────────────────── */}

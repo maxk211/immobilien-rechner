@@ -9,6 +9,7 @@ import { anfangsFremdkapital, fremdkapitalGesamt } from './utils/darlehen.js';
 import { hausgeldSteuerJahr, erhaltungsaufwandJahr } from './utils/sonderumlage.js';
 import ImmobilieLoeschenDialog from './components/ImmobilieLoeschenDialog';
 import { isFounderEmail } from './config/payments';
+import { mfhAlsKostenObjekt } from './utils/mfh.js';
 import { partnerZuordnungAbschliessen } from './utils/partner';
 const PartnerAdmin = lazy(() => import('./components/PartnerAdmin.jsx'));
 import { formatCurrency, formatPercent } from './utils/format.js';
@@ -767,7 +768,7 @@ function App() {
     const [XLSX, jsPDF] = await Promise.all([getXLSX(), getJsPDF()]);
 
     // Immobilien die im gewählten Jahr aktiv waren (erworben vor/in dem Jahr und noch nicht aufgegeben vor dem Jahr)
-    const kaufimmobilien = portfolio.filter(i => {
+    const kaufimmobilien = portfolio.map(mfhAlsKostenObjekt).filter(i => {
       if (i.immobilienTyp === 'mietimmobilie') return false;
       // Muss vor oder in dem Jahr erworben worden sein
       if (i.kaufdatum && new Date(i.kaufdatum).getFullYear() > jahr) return false;

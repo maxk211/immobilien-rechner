@@ -128,3 +128,80 @@ export function weMieterhoehung(w, datum, kaltmiete, extra = {}) {
     letzteMieterhoehung: zaehlt && (!w.letzteMieterhoehung || new Date(datum) > new Date(w.letzteMieterhoehung)) ? datum : (w.letzteMieterhoehung || null),
   };
 }
+
+// ── Kosten im Mehrfamilienhaus ────────────────────────────────────────────────
+// Zwei Ebenen: Kosten fürs GANZE Haus (immo.hauskosten, €/Monat — Hausverwaltung, Grundsteuer,
+// Versicherung … betreffen meist alle Wohnungen) und Kosten EINER Wohnung (w.kosten).
+// Hauskosten werden nach Wohnfläche (oder gleich je Einheit) auf die Wohnungen verteilt.
+// EINE Rechnung für Cashflow-Reiter, Cockpit, Portfolio, Steuer und Export.
+export const MFH_KOSTEN = ['hausverwaltung', 'instandhaltung', 'grundsteuer', 'versicherung', 'strom', 'internet', 'sonstige'];
+
+const leereKosten = () => Object.fromEntries(MFH_KOSTEN.map(k => [k, 0]));
+const hatWeKosten = (immo) => (immo?.wohnungen || []).some(w => MFH_KOSTEN.some(k => zahl(w?.kosten?.[k]) > 0));
+
+// Beim Anlegen (Assistent) bzw. früher auf Objektebene erfasste Kosten
+export function altHauskosten(immo) {
+  return {
+    hausverwaltung: zahl(immo?.verwaltung),
+    instandhaltung: zahl(immo?.instandhaltung),
+    grundsteuer: zahl(immo?.grundsteuerMonat),
+    versicherung: zahl(immo?.versicherungMonat),
+    strom: zahl(immo?.strom) + zahl(immo?.heizung),
+    internet: zahl(immo?.internet) + zahl(immo?.rundfunk),
+    sonstige: zahl(immo?.nebenkosten) + zahl(immo?.kontofuehrung) + zahl(immo?.hausgeld),
+  };
+}
+const summe = (k) => MFH_KOSTEN.reduce((s, f) => s + zahl(k?.[f]), 0);
+
+// Hauskosten: ausdrücklich erfasst → die; sonst (ältere Häuser ohne Wohnungskosten) die
+// Objektkosten aus dem Anlegen — so wie der Cashflow sie bisher schon gerechnet hat.
+export function hauskostenVon(immo) {
+  if (immo?.hauskosten && typeof immo.hauskosten === 'object') return { ...leereKosten(), ...Object.fromEntries(MFH_KOSTEN.map(k => [k, zahl(immo.hauskosten[k])])) };
+  return hatWeKosten(immo) ? leereKosten() : altHauskosten(immo);
+}
+// Alte Objektkosten, die neben Wohnungskosten bisher NICHT gezählt wurden → zum Übernehmen anbieten
+export function ungenutzteAltkosten(immo) {
+  if (immo?.hauskosten && typeof immo.hauskosten === 'object') return null;
+  if (!hatWeKosten(immo)) return null;
+  const alt = altHauskosten(immo);
+  return summe(alt) > 0 ? alt : null;
+}
+
+// Verteilschlüssel je Wohnung (Summe 1): Wohnfläche oder gleich je Einheit
+export function verteilung(immo) {
+  const liste = immo?.wohnungen || [];
+  if (!liste.length) return [];
+  const flaeche = liste.map(w => zahl(w?.wohnflaeche));
+  const gesamt = flaeche.reduce((a, b) => a + b, 0);
+  const nachFlaeche = (immo?.hauskostenVerteilung || 'flaeche') === 'flaeche' && gesamt > 0 && flaeche.every(f => f > 0);
+  return liste.map((_, i) => (nachFlaeche ? flaeche[i] / gesamt : 1 / liste.length));
+}
+
+export function mfhKosten(immo) {
+  const liste = immo?.wohnungen || [];
+  const haus = hauskostenVon(immo);
+  const anteile = verteilung(immo);
+  const je = liste.map((w, i) => {
+    const eigen = { ...leereKosten(), ...Object.fromEntries(MFH_KOSTEN.map(k => [k, zahl(w?.kosten?.[k])])) };
+    const hausAnteil = Object.fromEntries(MFH_KOSTEN.map(k => [k, haus[k] * (anteile[i] || 0)]));
+    const eigenSumme = summe(eigen), hausAnteilSumme = summe(hausAnteil);
+    return { idx: i, eigen, eigenSumme, anteil: anteile[i] || 0, hausAnteil, hausAnteilSumme, summe: eigenSumme + hausAnteilSumme };
+  });
+  const proKategorie = Object.fromEntries(MFH_KOSTEN.map(k => [k, haus[k] + je.reduce((s, x) => s + x.eigen[k], 0)]));
+  return { haus, hausSumme: summe(haus), je, proKategorie, summe: summe(proKategorie), nachFlaeche: anteile.length > 0 && (immo?.hauskostenVerteilung || 'flaeche') === 'flaeche' && liste.every(w => zahl(w?.wohnflaeche) > 0) };
+}
+
+// MFH als Objekt mit Kostenfeldern wie bei der Eigentumswohnung — für Steuer, Export, Rendite
+export function mfhAlsKostenObjekt(immo) {
+  if (immo?.immobilienTyp !== 'mehrfamilienhaus') return immo;
+  const k = mfhKosten(immo).proKategorie;
+  return {
+    ...immo,
+    verwaltung: k.hausverwaltung, instandhaltung: k.instandhaltung,
+    grundsteuerMonat: k.grundsteuer, versicherungMonat: k.versicherung,
+    strom: k.strom, internet: k.internet, nebenkosten: k.sonstige,
+    hausgeld: 0, heizung: 0, rundfunk: 0, kontofuehrung: 0,
+    hausgeldNichtUmlagefaehig: null, vermietungsmodell: 'kaltmiete', nebenkostenVomMieter: 0,
+    kostenZahler: {}, kostenAnpassungen: [],
+  };
+}

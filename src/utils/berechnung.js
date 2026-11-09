@@ -4,7 +4,7 @@ import { darlehensVerlauf, anfangsFremdkapital, hatDarlehen, fremdkapitalGesamt,
 import { bausparMonat } from './bauspar.js';
 import { normalisiereImmobilie, zahl } from './zahlen.js';
 import { sonderumlageImMonat } from './sonderumlage.js';
-import { mfhMieteAm } from './mfh.js';
+import { mfhMieteAm, mfhKosten } from './mfh.js';
 
 // Immobilienwert schätzen
 export const schaetzeImmobilienwert = (immobilie) => {
@@ -579,10 +579,8 @@ export const cashflowMonat = (immo, heute = new Date()) => {
     : getAktuelleMiete(immo);
   let betrieb, nkImCashflow = 0, ks = null;
   if (istMFH) {
-    const weKosten = (immo.wohnungen || []).some(w => w.kosten && Object.keys(w.kosten).length);
-    betrieb = weKosten
-      ? (immo.wohnungen || []).reduce((s, w) => s + MFH_KOSTEN_KEYS.reduce((k, f) => k + (Number((w.kosten || {})[f]) || 0), 0), 0)
-      : (Number(immo.instandhaltung) || 0) + (Number(immo.verwaltung) || 0) + (Number(immo.hausgeld) || 0) + (Number(immo.strom) || 0) + (Number(immo.internet) || 0) + (Number(immo.nebenkosten) || 0);
+    // Kosten fürs ganze Haus + Kosten je Wohnung (utils/mfh.js) — gleiche Rechnung wie im Cashflow-Reiter
+    betrieb = mfhKosten(immo).summe;
   } else {
     ks = kostenStruktur(immo, (f) => getAktuellerWert(immo, f));
     betrieb = ks.bewirtschaftung;
