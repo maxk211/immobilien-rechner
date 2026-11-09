@@ -12,7 +12,7 @@ import { isFounderEmail } from './config/payments';
 import { partnerZuordnungAbschliessen } from './utils/partner';
 const PartnerAdmin = lazy(() => import('./components/PartnerAdmin.jsx'));
 import { formatCurrency, formatPercent } from './utils/format.js';
-import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, getJahresDurchschnittFuerFeld, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, zahlerAnteilJahr } from './utils/miete.js';
+import { getAktuelleMiete, getAktuelleWarmmiete, getAktuelleUntermiete, getAktuellerWert, getJahresDurchschnittFuerFeld, basisKaltmiete, berechneHistorischenArbitrageCashflow, arbitrageZusatzkosten, zahlerAnteilJahr } from './utils/miete.js';
 import { cashflowMonat, schaetzeImmobilienwert, berechneWertsteigerungSeitKauf, berechneRestschuld, berechneJahresRateFuerPhasen, berechneRendite, berechneMtlCashflow, berechneImmoVermoegenswerte, berechneJahresZinsenFuerSteuer, getAktuellerGesamtwert } from './utils/berechnung.js';
 import { showConfirm, ConfirmDialog } from './utils/confirm.jsx';
 import { ZAEHLER_TYPEN, NK_KOSTENPOSITIONEN_DEFAULTS, NK_STANDARD_POSITIONEN, CHANGELOG_VERSION, CHANGELOG_EINTRAEGE } from './constants/index.js';
@@ -890,7 +890,7 @@ function App() {
         for (const a of sorted) {
           if (new Date(a.datum) <= monatDatum) gueltige = a;
         }
-        gesamtmiete += gueltige ? gueltige.kaltmiete : (immo.kaltmiete || 0);
+        gesamtmiete += gueltige ? gueltige.kaltmiete : basisKaltmiete(immo);
       }
       return gesamtmiete;
     };

@@ -62,7 +62,7 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
     // da die schon die neueste Anpassung enthält und historisch falsch wäre)
     const kaltmieteForMonat = gueltig
       ? gueltig.kaltmiete
-      : (isDauerauftrag ? dauerauftragBetrag : (params.kaltmiete || 0));
+      : (sorted[0]?.vorher != null && sorted[0].vorher !== '' ? Number(sorted[0].vorher) : (isDauerauftrag ? dauerauftragBetrag : (params.kaltmiete || 0)));
     // NK-Vorauszahlung addieren (nur bei kaltmiete_nk, aktueller Wert)
     return kaltmieteForMonat + nkVomMieter;
   };

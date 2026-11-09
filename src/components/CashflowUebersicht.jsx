@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Wallet, Landmark, AlertTriangle, ParkingSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
-import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld } from '../utils/miete.js';
+import { getAktuelleMiete, getAktuellerWert, getJahresDurchschnittFuerFeld, basisKaltmiete } from '../utils/miete.js';
 import { berechneJahresRateFuerPhasen, berechneZinsUndTilgung, kostenStruktur, cashflowMonat } from '../utils/berechnung.js';
 import { sonderumlageImJahr } from '../utils/sonderumlage.js';
 import { darlehensVerlauf, weitereDarlehen } from '../utils/darlehen.js';
@@ -123,7 +123,7 @@ const CashflowUebersicht = ({ params, ergebnis, immobilie, investitionen = [], a
         for (const a of mietAnpSorted) {
           if (new Date(a.datum) <= monatsMitte) gueltige = a;
         }
-        summe += gueltige?.kaltmiete ?? (params.kaltmiete || 0);
+        summe += gueltige?.kaltmiete ?? basisKaltmiete(params);
       }
       return summe / 12; // Monatsdurchschnitt (berücksichtigt unterjährige Anpassungen)
     };

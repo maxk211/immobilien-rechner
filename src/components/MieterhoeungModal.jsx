@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { getJsPDF } from '../utils/lazyLibs.js';
 import { formatCurrency } from '../utils/format.js';
+import { pruefeVorhaben } from '../utils/kappung.js';
 
 // Vermieter-Absenderdaten sind über alle Mieterhöhungsschreiben hinweg konstant
 // (ändern sich nicht pro Mieter/Immobilie) — daher einmal lokal gespeichert,
@@ -29,7 +30,7 @@ const ladeGespeicherteVermieterAdresse = () => {
  * mieterUpdate : { letzte_mieterhoehung: 'YYYY-MM-DD', kaltmiete: Zahl }
  * immoUpdate   : { mietAnpassungen: [...] }
  */
-const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = null }) => {
+const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = null, pruefung = null }) => {
   const heute = new Date();
   const heutStr = heute.toISOString().slice(0, 10);
 
@@ -63,8 +64,11 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = nul
     aktuelleKaltmiete: aktKaltmiete > 0 ? aktKaltmiete.toString() : '',
     // Mieterhöhung
     // A.5: Vorschlag aus „Was wäre, wenn?“ übernehmen
-    neueKaltmiete: vorschlag?.neueKaltmiete ?? (aktKaltmiete > 0 ? Math.ceil(aktKaltmiete * 1.05) : ''),
-    wirksamkeitsDatum: vorschlag?.wirksamkeitsDatum || frühestesWirksamkeitsDatum,
+    // Vorschlag +5 %, aber nie über die Kappungsgrenze; Datum nie vor 15-Monats-Frist/Kappungssperre
+    neueKaltmiete: vorschlag?.neueKaltmiete ?? (aktKaltmiete > 0
+      ? (pruefung?.spielraum > 0 ? Math.min(Math.ceil(aktKaltmiete * 1.05), Math.floor(aktKaltmiete + pruefung.spielraum)) : Math.ceil(aktKaltmiete * 1.05))
+      : ''),
+    wirksamkeitsDatum: vorschlag?.wirksamkeitsDatum || (pruefung?.abISO && pruefung.abISO > frühestesWirksamkeitsDatum ? pruefung.abISO : frühestesWirksamkeitsDatum),
     begründungsTyp: 'mietspiegel',
     mietspiegelJahr: new Date().getFullYear().toString(),
     mietspiegelQuelle: 'Mietspiegel der Gemeinde',
@@ -238,7 +242,7 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = nul
     } : null;
 
     const immoUpdate = {
-      neueAnpassung: { datum: form.wirksamkeitsDatum, kaltmiete: neueKalt },
+      neueAnpassung: { datum: form.wirksamkeitsDatum, kaltmiete: neueKalt, grund: 'Mieterhöhung', ...(effAktKaltmiete > 0 ? { vorher: effAktKaltmiete } : {}) },
     };
     onSave(mieterUpdate, immoUpdate);
     onClose();
@@ -318,11 +322,28 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = nul
                 <span>{diff > 0 ? '+' : ''}{formatCurrency(diff)}/mo ({diffProzent} %)</span>
               </div>
             )}
-            {diff / effAktKaltmiete > 0.2 && effAktKaltmiete > 0 && (
-              <p className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 flex items-start gap-1.5">
+            {/* Prüfung gegen 15-Monats-Frist und Kappungsgrenze (utils/kappung.js) — Hinweis, keine Sperre */}
+            {(() => {
+              const hinweise = pruefung
+                ? pruefeVorhaben(pruefung, { datum: form.wirksamkeitsDatum, neueMiete: neueKalt })
+                : (effAktKaltmiete > 0 && diff / effAktKaltmiete > 0.15
+                  ? [{ ton: 'gelb', text: 'Ohne hinterlegte Miethistorie kann renditly die Kappungsgrenze nicht prüfen (höchstens 20 % in drei Jahren, in Gebieten mit Landesverordnung 15 %).' }] : []);
+              return hinweise.map((h, i) => (
+                <p key={i} className={`mt-2 text-xs rounded-lg px-3 py-2 flex items-start gap-1.5 ${h.ton === 'rot' ? 'text-red-700 bg-red-50' : 'text-amber-800 bg-amber-50'}`}>
+                  <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />{h.text}
+                </p>
+              ));
+            })()}
+            {pruefung && (pruefung.status === 'ausgeschoepft' || pruefung.status === 'warten') && pruefung.abDatum && (
+              <p className="mt-2 text-xs rounded-lg px-3 py-2 text-amber-800 bg-amber-50 flex items-start gap-1.5">
                 <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
-                Achtung: Die Erhöhung überschreitet 20 % — dies kann die Kappungsgrenze nach § 558 BGB verletzen (innerhalb von 3 Jahren max. 20 % bzw. 15 % in Gebieten mit Wohnungsmangel).
+                {pruefung.status === 'ausgeschoepft'
+                  ? `Kappungsgrenze (${pruefung.prozent} % in drei Jahren) bis ${new Date(pruefung.abDatum).toLocaleDateString('de-DE')} ausgeschöpft — Wirksamkeitsdatum ist deshalb auf diesen Tag gesetzt, das Schreiben frühestens ab ${new Date(pruefung.versandAb).toLocaleDateString('de-DE')} verschicken.`
+                  : `15-Monats-Frist läuft bis ${new Date(pruefung.abDatum).toLocaleDateString('de-DE')} — Wirksamkeitsdatum ist deshalb auf diesen Tag gesetzt, das Schreiben frühestens ab ${new Date(pruefung.versandAb).toLocaleDateString('de-DE')} verschicken.`}
               </p>
+            )}
+            {pruefung && pruefung.status === 'moeglich' && pruefung.maxMiete > 0 && (
+              <p className="mt-2 text-[11px] text-gray-500">Kappungsgrenze {pruefung.prozent} %: höchstens {formatCurrency(pruefung.maxMiete)} — zusätzlich nicht über der ortsüblichen Vergleichsmiete (Mietspiegel).</p>
             )}
           </div>
 

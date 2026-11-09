@@ -9,6 +9,8 @@ import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import InfoHint from './InfoHint';
+import ErhoehungAngaben, { anpassungAusAngaben } from './ErhoehungAngaben';
+import { naechsteErhoehung, kappungsgrenze, anpassungsListe, monatJahr, tag } from '../utils/kappung.js';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 
 const MIETER_DOK_TYPEN = ['Mietvertrag', 'Personalausweis', 'Selbstauskunft', 'Bonitätsnachweis', 'SCHUFA-Auskunft', 'Übergabeprotokoll', 'Kautionsquittung', 'Sonstiges'];
@@ -58,6 +60,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
   // (nicht sofort bei "Anpassung hinzufügen") — sonst würde ein Abbrechen des
   // Formulars die Immobilien-Daten trotzdem schon verändert haben.
   const [pendingImmoSync, setPendingImmoSync] = useState(null);
+  const [erhAngabe, setErhAngabe] = useState({ vorher: '', prozent: '' }); // Betrag der letzten Erhöhung
   // Sobald der Nutzer die Kaltmiete manuell ändert, hört die automatische
   // Vorbefüllung aus der Immobilie auf, seinen Wert zu überschreiben.
   const [kaltmieteBeruehrt, setKaltmieteBeruehrt] = useState(!!mieter);
@@ -163,9 +166,15 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
       const savedMieter = await onSave(form);
       // Mietanpassung erst JETZT (nach erfolgreichem Mieter-Speichern) an die
       // Immobilie weiterreichen — siehe pendingImmoSync-Kommentar oben.
+      const mieterRef = { ...(mieter || {}), ...(savedMieter || {}), name: form.name, zimmer_bezeichnung: form.zimmerBezeichnung ?? mieter?.zimmer_bezeichnung };
       if (pendingImmoSync && onMietanpassungFuerImmobilie) {
-        await onMietanpassungFuerImmobilie(pendingImmoSync, { ...(mieter || {}), ...(savedMieter || {}), name: form.name, zimmer_bezeichnung: form.zimmerBezeichnung ?? mieter?.zimmer_bezeichnung });
+        await onMietanpassungFuerImmobilie(pendingImmoSync, mieterRef);
         setPendingImmoSync(null);
+      }
+      // Letzte Erhöhung mit Betrag → als Anpassung am Objekt/an der Wohnung (Kappungsgrenze)
+      const nachgetragen = anpassungAusAngaben(form.letzteMieterhoehung, parseFloat(form.kaltmiete) || 0, erhAngabe);
+      if (nachgetragen && onMietanpassungFuerImmobilie && pendingImmoSync?.datum !== form.letzteMieterhoehung) {
+        await onMietanpassungFuerImmobilie(nachgetragen, mieterRef);
       }
       // Gepufferte Dokumente für neuen Mieter jetzt hochladen
       if (pendingFiles.length > 0 && onDokumentUpdate) {
@@ -540,21 +549,43 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {/* Letzte formale Mieterhöhung */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-sm font-semibold text-amber-800 mb-1 flex items-center gap-1.5"><ScrollText size={14} /> Letzte Mieterhöhung nach § 558 BGB</p>
-                <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">Datum der letzten formalen Mieterhöhung (Grundlage für 3-Jahres-Kappungsgrenze) <InfoHint text="Begrenzt die Mieterhöhung auf die ortsübliche Vergleichsmiete: maximal 20% innerhalb von 3 Jahren, in Gebieten mit angespanntem Wohnungsmarkt maximal 15%." /></p>
+                <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">Datum und Betrag der letzten Erhöhung (Grundlage für 15-Monats-Frist und Kappungsgrenze) <InfoHint text="Begrenzt die Mieterhöhung auf die ortsübliche Vergleichsmiete: maximal 20% innerhalb von 3 Jahren, in Gebieten mit angespanntem Wohnungsmarkt maximal 15%." /></p>
                 <input type="date" value={form.letzteMieterhoehung}
                   onChange={e => setForm({ ...form, letzteMieterhoehung: e.target.value })}
                   className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-base sm:text-sm bg-white" />
                 {form.letzteMieterhoehung && (() => {
-                  const letzte = new Date(form.letzteMieterhoehung);
-                  const naechste = new Date(letzte);
-                  naechste.setFullYear(naechste.getFullYear() + 3);
-                  const heute = new Date();
-                  const monateVerbleibend = (naechste - heute) / (1000 * 60 * 60 * 24 * 30.44);
+                  // Gleiche Rechnung wie „Was steht an“ (utils/kappung.js): 15 Monate + Kappungsgrenze
+                  const obj = gewaehltesObjekt || {};
+                  const norm = (x) => String(x || '').trim().toLowerCase();
+                  const we = obj.immobilienTyp === 'mehrfamilienhaus'
+                    ? (obj.wohnungen || []).find(w => (form.zimmerBezeichnung && norm(w.name) === norm(form.zimmerBezeichnung)) || (w.mieterName && norm(w.mieterName) === norm(form.name)))
+                    : null;
+                  const quelle = we || obj;
+                  const vorhanden = anpassungsListe(quelle.mietAnpassungen).some(a => Math.abs(a.d - tag(form.letzteMieterhoehung)) <= 45 * 86400000 && a.art !== 'neuvermietung');
+                  const zusatz = !vorhanden ? anpassungAusAngaben(form.letzteMieterhoehung, parseFloat(form.kaltmiete) || 0, erhAngabe) : null;
+                  const grenze = kappungsgrenze(obj);
+                  const p = naechsteErhoehung({
+                    kaltmiete: we ? we.kaltmiete : obj.kaltmiete,
+                    mietAnpassungen: [...(quelle.mietAnpassungen || []), ...(zusatz ? [zusatz] : [])],
+                    letzteErhoehung: form.letzteMieterhoehung, mietbeginn: form.mietbeginn || we?.mietbeginn, prozent: grenze.prozent,
+                  });
+                  const text = {
+                    moeglich: `Nächste Erhöhung möglich: wirksam ab ${p.abDatum?.toLocaleDateString('de-DE')}, bis ca. +${formatCurrency(p.spielraum || 0)} (Kappungsgrenze ${grenze.prozent} %).`,
+                    warten: `15-Monats-Frist läuft — nächste Erhöhung wirksam frühestens ab ${p.abDatum?.toLocaleDateString('de-DE')}, Schreiben ab ${monatJahr(p.versandAb)}.`,
+                    ausgeschoepft: p.gesperrtBis ? `Kappungsgrenze (${grenze.prozent} % in drei Jahren) ausgeschöpft — nächste Erhöhung frühestens ab ${p.gesperrtBis.toLocaleDateString('de-DE')}.` : `Kappungsgrenze (${grenze.prozent} %) ausgeschöpft.`,
+                    betrag_fehlt: 'Um wie viel wurde erhöht? Ohne Betrag lässt sich die Kappungsgrenze nicht prüfen.',
+                    vertrag: 'Staffel- oder Indexmiete — keine Erhöhung nach § 558 BGB.',
+                  }[p.status];
                   return (
-                    <div className={`mt-2 text-xs font-semibold flex items-center gap-1 ${monateVerbleibend <= 0 ? 'text-emerald-700' : monateVerbleibend <= 3 ? 'text-amber-700' : 'text-amber-600'}`}>
-                      {monateVerbleibend <= 0
-                        ? <><CheckCircle2 size={12} /> Nächste Mieterhöhung ist jetzt möglich</>
-                        : `Nächste Mieterhöhung möglich ab: ${naechste.toLocaleDateString('de-DE')} (in ${Math.ceil(monateVerbleibend)} Mon.)`}
+                    <div className="mt-2 space-y-2">
+                      {!vorhanden && (
+                        <ErhoehungAngaben wert={erhAngabe} onChange={setErhAngabe} nachher={parseFloat(form.kaltmiete) || 0} />
+                      )}
+                      {text && (
+                        <div className={`text-xs font-semibold flex items-start gap-1 ${p.status === 'moeglich' ? 'text-emerald-700' : p.status === 'betrag_fehlt' ? 'text-amber-700' : 'text-gray-600'}`}>
+                          {p.status === 'moeglich' && <CheckCircle2 size={12} className="mt-0.5 shrink-0" />} <span>{text}{grenze.quelle === 'ort' ? ` ${grenze.ort.name}: 15 % per Landesverordnung (bis ${new Date(grenze.ort.bis).toLocaleDateString('de-DE')}).` : ''}</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}

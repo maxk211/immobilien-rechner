@@ -6,6 +6,7 @@ import { cashflowVorNach } from '../utils/kapital.js';
 import { darlehensVerlauf } from '../utils/darlehen.js';
 import { GREST_HISTORIE, grestSatz, bundeslandAusName, bundeslandAusPlz } from '../config/grunderwerbsteuer.js';
 import { mieterAusWohnungen } from '../utils/belegung.js';
+import ErhoehungAngaben, { anpassungAusAngaben } from './ErhoehungAngaben';
 
 // Anlage-Wizard (UX-Paket Teil 2): vier Schritte statt einer Maske.
 //  1 Was besitzt du? · 2 Das Objekt · 3 Kaufpreis, Eigenkapital, Kredit · 4 Miete rein, Kosten raus
@@ -27,7 +28,7 @@ const LEER = {
   zahlweise: '', zusatzEK: '', kreditBeiErbe: false, darlehenManuell: '', sollzins: 4, kreditSeit: '', zinsbindungBis: '', zbBestaetigt: false,
   kenne: 'tilgung', tilgung: 2, rate: '', sondertilgungProzent: '',
   mietstatus: '', vermietungsmodell: 'kaltmiete_nk', kaltmiete: '', nkVz: '', mieterName: '', mieterSeit: '', faelligTag: 3,
-  letzteErhoehung: '', nieErhoeht: false,
+  letzteErhoehung: '', nieErhoeht: false, erhVorher: '', erhProzent: '',
   hausgeld: '', nuHG: '', nuGeschaetzt: false, ruecklage: '', grundsteuerJahr: '', versicherung: '', sev: '',
   chips: [], strom: '', internet: '', kontofuehrung: '', sonstige: '', heizung: '', rundfunk: '',
   // Arbitrage
@@ -123,6 +124,10 @@ export function baueImmobilie(d) {
     zinssatz: n(d.sollzins) || 4, tilgung: n(d.tilgung) || 2,
     finanzierungsphasen: phasen,
     kaltmiete: istMFH ? wohnungen.reduce((s, w) => s + w.kaltmiete, 0) : (vermietet ? n(d.kaltmiete) : 0),
+    // Letzte Erhöhung mit Betrag → Anpassung (Grundlage für Kappungsgrenze, § 558 BGB)
+    mietAnpassungen: (!istMFH && vermietet && d.letzteErhoehung)
+      ? [anpassungAusAngaben(monatZuDatum(d.letzteErhoehung), n(d.kaltmiete), { vorher: d.erhVorher, prozent: d.erhProzent })].filter(Boolean)
+      : [],
     vermietungsmodell: vermietet ? d.vermietungsmodell : 'kaltmiete',
     nebenkostenVomMieter: nkVz,
     mieteFaelligkeitstag: n(d.faelligTag) || 3,
@@ -764,8 +769,15 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
                 <p className="text-xs text-gray-500 mb-2">Ohne dieses Datum können wir dich nicht erinnern, sobald wieder eine Erhöhung möglich wäre.</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <input type="month" className={`${inputCls} w-44`} value={d.letzteErhoehung} disabled={d.nieErhoeht} onChange={e => set({ letzteErhoehung: e.target.value })} />
-                  <Pille aktiv={d.nieErhoeht} onClick={() => set({ nieErhoeht: !d.nieErhoeht, letzteErhoehung: '' })}>Nie erhöht</Pille>
+                  <Pille aktiv={d.nieErhoeht} onClick={() => set({ nieErhoeht: !d.nieErhoeht, letzteErhoehung: '', erhVorher: '', erhProzent: '' })}>Nie erhöht</Pille>
                 </div>
+                {d.letzteErhoehung && !d.nieErhoeht && (
+                  <div className="mt-2 max-w-sm">
+                    <ErhoehungAngaben wert={{ vorher: d.erhVorher, prozent: d.erhProzent }} nachher={n(d.kaltmiete)}
+                      onChange={(v) => set({ erhVorher: v.vorher, erhProzent: v.prozent })} />
+                    <p className="text-[11px] text-gray-400 mt-1">Daraus rechnet renditly die Kappungsgrenze — z. B. nach +15 % in Erfurt drei Jahre keine weitere Erhöhung.</p>
+                  </div>
+                )}
               </div>
             </>
           )}

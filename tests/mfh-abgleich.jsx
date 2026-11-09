@@ -42,16 +42,18 @@ const erhDatum = new Date(vorMonaten(2));
 ok(Math.round(getJahresDurchschnittFuerFeld(steuerHaus, J - 2, 'kaltmiete')) === 2100 && Math.round(getJahresDurchschnittFuerFeld(steuerHaus, J + 1, 'kaltmiete')) === 2150, `Steuer: Jahre vor der Erhöhung 2.100 €, danach 2.150 € (Erhöhung ${erhDatum.toLocaleDateString('de-DE')})`);
 
 // ── Letzte Mieterhöhung → „Was steht an“ je Wohnung ──
-const alt = mfh([we('EG', 'Anna', { letzteMieterhoehung: vorMonaten(20) }), we('OG', 'Ben', { letzteMieterhoehung: vorMonaten(13) }), we('DG', 'Cem')]);
+// Erhöhungen mit Betrag (+5 %), sonst lässt sich die Kappungsgrenze nicht prüfen
+const mitErh = (w, n) => M.weMieterhoehung(w, vorMonaten(n), 735, { vorher: 700 });
+const alt = mfh([mitErh(we('EG', 'Anna'), 20), mitErh(we('OG', 'Ben'), 10), we('DG', 'Cem')]);
 const t = generiereAufgaben([alt], [], []);
 const moegl = t.find(a => a.id === 'mieterhoehung-m'), bald = t.find(a => a.id === 'mieterhoehung-bald-m'), fehlt = t.find(a => a.id === 'mieterhoehung-datum-m');
 ok(moegl && /1 Wohnung/.test(moegl.titel) && /EG/.test(moegl.sub) && moegl.targetTab === 'wohnungen', '„Was steht an“: Mieterhöhung möglich bei EG (20 Monate her)');
-ok(bald && /OG/.test(bald.sub), '„Was steht an“: OG bald möglich (13 Monate) — jetzt vorbereiten');
+ok(bald && /OG/.test(bald.sub), '„Was steht an“: OG bald möglich (10 Monate her, Schreiben in < 3 Monaten) — jetzt vorbereiten');
 ok(fehlt && /DG/.test(fehlt.sub) && !/EG/.test(fehlt.sub), '„Was steht an“: bei DG fehlt das Datum (nur dort)');
 const angek = mfh([M.weMieterhoehung(we('EG', 'Anna', { letzteMieterhoehung: vorMonaten(30) }), iso(new Date(J, H.getMonth() + 2, 1)), 780)]);
 ok(!generiereAufgaben([angek], [], []).some(a => a.id === 'mieterhoehung-m'), 'Angekündigte Erhöhung: keine zweite Erhöhung vorgeschlagen');
 const mitDatensatz = mfh([we('EG', 'Anna')]);
-ok(generiereAufgaben([mitDatensatz], [{ id: 'r1', immobilie_id: 'm', name: 'Anna', zimmer_bezeichnung: 'EG', aktiv: true, letzte_mieterhoehung: vorMonaten(24) }], []).some(a => a.id === 'mieterhoehung-m'), 'Datum aus dem Mieterdatensatz zählt auch');
+ok(generiereAufgaben([mitDatensatz], [{ id: 'r1', immobilie_id: 'm', name: 'Anna', zimmer_bezeichnung: 'EG', aktiv: true, letzte_mieterhoehung: vorMonaten(24) }], []).some(a => a.id === 'mieterhoehung-betrag-m'), 'Datum aus dem Mieterdatensatz zählt — ohne Betrag: „um wie viel?“ statt Spielraum erfinden');
 ok(!generiereAufgaben([alt], [], []).some(a => /^mieterhoehung-datum-r/.test(a.id)), 'Keine doppelte „nicht hinterlegt“-Meldung je Mieter');
 ok(mieterAusWohnungen(mfh([we('EG', 'Anna', { letzteMieterhoehung: '2024-05-01' })]), [])[0].letzteMieterhoehung === '2024-05-01', 'Mieter übernehmen: letzte Erhöhung kommt mit');
 
@@ -64,8 +66,8 @@ ok(st[0].status === 'bezahlt' && st[2].status === 'bezahlt' && st[1].status === 
 ok(M.alleMietenBuchen(r.wohnungen, J, MO).gebucht.length === 0, 'Zweimal klicken bucht nichts doppelt');
 const zurueck = M.sammelbuchungZurueck(r.wohnungen, r.gebucht.map(g => g.id));
 ok(M.mfhMonatsStatus(zurueck, J, MO).filter(x => x.status === 'offen').length === 2 && zurueck[1].mietEingaenge.length === 1, 'Rückgängig entfernt genau die Sammelbuchung');
-const mitErh = M.alleMietenBuchen([erh], J, MO);
-ok(mitErh.summe === 750, 'Sammelbuchung nutzt die Miete nach Erhöhung');
+const mitErhBuch = M.alleMietenBuchen([erh], J, MO);
+ok(mitErhBuch.summe === 750, 'Sammelbuchung nutzt die Miete nach Erhöhung');
 const da = mfh([we('EG', 'Anna', { dauerauftrag: true }), we('OG', 'Ben')]);
 ok(M.mfhMonatsStatus(da.wohnungen, J, MO)[0].status === 'bezahlt' && M.alleMietenBuchen(da.wohnungen, J, MO).gebucht.length === 1, 'Dauerauftrag je Wohnung: gilt als eingegangen, wird nicht doppelt gebucht');
 const tm = generiereAufgaben([teil], [], []).find(a => a.id === 'miete-ausstehend-m');
@@ -75,7 +77,7 @@ ok(tm && tm.felder?.wohnungen && M.mfhMonatsStatus(tm.felder.wohnungen, J, MO).f
 const dash = txt(renderToString(<MieteingaengeMonat portfolio={[teil]} mieterListe={[]} onBuchen={()=>{}} onOpenImmobilie={()=>{}} />));
 ok(/0 von 3 Wohnungen eingegangen/.test(dash) && /2 Wohnungen als eingegangen buchen/.test(dash), 'Dashboard: MFH-Kachel mit „2 Wohnungen als eingegangen buchen“');
 const wohn = txt(renderToString(<ImmobilienDetail immobilie={alt} initialTab="wohnungen" onClose={()=>{}} onSave={()=>{}} onSaveMieter={()=>{}} portfolio={[alt]} mieterListe={[]} aufgaben={[]} />));
-ok(/letzte Erhöhung \d\d\/\d{4}/.test(wohn) && /letzte Erhöhung fehlt/.test(wohn) && /Mieterhöhung/.test(wohn), 'Wohnungen: letzte Erhöhung je Wohnung + Knopf „Mieterhöhung“');
+ok(/Erhöhung möglich · bis \+105/.test(wohn) && /letzte Erhöhung fehlt/.test(wohn) && /Mieterhöhung/.test(wohn), 'Wohnungen: letzte Erhöhung je Wohnung + Knopf „Mieterhöhung“');
 {
   let gespeichert = null;
   const root = createRoot(document.getElementById('root'));

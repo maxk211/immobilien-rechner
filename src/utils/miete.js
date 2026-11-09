@@ -1,4 +1,12 @@
 import { zahl } from './zahlen.js';
+// Kaltmiete VOR der ersten Anpassung: deren „vorher“ (nachgetragene Erhöhung), sonst die
+// hinterlegte Ausgangsmiete. Für Monate/Jahre vor der ersten Anpassung (Steuer, Kappungsgrenze).
+export const basisKaltmiete = (p) => {
+  const erste = [...(p?.mietAnpassungen || [])].filter(a => a && a.datum && a.kaltmiete != null && a.kaltmiete !== '')
+    .sort((a, b) => new Date(a.datum) - new Date(b.datum))[0];
+  return erste && erste.vorher != null && erste.vorher !== '' ? zahl(erste.vorher) : zahl(p?.kaltmiete);
+};
+
 // Gibt die aktuell gültige Kaltmiete zurück, berücksichtigt mietAnpassungen
 // Nimmt das aktuellste Datum <= heute aus mietAnpassungen[].kaltmiete
 export const getAktuelleMiete = (immobilieOrParams) => {
@@ -77,12 +85,13 @@ export const getJahresDurchschnittFuerFeld = (params, jahr, feld) => {
     .filter(a => a[feld] != null && a[feld] !== '')
     .sort((a, b) => new Date(a.datum) - new Date(b.datum));
   if (anpassungen.length === 0) return params[feld] || 0;
+  const basis = feld === 'kaltmiete' ? basisKaltmiete(params) : (params[feld] || 0);
   let summe = 0;
   for (let m = 0; m < 12; m++) {
     const monatsMitte = new Date(jahr, m, 15);
     let gueltige = null;
     for (const a of anpassungen) { if (new Date(a.datum) <= monatsMitte) gueltige = a; }
-    summe += gueltige ? gueltige[feld] : (params[feld] || 0);
+    summe += gueltige ? gueltige[feld] : basis;
   }
   return summe / 12;
 };

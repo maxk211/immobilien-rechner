@@ -17,8 +17,9 @@ const anpassungenVon = (w) => (w?.mietAnpassungen || [])
 // Kaltmiete einer Wohnung zu einem Stichtag (Ende des Tages)
 export function weMieteAm(w, datum = new Date()) {
   const stichtag = new Date(datum); stichtag.setHours(23, 59, 59, 999);
-  let miete = zahl(w?.kaltmiete);
-  for (const a of anpassungenVon(w)) { if (new Date(a.datum) <= stichtag) miete = zahl(a.kaltmiete); else break; }
+  const liste = anpassungenVon(w);
+  let miete = liste.length && liste[0].vorher != null && liste[0].vorher !== '' ? zahl(liste[0].vorher) : zahl(w?.kaltmiete);
+  for (const a of liste) { if (new Date(a.datum) <= stichtag) miete = zahl(a.kaltmiete); else break; }
   return miete;
 }
 
@@ -30,7 +31,8 @@ export const mfhMieteAm = (wohnungen, datum = new Date()) => (wohnungen || []).r
 // Objektwerte aus den Wohnungen: Ausgangsmiete + Anpassungs-Zeitreihe
 export function mfhMietAggregat(wohnungen) {
   const liste = wohnungen || [];
-  const kaltmiete = liste.reduce((s, w) => s + zahl(w?.kaltmiete), 0);
+  // Ausgangsmiete = Miete vor der ersten Anpassung (inkl. nachgetragenem „vorher“)
+  const kaltmiete = liste.reduce((s, w) => s + weMieteAm(w, new Date(1900, 0, 1)), 0);
   const daten = [...new Set(liste.flatMap(w => anpassungenVon(w).map(a => String(a.datum).slice(0, 10))))].sort();
   const mietAnpassungen = daten.map(d => ({ datum: d, kaltmiete: Math.round(mfhMieteAm(liste, new Date(d)) * 100) / 100, quelle: 'wohnungen' }));
   return { kaltmiete, mietAnpassungen };
@@ -114,11 +116,15 @@ export function letzteErhoehungWE(w, mieter = null) {
 }
 
 // Neue Miete ab Datum für eine Wohnung eintragen (Mieterhöhung)
-export function weMieterhoehung(w, datum, kaltmiete) {
+// extra: { grund, vorher } — Modernisierung/Neuvermietung zählen nicht als „letzte Mieterhöhung“ (§ 558)
+export function weMieterhoehung(w, datum, kaltmiete, extra = {}) {
   const rest = (w.mietAnpassungen || []).filter(a => String(a.datum).slice(0, 10) !== String(datum).slice(0, 10));
+  const grund = extra.grund || 'Mieterhöhung';
+  const zaehlt = !/modern|neuverm|senk|staffel|index/i.test(grund);
+  const eintrag = { datum, kaltmiete: zahl(kaltmiete), grund, ...(extra.vorher != null && extra.vorher !== '' ? { vorher: zahl(extra.vorher) } : {}) };
   return {
     ...w,
-    mietAnpassungen: [...rest, { datum, kaltmiete: zahl(kaltmiete) }].sort((a, b) => new Date(a.datum) - new Date(b.datum)),
-    letzteMieterhoehung: (!w.letzteMieterhoehung || new Date(datum) > new Date(w.letzteMieterhoehung)) ? datum : w.letzteMieterhoehung,
+    mietAnpassungen: [...rest, eintrag].sort((a, b) => new Date(a.datum) - new Date(b.datum)),
+    letzteMieterhoehung: zaehlt && (!w.letzteMieterhoehung || new Date(datum) > new Date(w.letzteMieterhoehung)) ? datum : (w.letzteMieterhoehung || null),
   };
 }

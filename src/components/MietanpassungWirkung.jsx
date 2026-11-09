@@ -3,6 +3,8 @@ import { AlertTriangle, Check } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { cashflowMonat } from '../utils/berechnung.js';
 import { getAktuelleMiete } from '../utils/miete.js';
+import { kappungsgrenze, kappungsMaxZum, pruefeVorhaben, mieteZum } from '../utils/kappung.js';
+import { KappungsgrenzeWahl } from './MieterSeitenleiste';
 
 // Mietanpassung mit Cashflow-Wirkung (UX-Gesamtpaket A.5).
 // Die Mieterhöhung ist der einzige Hebel, den ein Vermieter kurzfristig selbst in der Hand
@@ -14,15 +16,8 @@ const vz = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
 const eur = (v) => `${vz(Math.round(v))}${formatCurrency(Math.abs(Math.round(v)))}`;
 const pct = (v) => `${(Number(v) || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
 
-// Kaltmiete zu einem Stichtag (Basis + Anpassungen bis dahin)
-export function mieteAm(params, datum) {
-  const t = new Date(datum).getTime();
-  let m = Number(params.kaltmiete) || 0;
-  [...(params.mietAnpassungen || [])].filter(a => a.kaltmiete != null && a.datum)
-    .sort((a, b) => new Date(a.datum) - new Date(b.datum))
-    .forEach(a => { if (new Date(a.datum).getTime() <= t) m = Number(a.kaltmiete) || m; });
-  return m;
-}
+// Kaltmiete zu einem Stichtag (Basis + Anpassungen bis dahin; „vorher“ der ersten Anpassung)
+export const mieteAm = (params, datum) => mieteZum(params, datum);
 
 // Cashflow (vor/nach Tilgung) des heutigen Monats bei einer anderen Kaltmiete
 export function cashflowBeiMiete(immo, miete) {
@@ -45,16 +40,23 @@ function Kachel({ label, alt, neu, format = eur, gut = (a, b) => b >= a }) {
   );
 }
 
-export default function MietanpassungWirkung({ params, immobilie, onAdd, onSchreiben, onKappungChange }) {
+export default function MietanpassungWirkung({ params, immobilie, onAdd, onSchreiben, onKappungChange, pruefung = null }) {
   const immo = useMemo(() => ({ ...immobilie, ...params }), [immobilie, params]);
   const heute = getAktuelleMiete(immo) || 0;
-  const [stichtag, setStichtag] = useState(fruehesterStichtag);
+  // Frühester sinnvoller Stichtag: 15-Monats-Frist und Kappungsgrenze (utils/kappung.js)
+  const [stichtag, setStichtag] = useState(() => {
+    const f = fruehesterStichtag();
+    const ab = pruefung?.abDatum ? iso(pruefung.abDatum) : null;
+    return ab && ab > f ? ab : f;
+  });
   const [neu, setNeu] = useState(heute);
   const [eingetragen, setEingetragen] = useState(false);
 
-  const kappungProzent = Number(params.kappungsgrenze) === 15 ? 15 : 20;
-  const basisVor3J = (() => { const d = new Date(stichtag); d.setFullYear(d.getFullYear() - 3); return mieteAm(params, d); })();
-  const kappung = Math.floor((basisVor3J || heute) * (1 + kappungProzent / 100));
+  const kappungProzent = pruefung?.prozent ?? kappungsgrenze(immo).prozent;
+  const km = kappungsMaxZum(pruefung?.eingaben || { kaltmiete: params.kaltmiete, mietAnpassungen: params.mietAnpassungen, prozent: kappungProzent }, stichtag);
+  const basisVor3J = km.basis || heute;
+  const kappung = Math.max(heute, km.basis > 0 ? km.max : Math.floor(heute * (1 + kappungProzent / 100)));
+  const hinweise = pruefeVorhaben(pruefung, { datum: stichtag, neueMiete: neu > heute ? neu : 0 });
   const flaeche = Number(params.wohnflaeche) || 0;
   const kaufpreis = Number(params.kaufpreis) || 0;
 
@@ -84,6 +86,18 @@ export default function MietanpassungWirkung({ params, immobilie, onAdd, onSchre
         <div>
           <p className="text-sm font-bold text-gray-800">Was wäre, wenn?</p>
           <p className="text-xs text-gray-400">Schieb die Kaltmiete und sieh sofort, was sie mit deinem Cashflow macht. Nichts wird gespeichert, bis du übernimmst.</p>
+          {pruefung && (() => {
+            const d = (x) => (x ? new Date(x).toLocaleDateString('de-DE') : '');
+            const t = {
+              moeglich: `Nächste Erhöhung: wirksam ab ${d(pruefung.abDatum)} möglich, bis ca. +${formatCurrency(pruefung.spielraum)} (Kappungsgrenze ${pruefung.prozent} %).`,
+              warten: `15-Monats-Frist läuft — nächste Erhöhung wirksam frühestens ab ${d(pruefung.abDatum)}.`,
+              ausgeschoepft: pruefung.gesperrtBis ? `Kappungsgrenze (${pruefung.prozent} % in drei Jahren) ausgeschöpft — nächste Erhöhung frühestens ab ${d(pruefung.gesperrtBis)}.` : 'Kappungsgrenze ausgeschöpft.',
+              betrag_fehlt: 'Um wie viel zuletzt erhöht wurde, fehlt — unter „Mietanpassungen“ die letzte Erhöhung mit der Miete davor eintragen.',
+              datum_fehlt: 'Letzte Erhöhung und Mietbeginn fehlen — Sperrfrist und Kappungsgrenze lassen sich nicht prüfen.',
+              vertrag: 'Staffel- oder Indexmiete — keine Erhöhung nach § 558 BGB.',
+            }[pruefung.status];
+            return t ? <p className={`mt-1 text-xs font-semibold ${pruefung.status === 'moeglich' ? 'text-emerald-700' : pruefung.status === 'betrag_fehlt' || pruefung.status === 'datum_fehlt' ? 'text-amber-700' : 'text-gray-600'}`}>{t}</p> : null;
+          })()}
         </div>
         <div className="text-right">
           <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Neue Kaltmiete</div>
@@ -131,11 +145,18 @@ export default function MietanpassungWirkung({ params, immobilie, onAdd, onSchre
             Zusätzlich darfst du die ortsübliche Vergleichsmiete nicht überschreiten — die kennt renditly nicht, dafür brauchst du den Mietspiegel.
           </span>
         </div>
-        <label className="mt-2 flex items-center gap-1.5 text-[11px] text-gray-600">
-          <input type="checkbox" checked={kappungProzent === 15} onChange={e => onKappungChange?.(e.target.checked ? 15 : 20)} className="accent-indigo-600" />
-          Angespannter Wohnungsmarkt — Kappungsgrenze 15 % statt 20 %
-        </label>
+        <div className="mt-2"><KappungsgrenzeWahl immo={immo} onChange={onKappungChange} /></div>
       </div>
+
+      {hinweise.length > 0 && (
+        <div className="mx-4 mt-2 space-y-1">
+          {hinweise.map((h, i) => (
+            <div key={i} className={`rounded-lg px-3 py-2 text-xs flex gap-1.5 ${h.ton === 'rot' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-amber-50 border border-amber-200 text-amber-900'}`}>
+              <AlertTriangle size={13} className="shrink-0 mt-0.5" /><span>{h.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Ab wann gilt was */}
       <div className="px-4 py-4">

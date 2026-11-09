@@ -14,6 +14,7 @@ import MieterDashboard from './MieterDashboard';
 import MieterhoeungModal from './MieterhoeungModal';
 import JetztDran from './JetztDran';
 import { MietanpassungenTabelle, WasDuHierTunKannst } from './MieterSeitenleiste';
+import { erhoehungETW } from '../utils/kappung.js';
 import MietanpassungWirkung, { cashflowBeiMiete } from './MietanpassungWirkung';
 import { erstelleZahlungserinnerung } from '../utils/mahnung.js';
 import KaufnebenkostenManager from './KaufnebenkostenManager';
@@ -400,14 +401,15 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     setHasChanges(true);
   };
   // Mietanpassung speichern + letzte Mieterhöhung beim aktiven Mieter nachziehen (Tabelle und „Was wäre, wenn?“)
-  const mietanpassungEintragen = async ({ datum, kaltmiete, grund }) => {
-                  const updated = { ...params, mietAnpassungen: [...(params.mietAnpassungen || []), { datum, kaltmiete, grund }] };
+  const mietanpassungEintragen = async ({ datum, kaltmiete, grund, vorher }) => {
+                  const ohneGleichesDatum = (params.mietAnpassungen || []).filter(a => String(a.datum).slice(0, 10) !== String(datum).slice(0, 10));
+                  const updated = { ...params, mietAnpassungen: [...ohneGleichesDatum, { datum, kaltmiete, grund, ...(vorher != null ? { vorher } : {}) }] };
                   updateParams(updated);
                   await onSave({ ...immobilie, ...updated });
                   setHasChanges(false);
                   // Letzte Mieterhöhung beim aktiven Mieter nachziehen (Grundlage der Erinnerung)
                   const mAktiv = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
-                  if (mAktiv && grund !== 'Neuvermietung' && onSaveMieter) {
+                  if (mAktiv && !['Neuvermietung', 'Modernisierung', 'Mietsenkung'].includes(grund) && onSaveMieter) {
                     const bisher = mAktiv.letzte_mieterhoehung ? new Date(mAktiv.letzte_mieterhoehung) : null;
                     if (!bisher || new Date(datum) > bisher) {
                       await onSaveMieter({
@@ -2333,11 +2335,12 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 onMieterhoeungClick={(mieter) => setMieterhoeungMieter(mieter)}
                 onMieteingaengeClick={() => setActiveTab('mieteinnahmen')}
                 onNebenkostenClick={() => setActiveTab('nkabrechnung')}
-                onMietanpassungFuerImmobilie={async ({ datum, kaltmiete }) => {
+                onMietanpassungFuerImmobilie={async ({ datum, kaltmiete, vorher, grund }) => {
                   // Zieht eine im Mieter-Tab erfasste Mietanpassung in die
                   // Immobilie-level mietAnpassungen nach, damit die Forderung im
                   // Einnahmen-Tab automatisch die neue Miete verwendet.
-                  const neueAnpassungen = [...(params.mietAnpassungen || []), { datum, kaltmiete }];
+                  const rest = (params.mietAnpassungen || []).filter(a => String(a.datum).slice(0, 10) !== String(datum).slice(0, 10));
+                  const neueAnpassungen = [...rest, { datum, kaltmiete, ...(grund ? { grund } : {}), ...(vorher != null ? { vorher } : {}) }];
                   const updated = { ...params, mietAnpassungen: neueAnpassungen };
                   updateParams(updated);
                   await onSave({ ...immobilie, ...updated });
@@ -2354,6 +2357,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <MietanpassungWirkung
                 params={params}
                 immobilie={immobilie}
+                pruefung={erhoehungETW({ ...immobilie, ...params }, mieterListe)}
                 onAdd={mietanpassungEintragen}
                 onKappungChange={(k) => speichereSofort({ ...params, kappungsgrenze: k })}
                 onSchreiben={(v) => { setMieterhoeungVorschlag(v); setMieterhoeungMieter(mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false) || {}); }}
@@ -2389,6 +2393,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               mieter={mieterhoeungMieter}
               vorschlag={mieterhoeungVorschlag}
               immobilie={immobilie}
+              pruefung={erhoehungETW({ ...immobilie, ...params }, mieterListe)}
               onClose={() => { setMieterhoeungMieter(null); setMieterhoeungVorschlag(null); }}
               onSave={async (mieterUpdate, immoUpdate) => {
                 // 1. Mieter aktualisieren — nur wenn echter Datensatz mit ID
@@ -2408,7 +2413,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 const neueAnpassung = immoUpdate.neueAnpassung;
                 const neueAnpassungen = [
                   ...(params.mietAnpassungen || []),
-                  { datum: neueAnpassung.datum, kaltmiete: neueAnpassung.kaltmiete },
+                  { datum: neueAnpassung.datum, kaltmiete: neueAnpassung.kaltmiete, grund: 'Mieterhöhung', ...(neueAnpassung.vorher ? { vorher: neueAnpassung.vorher } : {}) },
                 ];
                 const updated = { ...params, mietAnpassungen: neueAnpassungen };
                 updateParams(updated);
