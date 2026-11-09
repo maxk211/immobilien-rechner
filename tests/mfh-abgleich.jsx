@@ -44,11 +44,11 @@ ok(Math.round(getJahresDurchschnittFuerFeld(steuerHaus, J - 2, 'kaltmiete')) ===
 // ── Letzte Mieterhöhung → „Was steht an“ je Wohnung ──
 // Erhöhungen mit Betrag (+5 %), sonst lässt sich die Kappungsgrenze nicht prüfen
 const mitErh = (w, n) => M.weMieterhoehung(w, vorMonaten(n), 735, { vorher: 700 });
-const alt = mfh([mitErh(we('EG', 'Anna'), 20), mitErh(we('OG', 'Ben'), 10), we('DG', 'Cem')]);
+const alt = mfh([mitErh(we('EG', 'Anna'), 20), mitErh(we('OG', 'Ben'), 11), we('DG', 'Cem')]);
 const t = generiereAufgaben([alt], [], []);
 const moegl = t.find(a => a.id === 'mieterhoehung-m'), bald = t.find(a => a.id === 'mieterhoehung-bald-m'), fehlt = t.find(a => a.id === 'mieterhoehung-datum-m');
 ok(moegl && /1 Wohnung/.test(moegl.titel) && /EG/.test(moegl.sub) && moegl.targetTab === 'wohnungen', '„Was steht an“: Mieterhöhung möglich bei EG (20 Monate her)');
-ok(bald && /OG/.test(bald.sub), '„Was steht an“: OG bald möglich (10 Monate her, Schreiben in < 3 Monaten) — jetzt vorbereiten');
+ok(bald && /OG/.test(bald.sub), '„Was steht an“: OG bald möglich (11 Monate her, Schreiben in ≤ 1 Monat) — Erinnerung einen Monat vor Versand');
 ok(fehlt && /DG/.test(fehlt.sub) && !/EG/.test(fehlt.sub), '„Was steht an“: bei DG fehlt das Datum (nur dort)');
 const angek = mfh([M.weMieterhoehung(we('EG', 'Anna', { letzteMieterhoehung: vorMonaten(30) }), iso(new Date(J, H.getMonth() + 2, 1)), 780)]);
 ok(!generiereAufgaben([angek], [], []).some(a => a.id === 'mieterhoehung-m'), 'Angekündigte Erhöhung: keine zweite Erhöhung vorgeschlagen');

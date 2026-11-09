@@ -23,6 +23,17 @@ const PRIORITAET = { rot: 0, gelb: 1, grau: 2 };
 // Exportiert, damit Portfolio-Kacheln und die Immobilien-Übersicht dieselbe
 // Aufgaben-Logik nutzen können (gefiltert auf immoId) statt sie zu duplizieren.
 // Jede Erinnerung trägt laut Abschnitt 5 Objektbezug/Kategorie/Text/Stufe/1 Aktion.
+// Zinsbindung: Erinnerung 12 Monate vorher (Angebote für die Anschlussfinanzierung einholen),
+// ab 3 Monaten dringend, nach Ablauf ohne Anschluss rot. Davor nichts.
+function zinsbindungsErinnerung(st) {
+  if (!st || st.stufe === 'neutral' || st.monate == null) return null;
+  const m = st.monate;
+  if (m < 0) return { prio: 'rot', badge: 'Dringend', titel: (ende, u) => `Zinsbindung seit ${ende} abgelaufen — keine Anschlussfinanzierung hinterlegt${u}` };
+  if (m < 3) return { prio: 'rot', badge: 'Dringend', titel: (ende, u) => `Zinsbindung endet ${ende} — jetzt Anschlussfinanzierung abschließen${u}` };
+  if (m < 12) return { prio: 'gelb', badge: 'Bald', titel: (ende, u) => `Zinsbindung endet ${ende} — noch ${Math.ceil(m)} Monate: Angebote für die Anschlussfinanzierung einholen${u}` };
+  return null;
+}
+
 export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   const todos = [];
   const heute = new Date();
@@ -64,26 +75,25 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
         sub: name, immoId: immo.id, badge: 'Prüfen', targetTab: 'finanzierung',
       });
     }
-    if (st.stufe === 'neutral' || st.monate == null) return;
+    // Erinnerung erst 12 Monate vor Zinsbindungsende (Angebote einholen), ab 3 Monaten dringend.
+    // Kein Forward-Hinweis mehr in „Was steht an“ — der steht als Info im Finanzierungs-Reiter.
+    const zb = zinsbindungsErinnerung(st);
+    if (!zb) return;
     const ungeprueft = st.letzte.endeGeschaetzt ? ' (Datum ungeprüft)' : '';
     const ende = formatMonatJahr(st.letzte.ende);
     todos.push({
       id: `zinsbindung-${immo.id}`,
-      priority: st.stufe,
+      priority: zb.prio,
       icon: <Landmark size={16} />,
       kategorie: 'Finanzierung',
-      titel: st.stufe === 'rot'
-        ? `Zinsbindung seit ${ende} abgelaufen — keine Anschlussfinanzierung hinterlegt${ungeprueft}`
-        : st.stufe === 'gelb'
-          ? `Zinsbindung endet ${ende} — noch ${Math.ceil(st.monate)} Monate${ungeprueft}`
-          : `Zinsbindung endet ${ende} — Forward-Darlehen wäre jetzt möglich${ungeprueft}`,
+      titel: zb.titel(ende, ungeprueft),
       sub: (() => {
         const v = st.stufe !== 'rot' ? darlehensVerlauf(immo, heute) : null;
         const rs = v?.phasen[v.phasen.length - 1]?.restschuldBeiZinsbindung;
         return rs > 0 ? `${name} · Restschuld dann ca. ${formatCurrency(Math.round(rs / 100) * 100)}` : name;
       })(),
       immoId: immo.id,
-      badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis',
+      badge: zb.badge,
       targetTab: 'finanzierung',
     });
   });
@@ -95,18 +105,17 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
     weitereDarlehen(immo).forEach((d, i) => {
       const obj = darlehenAlsObjekt(immo, d);
       const st = finanzierungsStatus(obj, heute);
-      if (!st || st.stufe === 'neutral' || st.monate == null) return;
+      const zb = st ? zinsbindungsErinnerung(st) : null;
+      if (!zb) return;
       const v = darlehensVerlauf(obj, heute);
       if (v?.abbezahltHeute) return;
       const ende = formatMonatJahr(st.letzte.ende);
       const ungeprueft = st.letzte.endeGeschaetzt ? ' (Datum ungeprüft)' : '';
       const dn = d.name || `Darlehen ${i + 2}`;
       todos.push({
-        id: `zinsbindung-${immo.id}-d${d.id ?? i}`, priority: st.stufe, icon: <Landmark size={16} />, kategorie: 'Finanzierung',
-        titel: st.stufe === 'rot' ? `${dn}: Zinsbindung seit ${ende} abgelaufen — keine Anschlussfinanzierung hinterlegt${ungeprueft}`
-          : st.stufe === 'gelb' ? `${dn}: Zinsbindung endet ${ende} — noch ${Math.ceil(st.monate)} Monate${ungeprueft}`
-            : `${dn}: Zinsbindung endet ${ende} — Forward-Darlehen wäre jetzt möglich${ungeprueft}`,
-        sub: name, immoId: immo.id, badge: st.stufe === 'rot' ? 'Dringend' : st.stufe === 'gelb' ? 'Bald' : 'Hinweis', targetTab: 'finanzierung',
+        id: `zinsbindung-${immo.id}-d${d.id ?? i}`, priority: zb.prio, icon: <Landmark size={16} />, kategorie: 'Finanzierung',
+        titel: `${dn}: ${zb.titel(ende, ungeprueft)}`,
+        sub: name, immoId: immo.id, badge: zb.badge, targetTab: 'finanzierung',
       });
     });
   });
@@ -358,7 +367,8 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
   // ── 5. Mieterhöhung (§ 558 BGB) — EINE Rechnung für ETW und MFH (utils/kappung.js):
   // 15-Monats-Frist UND Kappungsgrenze (Ausgangswert drei Jahre vor dem Wirksamkeitstag).
   // „Möglich“ nur bei echtem Spielraum; ausgeschöpft → Hinweis, ab wann wieder.
-  const bald = (p) => p.versandAb && (p.versandAb - heute) / 86400000 <= 92;
+  // „Bald“: einen Monat bevor das Erhöhungsschreiben verschickt werden darf (nicht früher)
+  const bald = (p) => p.versandAb && (p.versandAb - heute) / 86400000 <= 31;
   const grenzText = (p) => `Kappungsgrenze ${p.prozent} %${p.grenze?.quelle === 'ort' ? ` (${p.grenze.ort.name}, bitte bestätigen)` : ''}`;
   const erhoehungsTodos = (immo, eintraege, ziel) => {
     // eintraege: [{ name, p }] — je Objekt gebündelt
@@ -383,7 +393,7 @@ export function generiereAufgaben(portfolio, mieterListe, nkAbrechnungen) {
       const erst = spaeter.reduce((x, e) => (!x || e.p.abDatum < x.p.abDatum ? e : x), null);
       todos.push({
         id: `mieterhoehung-bald-${immo.id}`, priority: 'grau', icon: <CalendarDays size={16} />, kategorie: 'Mieter',
-        titel: `Mieterhöhung ab ${monatJahr(erst.p.abDatum)} wirksam möglich — Schreiben ab ${monatJahr(erst.p.versandAb)} verschicken`,
+        titel: `Mieterhöhung bald: Schreiben ab ${erst.p.versandAb.toLocaleDateString('de-DE')} verschicken — wirksam ab ${monatJahr(erst.p.abDatum)}`,
         sub: `${name}${mehrere ? ` · ${spaeter.map(e => `${e.name} ab ${monatJahr(e.p.abDatum)}`).join(', ')}` : ''} · ${erst.p.status === 'ausgeschoepft' ? `bis dahin ${grenzText(erst.p)} ausgeschöpft` : '15-Monats-Frist läuft'}`,
         immoId: immo.id, badge: 'Vorbereiten', targetTab: ziel,
       });

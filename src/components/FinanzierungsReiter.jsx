@@ -251,7 +251,7 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
           return { ...s, rate, cf: cashflowNachTilgung + aktiv.rate - rate };
         });
         const schlechtester = Math.min(...szen.map(s => s.cf));
-        const forwardAb = new Date(aktiv.ende.getFullYear(), aktiv.ende.getMonth() - 60, 1);
+        const erinnerungAb = new Date(aktiv.ende.getFullYear(), aktiv.ende.getMonth() - 12, 1);
         return (
           <div className="bg-white border border-gray-200 rounded-2xl p-4">
             <p className="text-sm font-bold text-gray-800">Was passiert {aktiv.ende.getFullYear()}, wenn du neu verhandeln musst?</p>
@@ -282,7 +282,7 @@ export default function FinanzierungsReiter({ params, updateParams, marktwert, c
             </p>
             {monateBisZb != null && monateBisZb > 0 && (
               <p className="text-[11px] text-gray-400 mt-2">
-                Ein Forward-Darlehen kannst du bis zu 60 Monate vor Zinsbindungsende abschließen. {monateBisZb > 60 ? `renditly erinnert dich ab ${mmjjjj(forwardAb)}.` : 'Das ist jetzt schon möglich.'}
+                {monateBisZb > 12 ? `renditly erinnert dich ab ${mmjjjj(erinnerungAb)} (12 Monate vorher), Angebote für die Anschlussfinanzierung einzuholen.` : 'Jetzt ist die Zeit, Angebote für die Anschlussfinanzierung einzuholen.'} Wer sich den heutigen Zins früher sichern will, kann bis zu 60 Monate vorher ein Forward-Darlehen abschließen — meist mit Zinsaufschlag.
               </p>
             )}
           </div>

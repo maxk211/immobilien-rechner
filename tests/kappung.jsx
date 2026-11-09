@@ -74,6 +74,23 @@ ok(mC && /\+100/.test(mC.titel) && /Kappungsgrenze 20 %/.test(mC.sub), '„Was s
 const tD = generiereAufgaben([etw({ kaltmiete: 1150, mietAnpassungen: [] })], mieter({ letzte_mieterhoehung: null }), []);
 ok(ids(tD).includes('mieterhoehung-datum-e') && !ids(tD).includes('mieterhoehung-e'), 'Ohne Angabe zur letzten Erhöhung: „nicht hinterlegt“, kein Spielraum ab Mietbeginn geraten');
 
+// Erinnerung genau einen Monat vor dem Versand, nicht früher
+const mitErh = (n) => etw({ plz: '93047', kaltmiete: 1050, mietAnpassungen: [{ datum: vor(n), kaltmiete: 1050, vorher: 1000 }] });
+const bald = (n) => generiereAufgaben([mitErh(n)], mieter({ letzte_mieterhoehung: vor(n) }), []).find(a => a.id === 'mieterhoehung-bald-e');
+ok(!bald(9) && !bald(10), 'Mieterhöhung: 9–10 Monate nach der letzten Erhöhung noch keine Erinnerung (zu früh)');
+const b11 = bald(11);
+ok(b11 && /Schreiben ab \d+\.\d+\.\d{4} verschicken — wirksam ab/.test(b11.titel), `Mieterhöhung: einen Monat vor Versand „${b11?.titel}“`);
+ok(generiereAufgaben([mitErh(12)], mieter({ letzte_mieterhoehung: vor(12) }), []).some(a => a.id === 'mieterhoehung-e'), 'Mieterhöhung: ab Versanddatum „möglich“');
+
+// Zinsbindung: erst 12 Monate vorher, kein Forward-Hinweis mehr
+const zbEnde = (monate) => { const d = new Date(heute.getFullYear(), heute.getMonth() + monate, 28); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-28`; };
+const kredit = (m) => etw({ plz: '93047', kaltmiete: 900, finanzierungsbetrag: 150000, finanzierungsphasen: [{ id: 1, darlehensTyp: 'annuitaet', sollzinssatz: 2, anfangstilgung: 2, kreditStartDatum: '2019-01-01', zinsbindungBis: zbEnde(m), zinsbindung: 10 }] });
+const zb = (m) => generiereAufgaben([kredit(m)], mieter(), []).find(a => a.id === 'zinsbindung-e');
+ok(!zb(30) && !zb(14), 'Zinsbindung: 30 bzw. 14 Monate vorher keine Erinnerung (vorher ab 60 Monaten „Forward“)');
+ok(zb(10)?.priority === 'gelb' && /Angebote für die Anschlussfinanzierung/.test(zb(10).titel), 'Zinsbindung: 10 Monate vorher „Angebote einholen“');
+ok(zb(2)?.priority === 'rot' && /jetzt Anschlussfinanzierung abschließen/.test(zb(2).titel), 'Zinsbindung: 2 Monate vorher dringend');
+ok(!generiereAufgaben([kredit(40)], mieter(), []).some(a => /Forward/.test(a.titel)), 'Kein Forward-Hinweis mehr in „Was steht an“');
+
 // ── Erfassung: Assistent, Mietanpassungen-Tabelle ──
 const wiz = baueImmobilie({ typ: 'kaufimmobilie', mietstatus: 'vermietet', vermietungsmodell: 'kaltmiete', kaltmiete: '1150', letzteErhoehung: '2025-02', erhProzent: '15', erhVorher: '', eigentumMonat: '2019-01', kaufpreis: '200000', erwerbsart: 'kauf', wohnungen: [], chips: [] });
 ok(wiz.mietAnpassungen?.[0]?.vorher === 1000 && wiz.mietAnpassungen[0].kaltmiete === 1150 && wiz.mietAnpassungen[0].datum === '2025-02-01', 'Assistent: „+15 %“ → Erhöhung 1.000 → 1.150 € gespeichert');
