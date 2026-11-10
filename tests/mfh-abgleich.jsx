@@ -100,12 +100,17 @@ ok(/Erhöhung möglich · bis \+105/.test(wohn) && /letzte Erhöhung fehlt/.test
   const karte = [...document.querySelectorAll('p')].find(p => p.textContent === 'EG').closest('div.rounded-2xl');
   await act(async () => { karte.click(); });
   const setze = async (el, v) => { Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value').set.call(el, v); await act(async () => { el.dispatchEvent(new w.Event('input', { bubbles: true })); }); };
-  const lbl = [...document.querySelectorAll('label')].find(l => l.textContent === 'Letzte Mieterhöhung');
-  ok(!!lbl, 'Wohnungsformular: Feld „Letzte Mieterhöhung“');
-  await setze(lbl.parentElement.querySelector('input'), '2024-03-01');
+  // Letzte Mieterhöhung nach § 558: Datum + Betrag → Prozent, gespeichert im Mietverlauf der Wohnung
+  const amber = [...document.querySelectorAll('p')].find(p => /Letzte Mieterhöhung nach § 558/.test(p.textContent))?.parentElement;
+  ok(!!amber, 'Wohnungsformular: Block „Letzte Mieterhöhung nach § 558“');
+  await setze(amber.querySelector('input[type="date"]'), '2024-03-01');
+  const neuFeld = [...amber.querySelectorAll('label')].find(l => /Neue Kaltmiete/.test(l.textContent)).querySelector('input');
+  await setze(neuFeld, '735');
+  ok(/Alt 700\s?€ → Neu 735\s?€ \(\+5 %\)/.test(amber.textContent.replace(/\u00a0/g, ' ')), 'Vorschau: Alt 700 € → Neu 735 € (+5 %)');
+  await act(async () => { [...amber.querySelectorAll('button')].find(b => b.textContent === 'Übernehmen').click(); });
   await act(async () => { [...document.querySelectorAll('button')].find(b => b.textContent === 'Speichern').click(); });
-  ok(gespeichert?.wohnungen?.[0]?.letzteMieterhoehung === '2024-03-01', 'Gespeichert an der Wohnung');
-  ok(mieterCalls.some(m => m.id === 'r1' && m.letzteMieterhoehung === '2024-03-01'), 'Und am Mieterdatensatz (wie bei der Eigentumswohnung)');
+  ok(gespeichert?.wohnungen?.[0]?.letzteMieterhoehung === '2024-03-01' && gespeichert.wohnungen[0].mietAnpassungen.some(a => a.datum === '2024-03-01' && a.kaltmiete === 735), 'Gespeichert an der Wohnung — Datum UND Betrag im Mietverlauf');
+  ok(mieterCalls.some(m => m.id === 'r1' && m.letzteMieterhoehung === '2024-03-01'), 'Und am Mieterdatensatz gespiegelt (wie bei der Eigentumswohnung)');
   // Mieterhöhungsschreiben aus der Wohnungskarte → neue Miete an der Wohnung + am Mieter
   const mhKnopf = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Mieterhöhung');
   await act(async () => { mhKnopf.click(); });
@@ -113,8 +118,8 @@ ok(/Erhöhung möglich · bis \+105/.test(wohn) && /letzte Erhöhung fehlt/.test
   const speichern = [...document.querySelectorAll('button')].find(b => b.className.includes('bg-emerald-500') && b.className.includes('flex-1'));
   await act(async () => { speichern.click(); });
   const egNeu = gespeichert?.wohnungen?.[0];
-  ok(egNeu?.mietAnpassungen?.length === 1 && egNeu.mietAnpassungen[0].kaltmiete === 735 && gespeichert.mietAnpassungen?.[0]?.kaltmiete === 1435, 'Erhöhung gespeichert: Wohnung 735 €, Objekt-Zeitreihe 1.435 €');
-  ok(mieterCalls.some(m => m.id === 'r1' && m.kaltmiete === 735), 'Mieterdatensatz: neue Kaltmiete + Datum');
+  ok(egNeu?.mietAnpassungen?.length === 2 && egNeu.mietAnpassungen[1].kaltmiete === 772, 'Erhöhung aus dem Schreiben gespeichert: Wohnung 735 → 772 € (zweite Anpassung)');
+  ok(mieterCalls.some(m => m.id === 'r1' && m.kaltmiete === 772), 'Mieterdatensatz: neue Kaltmiete + Datum');
   await act(async () => { root.unmount(); });
 }
 

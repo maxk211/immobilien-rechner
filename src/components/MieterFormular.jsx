@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   User, FileText, TrendingUp, Paperclip, ClipboardList, AlertTriangle,
   CalendarDays, Key, Upload, Download, Trash2, X, CheckCircle2,
@@ -10,6 +10,8 @@ import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete } from '../utils/miete.js';
 import InfoHint from './InfoHint';
 import ErhoehungAngaben, { anpassungAusAngaben } from './ErhoehungAngaben';
+import MietverlaufEditor, { MietanpassungFormular } from './MietverlaufEditor';
+import { mietZeilen, aktuelleMiete, aktuelleMieteAendern, letzteErhoehungZeile, mieterSpiegel, mieterListeUebernehmen, setzeMietanpassung } from '../utils/mietverlauf.js';
 import { naechsteErhoehung, kappungsgrenze, anpassungsListe, monatJahr, tag } from '../utils/kappung.js';
 import { uploadDokument, deleteDokument, getDokumentUrl } from '../supabaseClient';
 
@@ -25,7 +27,7 @@ const MIETER_DOK_ICONS = {
   'Sonstiges':        <Paperclip size={14} />,
 };
 
-const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente = [], onDokumentUpdate, onMietanpassungFuerImmobilie }) => {
+const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente = [], onDokumentUpdate, onMietanpassungFuerImmobilie, onMietverlauf = null }) => {
   const [activeTab, setActiveTab] = useState('stammdaten');
   const [form, setForm] = useState({
     id: mieter?.id || null,
@@ -60,7 +62,36 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
   // (nicht sofort bei "Anpassung hinzufügen") — sonst würde ein Abbrechen des
   // Formulars die Immobilien-Daten trotzdem schon verändert haben.
   const [pendingImmoSync, setPendingImmoSync] = useState(null);
-  const [erhAngabe, setErhAngabe] = useState({ vorher: '', prozent: '' }); // Betrag der letzten Erhöhung
+  const [erhAngabe, setErhAngabe] = useState({ vorher: '', prozent: '' }); // Betrag der letzten Erhöhung (nur ohne Mietverlauf)
+  const [nieErhoeht, setNieErhoeht] = useState(() => !!(mieter?.letzte_mieterhoehung && mieter?.mietbeginn && String(mieter.letzte_mieterhoehung).slice(0, 10) === String(mieter.mietbeginn).slice(0, 10)));
+  const [erhOffen, setErhOffen] = useState(false);
+
+  // ── Mietverlauf: EINE Quelle am Objekt (ETW) bzw. an der Wohnung (MFH) ──────────────
+  // Der Mieter bekommt Kaltmiete und „letzte Mieterhöhung“ nur gespiegelt; die frühere Zweitliste
+  // am Mieter (mietanpassungenMieter) wird einmalig in den Verlauf übernommen.
+  const normT = (x) => String(x || '').trim().toLowerCase();
+  const quelleSuchen = (immoId, zimmer, name) => {
+    const obj = portfolio.find(i => String(i.id) === String(immoId));
+    if (!obj || obj.immobilienTyp === 'mietimmobilie') return null;
+    if (obj.immobilienTyp === 'mehrfamilienhaus') {
+      const w = (obj.wohnungen || []).find(x => (zimmer && normT(x.name) === normT(zimmer)) || (x.mieterName && normT(x.mieterName) === normT(name)));
+      return w ? { key: `${obj.id}|${w.id ?? w.name}`, quelle: { kaltmiete: w.kaltmiete, mietAnpassungen: w.mietAnpassungen || [] }, obj, we: w } : null;
+    }
+    return { key: String(obj.id), quelle: { kaltmiete: obj.kaltmiete, mietAnpassungen: obj.mietAnpassungen || [] }, obj };
+  };
+  const qInfo = onMietverlauf ? quelleSuchen(form.immobilieId, form.zimmerBezeichnung, form.name) : null;
+  const [verlaufStart, setVerlaufStart] = useState(null);
+  const [verlauf, setVerlauf] = useState(null);
+  useEffect(() => {
+    if (!qInfo) { setVerlauf(null); setVerlaufStart(null); return; }
+    if (verlaufStart?.key === qInfo.key) return;
+    const start = { ...qInfo.quelle, mietAnpassungen: mieterListeUebernehmen(qInfo.quelle, mieter ? form.mietanpassungenMieter : []) };
+    setVerlaufStart({ key: qInfo.key, quelle: qInfo.quelle });
+    setVerlauf(start);
+  }, [qInfo?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const verlaufAktiv = !!(onMietverlauf && verlauf && verlaufStart?.key === qInfo?.key);
+  const bestehend = !!mieter?.id;
+  const mieteAusVerlauf = verlaufAktiv && bestehend ? aktuelleMiete(verlauf) : null;
   // Sobald der Nutzer die Kaltmiete manuell ändert, hört die automatische
   // Vorbefüllung aus der Immobilie auf, seinen Wert zu überschreiben.
   const [kaltmieteBeruehrt, setKaltmieteBeruehrt] = useState(!!mieter);
@@ -157,26 +188,8 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
   const kaltmieteNum = parseFloat(form.kaltmiete) || 0;
   const preisProQm = wohnflaeche > 0 && kaltmieteNum > 0 ? (kaltmieteNum / wohnflaeche).toFixed(2) : null;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) { toast.error('Name ist Pflicht'); return; }
-    if (!form.immobilieId) { toast.error('Bitte eine Immobilie auswählen'); return; }
-    setSaving(true);
-    try {
-      const savedMieter = await onSave(form);
-      // Mietanpassung erst JETZT (nach erfolgreichem Mieter-Speichern) an die
-      // Immobilie weiterreichen — siehe pendingImmoSync-Kommentar oben.
-      const mieterRef = { ...(mieter || {}), ...(savedMieter || {}), name: form.name, zimmer_bezeichnung: form.zimmerBezeichnung ?? mieter?.zimmer_bezeichnung };
-      if (pendingImmoSync && onMietanpassungFuerImmobilie) {
-        await onMietanpassungFuerImmobilie(pendingImmoSync, mieterRef);
-        setPendingImmoSync(null);
-      }
-      // Letzte Erhöhung mit Betrag → als Anpassung am Objekt/an der Wohnung (Kappungsgrenze)
-      const nachgetragen = anpassungAusAngaben(form.letzteMieterhoehung, parseFloat(form.kaltmiete) || 0, erhAngabe);
-      if (nachgetragen && onMietanpassungFuerImmobilie && pendingImmoSync?.datum !== form.letzteMieterhoehung) {
-        await onMietanpassungFuerImmobilie(nachgetragen, mieterRef);
-      }
-      // Gepufferte Dokumente für neuen Mieter jetzt hochladen
+  // Gepufferte Dokumente für neuen Mieter jetzt hochladen
+  const dokumenteHochladen = async (savedMieter) => {
       if (pendingFiles.length > 0 && onDokumentUpdate) {
         const mieterMeta = {
           id: savedMieter?.id || mieter?.id || form.id || 'unbekannt',
@@ -194,6 +207,46 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
           if (neu.length > 0) await onDokumentUpdate([...immobilieDokumente, ...neu]);
         }
       }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) { toast.error('Name ist Pflicht'); return; }
+    if (!form.immobilieId) { toast.error('Bitte eine Immobilie auswählen'); return; }
+    setSaving(true);
+    try {
+      if (verlaufAktiv) {
+        // Eine Quelle: Mietverlauf am Objekt/an der Wohnung speichern, Mieter bekommt nur den Spiegel
+        let liste = verlauf.mietAnpassungen;
+        const extra = {};
+        const kalt = parseFloat(form.kaltmiete) || 0;
+        if (!bestehend && form.mietbeginn && kalt > 0) {
+          // Neuer Mieter = neues Mietverhältnis: Miete ab Mietbeginn als „Neuvermietung“ (Fristen starten neu)
+          if (mietZeilen(verlauf).length || (Number(verlauf.kaltmiete) || 0) !== kalt) liste = setzeMietanpassung(liste, { datum: form.mietbeginn, kaltmiete: kalt, grund: 'Neuvermietung' });
+        } else if (!bestehend && kalt > 0 && !mietZeilen(verlauf).length) extra.kaltmiete = kalt;
+        if (bestehend && !mietZeilen({ ...verlauf, mietAnpassungen: liste }).length && Number(verlauf.kaltmiete) !== Number(verlaufStart.quelle.kaltmiete)) extra.kaltmiete = Number(verlauf.kaltmiete) || 0;
+        const fertig = { ...verlauf, ...(extra.kaltmiete != null ? { kaltmiete: extra.kaltmiete } : {}), mietAnpassungen: liste };
+        const spiegel = mieterSpiegel(fertig, { mietbeginn: form.mietbeginn, nieErhoeht, bisherLetzte: mieter?.letzte_mieterhoehung, vorherQuelle: verlaufStart.quelle });
+        const savedMieter = await onSave({ ...form, ...spiegel });
+        const geaendert = JSON.stringify(liste) !== JSON.stringify(verlaufStart.quelle.mietAnpassungen || []) || extra.kaltmiete != null;
+        if (geaendert) await onMietverlauf(liste, extra, { ...(mieter || {}), ...(savedMieter || {}), name: form.name, zimmer_bezeichnung: form.zimmerBezeichnung ?? mieter?.zimmer_bezeichnung });
+        await dokumenteHochladen(savedMieter);
+        return;
+      }
+      const savedMieter = await onSave(form);
+      // Mietanpassung erst JETZT (nach erfolgreichem Mieter-Speichern) an die
+      // Immobilie weiterreichen — siehe pendingImmoSync-Kommentar oben.
+      const mieterRef = { ...(mieter || {}), ...(savedMieter || {}), name: form.name, zimmer_bezeichnung: form.zimmerBezeichnung ?? mieter?.zimmer_bezeichnung };
+      if (pendingImmoSync && onMietanpassungFuerImmobilie) {
+        await onMietanpassungFuerImmobilie(pendingImmoSync, mieterRef);
+        setPendingImmoSync(null);
+      }
+      // Letzte Erhöhung mit Betrag → als Anpassung am Objekt/an der Wohnung (Kappungsgrenze)
+      const nachgetragen = anpassungAusAngaben(form.letzteMieterhoehung, parseFloat(form.kaltmiete) || 0, erhAngabe);
+      if (nachgetragen && onMietanpassungFuerImmobilie && pendingImmoSync?.datum !== form.letzteMieterhoehung) {
+        await onMietanpassungFuerImmobilie(nachgetragen, mieterRef);
+      }
+      await dokumenteHochladen(savedMieter);
     } finally { setSaving(false); }
   };
 
@@ -395,8 +448,18 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Mon.)</label>
-                    <input type="number" value={form.kaltmiete} onChange={e => { setKaltmieteBeruehrt(true); setForm({...form, kaltmiete: parseFloat(e.target.value) || ''}); }}
+                    <input type="number" value={mieteAusVerlauf != null ? mieteAusVerlauf : form.kaltmiete}
+                      onChange={e => {
+                        setKaltmieteBeruehrt(true);
+                        const w = parseFloat(e.target.value) || '';
+                        // Bestehender Mieter: die Kaltmiete IST die Zahl im Mietverlauf — dort ändern, nicht doppelt
+                        if (mieteAusVerlauf != null) setVerlauf(v => ({ ...v, ...aktuelleMieteAendern(v, Number(w) || 0) }));
+                        setForm({ ...form, kaltmiete: w });
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
+                    {mieteAusVerlauf != null && mietZeilen(verlauf).length > 0 && (
+                      <p className="text-[11px] text-gray-400 mt-1">Heute gültig laut Mietanpassungen — Ändern korrigiert genau diese Anpassung</p>
+                    )}
                     {!mieter && !kaltmieteBeruehrt && form.kaltmiete ? (
                       <p className="text-[11px] text-indigo-500 mt-1">Aus Immobilie übernommen</p>
                     ) : null}
@@ -467,7 +530,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
               {kaltmieteNum > 0 && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-black text-indigo-700">{formatCurrency(kaltmieteNum)}</div>
+                    <div className="text-2xl font-black text-indigo-700">{formatCurrency(mieteAusVerlauf != null ? mieteAusVerlauf : kaltmieteNum)}</div>
                     <div className="text-xs text-indigo-500 font-semibold mt-1">Aktuelle Kaltmiete/Mo.</div>
                   </div>
                   {preisProQm && (
@@ -479,6 +542,57 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                 </div>
               )}
 
+              {verlaufAktiv ? (
+                <>
+                  <MietverlaufEditor quelle={verlauf} kompakt
+                    titel="Mietanpassungen"
+                    hinweis={`Auch rückwirkend. Gespeichert ${qInfo?.we ? 'an der Wohnung' : 'am Objekt'} — dieselbe Liste wie auf der Mieter-Seite und im Cashflow. Wird mit „Speichern“ unten übernommen.`}
+                    onChange={(l) => setVerlauf(v => ({ ...v, mietAnpassungen: l }))} />
+
+                  {/* Letzte Mieterhöhung nach § 558 — aus demselben Verlauf, hier direkt eintragbar */}
+                  {(() => {
+                    const z = letzteErhoehungZeile(verlauf, form.mietbeginn);
+                    const altDatum = !z && form.letzteMieterhoehung && !nieErhoeht ? form.letzteMieterhoehung : null;
+                    const grenze = kappungsgrenze(qInfo?.obj || {});
+                    const spiegel = mieterSpiegel(verlauf, { mietbeginn: form.mietbeginn, nieErhoeht, bisherLetzte: mieter?.letzte_mieterhoehung, vorherQuelle: verlaufStart?.quelle });
+                    const p = naechsteErhoehung({ kaltmiete: verlauf.kaltmiete, mietAnpassungen: verlauf.mietAnpassungen, letzteErhoehung: spiegel.letzteMieterhoehung, mietbeginn: form.mietbeginn, prozent: grenze.prozent });
+                    const statusText = {
+                      moeglich: `Nächste Erhöhung möglich: wirksam ab ${p.abDatum?.toLocaleDateString('de-DE')}, bis ca. +${formatCurrency(p.spielraum || 0)} (Kappungsgrenze ${grenze.prozent} %).`,
+                      warten: `15-Monats-Frist läuft — nächste Erhöhung wirksam frühestens ab ${p.abDatum?.toLocaleDateString('de-DE')}, Schreiben ab ${monatJahr(p.versandAb)}.`,
+                      ausgeschoepft: p.gesperrtBis ? `Kappungsgrenze (${grenze.prozent} % in drei Jahren) ausgeschöpft — nächste Erhöhung frühestens ab ${p.gesperrtBis.toLocaleDateString('de-DE')}.` : `Kappungsgrenze (${grenze.prozent} %) ausgeschöpft.`,
+                      betrag_fehlt: 'Um wie viel wurde erhöht? Ohne Betrag lässt sich die Kappungsgrenze nicht prüfen.',
+                      vertrag: 'Staffel- oder Indexmiete — keine Erhöhung nach § 558 BGB.',
+                    }[p.status];
+                    return (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+                        <p className="text-sm font-semibold text-amber-800 flex items-center gap-1.5"><ScrollText size={14} /> Letzte Mieterhöhung nach § 558 BGB</p>
+                        {z ? (
+                          <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-amber-200 rounded-lg px-3 py-2">
+                            <span className="text-sm text-gray-800">{new Date(z.datum).toLocaleDateString('de-DE')} · {formatCurrency(z.alt)} → <strong>{formatCurrency(z.neu)}</strong>{z.prozent != null && <span className="text-emerald-700 font-semibold"> ({z.prozent > 0 ? '+' : ''}{z.prozent.toLocaleString('de-DE')} %)</span>}</span>
+                            <span className="flex gap-3"><button type="button" onClick={() => setErhOffen(o => (o === 'bearbeiten' ? false : 'bearbeiten'))} className="text-xs font-semibold text-indigo-600 hover:underline">{erhOffen === 'bearbeiten' ? 'Schließen' : 'Bearbeiten'}</button><button type="button" onClick={() => setErhOffen(o => (o === 'neu' ? false : 'neu'))} className="text-xs font-semibold text-indigo-600 hover:underline">{erhOffen === 'neu' ? 'Schließen' : 'Neue Erhöhung'}</button></span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-amber-700">{altDatum ? `Datum ${new Date(altDatum).toLocaleDateString('de-DE')} hinterlegt — um wie viel wurde erhöht?` : 'Noch keine Erhöhung erfasst. Datum und Betrag eintragen (auch rückwirkend):'}</p>
+                        )}
+                        {(!z || erhOffen) && !nieErhoeht && (
+                          <MietanpassungFormular key={`${z?.datum || altDatum || 'neu'}-${erhOffen}`} quelle={verlauf} kompakt grundFest="Mieterhöhung"
+                            bearbeiteDatum={z && erhOffen === 'bearbeiten' ? z.datum : null}
+                            initial={z && erhOffen === 'bearbeiten' ? { datum: z.datum, neu: String(z.neu) } : z ? null : (altDatum ? { datum: String(altDatum).slice(0, 10), neu: String(aktuelleMiete(verlauf) || '') } : null)}
+                            onSpeichern={(l) => { setVerlauf(v => ({ ...v, mietAnpassungen: l })); setErhOffen(false); }} />
+                        )}
+                        {!z && (
+                          <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                            <input type="checkbox" checked={nieErhoeht} disabled={!form.mietbeginn} onChange={e => setNieErhoeht(e.target.checked)} className="w-4 h-4 rounded" />
+                            Seit Einzug nicht erhöht{!form.mietbeginn && <span className="text-gray-400">(braucht den Mietbeginn)</span>}
+                          </label>
+                        )}
+                        {statusText && <p className={`text-xs font-semibold ${p.status === 'moeglich' ? 'text-emerald-700' : p.status === 'betrag_fehlt' ? 'text-amber-700' : 'text-gray-600'}`}>{statusText}{grenze.quelle === 'ort' ? ` ${grenze.ort.name}: 15 % per Landesverordnung.` : ''}</p>}
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : (
+                <>
               {/* Anpassungs-Historie */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
@@ -590,6 +704,8 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   );
                 })()}
               </div>
+                </>
+              )}
             </>
           )}
 

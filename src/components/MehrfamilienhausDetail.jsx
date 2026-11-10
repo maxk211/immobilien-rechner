@@ -36,6 +36,8 @@ import { mieterAusWohnungen, einheitenStatus } from '../utils/belegung.js';
 import WeitereDarlehen, { HauptDarlehenReiter } from './WeitereDarlehen';
 import MieterhoeungModal from './MieterhoeungModal';
 import NachforderungenManager from './NachforderungenManager';
+import { letzteErhoehungZeile } from '../utils/mietverlauf.js';
+import MietverlaufEditor, { MietanpassungFormular } from './MietverlaufEditor';
 import { mfhKosten, ungenutzteAltkosten, hauskostenVon, MFH_KOSTEN, mfhAlsKostenObjekt } from '../utils/mfh.js';
 import { weMieteAm, weMieteImMonat, mfhMietAggregat, hatWeAnpassungen, mfhMonatsStatus, alleMietenBuchen, sammelbuchungZurueck, weMieteBuchen, weMieterhoehung } from '../utils/mfh.js';
 import { erhoehungWE, erhoehungKurz, anpassungsListe, tag, GRUENDE, kappungsgrenze, pruefeVorhaben } from '../utils/kappung.js';
@@ -184,90 +186,60 @@ const MFH_TAB_MAP = {
 const MFH_OBJEKT_IDS = ['stammdaten', 'kaufwert', 'investitionen', 'zaehler', 'dokumente'];
 
 // ─── Mieterhöhung je Wohnung (im Wohnungsformular) ───────────────────────────
-// Wie bei der Eigentumswohnung: Datum UND Betrag der letzten Erhöhung, eingetragene Erhöhungen
-// mit Grund. Status aus derselben Rechnung wie „Was steht an“ (utils/kappung.js).
+// Wie bei der Eigentumswohnung: EIN Mietverlauf an der Wohnung (rückwirkend eintragen, bearbeiten,
+// löschen, Alt → Neu, %). „Letzte Mieterhöhung“ kommt daraus — kein zweites Datumsfeld.
 function WeMieterhoehungFelder({ form, setForm, immo, mieter, onSchreiben }) {
-  const [neu, setNeu] = useState({ datum: '', kaltmiete: '', grund: 'Mieterhöhung' });
-  const [fehler, setFehler] = useState('');
-  const anp = [...(form.mietAnpassungen || [])].sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  const [erhOffen, setErhOffen] = useState(false);
   const nieErhoeht = !!form.nieErhoeht;
-  const lf = form.letzteMieterhoehung;
-  const vorhanden = lf && anpassungsListe(form.mietAnpassungen).some(a => Math.abs(a.d - tag(lf)) <= 45 * 86400000 && a.art !== 'neuvermietung');
-  const brauchtBetrag = lf && !nieErhoeht && !vorhanden && !(form.mietbeginn && Math.abs(tag(lf) - tag(form.mietbeginn)) <= 45 * 86400000);
-  const vorschau = brauchtBetrag && form._erh ? weMitAngabe(form) : form;
-  const p = erhoehungWE(immo, vorschau, mieter);
-  const kurz = erhoehungKurz(p);
-  const eintragen = () => {
-    const k = parseFloat(String(neu.kaltmiete).replace(',', '.'));
-    const fehlt = [!neu.datum && 'ab wann', !(k > 0) && 'neue Kaltmiete'].filter(Boolean);
-    if (fehlt.length) { setFehler(`Bitte ausfüllen: ${fehlt.join(', ')}`); return; }
-    setForm(weMieterhoehung({ ...form, nieErhoeht: false }, neu.datum, k, { grund: neu.grund, ...(anp.length === 0 ? { vorher: weMieteAm(form) } : {}) }));
-    setNeu({ datum: '', kaltmiete: '', grund: 'Mieterhöhung' }); setFehler('');
+  const z = letzteErhoehungZeile(form, form.mietbeginn);
+  const altDatum = !z && form.letzteMieterhoehung && !nieErhoeht && String(form.letzteMieterhoehung).slice(0, 10) !== String(form.mietbeginn || '').slice(0, 10) ? form.letzteMieterhoehung : null;
+  const mitVerlauf = (l) => {
+    const zz = letzteErhoehungZeile({ ...form, mietAnpassungen: l }, form.mietbeginn);
+    const bisher = form.letzteMieterhoehung;
+    const geloescht = bisher && (form.mietAnpassungen || []).some(x => String(x.datum).slice(0, 10) === String(bisher).slice(0, 10)) && !l.some(x => String(x.datum).slice(0, 10) === String(bisher).slice(0, 10));
+    setForm({ ...form, mietAnpassungen: l, nieErhoeht: zz ? false : nieErhoeht, letzteMieterhoehung: zz ? zz.datum : (geloescht ? null : (bisher || null)), _erh: null });
   };
-  const entfernen = (datum) => {
-    const rest = (form.mietAnpassungen || []).filter(a => a.datum !== datum);
-    setForm({ ...form, mietAnpassungen: rest, letzteMieterhoehung: form.letzteMieterhoehung === datum ? null : form.letzteMieterhoehung });
-  };
+  const p = erhoehungWE(immo, form, mieter);
   return (
     <div className="border-t pt-3 space-y-2">
       <p className="text-xs font-semibold text-gray-600 flex items-center gap-1"><TrendingUp size={12}/> Mieterhöhung</p>
-      <div className="grid grid-cols-2 gap-3 items-end">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Letzte Mieterhöhung</label>
-          <input type="date" value={form.letzteMieterhoehung || ''} disabled={nieErhoeht}
-            onChange={e => setForm({ ...form, letzteMieterhoehung: e.target.value || null, nieErhoeht: false })}
-            className="w-full px-3 py-2 border rounded-lg text-base sm:text-sm disabled:bg-gray-50 disabled:text-gray-400"/>
-        </div>
-        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer pb-2">
-          <input type="checkbox" checked={nieErhoeht} disabled={!form.mietbeginn}
-            onChange={e => setForm({ ...form, nieErhoeht: e.target.checked, letzteMieterhoehung: e.target.checked ? form.mietbeginn : null, _erh: null })}
-            className="w-4 h-4 rounded"/>
-          <span>Seit Einzug nicht erhöht{!form.mietbeginn && <span className="block text-[10px] text-gray-400">braucht den Mietbeginn</span>}</span>
-        </label>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-2">
+        <p className="text-xs font-semibold text-amber-800">Letzte Mieterhöhung nach § 558 BGB</p>
+        {z ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-gray-800">{new Date(z.datum).toLocaleDateString('de-DE')} · {formatCurrency(z.alt)} → <strong>{formatCurrency(z.neu)}</strong>{z.prozent != null && <span className="text-emerald-700 font-semibold"> ({z.prozent > 0 ? '+' : ''}{z.prozent.toLocaleString('de-DE')} %)</span>}</span>
+            <span className="flex gap-3"><button type="button" onClick={() => setErhOffen(o => (o === 'bearbeiten' ? false : 'bearbeiten'))} className="font-semibold text-indigo-600 hover:underline">{erhOffen === 'bearbeiten' ? 'Schließen' : 'Bearbeiten'}</button><button type="button" onClick={() => setErhOffen(o => (o === 'neu' ? false : 'neu'))} className="font-semibold text-indigo-600 hover:underline">{erhOffen === 'neu' ? 'Schließen' : 'Neue Erhöhung'}</button></span>
+          </div>
+        ) : (
+          <p className="text-[11px] text-amber-700">{altDatum ? `Datum ${new Date(altDatum).toLocaleDateString('de-DE')} hinterlegt — um wie viel wurde erhöht?` : 'Noch keine Erhöhung erfasst — Datum und Betrag eintragen (auch rückwirkend).'}</p>
+        )}
+        {(!z || erhOffen) && !nieErhoeht && (
+          <MietanpassungFormular key={`${z?.datum || altDatum || 'neu'}-${erhOffen}`} quelle={form} kompakt grundFest="Mieterhöhung"
+            bearbeiteDatum={z && erhOffen === 'bearbeiten' ? z.datum : null}
+            initial={z && erhOffen === 'bearbeiten' ? { datum: z.datum, neu: String(z.neu) } : z ? null : (altDatum ? { datum: String(altDatum).slice(0, 10), neu: String(weMieteAm(form) || '') } : null)}
+            onSpeichern={(l) => { mitVerlauf(l); setErhOffen(false); }} />
+        )}
+        {!z && (
+          <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={nieErhoeht} disabled={!form.mietbeginn}
+              onChange={e => setForm({ ...form, nieErhoeht: e.target.checked, letzteMieterhoehung: e.target.checked ? form.mietbeginn : null })} className="w-4 h-4 rounded"/>
+            Seit Einzug nicht erhöht{!form.mietbeginn && <span className="text-gray-400">(braucht den Mietbeginn)</span>}
+          </label>
+        )}
+        {(() => {
+          const t = {
+            moeglich: `Erhöhung möglich: wirksam ab ${p.abDatum?.toLocaleDateString('de-DE')}, bis ca. +${formatCurrency(p.spielraum || 0)} (Kappungsgrenze ${p.prozent} %). Obergrenze ist auch der Mietspiegel.`,
+            warten: `15-Monats-Frist läuft — wirksam frühestens ab ${p.abDatum?.toLocaleDateString('de-DE')}.`,
+            ausgeschoepft: p.gesperrtBis ? `Kappungsgrenze (${p.prozent} % in drei Jahren) ausgeschöpft — nächste Erhöhung frühestens ab ${p.gesperrtBis.toLocaleDateString('de-DE')}.` : 'Kappungsgrenze ausgeschöpft.',
+            betrag_fehlt: 'Ohne Betrag lässt sich die Kappungsgrenze nicht prüfen.',
+            vertrag: 'Staffel- oder Indexmiete — keine Erhöhung nach § 558 BGB.',
+          }[p.status];
+          return t ? <p className={`text-[11px] ${p.status === 'moeglich' ? 'text-emerald-700' : 'text-gray-600'}`}>{t}{p.grenze?.quelle === 'ort' ? ` ${p.grenze.ort.name}: 15 % per Landesverordnung.` : ''}</p> : null;
+        })()}
       </div>
-      {brauchtBetrag && (
-        <ErhoehungAngaben wert={form._erh || {}} onChange={(v) => setForm({ ...form, _erh: v })} nachher={weMieteAm(form)} />
-      )}
-      {kurz && (
-        <p className={`text-[11px] ${kurz.ton === 'gruen' ? 'text-emerald-700' : kurz.ton === 'gelb' ? 'text-amber-600' : 'text-gray-500'}`}>
-          {p.status === 'moeglich' && `Erhöhung möglich: wirksam ab ${p.abDatum.toLocaleDateString('de-DE')}, bis ca. +${formatCurrency(p.spielraum)} (Kappungsgrenze ${p.prozent} %). Obergrenze ist auch der Mietspiegel.`}
-          {p.status === 'warten' && `15-Monats-Frist läuft — wirksam frühestens ab ${p.abDatum.toLocaleDateString('de-DE')}, dann bis ca. +${formatCurrency(p.spielraum)}.`}
-          {p.status === 'ausgeschoepft' && (p.gesperrtBis ? `Kappungsgrenze (${p.prozent} % in drei Jahren) ausgeschöpft — nächste Erhöhung frühestens ab ${p.gesperrtBis.toLocaleDateString('de-DE')}.` : 'Kappungsgrenze ausgeschöpft.')}
-          {p.status === 'betrag_fehlt' && 'Um wie viel wurde erhöht? Ohne Betrag lässt sich die Kappungsgrenze nicht prüfen.'}
-          {p.status === 'datum_fehlt' && 'Nicht hinterlegt — ohne Datum kann renditly nicht sagen, wann die nächste Erhöhung möglich ist.'}
-          {p.status === 'vertrag' && 'Staffel- oder Indexmiete — keine Erhöhung nach § 558 BGB.'}
-          {p.grenze?.quelle === 'ort' && ` ${p.grenze.ort.name}: 15 % per Landesverordnung.`}
-        </p>
-      )}
-      {anp.length > 0 && (
-        <div className="rounded-lg border border-gray-100 divide-y divide-gray-50 text-xs">
-          {anp.map(a => (
-            <div key={a.datum} className="flex items-center justify-between px-2.5 py-1.5">
-              <span className="text-gray-600">ab {new Date(a.datum).toLocaleDateString('de-DE')}{a.grund && a.grund !== 'Mieterhöhung' ? ` · ${a.grund}` : ''}{new Date(a.datum) > new Date() ? ' · angekündigt' : ''}</span>
-              <span className="flex items-center gap-2">{a.vorher != null && <span className="text-gray-400">{formatCurrency(Number(a.vorher))} →</span>}<strong className="text-gray-800">{formatCurrency(Number(a.kaltmiete) || 0)}</strong>
-                <button type="button" onClick={() => entfernen(a.datum)} className="text-gray-300 hover:text-red-500" title="Anpassung entfernen"><X size={12}/></button></span>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
-        <div>
-          <label className="block text-[10px] text-gray-400 mb-0.5">Neue Miete ab</label>
-          <input type="date" value={neu.datum} onChange={e => setNeu({ ...neu, datum: e.target.value })} className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm"/>
-        </div>
-        <div>
-          <label className="block text-[10px] text-gray-400 mb-0.5">Neue Kaltmiete (€)</label>
-          <input type="text" inputMode="decimal" value={neu.kaltmiete} onChange={e => setNeu({ ...neu, kaltmiete: e.target.value })} className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm text-right"/>
-        </div>
-        <div>
-          <label className="block text-[10px] text-gray-400 mb-0.5">Grund</label>
-          <select value={neu.grund} onChange={e => setNeu({ ...neu, grund: e.target.value })} className="w-full px-2 py-1.5 border rounded-lg text-base sm:text-sm bg-white">
-            {GRUENDE.map(g => <option key={g}>{g}</option>)}
-          </select>
-        </div>
-        <button type="button" onClick={eintragen} className="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold">Eintragen</button>
-      </div>
-      {fehler && <p className="text-[11px] text-red-600">{fehler}</p>}
+      <MietverlaufEditor quelle={form} kompakt titel="Mietverlauf der Wohnung"
+        hinweis="Auch rückwirkend. Wird mit „Speichern“ der Wohnung übernommen — dieselbe Liste wie Mieteingänge, Cashflow und Steuer."
+        onChange={mitVerlauf} />
       {onSchreiben && (
         <button type="button" onClick={onSchreiben} className="text-xs font-semibold text-indigo-600 hover:underline">Mieterhöhungsschreiben erstellen →</button>
       )}
@@ -2228,7 +2200,7 @@ const MehrfamilienhausDetail = ({
             })()}
             <MieterDashboard
               mieterListe={(mieterListe || []).filter(m => m.immobilie_id === immobilie.id)}
-              portfolio={[{ ...immobilie, wohnungen }]}
+              portfolio={[{ ...immobilie, ...params, immobilienTyp: 'mehrfamilienhaus', wohnungen }]}
               onDelete={onDeleteMieter}
               onSave={onSaveMieter}
               nkAbrechnungen={nkAbrechnungen}
@@ -2246,6 +2218,19 @@ const MehrfamilienhausDetail = ({
               // Mieterhöhung je Mieter → Schreiben für dessen Wohnung (wie bei der Eigentumswohnung)
               onMieterhoeungClick={(m) => { const i = weIdxFuerMieter(m); if (i >= 0) setMhWE(i); else setActiveTab('wohnungen'); }}
               // Im Mieter-Formular erfasste Mietanpassung → Miete der Wohnung ab Datum
+              // Mietverlauf aus dem Mieterformular → genau die Liste der Wohnung (eine Quelle)
+              onMietverlauf={async (liste, extra = {}, m) => {
+                const i = weIdxFuerMieter(m);
+                if (i < 0) return;
+                const neu = [...wohnungen];
+                const w = { ...neu[i], mietAnpassungen: liste, ...(extra.kaltmiete != null ? { kaltmiete: extra.kaltmiete } : {}) };
+                const z = letzteErhoehungZeile(w, w.mietbeginn || m?.mietbeginn);
+                const bisher = neu[i].letzteMieterhoehung;
+                const geloescht = bisher && (neu[i].mietAnpassungen || []).some(x => String(x.datum).slice(0, 10) === String(bisher).slice(0, 10)) && !liste.some(x => String(x.datum).slice(0, 10) === String(bisher).slice(0, 10));
+                neu[i] = { ...w, letzteMieterhoehung: z ? z.datum : (geloescht ? null : (bisher || null)) };
+                setWohnungen(neu);
+                aggregiereUndSpeichere(neu);
+              }}
               onMietanpassungFuerImmobilie={async ({ datum, kaltmiete, vorher, grund }, m) => {
                 const i = weIdxFuerMieter(m);
                 if (i >= 0) await mieterhoehungFuerWE(i, datum, kaltmiete, { mieterMitnehmen: false, vorher, grund: grund || 'Mieterhöhung' });

@@ -5,9 +5,14 @@ import { formatCurrency } from '../utils/format.js';
 import { PlausiFeldHinweis } from './PlausiPruefung';
 import KostenZahler from './KostenZahler';
 import ZahlInput from './ZahlInput';
+import MietverlaufEditor from './MietverlaufEditor';
+import { mietZeilen, aktuelleMiete, aktuelleMieteAendern } from '../utils/mietverlauf.js';
 import SchaetzInfo, { nuGeschaetztInfo } from './SchaetzInfo';
 
-const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges, plausi = [] }) => {
+const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges, plausi = [], onMietverlauf = null }) => {
+  // Mietverlauf: eine Liste am Objekt — sofort gespeichert, wenn der Aufrufer onMietverlauf gibt
+  const mietverlaufAendern = (liste) => (onMietverlauf ? onMietverlauf(liste) : updateParams({ ...params, mietAnpassungen: liste }));
+  const hatMietverlauf = mietZeilen(params).length > 0;
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
   const [ansicht, setAnsicht] = useState('jahr'); // 'jahr' oder 'monat'
   const [mietHistorie, setMietHistorie] = useState(immobilie.mietHistorie || {});
@@ -132,9 +137,10 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
           {/* Einnahmen — UX-Paket Teil 2, Nachtrag: nur Kaltmiete + NK-Vorauszahlung */}
           {(() => {
             const modell = params.vermietungsmodell || 'kaltmiete';
-            const kalt = Number(params.kaltmiete) || 0;
+            // Kaltmiete = heute gültige Miete aus dem Mietverlauf; Ändern ändert genau diese eine Zahl
+            const kalt = hatMietverlauf ? aktuelleMiete(params) : (Number(params.kaltmiete) || 0);
             const nk = modell === 'kaltmiete_nk' ? (Number(params.nebenkostenVomMieter) || 0) : 0;
-            const Feld = ({ label, hint, feld, step = 10, nullbar = false, value }) => (
+            const Feld = ({ label, hint, feld, step = 10, nullbar = false, value, onWert }) => (
               <div className="flex items-center justify-between py-2.5 gap-3">
                 <div className="min-w-0">
                   <div className="text-sm text-gray-800 font-medium">{label}</div>
@@ -145,7 +151,7 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
                   <ZahlInput type="number" min={0} step={step}
                     value={value !== undefined ? value : (nullbar ? (params[feld] ?? '') : (params[feld] ?? 0))}
                     placeholder={nullbar ? 'leer' : undefined}
-                    onChange={e => updateParams({ ...params, [feld]: e.target.value === '' ? (nullbar ? null : 0) : (parseFloat(e.target.value) || 0) })}
+                    onChange={e => (onWert ? onWert(parseFloat(e.target.value) || 0) : updateParams({ ...params, [feld]: e.target.value === '' ? (nullbar ? null : 0) : (parseFloat(e.target.value) || 0) }))}
                     className="w-24 text-right border border-gray-200 rounded-lg px-2 py-1.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums" />
                   <span className="text-xs text-gray-400 w-5 text-left">€</span>
                 </div>
@@ -158,7 +164,10 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             </div>
             <div className="divide-y divide-gray-100 px-4">
               {Feld({ label: modell === 'warmmiete' ? 'Pauschalmiete' : 'Kaltmiete', feld: 'kaltmiete', step: 25,
-                hint: modell === 'warmmiete' ? 'Ein fester Betrag, alle Nebenkosten eingepreist' : 'Monatliche Grundmiete, ohne Nebenkosten' })}
+                hint: hatMietverlauf
+                  ? 'Heute gültig laut Mietanpassungen — Ändern korrigiert genau diese Anpassung'
+                  : (modell === 'warmmiete' ? 'Ein fester Betrag, alle Nebenkosten eingepreist' : 'Monatliche Grundmiete, ohne Nebenkosten'),
+                ...(hatMietverlauf ? { value: kalt, onWert: (w) => { const aenderung = aktuelleMieteAendern(params, w); if (aenderung.mietAnpassungen) mietverlaufAendern(aenderung.mietAnpassungen); else updateParams({ ...params, ...aenderung }); } } : {}) })}
               {modell === 'kaltmiete_nk' && (
                 Feld({ label: 'Nebenkosten-Vorauszahlung', feld: 'nebenkostenVomMieter', hint: 'Was der Mieter zusätzlich für Betriebskosten zahlt' })
               )}
@@ -286,67 +295,10 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
             );
           })()}
 
-          {/* Mietanpassungen */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1"><CalendarDays size={12} /> Mietanpassungen</p>
-              <button type="button"
-                onClick={() => {
-                  const neueAnpassung = { datum: new Date().toISOString().split('T')[0], kaltmiete: params.kaltmiete || 0 };
-                  updateParams({ ...params, mietAnpassungen: [...(params.mietAnpassungen || []), neueAnpassung] });
-                }}
-                className="text-xs bg-blue-100 hover:bg-blue-200 text-indigo-700 px-2 py-1 rounded-lg font-medium">
-                + Anpassung
-              </button>
-            </div>
-            <div className="px-4 py-3">
-              <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-700 mb-3">
-                <Info size={14} className="shrink-0 mt-0.5" />
-                <span>Fließt in Cashflow, Rendite und alle Berechnungen ein — die jeweils zum betreffenden Zeitpunkt gültige Miete wird automatisch verwendet.</span>
-              </div>
-              {(params.mietAnpassungen || []).length === 0 ? (
-                <div className="text-center py-4 text-gray-400 text-sm">
-                  <p>Noch keine Verlaufshistorie</p>
-                  <p className="text-xs mt-1 text-gray-300">Nicht nötig für Berechnungen — optional für den Miete-Verlaufsgraph</p>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {(params.mietAnpassungen || [])
-                    .map((anp, originalIdx) => ({ ...anp, originalIdx }))
-                    .sort((a, b) => new Date(a.datum) - new Date(b.datum))
-                    .map(anp => (
-                      <div key={anp.originalIdx} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-1.5">
-                        <input type="date" value={anp.datum}
-                          onChange={e => {
-                            const neu = [...(params.mietAnpassungen || [])];
-                            neu[anp.originalIdx] = { ...neu[anp.originalIdx], datum: e.target.value };
-                            updateParams({ ...params, mietAnpassungen: neu });
-                          }}
-                          className="text-xs border border-gray-300 rounded px-1 py-0.5 flex-1 min-w-0" />
-                        <ZahlInput type="number" value={anp.kaltmiete}
-                          onChange={e => {
-                            const neu = [...(params.mietAnpassungen || [])];
-                            neu[anp.originalIdx] = { ...neu[anp.originalIdx], kaltmiete: parseFloat(e.target.value) || 0 };
-                            updateParams({ ...params, mietAnpassungen: neu });
-                          }}
-                          className="w-20 text-xs border border-gray-300 rounded px-1 py-0.5 text-right" />
-                        <span className="text-[10px] text-gray-400 whitespace-nowrap">€/Mon</span>
-                        <button type="button"
-                          onClick={() => {
-                            const neu = (params.mietAnpassungen || []).filter((_, i) => i !== anp.originalIdx);
-                            updateParams({ ...params, mietAnpassungen: neu });
-                          }}
-                          title="Anpassung löschen"
-                          className="text-red-400 hover:text-red-600 text-xs px-1 shrink-0"><X size={12} /></button>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Mietanpassungen — dieselbe Liste wie auf der Mieter-Seite (Mietverlauf) */}
+          <MietverlaufEditor quelle={params} onChange={mietverlaufAendern} kompakt
+            hinweis="Auch rückwirkend. Dieselbe Liste wie auf der Mieter-Seite — Cashflow, Rendite und Steuer rechnen je Zeitpunkt mit der dann gültigen Miete." />
 
-          {/* Kostenanpassungen — datumsbasierte Overrides für alle Kostenfelder,
-              analog zu den Mietanpassungen oben (statt starr pro Kalenderjahr). */}
           {(() => {
             const COST_FELDER = [
               { key: 'instandhaltung', label: 'Eigene Rücklage' },

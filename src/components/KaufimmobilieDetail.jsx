@@ -15,6 +15,8 @@ import MieterhoeungModal from './MieterhoeungModal';
 import JetztDran from './JetztDran';
 import { MietanpassungenTabelle, WasDuHierTunKannst } from './MieterSeitenleiste';
 import { erhoehungETW } from '../utils/kappung.js';
+import { setzeMietanpassung, mieterSpiegel, aktuelleMiete } from '../utils/mietverlauf.js';
+import MietverlaufEditor from './MietverlaufEditor';
 import MietanpassungWirkung, { cashflowBeiMiete } from './MietanpassungWirkung';
 import { erstelleZahlungserinnerung } from '../utils/mahnung.js';
 import KaufnebenkostenManager from './KaufnebenkostenManager';
@@ -401,27 +403,23 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     setHasChanges(true);
   };
   // Mietanpassung speichern + letzte Mieterhöhung beim aktiven Mieter nachziehen (Tabelle und „Was wäre, wenn?“)
-  const mietanpassungEintragen = async ({ datum, kaltmiete, grund, vorher }) => {
-                  const ohneGleichesDatum = (params.mietAnpassungen || []).filter(a => String(a.datum).slice(0, 10) !== String(datum).slice(0, 10));
-                  const updated = { ...params, mietAnpassungen: [...ohneGleichesDatum, { datum, kaltmiete, grund, ...(vorher != null ? { vorher } : {}) }] };
-                  updateParams(updated);
-                  await onSave({ ...immobilie, ...updated });
-                  setHasChanges(false);
-                  // Letzte Mieterhöhung beim aktiven Mieter nachziehen (Grundlage der Erinnerung)
-                  const mAktiv = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
-                  if (mAktiv && !['Neuvermietung', 'Modernisierung', 'Mietsenkung'].includes(grund) && onSaveMieter) {
-                    const bisher = mAktiv.letzte_mieterhoehung ? new Date(mAktiv.letzte_mieterhoehung) : null;
-                    if (!bisher || new Date(datum) > bisher) {
-                      await onSaveMieter({
-                        ...mAktiv,
-                        mietanpassungenMieter: mAktiv.mietanpassungen_mieter || [],
-                        naechsteAnpassungDatum: mAktiv.naechste_anpassung_datum || '',
-                        letzteMieterhoehung: datum,
-                        kaltmiete,
-                      });
-                    }
-                  }
-                };
+  // Mietverlauf: EINE Liste am Objekt. Speichert sofort und zieht den Spiegel am aktiven Mieter
+  // (aktuelle Kaltmiete, letzte Mieterhöhung) nach — dort wird nie separat etwas gepflegt.
+  const mietverlaufSpeichern = async (liste, { spiegeln = true, kaltmiete = null } = {}) => {
+    const vorher = { ...params };
+    const updated = { ...params, mietAnpassungen: liste, ...(kaltmiete != null ? { kaltmiete } : {}) };
+    speichereSofort(updated);
+    setHasChanges(false);
+    const mAktiv = spiegeln ? mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false) : null;
+    if (mAktiv && onSaveMieter) {
+      const sp = mieterSpiegel(updated, { mietbeginn: mAktiv.mietbeginn, bisherLetzte: mAktiv.letzte_mieterhoehung, vorherQuelle: vorher });
+      if (Number(mAktiv.kaltmiete) !== sp.kaltmiete || (mAktiv.letzte_mieterhoehung || null) !== sp.letzteMieterhoehung || (mAktiv.mietanpassungen_mieter || []).length) {
+        await onSaveMieter({ ...mAktiv, naechsteAnpassungDatum: mAktiv.naechste_anpassung_datum || '', ...sp });
+      }
+    }
+  };
+  const mietanpassungEintragen = async ({ datum, kaltmiete, grund, vorher }) =>
+    mietverlaufSpeichern(setzeMietanpassung(params.mietAnpassungen, { datum, kaltmiete, grund, vorher }));
   // Phase G: Korrekturen/Bestätigungen aus der Plausibilitätsprüfung sofort speichern
   const speichereSofort = (neu) => {
     setParams(neu);
@@ -2286,6 +2284,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 <MietKostenManager
                   params={params}
                   updateParams={updateParams}
+                  onMietverlauf={(liste) => mietverlaufSpeichern(liste)}
                   immobilie={immobilie}
                   hasChanges={hasChanges}
                   setHasChanges={setHasChanges}
@@ -2319,7 +2318,8 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
               <div className="lg:col-span-2 space-y-4 min-w-0">
               <MieterDashboard
                 mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
-                portfolio={[immobilie]}
+                portfolio={[{ ...immobilie, ...params }]}
+                onMietverlauf={(liste, extra = {}) => mietverlaufSpeichern(liste, { spiegeln: false, ...extra })}
                 onDelete={onDeleteMieter}
                 onSave={onSaveMieter}
                 nkAbrechnungen={nkAbrechnungen}
@@ -2348,11 +2348,10 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 }}
               />
 
-              <MietanpassungenTabelle
-                anpassungen={params.mietAnpassungen || []}
-                basisMiete={Number(params.kaltmiete) || 0}
+              <MietverlaufEditor
+                quelle={params}
+                onChange={(liste) => mietverlaufSpeichern(liste)}
                 cfFuerMiete={(m) => cashflowBeiMiete({ ...immobilie, ...params }, m)}
-                onAdd={mietanpassungEintragen}
               />
               <MietanpassungWirkung
                 params={params}
@@ -2390,35 +2389,16 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           {/* Mieterhöhungs-Modal — auch ohne Mieter-Datensatz (mieterhoeungMieter === {} oder echter Mieter) */}
           {mieterhoeungMieter !== null && (
             <MieterhoeungModal
-              mieter={mieterhoeungMieter}
+              mieter={mieterhoeungMieter?.id || mieterhoeungMieter?.name ? { ...mieterhoeungMieter, kaltmiete: aktuelleMiete(params) } : mieterhoeungMieter}
               vorschlag={mieterhoeungVorschlag}
               immobilie={immobilie}
               pruefung={erhoehungETW({ ...immobilie, ...params }, mieterListe)}
               onClose={() => { setMieterhoeungMieter(null); setMieterhoeungVorschlag(null); }}
-              onSave={async (mieterUpdate, immoUpdate) => {
-                // 1. Mieter aktualisieren — nur wenn echter Datensatz mit ID
-                // WICHTIG: mieterhoeungMieter ist ein DB-Record (snake_case), aber onSaveMieter
-                // erwartet camelCase. Deshalb explizit mappen statt nur zu spreaden.
-                if (mieterUpdate && mieterhoeungMieter?.id) {
-                  await onSaveMieter({
-                    ...mieterhoeungMieter,
-                    // camelCase-Felder die saveMieter erwartet:
-                    mietanpassungenMieter: mieterhoeungMieter.mietanpassungen_mieter || [],
-                    naechsteAnpassungDatum: mieterhoeungMieter.naechste_anpassung_datum || '',
-                    letzteMieterhoehung: mieterUpdate.letzte_mieterhoehung,
-                    kaltmiete: mieterUpdate.kaltmiete,
-                  });
-                }
-                // 2. Immobilie: mietAnpassungen erweitern
-                const neueAnpassung = immoUpdate.neueAnpassung;
-                const neueAnpassungen = [
-                  ...(params.mietAnpassungen || []),
-                  { datum: neueAnpassung.datum, kaltmiete: neueAnpassung.kaltmiete, grund: 'Mieterhöhung', ...(neueAnpassung.vorher ? { vorher: neueAnpassung.vorher } : {}) },
-                ];
-                const updated = { ...params, mietAnpassungen: neueAnpassungen };
-                updateParams(updated);
-                await onSave(updated);
-                setHasChanges(false); // bereits persistiert — "ungespeichert"-Hinweis nicht fälschlich stehen lassen
+              onSave={async (_mieterUpdate, immoUpdate) => {
+                // Eine Quelle: Anpassung in den Mietverlauf, Mieter (Kaltmiete, letzte Erhöhung) wird gespiegelt
+                const n = immoUpdate.neueAnpassung;
+                const ersteOhneVerlauf = !(params.mietAnpassungen || []).some(x => x.kaltmiete != null && x.kaltmiete !== '');
+                await mietverlaufSpeichern(setzeMietanpassung(params.mietAnpassungen, { datum: n.datum, kaltmiete: n.kaltmiete, grund: 'Mieterhöhung', vorher: ersteOhneVerlauf ? n.vorher : null }));
                 setMieterhoeungMieter(null);
               }}
             />

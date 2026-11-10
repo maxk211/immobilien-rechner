@@ -8,7 +8,7 @@ import MieterFormular from './MieterFormular';
 import MieterAuszug from './MieterAuszug';
 import NKAbrechnungListe from './NKAbrechnungListe';
 
-const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate, onMieterhoeungClick, onMietanpassungFuerImmobilie, onMieteingaengeClick, onNebenkostenClick }) => {
+const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSave, nkAbrechnungen, onSaveNK, onDeleteNK, immobilieDokumente = [], onDokumentUpdate, onMieterhoeungClick, onMietanpassungFuerImmobilie, onMietverlauf = null, onMieteingaengeClick, onNebenkostenClick }) => {
   const [selectedMieter, setSelectedMieter] = useState(null);
   const [showAuszug, setShowAuszug] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -262,6 +262,7 @@ const MieterDashboard = ({ mieterListe, portfolio, onAdd, onEdit, onDelete, onSa
           immobilieDokumente={immobilieDokumente}
           onDokumentUpdate={onDokumentUpdate}
           onMietanpassungFuerImmobilie={onMietanpassungFuerImmobilie}
+          onMietverlauf={onMietverlauf}
         />
       )}
 
