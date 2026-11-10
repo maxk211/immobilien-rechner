@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Wrench, Home, ClipboardList, Leaf, Package, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { regel15 as regel15Berechnen, sonderumlagenAlsInvestitionen } from '../utils/sonderumlage.js';
@@ -169,8 +170,8 @@ const ReparaturenInvestitionen = ({ immobilie, onUpdate }) => {
           </div>
           <div className="mb-3">
             <label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
-            <input
-              type="number"
+            <ZahlFeld
+              
               value={neueInvestition.betrag}
               onChange={(e) => setNeueInvestition({...neueInvestition, betrag: e.target.value})}
               placeholder="z.B. 5000"

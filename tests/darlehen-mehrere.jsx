@@ -79,8 +79,8 @@ ok(/Alle Darlehen zusammen/.test(fin) && /Darlehen 2/.test(fin) && /KfW 261/.tes
   await setze(inp.find(i => i.placeholder?.startsWith('z. B. KfW')), 'KfW 124');
   await setze(inp[1], '30000');
   await act(async () => { btn('Teil der Kauffinanzierung').click(); });
-  const nums = [...document.querySelectorAll('input[type="number"]')];
-  await setze(nums[1], '2,1'.replace(',', '.'));
+  const nums = [...document.querySelectorAll('input[inputmode="decimal"]')];
+  await setze(nums[1], '2,1'); // Komma wie im echten Leben
   await setze(nums[2], '2');
   const dates = [...document.querySelectorAll('input[type="date"]')];
   await setze(dates[0], '2025-05-01'); await setze(dates[1], '2035-04-30');

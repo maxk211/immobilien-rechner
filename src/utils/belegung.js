@@ -28,6 +28,13 @@ export function einheitenStatus(immo, mieterListe = [], heute = new Date()) {
         || nimm(m => norm(m.zimmer_bezeichnung) && norm(m.zimmer_bezeichnung) === norm(name))
         || (w.mieterName ? nimm(m => norm(m.name) === norm(w.mieterName)) : null);
       if (datensatz) return { key: w.id ?? i, name, status: 'vermietet', mieterName: datensatz.name, quelle: 'mieter', mieterId: datensatz.id, wohnung: w };
+      // Mieter in der Mieterverwaltung ausgezogen/beendet → Wohnung leer, auch wenn der Name noch an der Wohnung steht
+      const ehemaliger = ehemalige.find(m => (w.mieterId != null && String(m.id) === String(w.mieterId))
+        || (norm(m.zimmer_bezeichnung) && norm(m.zimmer_bezeichnung) === norm(name))
+        || (w.mieterName && norm(m.name) === norm(w.mieterName)));
+      if (ehemaliger && (!w.mieterId || String(w.mieterId) === String(ehemaliger.id)) && (!w.mieterName || norm(w.mieterName) === norm(ehemaliger.name))) {
+        return { key: w.id ?? i, name, status: 'leer', quelle: 'mieter', ehemalig: ehemaliger.name, wohnung: w };
+      }
       if (w.mieterName && laeuft(w.mietende, heute)) return { key: w.id ?? i, name, status: 'vermietet', mieterName: w.mieterName, quelle: 'wohnung', wohnung: w };
       if (w.leer === true || (w.mietende && !laeuft(w.mietende, heute))) return { key: w.id ?? i, name, status: 'leer', quelle: 'wohnung', wohnung: w };
       return { key: w.id ?? i, name, status: 'unbekannt', quelle: null, wohnung: w };
@@ -76,6 +83,8 @@ export function mieterAusWohnungen(immo, mieterListe = [], heute = new Date()) {
       mietbeginn: e.wohnung?.mietbeginn || null,
       mietende: e.wohnung?.mietende || null,
       letzteMieterhoehung: e.wohnung?.letzteMieterhoehung || null,
+      kautionBetrag: Number(e.wohnung?.kautionBetrag) || null,
+      kautionBezahlt: !!e.wohnung?.kautionBezahlt,
       aktiv: true,
     };
   });
@@ -85,3 +94,66 @@ export const BELEGUNG_TEXT = {
   voll: 'voll vermietet', teilweise: 'teilweise vermietet', leer: 'steht leer',
   unbekannt: 'Belegung offen', eigennutzung: 'selbst genutzt',
 };
+
+// ── Mehrfamilienhaus: EINE Quelle für Mieterdaten ─────────────────────────────
+// Gibt es einen Mieterdatensatz, ist ER die Quelle (Name, Mietbeginn, Mietende/Auszug, Kaution).
+// Die Felder an der Wohnung sind nur noch die Anzeige davon und werden nach jedem Speichern des
+// Mieters nachgezogen. Änderungen im Wohnungsformular gehen umgekehrt an den Datensatz.
+const feldVon = (m, snake, camel) => (m?.[camel] !== undefined ? m[camel] : m?.[snake]);
+const iso10 = (s) => (s ? String(s).slice(0, 10) : '');
+
+export function wohnungIndexFuer(wohnungen, m) {
+  if (!m) return -1;
+  const id = m.id;
+  let i = id != null ? (wohnungen || []).findIndex(w => w.mieterId != null && String(w.mieterId) === String(id)) : -1;
+  if (i >= 0) return i;
+  const zimmer = feldVon(m, 'zimmer_bezeichnung', 'zimmerBezeichnung');
+  i = zimmer ? (wohnungen || []).findIndex(w => norm(w.name) === norm(zimmer)) : -1;
+  if (i >= 0) return i;
+  return (wohnungen || []).findIndex(w => w.mieterName && norm(w.mieterName) === norm(m.name));
+}
+
+// Wohnungsfelder aus dem Mieterdatensatz (Spiegel). Liefert dieselbe Liste, wenn sich nichts ändert.
+export function wohnungenMitMieter(wohnungen, m) {
+  const i = wohnungIndexFuer(wohnungen, m);
+  if (i < 0) return wohnungen;
+  const w = wohnungen[i];
+  const aktiv = feldVon(m, 'aktiv', 'aktiv') !== false;
+  const auszug = iso10(feldVon(m, 'auszugsdatum', 'auszugsdatum'));
+  const ende = iso10(feldVon(m, 'mietende', 'mietende')) || (!aktiv ? (auszug || iso10(new Date().toISOString())) : '');
+  // Ein ehemaliger Mieter darf einen inzwischen eingetragenen Nachfolger nicht überschreiben
+  if (!aktiv && w.mieterId != null && m.id != null && String(w.mieterId) !== String(m.id)) return wohnungen;
+  const kaution = feldVon(m, 'kaution_betrag', 'kautionBetrag');
+  const neu = {
+    ...w,
+    ...(m.id != null ? { mieterId: m.id } : {}),
+    mieterName: m.name || w.mieterName,
+    mietbeginn: iso10(feldVon(m, 'mietbeginn', 'mietbeginn')) || w.mietbeginn || '',
+    mietende: ende,
+    ...(kaution !== undefined && kaution !== null && kaution !== '' ? { kautionBetrag: Number(kaution) || 0 } : {}),
+    ...(feldVon(m, 'kaution_bezahlt', 'kautionBezahlt') !== undefined ? { kautionBezahlt: !!feldVon(m, 'kaution_bezahlt', 'kautionBezahlt') } : {}),
+    leer: false,
+  };
+  const gleich = ['mieterId', 'mieterName', 'mietbeginn', 'mietende', 'kautionBetrag', 'kautionBezahlt', 'leer'].every(k => (neu[k] ?? '') === (w[k] ?? ''));
+  if (gleich) return wohnungen;
+  const liste = [...wohnungen]; liste[i] = neu; return liste;
+}
+
+// Umgekehrt: was im Wohnungsformular geändert wurde, als Änderung am Mieterdatensatz (oder null)
+export function mieterAusWohnungAenderung(m, w) {
+  if (!m?.id || !w) return null;
+  const ziel = {
+    name: w.mieterName || m.name,
+    mietbeginn: w.mietbeginn || null,
+    mietende: w.mietende || null,
+    kautionBetrag: Number(w.kautionBetrag) || 0,
+    kautionBezahlt: !!w.kautionBezahlt,
+  };
+  const ist = {
+    name: m.name, mietbeginn: iso10(m.mietbeginn) || null, mietende: iso10(m.mietende) || null,
+    kautionBetrag: Number(m.kaution_betrag ?? m.kautionBetrag) || 0, kautionBezahlt: !!(m.kaution_bezahlt ?? m.kautionBezahlt),
+  };
+  const anders = Object.keys(ziel).some(k => (ziel[k] ?? '') !== (ist[k] ?? ''));
+  if (!anders) return null;
+  return { ...m, ...ziel, naechsteAnpassungDatum: m.naechste_anpassung_datum || m.naechsteAnpassungDatum || '' };
+}

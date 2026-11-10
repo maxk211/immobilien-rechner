@@ -129,3 +129,42 @@ export function eingabeAuswerten({ vorher, neu, prozent }, altBekannt) {
   if (p != null && alt > 0) return { alt, neu: Math.round(alt * (1 + p / 100) * 100) / 100, prozent: p, vorherEingabe: v };
   return { alt, neu: null, prozent: null, vorherEingabe: v };
 }
+
+// ── Alte Jahreswerte („manuell“ je Jahr/Monat) in Mietverlauf und Kostenanpassungen übernehmen ──
+// Ein Jahreswert gilt nur für sein Jahr: am Anfang ein Eintrag mit dem Wert, danach wieder der Wert,
+// der ohne ihn gegolten hätte. So bleibt jede Zahl an genau einer Stelle (mietAnpassungen).
+const wertAm = (p, feld, datum) => {
+  const d = tag(datum);
+  if (feld === 'kaltmiete') return mietZeilen(p).filter(r => r.d <= d).slice(-1)[0]?.neu ?? (mietZeilen(p)[0]?.alt ?? zahl(p.kaltmiete));
+  let w = zahl(p[feld]);
+  [...(p.mietAnpassungen || [])].filter(a => a && a[feld] != null && a[feld] !== '' && a.datum).sort((a, b) => new Date(a.datum) - new Date(b.datum))
+    .forEach(a => { if (tag(a.datum) <= d) w = zahl(a[feld]); });
+  return w;
+};
+export function hatJahreswerte(p) { return Object.values(p?.mietHistorie || {}).some(e => e && Object.keys(e).length); }
+export function jahreswerteUebernehmen(p) {
+  const hist = p?.mietHistorie || {};
+  const stuecke = Object.entries(hist).map(([k, e]) => {
+    const m = String(k).match(/^(\d{4})(?:-(\d{1,2}))?$/);
+    if (!m || !e) return null;
+    const y = +m[1], mon = m[2] != null ? +m[2] : null;
+    const von = mon == null ? new Date(y, 0, 1, 12) : new Date(y, mon, 1, 12);
+    const bis = mon == null ? new Date(y + 1, 0, 1, 12) : new Date(y, mon + 1, 1, 12);
+    return { von, bis, felder: e };
+  }).filter(Boolean).sort((a, b) => a.von - b.von);
+  let liste = [...(p.mietAnpassungen || [])];
+  const isoD = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  const setze = (datum, feld, wert) => {
+    if (feld === 'kaltmiete') { liste = setzeMietanpassung(liste, { datum, kaltmiete: wert, grund: 'Korrektur (Jahreswert)' }); return; }
+    const i = liste.findIndex(a => String(a.datum).slice(0, 10) === datum);
+    if (i >= 0) liste[i] = { ...liste[i], [feld]: zahl(wert) }; else liste.push({ datum, [feld]: zahl(wert) });
+  };
+  stuecke.forEach(st => Object.entries(st.felder).forEach(([feld, wert]) => {
+    if (wert === null || wert === undefined || wert === '') return;
+    setze(isoD(st.von), feld, wert);
+    const folgt = stuecke.some(x => +x.von === +st.bis && x.felder[feld] != null && x.felder[feld] !== '');
+    if (!folgt) setze(isoD(st.bis), feld, wertAm(p, feld, st.bis));
+  }));
+  liste.sort((a, b) => new Date(a.datum) - new Date(b.datum));
+  return { mietAnpassungen: liste, mietHistorie: {}, mietModus: 'automatisch' };
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { zahlAusText } from '../utils/zahlen.js';
 
 // Zahlenfeld, das nicht bei jedem Tastendruck durchschreibt (UX-Gesamtpaket B2).
 //
@@ -24,15 +25,24 @@ const grosseAenderung = (alt, neu) => {
   return Math.abs(b - a) / Math.abs(a) > 0.5;
 };
 
-export default function ZahlInput({ value, onChange, onBlur, onFocus, onKeyDown, verzoegerung = 500, ...rest }) {
-  const [entwurf, setEntwurf] = useState(value ?? '');
+// Deutsche Eingabe: „478,10“ / „1.250,50“ → 478.1 / 1250.5 (vorher je nach Browser still leer/0)
+const anzeige = (v) => (v === '' || v == null || (typeof v === 'number' && !Number.isFinite(v)) ? '' : String(v).replace('.', ','));
+const lese = (t) => {
+  const roh = String(t ?? '').trim();
+  if (roh === '') return '';
+  const n = zahlAusText(roh);
+  return n === null || n === undefined ? null : String(n);
+};
+
+export default function ZahlInput({ value, onChange, onBlur, onFocus, onKeyDown, verzoegerung = 500, type: _type, min, max, step, ...rest }) {
+  const [entwurf, setEntwurf] = useState(anzeige(value));
   const fokus = useRef(false);
   const timer = useRef(null);
   const zuletzt = useRef(value ?? '');
 
   // Von außen geänderte Werte übernehmen, solange niemand tippt
   useEffect(() => {
-    if (!fokus.current) { setEntwurf(value ?? ''); zuletzt.current = value ?? ''; }
+    if (!fokus.current) { setEntwurf(anzeige(value)); zuletzt.current = value ?? ''; }
   }, [value]);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -42,7 +52,7 @@ export default function ZahlInput({ value, onChange, onBlur, onFocus, onKeyDown,
   useEffect(() => () => clearTimeout(bestaetigung.current), []);
 
   const zeigeRueckgaengig = (alt, v, gross) => {
-    const rueckgaengig = () => { zuletzt.current = alt; setEntwurf(alt ?? ''); sende(alt ?? ''); };
+    const rueckgaengig = () => { zuletzt.current = alt; setEntwurf(anzeige(alt)); sende(alt ?? ''); };
     toast((t) => (
       <span className="flex items-center gap-3 text-sm">
         <span>{gross ? 'Übernommen: ' : 'Geändert: '}{fmt(alt)} → {fmt(v)}</span>
@@ -60,7 +70,7 @@ export default function ZahlInput({ value, onChange, onBlur, onFocus, onKeyDown,
     // still übernommen — erst nach ausdrücklicher Bestätigung. Ohne Antwort bleibt der alte Wert.
     if (grosseAenderung(alt, v)) {
       clearTimeout(bestaetigung.current);
-      const verwerfen = () => { clearTimeout(bestaetigung.current); setEntwurf(alt ?? ''); };
+      const verwerfen = () => { clearTimeout(bestaetigung.current); setEntwurf(anzeige(alt)); };
       const bestaetigen = () => {
         clearTimeout(bestaetigung.current);
         zuletzt.current = v; sende(v);
@@ -92,19 +102,28 @@ export default function ZahlInput({ value, onChange, onBlur, onFocus, onKeyDown,
 
   return (
     <input
-      type="number"
       {...rest}
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
       value={entwurf}
       onFocus={(e) => { fokus.current = true; onFocus?.(e); }}
       onChange={(e) => {
-        const v = e.target.value;
-        setEntwurf(v);
+        const raw = e.target.value;
+        setEntwurf(raw);
         clearTimeout(timer.current);
+        const v = lese(raw);
+        if (v === null || /[,.]$/.test(raw.trim())) return; // ungültig oder „478,“ — noch am Tippen
         // Große Sprünge (z. B. gelöschte Ziffer) nie automatisch — erst beim Verlassen
         if (!grosseAenderung(zuletzt.current, v)) timer.current = setTimeout(() => uebernehmen(v), verzoegerung);
       }}
-      onBlur={(e) => { fokus.current = false; uebernehmen(e.target.value); onBlur?.(e); }}
-      onKeyDown={(e) => { if (e.key === 'Enter') uebernehmen(e.currentTarget.value); onKeyDown?.(e); }}
+      onBlur={(e) => {
+        fokus.current = false;
+        const v = lese(e.target.value);
+        if (v === null) setEntwurf(anzeige(zuletzt.current)); else uebernehmen(v);
+        onBlur?.(e);
+      }}
+      onKeyDown={(e) => { if (e.key === 'Enter') { const v = lese(e.currentTarget.value); if (v !== null) uebernehmen(v); } onKeyDown?.(e); }}
     />
   );
 }

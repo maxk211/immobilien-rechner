@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Gauge, RefreshCw, Pencil, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { showConfirm } from '../utils/confirm.jsx';
 import { ZAEHLER_TYPEN } from '../constants/index.js';
@@ -311,7 +312,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Zählerstand ({z.einheit})</label>
-                  <input type="number" step="0.001" value={ableseForm.stand}
+                  <ZahlFeld  step="0.001" value={ableseForm.stand}
                     onChange={e => setAbleseForm(f => ({...f, stand: e.target.value}))}
                     placeholder="z.B. 12345"
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-400" />
@@ -337,7 +338,7 @@ const ZaehlerVerwaltung = ({ params, updateParams }) => {
                 {ableseForm.istTausch && (
                   <div>
                     <label className="block text-xs text-orange-700 mb-1">Endstand alter Zähler ({z.einheit})</label>
-                    <input type="number" step="0.001" value={ableseForm.altStand}
+                    <ZahlFeld  step="0.001" value={ableseForm.altStand}
                       onChange={e => setAbleseForm(f => ({...f, altStand: e.target.value}))}
                       placeholder="Letzter Stand des alten Zählers"
                       className="w-full px-3 py-2 border border-orange-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 bg-white" />

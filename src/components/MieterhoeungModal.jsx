@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import ZahlFeld from './ZahlFeld';
 import {
   TrendingUp, BarChart2, Home, Search, FileText, CheckCircle2,
   AlertTriangle, X, User,
@@ -294,8 +295,8 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = nul
                 {hatMieter ? (
                   <p className="text-xl font-black text-gray-500 line-through">{formatCurrency(effAktKaltmiete)}</p>
                 ) : (
-                  <input
-                    type="number"
+                  <ZahlFeld
+                    
                     value={form.aktuelleKaltmiete}
                     onChange={e => setForm({ ...form, aktuelleKaltmiete: e.target.value, neueKaltmiete: e.target.value ? Math.ceil(parseFloat(e.target.value) * 1.05) : '' })}
                     className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-xl font-black text-gray-500 text-right focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -306,8 +307,8 @@ const MieterhoeungModal = ({ mieter, immobilie, onClose, onSave, vorschlag = nul
               <span className="text-2xl text-gray-300">→</span>
               <div className="flex-1">
                 <p className="text-[10px] text-gray-400 mb-1">Neue Kaltmiete</p>
-                <input
-                  type="number"
+                <ZahlFeld
+                  
                   value={form.neueKaltmiete}
                   onChange={e => setForm({ ...form, neueKaltmiete: parseFloat(e.target.value) || '' })}
                   className="w-full px-3 py-2 border-2 border-indigo-400 rounded-lg text-xl font-black text-indigo-700 text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"

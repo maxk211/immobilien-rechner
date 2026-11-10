@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSchliessenMitRueckfrage } from './UngespeichertDialog';
 import KostenZahler from './KostenZahler';
 import JetztDran from './JetztDran';
 import { formatCurrency } from '../utils/format.js';
@@ -227,7 +228,9 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   const handleSave = () => {
     onSave({ ...immobilie, ...params });
     setHasChanges(false);
-  };
+  };  // Schließen mit offenen Änderungen: Rückfrage Speichern / Verwerfen / Weiter bearbeiten
+  const { schliessen, dialog: ungespeichertDialog } = useSchliessenMitRueckfrage({ hatAenderungen: hasChanges, onSpeichern: handleSave, onSchliessen: onClose });
+
 
   // Mietvertragsende prüfen
   const vertragsende = params.mietvertragEnde ? new Date(params.mietvertragEnde) : null;
@@ -323,7 +326,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     Speichern
                   </button>
                 )}
-<button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
+<button onClick={schliessen} aria-label="Schließen" className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
               </div>
             </div>
           </div>
@@ -933,6 +936,7 @@ const MietimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           )}
         </div>
       </div>
+    {ungespeichertDialog}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { X, Home, Building2, ArrowLeftRight, MapPin, ChevronDown, ChevronUp, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneMtlCashflow } from '../utils/berechnung.js';
@@ -521,10 +522,10 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
             </Feld>
           )}
           <Feld label="Wohnfläche" pflicht fehler={fehlerFuer("wohnflaeche")} hint={istArb ? undefined : 'Das einzige Pflichtfeld hier — aus ihr rechnen wir den Quadratmeterpreis.'}>
-            <div className="relative"><input type="number" min="0" className={`${inputCls} pr-10`} value={d.wohnflaeche} onChange={e => set({ wohnflaeche: e.target.value })} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">m²</span></div>
+            <div className="relative"><ZahlFeld  min="0" className={`${inputCls} pr-10`} value={d.wohnflaeche} onChange={e => set({ wohnflaeche: e.target.value })} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">m²</span></div>
           </Feld>
           {istArb ? (
-            <Feld label="Zimmer"><input type="number" min="0" className={inputCls} value={d.zimmer} onChange={e => set({ zimmer: e.target.value })} /></Feld>
+            <Feld label="Zimmer"><ZahlFeld  min="0" className={inputCls} value={d.zimmer} onChange={e => set({ zimmer: e.target.value })} /></Feld>
           ) : (
             <Feld label="Zustand">
               <select className={inputCls} value={d.zustand} onChange={e => set({ zustand: e.target.value })}>
@@ -541,8 +542,8 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           {d.wohnungen.map((w, i) => (
             <div key={i} className="grid grid-cols-12 gap-2 items-end bg-gray-50 border border-gray-100 rounded-xl p-2">
               <input className={`${inputCls} col-span-3`} placeholder={`WE ${i + 1}`} value={w.name} onChange={e => set({ wohnungen: d.wohnungen.map((x, j) => j === i ? { ...x, name: e.target.value } : x) })} />
-              <input type="number" min="0" className={`${inputCls} col-span-2`} placeholder="m²" value={w.wohnflaeche} onChange={e => set({ wohnungen: d.wohnungen.map((x, j) => j === i ? { ...x, wohnflaeche: e.target.value } : x) })} />
-              <input type="number" min="0" className={`${inputCls} col-span-3`} placeholder="Kaltmiete €" value={w.kaltmiete} onChange={e => set({ wohnungen: d.wohnungen.map((x, j) => j === i ? { ...x, kaltmiete: e.target.value } : x) })} />
+              <ZahlFeld  min="0" className={`${inputCls} col-span-2`} placeholder="m²" value={w.wohnflaeche} onChange={e => set({ wohnungen: d.wohnungen.map((x, j) => j === i ? { ...x, wohnflaeche: e.target.value } : x) })} />
+              <ZahlFeld  min="0" className={`${inputCls} col-span-3`} placeholder="Kaltmiete €" value={w.kaltmiete} onChange={e => set({ wohnungen: d.wohnungen.map((x, j) => j === i ? { ...x, kaltmiete: e.target.value } : x) })} />
               <input className={`${inputCls} col-span-3`} placeholder="Mieter (optional)" value={w.mieterName || ''} onChange={e => set({ wohnungen: d.wohnungen.map((x, j) => j === i ? { ...x, mieterName: e.target.value } : x) })} />
               <button type="button" onClick={() => set({ wohnungen: d.wohnungen.filter((_, j) => j !== i) })} className="col-span-1 text-gray-300 hover:text-red-500 flex justify-center py-2" title="Entfernen"><Trash2 size={16} /></button>
             </div>
@@ -558,9 +559,9 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           <p className="text-sm font-bold text-gray-800">Was ist {istMFH ? 'das Haus' : 'die Wohnung'} heute wert?</p>
           <p className="text-xs text-gray-500">Du brauchst nur den Quadratmeterpreis. Den Rest rechnen wir.</p>
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <input type="number" min="0" className={`${inputCls} w-32`} placeholder="€/m²" value={d.qmPreis} onChange={e => set({ qmPreis: e.target.value, marktwertManuell: '' })} />
+            <ZahlFeld  min="0" className={`${inputCls} w-32`} placeholder="€/m²" value={d.qmPreis} onChange={e => set({ qmPreis: e.target.value, marktwertManuell: '' })} />
             <span className="text-gray-400">× {flaecheWert || '—'} m² =</span>
-            <input type="number" min="0" className={`${inputCls} w-36`} placeholder="Wert €" value={!leer(d.marktwertManuell) ? d.marktwertManuell : (n(d.qmPreis) > 0 && flaecheWert > 0 ? Math.round(n(d.qmPreis) * flaecheWert) : '')}
+            <ZahlFeld  min="0" className={`${inputCls} w-36`} placeholder="Wert €" value={!leer(d.marktwertManuell) ? d.marktwertManuell : (n(d.qmPreis) > 0 && flaecheWert > 0 ? Math.round(n(d.qmPreis) * flaecheWert) : '')}
               onChange={e => set({ marktwertManuell: e.target.value })} />
             <a href={`https://www.homeday.de/de/preisatlas/${encodeURIComponent((d.ort || '').toLowerCase())}`} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-indigo-600 hover:underline">m²-Preis bei Homeday suchen ↗</a>
           </div>
@@ -577,9 +578,9 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
             <div className="px-3 pb-3 space-y-3">
               <p className="text-[11px] text-gray-400">Was du nicht weißt, trägst du später im Objekt nach.</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <Feld label="Baujahr"><input type="number" className={inputCls} placeholder="weiß ich nicht" value={d.baujahr} onChange={e => set({ baujahr: e.target.value })} /></Feld>
-                <Feld label="Zimmer"><input type="number" className={inputCls} placeholder="weiß ich nicht" value={d.zimmer} onChange={e => set({ zimmer: e.target.value })} /></Feld>
-                <Feld label="Stockwerk"><input type="number" className={inputCls} placeholder="weiß ich nicht" value={d.stockwerk} onChange={e => set({ stockwerk: e.target.value })} /></Feld>
+                <Feld label="Baujahr"><ZahlFeld  className={inputCls} placeholder="weiß ich nicht" value={d.baujahr} onChange={e => set({ baujahr: e.target.value })} /></Feld>
+                <Feld label="Zimmer"><ZahlFeld  className={inputCls} placeholder="weiß ich nicht" value={d.zimmer} onChange={e => set({ zimmer: e.target.value })} /></Feld>
+                <Feld label="Stockwerk"><ZahlFeld  className={inputCls} placeholder="weiß ich nicht" value={d.stockwerk} onChange={e => set({ stockwerk: e.target.value })} /></Feld>
                 <Feld label="Energieeffizienz">
                   <select className={inputCls} value={d.energieeffizienz} onChange={e => set({ energieeffizienz: e.target.value })}>
                     <option value="">weiß ich nicht</option>{['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(k => <option key={k}>{k}</option>)}
@@ -619,24 +620,24 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
         {geerbt ? (
           <div className="space-y-3">
             <Feld label="Verkehrswert beim Übergang" hint="Keine Grunderwerbsteuer bei Erbe oder Schenkung (§ 3 Nr. 2 GrEStG). Für die Abschreibung führst du die Werte des Vorbesitzers fort — die trägst du später unter Steuern ein.">
-              <input type="number" min="0" className={inputCls} value={d.verkehrswert} onChange={e => set({ verkehrswert: e.target.value })} />
+              <ZahlFeld  min="0" className={inputCls} value={d.verkehrswert} onChange={e => set({ verkehrswert: e.target.value })} />
             </Feld>
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input type="checkbox" checked={d.kreditBeiErbe} onChange={e => set({ kreditBeiErbe: e.target.checked })} /> Es läuft ein Kredit auf dem Objekt (übernommen oder neu)
             </label>
             {d.kreditBeiErbe && (
-              <Feld label="Darlehensbetrag"><input type="number" min="0" className={inputCls} value={d.darlehenManuell} onChange={e => set({ darlehenManuell: e.target.value })} /></Feld>
+              <Feld label="Darlehensbetrag"><ZahlFeld  min="0" className={inputCls} value={d.darlehenManuell} onChange={e => set({ darlehenManuell: e.target.value })} /></Feld>
             )}
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Feld label="Kaufpreis" pflicht fehler={fehlerFuer("kaufpreis")}><input type="number" min="0" className={inputCls} value={d.kaufpreis} onChange={e => set({ kaufpreis: e.target.value })} /></Feld>
+              <Feld label="Kaufpreis" pflicht fehler={fehlerFuer("kaufpreis")}><ZahlFeld  min="0" className={inputCls} value={d.kaufpreis} onChange={e => set({ kaufpreis: e.target.value })} /></Feld>
               <Feld label="Kaufnebenkosten" hint={grest
                 ? `${String(grest.satz).replace('.', ',')} % Grunderwerbsteuer für ${blName} — der Satz, der zu deinem Kaufdatum galt. Dazu ${String(d.knkNotar).replace('.', ',')} % Notar und Grundbuch${d.mitMakler ? ', 3,0 % Makler' : ''}. Alles änderbar.`
                 : 'Ohne Bundesland fehlt die Grunderwerbsteuer — in Schritt 1 die Adresse wählen.'}>
                 <div className="flex items-center gap-2">
-                  <input type="number" step="0.1" min="0" className={`${inputCls} w-24`} value={!leer(d.knkManuell) ? d.knkManuell : Math.round(knkProzentAnzeige * 10) / 10} onChange={e => set({ knkManuell: e.target.value })} />
+                  <ZahlFeld  step="0.1" min="0" className={`${inputCls} w-24`} value={!leer(d.knkManuell) ? d.knkManuell : Math.round(knkProzentAnzeige * 10) / 10} onChange={e => set({ knkManuell: e.target.value })} />
                   <span className="text-sm text-gray-500">% = {formatCurrency(nk)}</span>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-gray-500 mt-1 font-normal">
@@ -653,7 +654,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
                 <Karte aktiv={d.zahlweise === 'ohne'} onClick={() => set({ zahlweise: 'ohne', darlehenManuell: '' })} titel="Ohne Kredit" sub="Komplett aus eigenen Mitteln bezahlt." />
               </div>
               {d.zahlweise === 'zusatzEK' && (
-                <div className="mt-2 max-w-xs"><Feld label="Dein Eigenkapital insgesamt"><input type="number" min="0" className={inputCls} value={d.zusatzEK} onChange={e => set({ zusatzEK: e.target.value })} /></Feld></div>
+                <div className="mt-2 max-w-xs"><Feld label="Dein Eigenkapital insgesamt"><ZahlFeld  min="0" className={inputCls} value={d.zusatzEK} onChange={e => set({ zusatzEK: e.target.value })} /></Feld></div>
               )}
             </div>
             {d.zahlweise && gesamt > 0 && (
@@ -673,8 +674,8 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           <div className="rounded-xl border border-gray-200 p-3 space-y-3">
             <p className="text-sm font-bold text-gray-800">Dein Kredit</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {!geerbt && <Feld label="Darlehensbetrag"><input type="number" min="0" className={inputCls} value={!leer(d.darlehenManuell) ? d.darlehenManuell : Math.round(darlehen)} onChange={e => set({ darlehenManuell: e.target.value })} /></Feld>}
-              <Feld label="Sollzins p. a." pflicht fehler={fehlerFuer("sollzins")}><input type="number" step="0.01" min="0" className={inputCls} value={d.sollzins} onChange={e => set({ sollzins: e.target.value })} /></Feld>
+              {!geerbt && <Feld label="Darlehensbetrag"><ZahlFeld  min="0" className={inputCls} value={!leer(d.darlehenManuell) ? d.darlehenManuell : Math.round(darlehen)} onChange={e => set({ darlehenManuell: e.target.value })} /></Feld>}
+              <Feld label="Sollzins p. a." pflicht fehler={fehlerFuer("sollzins")}><ZahlFeld  step="0.01" min="0" className={inputCls} value={d.sollzins} onChange={e => set({ sollzins: e.target.value })} /></Feld>
               <Feld label="Kredit läuft seit"><input type="month" className={inputCls} value={(d.kreditSeit || monatZuDatum(d.eigentumMonat)).slice(0, 7)} onChange={e => set({ kreditSeit: monatZuDatum(e.target.value) })} /></Feld>
               <Feld label="Zinsbindung bis" hint={d.zbBestaetigt ? 'bestätigt' : 'geschätzt — bitte aus dem Vertrag'}>
                 <input type="date" className={`${inputCls} ${!d.zbBestaetigt ? 'border-amber-400 bg-amber-50' : ''}`} value={phase?.zinsbindungBis || ''} onChange={e => set({ zinsbindungBis: e.target.value, zbBestaetigt: !!e.target.value })} />
@@ -689,14 +690,14 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
                 </div>
               </div>
               {d.kenne === 'rate' ? (
-                <div className="w-32"><Feld label="Monatsrate"><input type="number" min="0" className={inputCls} value={d.rate} onChange={e => set({ rate: e.target.value })} /></Feld></div>
+                <div className="w-32"><Feld label="Monatsrate"><ZahlFeld  min="0" className={inputCls} value={d.rate} onChange={e => set({ rate: e.target.value })} /></Feld></div>
               ) : (
-                <div className="w-32"><Feld label="Tilgung p. a. %"><input type="number" step="0.1" min="0" className={inputCls} value={d.tilgung} onChange={e => set({ tilgung: e.target.value })} /></Feld></div>
+                <div className="w-32"><Feld label="Tilgung p. a. %"><ZahlFeld  step="0.1" min="0" className={inputCls} value={d.tilgung} onChange={e => set({ tilgung: e.target.value })} /></Feld></div>
               )}
               <p className="text-xs text-indigo-700 font-semibold pb-2">
                 {d.kenne === 'rate' ? `Daraus ergibt sich ein Tilgungssatz von ${(phase?.anfangstilgung || 0).toFixed(2).replace('.', ',')} %.` : `Ergibt eine Monatsrate von ${formatCurrency(vp?.rate || 0)}.`} Den musst du nicht nachschlagen.
               </p>
-              <div className="w-36"><Feld label="Sondertilgung % p. a." hint="optional"><input type="number" step="0.5" min="0" className={inputCls} value={d.sondertilgungProzent} onChange={e => set({ sondertilgungProzent: e.target.value })} /></Feld></div>
+              <div className="w-36"><Feld label="Sondertilgung % p. a." hint="optional"><ZahlFeld  step="0.5" min="0" className={inputCls} value={d.sondertilgungProzent} onChange={e => set({ sondertilgungProzent: e.target.value })} /></Feld></div>
             </div>
             {verlauf && (
               <div className="rounded-xl bg-ink text-white p-3">
@@ -718,7 +719,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
 
   const schritt3Arb = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <Feld label="Was zahlst du selbst im Monat (warm)?" pflicht fehler={fehlerFuer("warmmiete")}><input type="number" min="0" className={inputCls} value={d.eigeneWarmmiete} onChange={e => set({ eigeneWarmmiete: e.target.value })} /></Feld>
+      <Feld label="Was zahlst du selbst im Monat (warm)?" pflicht fehler={fehlerFuer("warmmiete")}><ZahlFeld  min="0" className={inputCls} value={d.eigeneWarmmiete} onChange={e => set({ eigeneWarmmiete: e.target.value })} /></Feld>
       <Feld label="Hauptmietvertrag endet am" hint="Leer lassen, wenn unbefristet"><input type="date" className={inputCls} value={d.mietvertragEnde} onChange={e => set({ mietvertragEnde: e.target.value })} /></Feld>
       <p className="sm:col-span-2 text-[11px] text-gray-400">Kein Kaufpreis, kein Kredit, keine Abschreibung — der Pfad für Arbitrage ist bewusst kurz.</p>
     </div>
@@ -727,11 +728,11 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
   const schritt4Arb = () => (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Feld label="Wie viele Zimmer vermietest du unter?"><input type="number" min="0" className={inputCls} value={d.zimmerVermietet} onChange={e => set({ zimmerVermietet: e.target.value })} /></Feld>
-        <Feld label="Untermiete pro Zimmer (warm)"><input type="number" min="0" className={inputCls} value={d.untermieteProZimmer} onChange={e => set({ untermieteProZimmer: e.target.value })} /></Feld>
-        <Feld label="Strom im Monat" hint="Wenn du ihn trägst"><input type="number" min="0" className={inputCls} value={d.strom} onChange={e => set({ strom: e.target.value })} /></Feld>
-        <Feld label="Internet im Monat"><input type="number" min="0" className={inputCls} value={d.internet} onChange={e => set({ internet: e.target.value })} /></Feld>
-        <Feld label="Weitere Kosten im Monat" hint="z. B. Reinigung, Verschleiß"><input type="number" min="0" className={inputCls} value={d.sonstige} onChange={e => set({ sonstige: e.target.value })} /></Feld>
+        <Feld label="Wie viele Zimmer vermietest du unter?"><ZahlFeld  min="0" className={inputCls} value={d.zimmerVermietet} onChange={e => set({ zimmerVermietet: e.target.value })} /></Feld>
+        <Feld label="Untermiete pro Zimmer (warm)"><ZahlFeld  min="0" className={inputCls} value={d.untermieteProZimmer} onChange={e => set({ untermieteProZimmer: e.target.value })} /></Feld>
+        <Feld label="Strom im Monat" hint="Wenn du ihn trägst"><ZahlFeld  min="0" className={inputCls} value={d.strom} onChange={e => set({ strom: e.target.value })} /></Feld>
+        <Feld label="Internet im Monat"><ZahlFeld  min="0" className={inputCls} value={d.internet} onChange={e => set({ internet: e.target.value })} /></Feld>
+        <Feld label="Weitere Kosten im Monat" hint="z. B. Reinigung, Verschleiß"><ZahlFeld  min="0" className={inputCls} value={d.sonstige} onChange={e => set({ sonstige: e.target.value })} /></Feld>
       </div>
       <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={d.gez} onChange={e => set({ gez: e.target.checked })} /> Ich zahle den Rundfunkbeitrag für die Wohnung (18,36 €)</label>
     </div>
@@ -758,8 +759,8 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <Feld label={d.vermietungsmodell === 'warmmiete' ? 'Pauschalmiete' : 'Kaltmiete pro Monat'} pflicht fehler={fehlerFuer('kaltmiete')}><input type="number" min="0" className={inputCls} value={d.kaltmiete} onChange={e => set({ kaltmiete: e.target.value })} /></Feld>
-                {d.vermietungsmodell === 'kaltmiete_nk' && <Feld label="NK-Vorauszahlung"><input type="number" min="0" className={inputCls} value={d.nkVz} onChange={e => set({ nkVz: e.target.value })} /></Feld>}
+                <Feld label={d.vermietungsmodell === 'warmmiete' ? 'Pauschalmiete' : 'Kaltmiete pro Monat'} pflicht fehler={fehlerFuer('kaltmiete')}><ZahlFeld  min="0" className={inputCls} value={d.kaltmiete} onChange={e => set({ kaltmiete: e.target.value })} /></Feld>
+                {d.vermietungsmodell === 'kaltmiete_nk' && <Feld label="NK-Vorauszahlung"><ZahlFeld  min="0" className={inputCls} value={d.nkVz} onChange={e => set({ nkVz: e.target.value })} /></Feld>}
                 <Feld label="Mieter seit"><input type="month" className={inputCls} value={d.mieterSeit} onChange={e => set({ mieterSeit: e.target.value })} /></Feld>
                 <Feld label="Miete fällig am"><select className={inputCls} value={d.faelligTag} onChange={e => set({ faelligTag: e.target.value })}>{[1, 3, 5, 10, 15].map(t => <option key={t} value={t}>{t}. des Monats</option>)}</select></Feld>
                 <Feld label="Name des Mieters" hint="optional"><input className={inputCls} value={d.mieterName} onChange={e => set({ mieterName: e.target.value })} /></Feld>
@@ -789,21 +790,21 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
         <p className="text-xs text-gray-500">Hier entscheidet sich, ob dein Cashflow stimmt.{istMFH ? '' : ' Zwei Zahlen reichen.'}</p>
         {!istMFH && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <Feld label="Hausgeld an die WEG"><input type="number" min="0" className={inputCls} value={d.hausgeld} onChange={e => set({ hausgeld: e.target.value })} /></Feld>
+            <Feld label="Hausgeld an die WEG"><ZahlFeld  min="0" className={inputCls} value={d.hausgeld} onChange={e => set({ hausgeld: e.target.value })} /></Feld>
             <Feld label="davon nicht umlagefähig" hint="Verwaltervergütung und Zuführung zur Instandhaltungsrücklage — diesen Teil bekommst du nie vom Mieter zurück.">
-              <input type="number" min="0" className={`${inputCls} border-indigo-300 bg-indigo-50/50`} value={d.nuHG} onChange={e => set({ nuHG: e.target.value, nuGeschaetzt: false })} />
+              <ZahlFeld  min="0" className={`${inputCls} border-indigo-300 bg-indigo-50/50`} value={d.nuHG} onChange={e => set({ nuHG: e.target.value, nuGeschaetzt: false })} />
               {n(d.hausgeld) > 0 && leer(d.nuHG) && (
                 <button type="button" onClick={() => set({ nuHG: String(Math.round(n(d.hausgeld) * 0.35)), nuGeschaetzt: true })} className="mt-1 text-[11px] font-semibold text-indigo-700 hover:underline">Weiß ich nicht, nimm 35 %</button>
               )}
             </Feld>
-            <Feld label="Eigene Reparaturrücklage" hint="optional · üblich 0,80–1,00 € pro m²"><input type="number" min="0" className={inputCls} value={d.ruecklage} onChange={e => set({ ruecklage: e.target.value })} /></Feld>
+            <Feld label="Eigene Reparaturrücklage" hint="optional · üblich 0,80–1,00 € pro m²"><ZahlFeld  min="0" className={inputCls} value={d.ruecklage} onChange={e => set({ ruecklage: e.target.value })} /></Feld>
           </div>
         )}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Feld label="Grundsteuer pro Jahr" hint="aus dem Bescheid"><input type="number" min="0" className={inputCls} value={d.grundsteuerJahr} onChange={e => set({ grundsteuerJahr: e.target.value })} /></Feld>
-          <Feld label="Versicherung / Monat"><input type="number" min="0" className={inputCls} value={d.versicherung} onChange={e => set({ versicherung: e.target.value })} /></Feld>
-          <Feld label={istMFH ? 'Hausverwaltung / Monat' : 'Sondereigentumsverwaltung'}><input type="number" min="0" className={inputCls} value={d.sev} onChange={e => set({ sev: e.target.value })} /></Feld>
-          {istMFH && <Feld label="Instandhaltungsrücklage"><input type="number" min="0" className={inputCls} value={d.ruecklage} onChange={e => set({ ruecklage: e.target.value })} /></Feld>}
+          <Feld label="Grundsteuer pro Jahr" hint="aus dem Bescheid"><ZahlFeld  min="0" className={inputCls} value={d.grundsteuerJahr} onChange={e => set({ grundsteuerJahr: e.target.value })} /></Feld>
+          <Feld label="Versicherung / Monat"><ZahlFeld  min="0" className={inputCls} value={d.versicherung} onChange={e => set({ versicherung: e.target.value })} /></Feld>
+          <Feld label={istMFH ? 'Hausverwaltung / Monat' : 'Sondereigentumsverwaltung'}><ZahlFeld  min="0" className={inputCls} value={d.sev} onChange={e => set({ sev: e.target.value })} /></Feld>
+          {istMFH && <Feld label="Instandhaltungsrücklage"><ZahlFeld  min="0" className={inputCls} value={d.ruecklage} onChange={e => set({ ruecklage: e.target.value })} /></Feld>}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {[['strom', 'Strom'], ['heizung', 'Heizung'], ['internet', 'Internet'], ['rundfunk', 'Rundfunkbeitrag'], ['kontofuehrung', 'Kontoführung'], ['sonstige', 'Weitere Position']].map(([k, l]) => (
@@ -814,7 +815,7 @@ export default function AnlageWizard({ onSave, onSaveMieter, onClose, onOpenDeta
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {d.chips.map(k => (
               <Feld key={k} label={{ strom: 'Strom', heizung: 'Heizung', internet: 'Internet', rundfunk: 'Rundfunkbeitrag', kontofuehrung: 'Kontoführung', sonstige: 'Weitere Position' }[k]}>
-                <input type="number" min="0" className={inputCls} value={d[k]} onChange={e => set({ [k]: e.target.value })} />
+                <ZahlFeld  min="0" className={inputCls} value={d[k]} onChange={e => set({ [k]: e.target.value })} />
               </Feld>
             ))}
           </div>

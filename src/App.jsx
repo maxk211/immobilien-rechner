@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import ZahlFeld from './components/ZahlFeld';
 import { Home, AlertTriangle, ClipboardList, Upload, BarChart3, Download, Calculator, Archive, Heart, PartyPopper, X, MoreVertical, Landmark, Handshake } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
@@ -1571,7 +1572,7 @@ function App() {
                 ))}
               </div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Eigener Wert (40–100 %)</label>
-              <input type="number" min="40" max="100" step="1" value={beleihungsgrenzeEingabe}
+              <ZahlFeld  min="40" max="100" step="1" value={beleihungsgrenzeEingabe}
                 onChange={e => setBeleihungsgrenzeEingabe(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-base mb-4" />
               <button
@@ -1799,7 +1800,7 @@ function App() {
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Monatliches Gehalt (€ netto)</label>
-                    <input type="number" value={selbstauskunftDaten.monatlGehalt} placeholder="3500"
+                    <ZahlFeld  value={selbstauskunftDaten.monatlGehalt} placeholder="3500"
                       onChange={e => setSelbstauskunftDaten(d => ({ ...d, monatlGehalt: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400" />
                   </div>
@@ -1813,7 +1814,7 @@ function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Bargeld / Bankguthaben (€)</label>
-                      <input type="number" value={selbstauskunftDaten.bargeld} placeholder="0"
+                      <ZahlFeld  value={selbstauskunftDaten.bargeld} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, bargeld: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
@@ -1827,7 +1828,7 @@ function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Depot / Aktien & ETFs (€)</label>
-                      <input type="number" value={selbstauskunftDaten.depot} placeholder="0"
+                      <ZahlFeld  value={selbstauskunftDaten.depot} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, depot: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>
@@ -1841,7 +1842,7 @@ function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Beteiligung (€ Wert)</label>
-                      <input type="number" value={selbstauskunftDaten.beteiligungWert} placeholder="0"
+                      <ZahlFeld  value={selbstauskunftDaten.beteiligungWert} placeholder="0"
                         onChange={e => setSelbstauskunftDaten(d => ({ ...d, beteiligungWert: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-emerald-400" />
                     </div>

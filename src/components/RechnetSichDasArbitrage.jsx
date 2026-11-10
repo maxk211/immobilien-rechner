@@ -1,4 +1,5 @@
 import { formatCurrency } from '../utils/format.js';
+import ZahlFeld from './ZahlFeld';
 import { berechneMtlCashflow } from '../utils/berechnung.js';
 import { getJsPDF } from '../utils/lazyLibs.js';
 
@@ -121,28 +122,28 @@ export function ArbitrageEingaben({ a, set }) {
       <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
         <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Die Wohnung, die du anmietest</p>
         <div className="grid grid-cols-2 gap-3">
-          <Feld label="Eigene Warmmiete" hint="Was du selbst an den Vermieter zahlst"><input type="number" min="0" className={inputCls} value={a.eigeneWarmmiete} onChange={x => set({ eigeneWarmmiete: x.target.value })} /></Feld>
-          <Feld label="Wohnfläche m²" hint="optional"><input type="number" min="0" className={inputCls} value={a.wohnflaeche} onChange={x => set({ wohnflaeche: x.target.value })} /></Feld>
+          <Feld label="Eigene Warmmiete" hint="Was du selbst an den Vermieter zahlst"><ZahlFeld  min="0" className={inputCls} value={a.eigeneWarmmiete} onChange={x => set({ eigeneWarmmiete: x.target.value })} /></Feld>
+          <Feld label="Wohnfläche m²" hint="optional"><ZahlFeld  min="0" className={inputCls} value={a.wohnflaeche} onChange={x => set({ wohnflaeche: x.target.value })} /></Feld>
         </div>
       </div>
       <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
         <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Untervermietung</p>
         <div className="grid grid-cols-2 gap-3">
-          <Feld label="Zimmer zum Untervermieten"><input type="number" min="0" className={inputCls} value={a.zimmer} onChange={x => set({ zimmer: x.target.value })} /></Feld>
-          <Feld label="Untermiete pro Zimmer (warm)" hint={r.einnahmen > 0 ? `= ${formatCurrency(r.einnahmen)} im Monat` : undefined}><input type="number" min="0" className={inputCls} value={a.proZimmer} onChange={x => set({ proZimmer: x.target.value })} /></Feld>
+          <Feld label="Zimmer zum Untervermieten"><ZahlFeld  min="0" className={inputCls} value={a.zimmer} onChange={x => set({ zimmer: x.target.value })} /></Feld>
+          <Feld label="Untermiete pro Zimmer (warm)" hint={r.einnahmen > 0 ? `= ${formatCurrency(r.einnahmen)} im Monat` : undefined}><ZahlFeld  min="0" className={inputCls} value={a.proZimmer} onChange={x => set({ proZimmer: x.target.value })} /></Feld>
         </div>
       </div>
       <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
         <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Was du zusätzlich trägst</p>
         <div className="grid grid-cols-3 gap-3">
-          <Feld label="Strom / Monat"><input type="number" min="0" className={inputCls} value={a.strom} onChange={x => set({ strom: x.target.value })} /></Feld>
-          <Feld label="Internet / Monat"><input type="number" min="0" className={inputCls} value={a.internet} onChange={x => set({ internet: x.target.value })} /></Feld>
-          <Feld label="Weitere / Monat" hint="z. B. Reinigung, Verschleiß"><input type="number" min="0" className={inputCls} value={a.sonstige} onChange={x => set({ sonstige: x.target.value })} /></Feld>
+          <Feld label="Strom / Monat"><ZahlFeld  min="0" className={inputCls} value={a.strom} onChange={x => set({ strom: x.target.value })} /></Feld>
+          <Feld label="Internet / Monat"><ZahlFeld  min="0" className={inputCls} value={a.internet} onChange={x => set({ internet: x.target.value })} /></Feld>
+          <Feld label="Weitere / Monat" hint="z. B. Reinigung, Verschleiß"><ZahlFeld  min="0" className={inputCls} value={a.sonstige} onChange={x => set({ sonstige: x.target.value })} /></Feld>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={a.gez} onChange={x => set({ gez: x.target.checked })} /> Ich zahle den Rundfunkbeitrag für die Wohnung (18,36 €)</label>
         <div className="grid grid-cols-2 gap-3">
-          <Feld label="Einmalkosten" hint="Möblierung, Ausstattung — ohne Kaution, die bekommst du zurück"><input type="number" min="0" className={inputCls} value={a.einmal} onChange={x => set({ einmal: x.target.value })} /></Feld>
-          <Feld label="Dein Steuersatz %" hint="optional — der Überschuss ist steuerpflichtig"><input type="number" min="0" max="45" className={inputCls} value={a.steuersatz} onChange={x => set({ steuersatz: x.target.value })} /></Feld>
+          <Feld label="Einmalkosten" hint="Möblierung, Ausstattung — ohne Kaution, die bekommst du zurück"><ZahlFeld  min="0" className={inputCls} value={a.einmal} onChange={x => set({ einmal: x.target.value })} /></Feld>
+          <Feld label="Dein Steuersatz %" hint="optional — der Überschuss ist steuerpflichtig"><ZahlFeld  min="0" max="45" className={inputCls} value={a.steuersatz} onChange={x => set({ steuersatz: x.target.value })} /></Feld>
         </div>
       </div>
     </div>

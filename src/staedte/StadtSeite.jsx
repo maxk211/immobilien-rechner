@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from '../components/ZahlFeld';
 import { STAEDTE, STAEDTE_LISTE } from './staedteDaten';
 import { VERGLEICHE } from './vergleichDaten';
 import FloatingCTA from '../components/FloatingCTA';
@@ -151,7 +152,7 @@ export default function StadtSeite({ slug }) {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Wohnfläche</label>
                 <div className="relative flex items-center">
-                  <input type="number" inputMode="decimal" value={wohnflaeche} onChange={(e) => setWohnflaeche(e.target.value)}
+                  <ZahlFeld  inputMode="decimal" value={wohnflaeche} onChange={(e) => setWohnflaeche(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl py-3 pl-3 pr-10 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all" />
                   <span className="absolute right-3 text-slate-400 text-sm pointer-events-none">m²</span>
                 </div>
@@ -159,7 +160,7 @@ export default function StadtSeite({ slug }) {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Kaufnebenkosten</label>
                 <div className="relative flex items-center">
-                  <input type="number" inputMode="decimal" value={nebenkosten} onChange={(e) => setNebenkosten(e.target.value)}
+                  <ZahlFeld  inputMode="decimal" value={nebenkosten} onChange={(e) => setNebenkosten(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl py-3 pl-3 pr-10 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all" />
                   <span className="absolute right-3 text-slate-400 text-sm pointer-events-none">%</span>
                 </div>
@@ -167,7 +168,7 @@ export default function StadtSeite({ slug }) {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Eigenkapitalanteil</label>
                 <div className="relative flex items-center">
-                  <input type="number" inputMode="decimal" value={eigenkapitalProzent} onChange={(e) => setEigenkapitalProzent(e.target.value)}
+                  <ZahlFeld  inputMode="decimal" value={eigenkapitalProzent} onChange={(e) => setEigenkapitalProzent(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl py-3 pl-3 pr-10 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all" />
                   <span className="absolute right-3 text-slate-400 text-sm pointer-events-none">%</span>
                 </div>
@@ -176,14 +177,14 @@ export default function StadtSeite({ slug }) {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Laufende Kosten / Monat</label>
                 <div className="relative flex items-center">
                   <span className="absolute left-3 text-slate-400 text-sm pointer-events-none">€</span>
-                  <input type="number" inputMode="decimal" value={kosten} onChange={(e) => setKosten(e.target.value)}
+                  <ZahlFeld  inputMode="decimal" value={kosten} onChange={(e) => setKosten(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl py-3 pl-7 pr-3 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Finanzierungszins</label>
                 <div className="relative flex items-center">
-                  <input type="number" inputMode="decimal" value={zins} onChange={(e) => setZins(e.target.value)}
+                  <ZahlFeld  inputMode="decimal" value={zins} onChange={(e) => setZins(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl py-3 pl-3 pr-10 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all" />
                   <span className="absolute right-3 text-slate-400 text-sm pointer-events-none">%</span>
                 </div>

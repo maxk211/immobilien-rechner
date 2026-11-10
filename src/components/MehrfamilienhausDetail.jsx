@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSchliessenMitRueckfrage } from './UngespeichertDialog';
 import FinanzierungsReiter from './FinanzierungsReiter';
 import JetztDran from './JetztDran';
 import { WasDuHierTunKannst, KappungsgrenzeWahl } from './MieterSeitenleiste';
@@ -32,7 +33,7 @@ import {
 } from 'lucide-react';
 import ZahlInput from './ZahlInput';
 import SchaetzInfo, { SchaetzZeile, beleihbarFreiInfo } from './SchaetzInfo';
-import { mieterAusWohnungen, einheitenStatus } from '../utils/belegung.js';
+import { mieterAusWohnungen, einheitenStatus, wohnungenMitMieter, mieterAusWohnungAenderung } from '../utils/belegung.js';
 import WeitereDarlehen, { HauptDarlehenReiter } from './WeitereDarlehen';
 import MieterhoeungModal from './MieterhoeungModal';
 import NachforderungenManager from './NachforderungenManager';
@@ -257,7 +258,7 @@ function weMitAngabe(form) {
 // ─── MehrfamilienhausDetail ───────────────────────────────────────────────────
 const MehrfamilienhausDetail = ({
   immobilie, onClose, onEdit, onSave, initialTab, onAlleErinnerungen, onDeleteImmobilie,
-  mieterListe = [], onSaveMieter, onDeleteMieter,
+  mieterListe = [], onSaveMieter: onSaveMieterRoh, onDeleteMieter,
   nkAbrechnungen = [], onSaveNK, onDeleteNK,
   portfolio = [], aufgaben = [],
 }) => {
@@ -284,6 +285,17 @@ const MehrfamilienhausDetail = ({
   const [mhWE, setMhWE] = useState(null); // Index der Wohnung für das Mieterhöhungsschreiben
   const [gJahr, setGJahr] = useState(new Date().getFullYear()); // Jahr der Gesamt-Einnahmen-Übersicht (Hook muss auf oberster Ebene stehen)
   const [wohnungen, setWohnungen] = useState(immobilie.wohnungen || []);
+  // Mieterdaten: der Mieterdatensatz ist die Quelle. Nach jedem Speichern eines Mieters werden
+  // Name, Mietbeginn, Mietende/Auszug und Kaution an der Wohnung nachgezogen (utils/belegung.js).
+  const wohnungenRef = useRef(wohnungen); wohnungenRef.current = wohnungen;
+  const onSaveMieter = onSaveMieterRoh ? async (m) => {
+    const saved = await onSaveMieterRoh(m);
+    const rec = saved && typeof saved === 'object' ? { ...m, ...saved } : m;
+    const neu = wohnungenMitMieter(wohnungenRef.current, rec);
+    if (neu !== wohnungenRef.current) { wohnungenRef.current = neu; setWohnungen(neu); aggregiereUndSpeichereRef.current?.(neu); }
+    return saved;
+  } : null;
+  const aggregiereUndSpeichereRef = useRef(null);
   const [showWohnungForm, setShowWohnungForm] = useState(false);
   const [editWohnungIdx, setEditWohnungIdx] = useState(null);
   const [wohnungForm, setWohnungForm] = useState({
@@ -458,6 +470,7 @@ const MehrfamilienhausDetail = ({
 
   // Auto-Save: Wohnungsänderung sofort persistieren + Aggregat aktualisieren
   const aggregiereUndSpeichere = (neueWohnungen) => {
+    wohnungenRef.current = neueWohnungen;
     // Objektmiete = Summe der Wohnungen; Mieterhöhungen je Wohnung als Zeitreihe aufs Objekt,
     // damit Steuer, Prognose und Export dieselbe Rechnung wie bei der Eigentumswohnung nutzen
     const agg = mfhMietAggregat(neueWohnungen);
@@ -473,6 +486,8 @@ const MehrfamilienhausDetail = ({
     });
     setHasChanges(false);    // alles ist persistiert
   };
+
+  aggregiereUndSpeichereRef.current = aggregiereUndSpeichere;
 
   const saveWohnung = () => {
     const neu = [...wohnungen];
@@ -491,12 +506,15 @@ const MehrfamilienhausDetail = ({
     const idxGespeichert = editWohnungIdx !== null ? editWohnungIdx : neu.length - 1;
     const mDatensatz = editWohnungIdx !== null ? mieterFuerWE(editWohnungIdx) : null;
     const lmNeu = neu[idxGespeichert]?.letzteMieterhoehung || null;
-    if (onSaveMieter && mDatensatz?.id && lmNeu && lmNeu !== (mDatensatz.letzte_mieterhoehung || null)) {
-      Promise.resolve(onSaveMieter({
-        ...mDatensatz,
-        mietanpassungenMieter: mDatensatz.mietanpassungen_mieter || [],
+    // Änderungen an Name, Mietbeginn, Mietende, Kaution und letzter Erhöhung → an den Mieterdatensatz (eine Quelle)
+    const aenderung = mDatensatz?.id ? mieterAusWohnungAenderung(mDatensatz, neu[idxGespeichert]) : null;
+    const lmAnders = mDatensatz?.id && lmNeu && lmNeu !== (mDatensatz.letzte_mieterhoehung || null);
+    if (onSaveMieterRoh && mDatensatz?.id && (aenderung || lmAnders)) {
+      Promise.resolve(onSaveMieterRoh({
+        ...(aenderung || mDatensatz),
+        mietanpassungenMieter: [],
         naechsteAnpassungDatum: mDatensatz.naechste_anpassung_datum || '',
-        letzteMieterhoehung: lmNeu,
+        letzteMieterhoehung: lmNeu || mDatensatz.letzte_mieterhoehung || null,
       })).catch(() => {});
     }
     // Neuer Mieter an der Wohnung → auch in der Mieterverwaltung anlegen (einheitliche Belegung)
@@ -512,6 +530,13 @@ const MehrfamilienhausDetail = ({
     setWohnungen(neu);
     setHasChanges(false);
     aggregiereUndSpeichere(neu);
+  };
+
+  // Kaution an der Wohnung geändert → am Mieterdatensatz (Quelle für Erinnerungen und Kautionsliste)
+  const kautionAnMieter = (idx, w) => {
+    const m = mieterFuerWE(idx);
+    const a = m?.id ? mieterAusWohnungAenderung(m, w) : null;
+    if (a && onSaveMieterRoh) Promise.resolve(onSaveMieterRoh({ ...a, mietanpassungenMieter: [] })).catch(() => {});
   };
 
   // Kosten einer einzelnen WE updaten + sofort persistieren
@@ -534,7 +559,9 @@ const MehrfamilienhausDetail = ({
     const zimmer     = wohnungen.length;
     onSave({ ...params, wohnungen, kaltmiete, wohnflaeche, zimmer, ...(hatWeAnpassungen(wohnungen) ? { mietAnpassungen: agg.mietAnpassungen } : {}) });
     setHasChanges(false);
-  };
+  };  // Schließen mit offenen Änderungen: Rückfrage Speichern / Verwerfen / Weiter bearbeiten
+  const { schliessen, dialog: ungespeichertDialog } = useSchliessenMitRueckfrage({ hatAenderungen: hasChanges, onSpeichern: handleSave, onSchliessen: onClose });
+
 
   const openWohnungForm = (idx = null) => {
     setEditWohnungIdx(idx);
@@ -665,7 +692,7 @@ const MehrfamilienhausDetail = ({
                     Speichern
                   </button>
                 )}
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
+                <button onClick={schliessen} aria-label="Schließen" className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
               </div>
             </div>
           </div>
@@ -2285,7 +2312,7 @@ const MehrfamilienhausDetail = ({
                           <ZahlInput type="number" value={w.kautionBetrag || ''} placeholder="0"
                             onChange={e => {
                               const neu = [...wohnungen]; neu[idx] = { ...neu[idx], kautionBetrag: parseFloat(e.target.value) || 0 };
-                              setWohnungen(neu); aggregiereUndSpeichere(neu);
+                              setWohnungen(neu); aggregiereUndSpeichere(neu); kautionAnMieter(idx, neu[idx]);
                             }}
                             className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-300 text-right"/>
                         </div>
@@ -2294,7 +2321,7 @@ const MehrfamilienhausDetail = ({
                             <input type="checkbox" checked={!!w.kautionBezahlt}
                               onChange={e => {
                                 const neu = [...wohnungen]; neu[idx] = { ...neu[idx], kautionBezahlt: e.target.checked };
-                                setWohnungen(neu); aggregiereUndSpeichere(neu);
+                                setWohnungen(neu); aggregiereUndSpeichere(neu); kautionAnMieter(idx, neu[idx]);
                               }}
                               className="w-4 h-4 rounded accent-emerald-500"/>
                             <span className="text-sm text-gray-700">Bezahlt</span>
@@ -2597,6 +2624,7 @@ const MehrfamilienhausDetail = ({
           </div>
         </div>
       )}
+    {ungespeichertDialog}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { X, Calculator, Bookmark, FileDown, ArrowRight, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/format.js';
@@ -295,8 +296,8 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
               <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
                 <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Das Objekt</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <Feld label="Kaufpreis"><input type="number" min="0" className={inputCls} value={e.kaufpreis} onChange={x => set({ kaufpreis: x.target.value })} /></Feld>
-                  <Feld label="Wohnfläche m²"><input type="number" min="0" className={inputCls} value={e.wohnflaeche} onChange={x => set({ wohnflaeche: x.target.value })} /></Feld>
+                  <Feld label="Kaufpreis"><ZahlFeld  min="0" className={inputCls} value={e.kaufpreis} onChange={x => set({ kaufpreis: x.target.value })} /></Feld>
+                  <Feld label="Wohnfläche m²"><ZahlFeld  min="0" className={inputCls} value={e.wohnflaeche} onChange={x => set({ wohnflaeche: x.target.value })} /></Feld>
                   <Feld label="PLZ" hint="optional — für das Bundesland">
                     <input className={inputCls} inputMode="numeric" value={e.plz} onChange={x => { const p = x.target.value.trim(); set({ plz: p, bundesland: bundeslandAusPlz(p) || e.bundesland }); }} />
                   </Feld>
@@ -309,7 +310,7 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
                 </div>
                 <Feld label="Kaufnebenkosten" hint={blName ? `${pct(r.grest, 1)} Grunderwerbsteuer ${blName} + ${pct(NOTAR_GRUNDBUCH, 1)} Notar und Grundbuch${e.mitMakler ? ` + ${pct(MAKLER, 1)} Makler` : ''}. Änderbar.` : 'Ohne Bundesland fehlt die Grunderwerbsteuer.'}>
                   <div className="flex items-center gap-2">
-                    <input type="number" step="0.1" min="0" className={`${inputCls} w-24`} value={!leer(e.knkManuell) ? e.knkManuell : Math.round(r.knkProzent * 100) / 100} onChange={x => set({ knkManuell: x.target.value })} />
+                    <ZahlFeld  step="0.1" min="0" className={`${inputCls} w-24`} value={!leer(e.knkManuell) ? e.knkManuell : Math.round(r.knkProzent * 100) / 100} onChange={x => set({ knkManuell: x.target.value })} />
                     <span className="text-sm text-gray-500">% = {formatCurrency(r.nk)}</span>
                   </div>
                   <label className="flex items-center gap-2 text-xs font-normal text-gray-500 mt-1"><input type="checkbox" checked={!e.mitMakler} onChange={x => set({ mitMakler: !x.target.checked, knkManuell: '' })} /> ohne Makler</label>
@@ -320,10 +321,10 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
                 <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Miete und Kosten</p>
                 <div className="grid grid-cols-2 gap-3">
                   <Feld label="Erwartete Kaltmiete" hint={r.qm ? `${formatCurrency(r.qm)}/m²${pfQm ? ` — in deinem Portfolio liegt der Schnitt bei ${formatCurrency(pfQm.schnitt)}` : ''}` : undefined}>
-                    <input type="number" min="0" className={inputCls} value={e.kaltmiete} onChange={x => set({ kaltmiete: x.target.value })} />
+                    <ZahlFeld  min="0" className={inputCls} value={e.kaltmiete} onChange={x => set({ kaltmiete: x.target.value })} />
                   </Feld>
                   <Feld label="Hausgeld" hint={n(e.hausgeld) > 0 ? `davon nicht umlagefähig: ${formatCurrency(r.nu)}${r.nuGeschaetzt ? ' · geschätzt 35 %' : ''}` : undefined}>
-                    <input type="number" min="0" className={inputCls} value={e.hausgeld} onChange={x => set({ hausgeld: x.target.value })} />
+                    <ZahlFeld  min="0" className={inputCls} value={e.hausgeld} onChange={x => set({ hausgeld: x.target.value })} />
                   </Feld>
                 </div>
                 <button type="button" onClick={() => setMehr(m => !m)} className="text-xs font-semibold text-indigo-600 flex items-center gap-1">
@@ -331,13 +332,13 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
                 </button>
                 {mehr && (
                   <div className="grid grid-cols-2 gap-3">
-                    <Feld label="davon nicht umlagefähig" hint="leer = 35 % geschätzt"><input type="number" min="0" className={inputCls} value={e.nuHG} onChange={x => set({ nuHG: x.target.value })} /></Feld>
-                    <Feld label="Grundsteuer / Jahr"><input type="number" min="0" className={inputCls} value={e.grundsteuerJahr} onChange={x => set({ grundsteuerJahr: x.target.value })} /></Feld>
-                    <Feld label="Eigene Rücklage / Monat"><input type="number" min="0" className={inputCls} value={e.ruecklage} onChange={x => set({ ruecklage: x.target.value })} /></Feld>
-                    <Feld label="Sondereigentumsverwaltung"><input type="number" min="0" className={inputCls} value={e.sev} onChange={x => set({ sev: x.target.value })} /></Feld>
-                    <Feld label="Weitere laufende Kosten"><input type="number" min="0" className={inputCls} value={e.sonstige} onChange={x => set({ sonstige: x.target.value })} /></Feld>
+                    <Feld label="davon nicht umlagefähig" hint="leer = 35 % geschätzt"><ZahlFeld  min="0" className={inputCls} value={e.nuHG} onChange={x => set({ nuHG: x.target.value })} /></Feld>
+                    <Feld label="Grundsteuer / Jahr"><ZahlFeld  min="0" className={inputCls} value={e.grundsteuerJahr} onChange={x => set({ grundsteuerJahr: x.target.value })} /></Feld>
+                    <Feld label="Eigene Rücklage / Monat"><ZahlFeld  min="0" className={inputCls} value={e.ruecklage} onChange={x => set({ ruecklage: x.target.value })} /></Feld>
+                    <Feld label="Sondereigentumsverwaltung"><ZahlFeld  min="0" className={inputCls} value={e.sev} onChange={x => set({ sev: x.target.value })} /></Feld>
+                    <Feld label="Weitere laufende Kosten"><ZahlFeld  min="0" className={inputCls} value={e.sonstige} onChange={x => set({ sonstige: x.target.value })} /></Feld>
                     <Feld label="Sanierung vor Vermietung" hint="einmalig, erhöht die Gesamtinvestition">
-                      <input type="number" min="0" className={inputCls} value={e.sanierung} onChange={x => set({ sanierung: x.target.value })} />
+                      <ZahlFeld  min="0" className={inputCls} value={e.sanierung} onChange={x => set({ sanierung: x.target.value })} />
                     </Feld>
                   </div>
                 )}
@@ -346,9 +347,9 @@ export default function RechnetSichDas({ onClose, portfolio = [], onUebernehmen 
               <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
                 <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">So würdest du finanzieren</p>
                 <div className="grid grid-cols-3 gap-3">
-                  <Feld label="Eigenkapital"><input type="number" min="0" className={inputCls} value={e.eigenkapital} onChange={x => set({ eigenkapital: x.target.value })} /></Feld>
-                  <Feld label="Sollzins %"><input type="number" step="0.01" min="0" className={inputCls} value={e.sollzins} onChange={x => set({ sollzins: x.target.value })} /></Feld>
-                  <Feld label="Tilgung %"><input type="number" step="0.1" min="0" className={inputCls} value={e.tilgung} onChange={x => set({ tilgung: x.target.value })} /></Feld>
+                  <Feld label="Eigenkapital"><ZahlFeld  min="0" className={inputCls} value={e.eigenkapital} onChange={x => set({ eigenkapital: x.target.value })} /></Feld>
+                  <Feld label="Sollzins %"><ZahlFeld  step="0.01" min="0" className={inputCls} value={e.sollzins} onChange={x => set({ sollzins: x.target.value })} /></Feld>
+                  <Feld label="Tilgung %"><ZahlFeld  step="0.1" min="0" className={inputCls} value={e.tilgung} onChange={x => set({ tilgung: x.target.value })} /></Feld>
                 </div>
                 <p className="text-xs text-gray-500">Darlehen {formatCurrency(r.darlehen)} · Rate {formatCurrency(r.rate)}/Monat · Beleihungsauslauf {pct(r.auslauf, 0)} vom Kaufpreis</p>
               </div>

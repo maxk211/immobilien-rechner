@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { FileText, X, TrendingDown, Wallet } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 
@@ -61,12 +62,12 @@ const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Abrechnungsjahr</label>
-            <input type="number" value={abjahr} onChange={e => setAbjahr(parseInt(e.target.value) || abrechnungsjahr)}
+            <ZahlFeld  value={abjahr} onChange={e => setAbjahr(parseInt(e.target.value) || abrechnungsjahr)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold" />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Gesamtbetrag (€)</label>
-            <input type="number" step="0.01" value={gesamtbetrag} onChange={e => setGesamtbetrag(e.target.value)}
+            <ZahlFeld  step="0.01" value={gesamtbetrag} onChange={e => setGesamtbetrag(e.target.value)}
               placeholder="z.B. 350"
               className="w-full px-3 py-2 border-2 border-blue-300 rounded-lg text-sm font-bold text-right" />
           </div>
@@ -95,7 +96,7 @@ const NKAbrechnungModal = ({ onClose, onSave, abrechnungsjahr }) => {
           {zahlungsmodus === 'raten' && (
             <div>
               <label className="block text-xs text-gray-500 mb-1">Anzahl Raten</label>
-              <input type="number" min={2} max={24} value={anzahlRaten} onChange={e => setAnzahlRaten(parseInt(e.target.value) || 2)}
+              <ZahlFeld  min={2} max={24} value={anzahlRaten} onChange={e => setAnzahlRaten(parseInt(e.target.value) || 2)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold" />
             </div>
           )}

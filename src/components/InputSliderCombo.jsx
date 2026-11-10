@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ZahlFeld from './ZahlFeld';
 
 // InputSliderCombo Komponente
 const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }) => {
@@ -34,8 +35,8 @@ const InputSliderCombo = ({ label, value, onChange, min, max, step, unit, info }
       <div className="flex justify-between items-center mb-1">
         <label className="text-sm font-medium text-gray-700">{label}</label>
         <div className="flex items-center gap-2">
-          <input
-            type="number"
+          <ZahlFeld
+            
             value={localValue}
             onChange={handleInputChange}
             onFocus={() => setIsFocused(true)}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Plus, Trash2, Pencil, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Zap, X } from 'lucide-react';
 import {
   nachforderungStand, gezahlt, restbetrag, sollImMonat, istImMonat, voraussichtlichFertig,
@@ -75,11 +76,11 @@ function Formular({ start, mieterNamen, onAbbrechen, onSpeichern }) {
         </label>
         <label className="block">
           <span className="text-xs font-semibold text-gray-600">Gesamtbetrag</span>
-          <input type="number" inputMode="decimal" className={inputCls} value={f.gesamt} onChange={e => set('gesamt', e.target.value)} placeholder="€" />
+          <ZahlFeld  inputMode="decimal" className={inputCls} value={f.gesamt} onChange={e => set('gesamt', e.target.value)} placeholder="€" />
         </label>
         <label className="block">
           <span className="text-xs font-semibold text-gray-600">Davon trägst du selbst</span>
-          <input type="number" inputMode="decimal" className={inputCls} value={f.eigenanteil} onChange={e => set('eigenanteil', e.target.value)} placeholder="€" />
+          <ZahlFeld  inputMode="decimal" className={inputCls} value={f.eigenanteil} onChange={e => set('eigenanteil', e.target.value)} placeholder="€" />
         </label>
         <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
           <div className="text-xs font-semibold text-gray-500">Zahlen die Mieter zurück</div>
@@ -97,7 +98,7 @@ function Formular({ start, mieterNamen, onAbbrechen, onSpeichern }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
             <label className="block">
               <span className="text-xs font-semibold text-gray-600">Rate pro Monat</span>
-              <input type="number" inputMode="decimal" className={inputCls} value={f.anbieterBetrag} onChange={e => set('anbieterBetrag', e.target.value)} placeholder="€" />
+              <ZahlFeld  inputMode="decimal" className={inputCls} value={f.anbieterBetrag} onChange={e => set('anbieterBetrag', e.target.value)} placeholder="€" />
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-gray-600">Erste Rate im</span>
@@ -105,7 +106,7 @@ function Formular({ start, mieterNamen, onAbbrechen, onSpeichern }) {
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-gray-600">Anzahl Raten</span>
-              <input type="number" inputMode="numeric" min="1" className={inputCls} value={f.anbieterMonate} onChange={e => set('anbieterMonate', e.target.value)} placeholder="1 = auf einmal" />
+              <ZahlFeld  inputMode="numeric" min="1" className={inputCls} value={f.anbieterMonate} onChange={e => set('anbieterMonate', e.target.value)} placeholder="1 = auf einmal" />
             </label>
             <div className="sm:col-span-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
               <span className="text-gray-500">Ergibt {eur(anbieterSumme)}</span>
@@ -139,8 +140,8 @@ function Formular({ start, mieterNamen, onAbbrechen, onSpeichern }) {
           {f.mieter.map((m, i) => (
             <div key={m.id || i} className="grid grid-cols-12 gap-2 items-center">
               <input list="nf-mieter-namen" className={`${inputCls} col-span-12 sm:col-span-4`} value={m.name} onChange={e => setM(i, 'name', e.target.value)} placeholder="Name" />
-              <input type="number" inputMode="decimal" className={`${inputCls} col-span-5 sm:col-span-3`} value={m.anteil} onChange={e => setM(i, 'anteil', e.target.value)} placeholder="Anteil €" />
-              <input type="number" inputMode="decimal" className={`${inputCls} col-span-5 sm:col-span-3`} value={m.zuschlag} onChange={e => setM(i, 'zuschlag', e.target.value)} placeholder="€ / Monat" />
+              <ZahlFeld  inputMode="decimal" className={`${inputCls} col-span-5 sm:col-span-3`} value={m.anteil} onChange={e => setM(i, 'anteil', e.target.value)} placeholder="Anteil €" />
+              <ZahlFeld  inputMode="decimal" className={`${inputCls} col-span-5 sm:col-span-3`} value={m.zuschlag} onChange={e => setM(i, 'zuschlag', e.target.value)} placeholder="€ / Monat" />
               <div className="col-span-2 flex items-center justify-end gap-1">
                 {n(m.anteil) > 0 && n(m.zuschlag) > 0 && <span className="hidden sm:inline text-[11px] text-gray-400">{Math.ceil(n(m.anteil) / n(m.zuschlag))} Mon.</span>}
                 <button type="button" onClick={() => setF(p => ({ ...p, mieter: p.mieter.filter((_, j) => j !== i) }))} className="p-1.5 text-gray-300 hover:text-red-500" title="Entfernen"><Trash2 size={15} /></button>
@@ -174,7 +175,7 @@ function ZahlungErfassen({ onErfassen }) {
   return (
     <div className="flex flex-wrap items-center gap-2 pt-2">
       <input type="date" value={datum} onChange={e => setDatum(e.target.value)} className="px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs" />
-      <input type="number" inputMode="decimal" value={betrag} onChange={e => setBetrag(e.target.value)} placeholder="Betrag €" className="w-28 px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs" />
+      <ZahlFeld  inputMode="decimal" value={betrag} onChange={e => setBetrag(e.target.value)} placeholder="Betrag €" className="w-28 px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs" />
       <button type="button" disabled={!(n(betrag) > 0) || !datum}
         onClick={() => { onErfassen({ datum, monat: datum.slice(0, 7), betrag: n(betrag), art: 'sonstig' }); setBetrag(''); }}
         className="px-2.5 py-1 rounded-md bg-gray-900 text-white text-xs font-bold disabled:opacity-40">Zahlung erfassen</button>
@@ -198,7 +199,7 @@ function AusfallErfassen({ max, onErfassen, onAbbrechen }) {
           <input type="date" value={datum} onChange={e => setDatum(e.target.value)} className="px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs bg-white" />
         </label>
         <label className="text-xs text-gray-600 flex items-center gap-1">Betrag
-          <input type="number" inputMode="decimal" value={betrag} onChange={e => setBetrag(e.target.value)} className="w-28 px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs bg-white" />
+          <ZahlFeld  inputMode="decimal" value={betrag} onChange={e => setBetrag(e.target.value)} className="w-28 px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs bg-white" />
         </label>
         <input value={notiz} onChange={e => setNotiz(e.target.value)} placeholder="Notiz, z. B. ausgeschieden" className="flex-1 min-w-[10rem] px-2 py-1 border border-gray-300 rounded-md text-base sm:text-xs bg-white" />
       </div>

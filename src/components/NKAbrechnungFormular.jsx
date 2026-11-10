@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { FileText, X } from 'lucide-react';
 import { NK_STANDARD_POSITIONEN } from '../constants/index.js';
 
@@ -101,25 +102,25 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="col-span-2 md:col-span-1">
               <label className="block text-xs text-gray-600 mb-1 font-semibold">Abrechnungsjahr</label>
-              <input type="number" value={form.abrechnungsjahr}
+              <ZahlFeld  value={form.abrechnungsjahr}
                 onChange={e => setForm(f => ({...f, abrechnungsjahr: e.target.value === '' ? '' : (parseInt(e.target.value, 10) || '')}))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1 font-semibold">Mieterfl. (m²)</label>
-              <input type="number" step="0.01" value={form.mieterflaeche}
+              <ZahlFeld  step="0.01" value={form.mieterflaeche}
                 onChange={e => setForm(f => ({...f, mieterflaeche: e.target.value}))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1 font-semibold">Gesamtfl. (m²)</label>
-              <input type="number" step="0.01" value={form.gesamtflaeche}
+              <ZahlFeld  step="0.01" value={form.gesamtflaeche}
                 onChange={e => setForm(f => ({...f, gesamtflaeche: e.target.value}))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" required />
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1 font-semibold">Anz. Parteien</label>
-              <input type="number" value={form.anzahlParteien}
+              <ZahlFeld  value={form.anzahlParteien}
                 onChange={e => setForm(f => ({...f, anzahlParteien: parseInt(e.target.value) || 1}))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm" min="1" />
             </div>
@@ -157,7 +158,7 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
                       </div>
                       <div className="col-span-5 md:col-span-2">
                         <label className="block text-xs text-gray-500 mb-1">Gesamtkosten (€)</label>
-                        <input type="number" step="0.01" value={pos.gesamtkosten}
+                        <ZahlFeld  step="0.01" value={pos.gesamtkosten}
                           onChange={e => updatePos(idx, 'gesamtkosten', e.target.value)}
                           placeholder="0,00"
                           className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
@@ -175,7 +176,7 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
                       {pos.umlageschluessel === 'fest' ? (
                         <div className="col-span-5 md:col-span-2">
                           <label className="block text-xs text-gray-500 mb-1">Mieteranteil (€)</label>
-                          <input type="number" step="0.01" value={pos.mieteranteil_fest}
+                          <ZahlFeld  step="0.01" value={pos.mieteranteil_fest}
                             onChange={e => updatePos(idx, 'mieteranteil_fest', e.target.value)}
                             className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-teal-500" />
                         </div>
@@ -213,7 +214,7 @@ const NKAbrechnungFormular = ({ mieter, portfolio, existingAbrechnung, onSave, o
             <div className="flex gap-3 items-end">
               <div className="flex-1">
                 <label className="block text-xs text-gray-600 mb-1 font-semibold">Geleistete Vorauszahlungen (€)</label>
-                <input type="number" step="0.01" value={form.vorauszahlungenGesamt}
+                <ZahlFeld  step="0.01" value={form.vorauszahlungenGesamt}
                   onChange={e => setForm(f => ({...f, vorauszahlungenGesamt: e.target.value}))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
               </div>

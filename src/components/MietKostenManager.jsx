@@ -6,12 +6,12 @@ import { PlausiFeldHinweis } from './PlausiPruefung';
 import KostenZahler from './KostenZahler';
 import ZahlInput from './ZahlInput';
 import MietverlaufEditor from './MietverlaufEditor';
-import { mietZeilen, aktuelleMiete, aktuelleMieteAendern } from '../utils/mietverlauf.js';
+import { mietZeilen, aktuelleMiete, aktuelleMieteAendern, hatJahreswerte, jahreswerteUebernehmen } from '../utils/mietverlauf.js';
 import SchaetzInfo, { nuGeschaetztInfo } from './SchaetzInfo';
 
 const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHasChanges, plausi = [], onMietverlauf = null }) => {
   // Mietverlauf: eine Liste am Objekt — sofort gespeichert, wenn der Aufrufer onMietverlauf gibt
-  const mietverlaufAendern = (liste) => (onMietverlauf ? onMietverlauf(liste) : updateParams({ ...params, mietAnpassungen: liste }));
+  const mietverlaufAendern = (liste, extra) => (onMietverlauf ? onMietverlauf(liste, extra) : updateParams({ ...params, mietAnpassungen: liste, ...(extra?.weitere || {}) }));
   const hatMietverlauf = mietZeilen(params).length > 0;
   const [modus, setModus] = useState(immobilie.mietModus || 'automatisch'); // 'automatisch' oder 'manuell'
   const [ansicht, setAnsicht] = useState('jahr'); // 'jahr' oder 'monat'
@@ -62,23 +62,22 @@ const MietKostenManager = ({ params, updateParams, immobilie, hasChanges, setHas
     <div className="bg-gray-50 p-4 rounded-lg">
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold text-gray-700">Einnahmen & Kosten</h3>
-        <div className="flex bg-gray-200 rounded-lg p-1">
-          <button
-            onClick={() => handleModusChange('automatisch')}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${modus === 'automatisch' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-600'}`}
-          >
-            Automatisch
-          </button>
-          <button
-            onClick={() => handleModusChange('manuell')}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${modus === 'manuell' ? 'bg-white shadow text-indigo-600 font-semibold' : 'text-gray-600'}`}
-          >
-            Manuell
-          </button>
-        </div>
       </div>
 
-      {modus === 'automatisch' ? (
+      {/* Alte Jahreswerte (früherer „Manuell“-Modus) überschrieben Steuer und Prognose, aber nicht den
+          laufenden Cashflow — eine zweite Wahrheit. Jetzt: übernehmen oder verwerfen. */}
+      {hatJahreswerte(params) && (
+        <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-900 space-y-2">
+          <p><strong>Alte Jahreswerte hinterlegt</strong> ({Object.keys(params.mietHistorie || {}).sort().join(', ')}) — sie galten bisher nur für Steuer und Prognose, nicht für Cashflow und Mieteingänge.</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => { const u = jahreswerteUebernehmen(params); setMietHistorie({}); setModus('automatisch'); (onMietverlauf ? onMietverlauf(u.mietAnpassungen, { weitere: { mietHistorie: {}, mietModus: 'automatisch' } }) : updateParams({ ...params, ...u })); }}
+              className="px-3 py-1.5 rounded-lg bg-amber-600 text-white font-bold">In Mietanpassungen übernehmen</button>
+            <button type="button" onClick={() => { if (typeof window !== 'undefined' && window.confirm && !window.confirm('Alte Jahreswerte verwerfen?')) return; setMietHistorie({}); setModus('automatisch'); updateParams({ ...params, mietHistorie: {}, mietModus: 'automatisch' }); }}
+              className="px-3 py-1.5 rounded-lg border border-amber-400 text-amber-800 font-semibold">Verwerfen</button>
+          </div>
+        </div>
+      )}
+      {true ? (
         <div className="space-y-3">
           {/* Vermietungsmodell — Abschnitt 6.2: Frage statt Fachbegriff, Rechenbeispiel
               aus den echten (bereits erfassten) Objektwerten statt Abkürzungen. */}

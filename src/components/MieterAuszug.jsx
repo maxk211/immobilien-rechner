@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { DoorOpen, ClipboardList, Key, Zap, Droplets, Flame, Check, X } from 'lucide-react';
 
 const MieterAuszug = ({ mieter, onSave, onClose }) => {
@@ -49,17 +50,17 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div>
                 <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Zap size={12} /> Strom</label>
-                <input type="number" value={form.zaehlerstandStrom} onChange={e => setForm({...form, zaehlerstandStrom: e.target.value})}
+                <ZahlFeld  value={form.zaehlerstandStrom} onChange={e => setForm({...form, zaehlerstandStrom: e.target.value})}
                   placeholder="kWh" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
               </div>
               <div>
                 <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Droplets size={12} /> Wasser</label>
-                <input type="number" value={form.zaehlerstandWasser} onChange={e => setForm({...form, zaehlerstandWasser: e.target.value})}
+                <ZahlFeld  value={form.zaehlerstandWasser} onChange={e => setForm({...form, zaehlerstandWasser: e.target.value})}
                   placeholder="m³" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
               </div>
               <div>
                 <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1"><Flame size={12} /> Heizung</label>
-                <input type="number" value={form.zaehlerstandHeizung} onChange={e => setForm({...form, zaehlerstandHeizung: e.target.value})}
+                <ZahlFeld  value={form.zaehlerstandHeizung} onChange={e => setForm({...form, zaehlerstandHeizung: e.target.value})}
                   placeholder="kWh" className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500" />
               </div>
             </div>
@@ -84,7 +85,7 @@ const MieterAuszug = ({ mieter, onSave, onClose }) => {
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Abzüge (€)</label>
-                  <input type="number" value={form.kautionAbzug} onChange={e => setForm({...form, kautionAbzug: parseFloat(e.target.value) || 0})}
+                  <ZahlFeld  value={form.kautionAbzug} onChange={e => setForm({...form, kautionAbzug: parseFloat(e.target.value) || 0})}
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-yellow-500" min="0" />
                 </div>
                 <div>

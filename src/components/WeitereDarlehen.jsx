@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Plus, Landmark, Trash2 } from 'lucide-react';
 import FinanzierungsReiter from './FinanzierungsReiter';
 import { formatCurrency } from '../utils/format.js';
@@ -73,7 +74,7 @@ function NeuesDarlehen({ onAnlegen, onAbbrechen }) {
           <input value={f.name} onChange={e => set('name', e.target.value)} placeholder="z. B. KfW 261 oder Sparkasse II" className={`${inputCls} mt-0.5`} />
         </label>
         <label className="text-xs text-gray-500">Darlehensbetrag € <span className="text-indigo-600">*</span>
-          <input type="number" min="0" step="1000" value={f.betrag} onChange={e => set('betrag', e.target.value)} className={`${inputCls} mt-0.5`} />
+          <ZahlFeld  min="0" step="1000" value={f.betrag} onChange={e => set('betrag', e.target.value)} className={`${inputCls} mt-0.5`} />
         </label>
       </div>
       <div>
@@ -92,7 +93,7 @@ function NeuesDarlehen({ onAnlegen, onAbbrechen }) {
           </select>
         </label>
         <label className="text-xs text-gray-500">Sollzins % p. a. <span className="text-indigo-600">*</span>
-          <input type="number" min="0" step="0.01" value={f.sollzins} onChange={e => set('sollzins', e.target.value)} className={`${inputCls} mt-0.5`} />
+          <ZahlFeld  min="0" step="0.01" value={f.sollzins} onChange={e => set('sollzins', e.target.value)} className={`${inputCls} mt-0.5`} />
         </label>
         {f.typ !== 'endfaellig' && (
           <div className="text-xs text-gray-500">
@@ -101,8 +102,8 @@ function NeuesDarlehen({ onAnlegen, onAbbrechen }) {
               {f.typ === 'annuitaet' && <button type="button" onClick={() => set('kenne', 'rate')} className={`font-semibold ${f.kenne === 'rate' ? 'text-indigo-700 underline' : ''}`}>oder Rate €</button>}
             </div>
             {f.kenne === 'rate' && f.typ === 'annuitaet'
-              ? <input type="number" min="0" step="1" value={f.rate} onChange={e => set('rate', e.target.value)} placeholder="Monatsrate" className={inputCls} />
-              : <input type="number" min="0" step="0.1" value={f.tilgung} onChange={e => set('tilgung', e.target.value)} placeholder="Anfangstilgung" className={inputCls} />}
+              ? <ZahlFeld  min="0" step="1" value={f.rate} onChange={e => set('rate', e.target.value)} placeholder="Monatsrate" className={inputCls} />
+              : <ZahlFeld  min="0" step="0.1" value={f.tilgung} onChange={e => set('tilgung', e.target.value)} placeholder="Anfangstilgung" className={inputCls} />}
           </div>
         )}
       </div>

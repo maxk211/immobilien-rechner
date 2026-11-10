@@ -1,65 +1,88 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Undo2, CheckCircle2, AlertCircle, Pencil, Trash2, Check, Sparkles } from 'lucide-react';
 
-const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
+// Kaution: der Mieterdatensatz ist die Quelle (Betrag, eingegangen, zurück, Abzug) — dieselbe Zahl,
+// die Mieterformular und „Was steht an“ zeigen. Hier liegen nur Zusatzangaben (Verwahrform, abweichend
+// eingegangener Betrag) und Kautionen ohne Mieterdatensatz.
+const KautionsManager = ({ params, updateParams, mieterListe = [], onSaveMieter = null }) => {
   const kautionen = params.kautionen || [];
   const [showForm, setShowForm] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
-  const [form, setForm] = useState({
+  const leer = {
     mieterId: null, mieterName: '', mietbeginn: '', mietende: '',
     vereinbartBetrag: 0, verwahrform: '', eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
     zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
-  });
+  };
+  const [form, setForm] = useState(leer);
 
-  const totalGehalten = kautionen
+  const zuEintrag = (m, extra = {}) => ({
+    ...extra, _quelle: 'mieter', mieterId: m.id, mieterName: m.name || '', mietbeginn: m.mietbeginn || '', mietende: m.mietende || m.auszugsdatum || '',
+    vereinbartBetrag: Number(m.kaution_betrag) || 0, eingegangen: !!m.kaution_bezahlt, eingegangenAm: m.kaution_bezahlt_am || '',
+    eingegangenBetrag: extra.eingegangenBetrag != null && extra.eingegangenBetrag !== '' ? Number(extra.eingegangenBetrag) : (m.kaution_bezahlt ? (Number(m.kaution_betrag) || 0) : 0),
+    zurueckgegeben: !!m.kaution_zurueck, zurueckgegebenAm: m.kaution_zurueck_am || '',
+    abzugBetrag: Number(m.kaution_abzug) || 0, abzugGrund: m.kaution_abzug_grund || '', verwahrform: extra.verwahrform || '',
+  });
+  const mitDatensatz = onSaveMieter ? mieterListe.filter(m => (Number(m.kaution_betrag) || 0) > 0 || kautionen.some(k => k.mieterId === m.id)) : [];
+  const eintraege = [
+    ...mitDatensatz.map(m => zuEintrag(m, kautionen.find(k => k.mieterId === m.id) || {})),
+    ...kautionen.filter(k => !onSaveMieter || !k.mieterId || !mieterListe.some(m => m.id === k.mieterId)).map(k => ({ ...k, _quelle: 'liste' })),
+  ];
+
+  const totalGehalten = eintraege
     .filter(k => k.eingegangen && !k.zurueckgegeben)
     .reduce((s, k) => s + (Number(k.eingegangenBetrag) || 0), 0);
-  const anzahlOffen = kautionen.filter(k => !k.eingegangen).length;
-
-  // Mieter mit hinterlegter Kaution, für die noch kein Eintrag in dieser Liste existiert —
-  // vermeidet, dass Name/Betrag/Datum ein zweites Mal von Hand erfasst werden müssen.
-  const offeneVorschlaege = mieterListe.filter(m =>
-    (Number(m.kaution_betrag) || 0) > 0 &&
-    !kautionen.some(k => k.mieterId === m.id)
-  );
+  const anzahlOffen = eintraege.filter(k => !k.eingegangen).length;
+  // Ohne Mieter-Speichern (Altfall): Vorschläge zum Übernehmen wie bisher
+  const offeneVorschlaege = onSaveMieter ? [] : mieterListe.filter(m => (Number(m.kaution_betrag) || 0) > 0 && !kautionen.some(k => k.mieterId === m.id));
 
   const openForm = (idx = null) => {
     setEditIdx(idx);
-    setForm(idx !== null ? { mieterId: null, ...kautionen[idx] } : {
-      mieterId: null, mieterName: '', mietbeginn: '', mietende: '',
-      vereinbartBetrag: 0, verwahrform: '', eingegangen: false, eingegangenAm: '', eingegangenBetrag: 0,
-      zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
-    });
+    setForm(idx !== null ? { ...leer, ...eintraege[idx] } : leer);
     setShowForm(true);
   };
 
-  const uebernehmeVorschlag = (m) => {
-    setEditIdx(null);
-    setForm({
-      mieterId: m.id,
-      mieterName: m.name || '',
-      mietbeginn: m.mietbeginn || '',
-      mietende: '',
-      vereinbartBetrag: Number(m.kaution_betrag) || 0,
-      eingegangen: !!m.kaution_bezahlt,
-      eingegangenAm: m.kaution_bezahlt_am || '',
-      eingegangenBetrag: m.kaution_bezahlt ? (Number(m.kaution_betrag) || 0) : 0,
-      verwahrform: '',
-      zurueckgegeben: false, zurueckgegebenAm: '', abzugBetrag: 0, abzugGrund: '',
-    });
-    setShowForm(true);
-  };
+  const uebernehmeVorschlag = (m) => { setEditIdx(null); setForm(zuEintrag(m)); setShowForm(true); };
 
-  const saveForm = () => {
-    const neu = [...kautionen];
-    if (editIdx !== null) neu[editIdx] = { ...form };
-    else neu.push({ id: Date.now(), ...form });
-    updateParams({ ...params, kautionen: neu });
+  const extrasOhne = (mieterId) => kautionen.filter(k => k.mieterId !== mieterId);
+  const saveForm = async () => {
+    const name = (form.mieterName || '').trim().toLowerCase();
+    const m = onSaveMieter ? (mieterListe.find(x => x.id === form.mieterId) || mieterListe.find(x => (x.name || '').trim().toLowerCase() === name)) : null;
+    if (m) {
+      // Quelle: Mieterdatensatz
+      await onSaveMieter({
+        ...m,
+        mietanpassungenMieter: m.mietanpassungen_mieter || m.mietanpassungenMieter || [],
+        naechsteAnpassungDatum: m.naechste_anpassung_datum || '',
+        kautionBetrag: Number(form.vereinbartBetrag) || 0,
+        kautionBezahlt: !!form.eingegangen, kautionBezahltAm: form.eingegangen ? (form.eingegangenAm || null) : null,
+        kautionZurueck: !!form.zurueckgegeben, kautionZurueckAm: form.zurueckgegeben ? (form.zurueckgegebenAm || null) : null,
+        kautionAbzug: Number(form.abzugBetrag) || 0, kautionAbzugGrund: form.abzugGrund || null,
+      });
+      const abweichend = form.eingegangen && Number(form.eingegangenBetrag) !== (Number(form.vereinbartBetrag) || 0);
+      const extra = (form.verwahrform || abweichend) ? [{ id: form.id || Date.now(), mieterId: m.id, verwahrform: form.verwahrform || '', ...(abweichend ? { eingegangenBetrag: Number(form.eingegangenBetrag) || 0 } : {}) }] : [];
+      updateParams({ ...params, kautionen: [...extrasOhne(m.id), ...extra] });
+    } else {
+      const { _quelle, ...rein } = form;
+      const neu = [...kautionen];
+      const i = editIdx !== null && eintraege[editIdx]?._quelle === 'liste' ? kautionen.findIndex(k => k.id === eintraege[editIdx].id) : -1;
+      if (i >= 0) neu[i] = rein; else neu.push({ id: Date.now(), ...rein });
+      updateParams({ ...params, kautionen: neu });
+    }
     setShowForm(false);
   };
 
-  const deleteKaution = (idx) => {
-    updateParams({ ...params, kautionen: kautionen.filter((_, i) => i !== idx) });
+  const deleteKaution = async (idx) => {
+    const k = eintraege[idx];
+    if (!k) return;
+    if (k._quelle === 'mieter') {
+      if (typeof window !== 'undefined' && window.confirm && !window.confirm(`Kaution von ${k.mieterName} entfernen? Sie wird auch am Mieter gelöscht.`)) return;
+      const m = mieterListe.find(x => x.id === k.mieterId);
+      if (m && onSaveMieter) await onSaveMieter({ ...m, mietanpassungenMieter: m.mietanpassungen_mieter || [], naechsteAnpassungDatum: m.naechste_anpassung_datum || '', kautionBetrag: 0, kautionBezahlt: false, kautionBezahltAm: null, kautionZurueck: false, kautionZurueckAm: null, kautionAbzug: 0, kautionAbzugGrund: null });
+      updateParams({ ...params, kautionen: extrasOhne(k.mieterId) });
+    } else {
+      updateParams({ ...params, kautionen: kautionen.filter(x => x.id !== k.id) });
+    }
   };
 
   const statusBadge = (k) => {
@@ -82,7 +105,7 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
           <p className="text-xs text-indigo-600 font-semibold uppercase mb-1">Gesamt Einträge</p>
-          <p className="text-2xl font-black text-indigo-700">{kautionen.length}</p>
+          <p className="text-2xl font-black text-indigo-700">{eintraege.length}</p>
         </div>
       </div>
 
@@ -113,11 +136,11 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
       </button>
 
       {/* Liste */}
-      {kautionen.length === 0 ? (
+      {eintraege.length === 0 ? (
         <p className="text-center text-gray-400 text-sm py-6">Noch keine Kautionen erfasst.</p>
       ) : (
         <div className="space-y-3">
-          {kautionen.map((k, idx) => (
+          {eintraege.map((k, idx) => (
             <div key={k.id || idx} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -175,7 +198,7 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-xs font-semibold text-gray-600 mb-1">Vereinbarter Kautionsbetrag (€)</label>
-                  <input type="number" value={form.vereinbartBetrag} onChange={e => setForm({...form, vereinbartBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                  <ZahlFeld  value={form.vereinbartBetrag} onChange={e => setForm({...form, vereinbartBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
                 </div>
                 <div><label className="block text-xs font-semibold text-gray-600 mb-1">Verwahrform</label>
                   <select value={form.verwahrform || ''} onChange={e => setForm({...form, verwahrform: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
@@ -198,7 +221,7 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
                       <input type="date" value={form.eingegangenAm} onChange={e => setForm({...form, eingegangenAm: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
                     </div>
                     <div><label className="block text-xs text-gray-600 mb-1">Betrag (€)</label>
-                      <input type="number" value={form.eingegangenBetrag} onChange={e => setForm({...form, eingegangenBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                      <ZahlFeld  value={form.eingegangenBetrag} onChange={e => setForm({...form, eingegangenBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
                     </div>
                   </div>
                 )}
@@ -215,7 +238,7 @@ const KautionsManager = ({ params, updateParams, mieterListe = [] }) => {
                         <input type="date" value={form.zurueckgegebenAm} onChange={e => setForm({...form, zurueckgegebenAm: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
                       </div>
                       <div><label className="block text-xs text-gray-600 mb-1">Abzug (€)</label>
-                        <input type="number" value={form.abzugBetrag} onChange={e => setForm({...form, abzugBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
+                        <ZahlFeld  value={form.abzugBetrag} onChange={e => setForm({...form, abzugBetrag: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm text-right" />
                       </div>
                     </div>
                     <div><label className="block text-xs text-gray-600 mb-1">Abzugsgrund</label>

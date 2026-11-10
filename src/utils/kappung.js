@@ -27,6 +27,7 @@ export function artVon(a) {
   if (g.includes('staffel')) return 'staffel';
   if (g.includes('index')) return 'index';
   if (g.includes('senk')) return 'senkung';
+  if (g.includes('korrektur')) return 'korrektur'; // übernommene Jahreswerte — keine Erhöhung nach § 558
   return 'erhoehung'; // Mieterhöhung, Mietspiegel, ohne Angabe → zählt (vorsichtige Annahme)
 }
 

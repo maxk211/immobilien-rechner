@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Zap, Check, X, ChevronUp, ChevronDown, User, FileText, TrendingDown, Wallet, Info } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, berechneMietStatusFuerMonat } from '../utils/miete.js';
@@ -14,6 +14,11 @@ const MieteinnahmenTracker = ({ params, updateParams, immobilie, mieterListe = [
   const [detailMonat, setDetailMonat] = useState(null); // nr of expanded month
   const [showNKModal, setShowNKModal] = useState(false); // NK-Abrechnung erfassen
   const [nkAbrechnungen, setNkAbrechnungen] = useState(params.nkAbrechnungen || []);
+  // Keine eigene, veraltete Kopie: ändern sich die Buchungen von außen (Sammelbuchung, Cockpit,
+  // Dashboard), übernimmt die Ansicht sie sofort — sonst würde die nächste Buchung hier sie überschreiben.
+  const gleich = (a, b) => JSON.stringify(a || []) === JSON.stringify(b || []);
+  useEffect(() => { setMietEingaenge(alt => (gleich(alt, params.mietEingaenge) ? alt : (params.mietEingaenge || []))); }, [params.mietEingaenge]);
+  useEffect(() => { setNkAbrechnungen(alt => (gleich(alt, params.nkAbrechnungen) ? alt : (params.nkAbrechnungen || []))); }, [params.nkAbrechnungen]);
 
   const kaufDatumObj = immobilie.kaufdatum ? new Date(immobilie.kaufdatum) : null;
   const kaufjahr = kaufDatumObj ? kaufDatumObj.getFullYear() : new Date().getFullYear();

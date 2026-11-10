@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSchliessenMitRueckfrage } from './UngespeichertDialog';
 import { TabErrorBoundary } from './ErrorBoundary';
 import { formatCurrency } from '../utils/format.js';
 import { getAktuelleMiete, getAktuellerWert, berechneMietStatusFuerMonat } from '../utils/miete.js';
@@ -405,26 +406,43 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
   // Mietanpassung speichern + letzte Mieterhöhung beim aktiven Mieter nachziehen (Tabelle und „Was wäre, wenn?“)
   // Mietverlauf: EINE Liste am Objekt. Speichert sofort und zieht den Spiegel am aktiven Mieter
   // (aktuelle Kaltmiete, letzte Mieterhöhung) nach — dort wird nie separat etwas gepflegt.
-  const mietverlaufSpeichern = async (liste, { spiegeln = true, kaltmiete = null } = {}) => {
+  // Spiegel am aktiven Mieter: Kaltmiete, NK-Vorauszahlung, Gesamtüberweisung, letzte Mieterhöhung —
+  // immer aus dem Objekt berechnet, dort wird nie separat gepflegt.
+  const mieterSpiegelNachziehen = async (neu, vorher) => {
+    const mAktiv = mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false);
+    if (!mAktiv || !onSaveMieter) return;
+    const kalt = aktuelleMiete(neu);
+    const mitNk = (neu.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk';
+    const altKalt = Number(mAktiv.kaltmiete) || 0, altNk = Number(mAktiv.nk_vorauszahlung) || 0;
+    // NK-Vorauszahlung nur spiegeln, wenn das Objekt mit „Miete + Nebenkosten“ rechnet — sonst bleibt der Wert am Mieter
+    const nk = mitNk ? (Number(neu.nebenkostenVomMieter) || 0) : altNk;
+    const gesamtAlt = mAktiv.gesamtueberweisung;
+    const warStandard = gesamtAlt == null || gesamtAlt === '' || Number(gesamtAlt) === altKalt + altNk;
+    const sp = mieterSpiegel(neu, { mietbeginn: mAktiv.mietbeginn, bisherLetzte: mAktiv.letzte_mieterhoehung, vorherQuelle: vorher });
+    const ziel = { kaltmiete: kalt, nkVorauszahlung: nk || null, gesamtueberweisung: warStandard ? (kalt + nk || null) : Number(gesamtAlt), letzteMieterhoehung: sp.letzteMieterhoehung };
+    const anders = altKalt !== kalt || (mitNk && (altNk || null) !== (nk || null)) || (warStandard && (Number(gesamtAlt) || null) !== (kalt + nk || null))
+      || (mAktiv.letzte_mieterhoehung || null) !== (sp.letzteMieterhoehung || null) || (mAktiv.mietanpassungen_mieter || []).length > 0;
+    if (anders) await onSaveMieter({ ...mAktiv, naechsteAnpassungDatum: mAktiv.naechste_anpassung_datum || '', mietanpassungenMieter: [], ...ziel });
+  };
+  // Mietverlauf: EINE Liste am Objekt. Speichert sofort, Spiegel am Mieter wird nachgezogen.
+  const mietverlaufSpeichern = async (liste, { spiegeln = true, kaltmiete = null, nebenkostenVomMieter = null, weitere = null } = {}) => {
     const vorher = { ...params };
-    const updated = { ...params, mietAnpassungen: liste, ...(kaltmiete != null ? { kaltmiete } : {}) };
-    speichereSofort(updated);
+    const updated = { ...params, ...(weitere || {}), mietAnpassungen: liste, ...(kaltmiete != null ? { kaltmiete } : {}), ...(nebenkostenVomMieter != null ? { nebenkostenVomMieter } : {}) };
+    setParams(updated);
+    const gesamtEK = (updated.ekFuerNebenkosten || 0) + (updated.ekFuerKaufpreis || 0);
+    onSave({ ...immobilie, ...updated, eigenkapital: gesamtEK });
     setHasChanges(false);
-    const mAktiv = spiegeln ? mieterListe.find(m => m.immobilie_id === immobilie.id && m.aktiv !== false) : null;
-    if (mAktiv && onSaveMieter) {
-      const sp = mieterSpiegel(updated, { mietbeginn: mAktiv.mietbeginn, bisherLetzte: mAktiv.letzte_mieterhoehung, vorherQuelle: vorher });
-      if (Number(mAktiv.kaltmiete) !== sp.kaltmiete || (mAktiv.letzte_mieterhoehung || null) !== sp.letzteMieterhoehung || (mAktiv.mietanpassungen_mieter || []).length) {
-        await onSaveMieter({ ...mAktiv, naechsteAnpassungDatum: mAktiv.naechste_anpassung_datum || '', ...sp });
-      }
-    }
+    if (spiegeln) await mieterSpiegelNachziehen(updated, vorher);
   };
   const mietanpassungEintragen = async ({ datum, kaltmiete, grund, vorher }) =>
     mietverlaufSpeichern(setzeMietanpassung(params.mietAnpassungen, { datum, kaltmiete, grund, vorher }));
   // Phase G: Korrekturen/Bestätigungen aus der Plausibilitätsprüfung sofort speichern
   const speichereSofort = (neu) => {
+    const vorher = params;
     setParams(neu);
     const gesamtEK = (neu.ekFuerNebenkosten || 0) + (neu.ekFuerKaufpreis || 0);
     onSave({ ...immobilie, ...neu, eigenkapital: gesamtEK });
+    mieterSpiegelNachziehen(neu, vorher).catch(() => {});
   };
   const plausiHinweise = useMemo(
     () => pruefeImmobilie({ ...immobilie, ...params }, { portfolio, mieter: mieterListe }),
@@ -462,7 +480,11 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
     const gesamtEK = (params.ekFuerNebenkosten || 0) + (params.ekFuerKaufpreis || 0);
     onSave({ ...immobilie, ...params, eigenkapital: gesamtEK });
     setHasChanges(false);
-  };
+    // Kaltmiete/NK-Vorauszahlung am Mieter sind nur ein Spiegel des Objekts
+    mieterSpiegelNachziehen(params, immobilie).catch(() => {});
+  };  // Schließen mit offenen Änderungen: Rückfrage Speichern / Verwerfen / Weiter bearbeiten
+  const { schliessen, dialog: ungespeichertDialog } = useSchliessenMitRueckfrage({ hatAenderungen: hasChanges, onSpeichern: handleSave, onSchliessen: onClose });
+
 
   const ergebnis = useMemo(() => berechneRendite({
     ...params,
@@ -641,7 +663,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                     Bearbeiten
                   </button>
                 )}
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
+                <button onClick={schliessen} aria-label="Schließen" className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white"><X size={20}/></button>
               </div>
             </div>
           </div>
@@ -2284,7 +2306,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                 <MietKostenManager
                   params={params}
                   updateParams={updateParams}
-                  onMietverlauf={(liste) => mietverlaufSpeichern(liste)}
+                  onMietverlauf={(liste, extra = {}) => mietverlaufSpeichern(liste, extra)}
                   immobilie={immobilie}
                   hasChanges={hasChanges}
                   setHasChanges={setHasChanges}
@@ -2369,7 +2391,8 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Kaution</h3>
                   <KautionsManager
                     params={params}
-                    updateParams={updateParams}
+                    updateParams={speichereSofort}
+                    onSaveMieter={onSaveMieter}
                     mieterListe={mieterListe.filter(m => m.immobilie_id === immobilie.id)}
                   />
                 </div>
@@ -2407,6 +2430,7 @@ const KaufimmobilieDetail = ({ immobilie, onClose, onEdit, onSave, mieterListe =
           </TabErrorBoundary>
         </div>
       </div>
+    {ungespeichertDialog}
     </div>
   );
 };

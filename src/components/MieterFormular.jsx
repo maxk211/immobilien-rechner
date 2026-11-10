@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import ZahlFeld from './ZahlFeld';
 import {
   User, FileText, TrendingUp, Paperclip, ClipboardList, AlertTriangle,
   CalendarDays, Key, Upload, Download, Trash2, X, CheckCircle2,
@@ -92,6 +93,10 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
   const verlaufAktiv = !!(onMietverlauf && verlauf && verlaufStart?.key === qInfo?.key);
   const bestehend = !!mieter?.id;
   const mieteAusVerlauf = verlaufAktiv && bestehend ? aktuelleMiete(verlauf) : null;
+  // NK-Vorauszahlung bei der Eigentumswohnung: Quelle ist das Objekt (Cashflow, Soll in den Mieteingängen)
+  const nkAmObjekt = verlaufAktiv && !qInfo?.we && (qInfo?.obj?.vermietungsmodell || 'kaltmiete') === 'kaltmiete_nk';
+  const [nkObjekt, setNkObjekt] = useState(null); // null = unverändert
+  const nkAnzeige = nkAmObjekt && bestehend ? (nkObjekt ?? (qInfo?.obj?.nebenkostenVomMieter ?? '')) : form.nkVorauszahlung;
   // Sobald der Nutzer die Kaltmiete manuell ändert, hört die automatische
   // Vorbefüllung aus der Immobilie auf, seinen Wert zu überschreiben.
   const [kaltmieteBeruehrt, setKaltmieteBeruehrt] = useState(!!mieter);
@@ -225,10 +230,11 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
           if (mietZeilen(verlauf).length || (Number(verlauf.kaltmiete) || 0) !== kalt) liste = setzeMietanpassung(liste, { datum: form.mietbeginn, kaltmiete: kalt, grund: 'Neuvermietung' });
         } else if (!bestehend && kalt > 0 && !mietZeilen(verlauf).length) extra.kaltmiete = kalt;
         if (bestehend && !mietZeilen({ ...verlauf, mietAnpassungen: liste }).length && Number(verlauf.kaltmiete) !== Number(verlaufStart.quelle.kaltmiete)) extra.kaltmiete = Number(verlauf.kaltmiete) || 0;
+        if (nkAmObjekt && (nkObjekt !== null || !bestehend) && form.nkVorauszahlung !== '' && Number(form.nkVorauszahlung) !== Number(qInfo?.obj?.nebenkostenVomMieter || 0)) extra.nebenkostenVomMieter = Number(form.nkVorauszahlung) || 0;
         const fertig = { ...verlauf, ...(extra.kaltmiete != null ? { kaltmiete: extra.kaltmiete } : {}), mietAnpassungen: liste };
         const spiegel = mieterSpiegel(fertig, { mietbeginn: form.mietbeginn, nieErhoeht, bisherLetzte: mieter?.letzte_mieterhoehung, vorherQuelle: verlaufStart.quelle });
-        const savedMieter = await onSave({ ...form, ...spiegel });
-        const geaendert = JSON.stringify(liste) !== JSON.stringify(verlaufStart.quelle.mietAnpassungen || []) || extra.kaltmiete != null;
+        const savedMieter = await onSave({ ...form, ...spiegel, ...(nkAmObjekt ? { nkVorauszahlung: extra.nebenkostenVomMieter ?? (bestehend ? (qInfo?.obj?.nebenkostenVomMieter ?? form.nkVorauszahlung) : form.nkVorauszahlung) } : {}) });
+        const geaendert = JSON.stringify(liste) !== JSON.stringify(verlaufStart.quelle.mietAnpassungen || []) || extra.kaltmiete != null || extra.nebenkostenVomMieter != null;
         if (geaendert) await onMietverlauf(liste, extra, { ...(mieter || {}), ...(savedMieter || {}), name: form.name, zimmer_bezeichnung: form.zimmerBezeichnung ?? mieter?.zimmer_bezeichnung });
         await dokumenteHochladen(savedMieter);
         return;
@@ -448,7 +454,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kaltmiete (€/Mon.)</label>
-                    <input type="number" value={mieteAusVerlauf != null ? mieteAusVerlauf : form.kaltmiete}
+                    <ZahlFeld  value={mieteAusVerlauf != null ? mieteAusVerlauf : form.kaltmiete}
                       onChange={e => {
                         setKaltmieteBeruehrt(true);
                         const w = parseFloat(e.target.value) || '';
@@ -478,18 +484,18 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Nebenkosten-Vorauszahlung (€/Mon.)</label>
-                    <input type="number" value={form.nkVorauszahlung}
-                      onChange={e => setForm({...form, nkVorauszahlung: parseFloat(e.target.value) || ''})}
+                    <ZahlFeld  value={nkAnzeige}
+                      onChange={e => { const v = parseFloat(e.target.value); const w = Number.isFinite(v) ? v : ''; if (nkAmObjekt) setNkObjekt(w); setForm({...form, nkVorauszahlung: w}); }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">Gesamtüberweisung (€/Mon.) <InfoHint text="Der Betrag, den der Mieter tatsächlich monatlich überweist — üblicherweise Kaltmiete + NK-Vorauszahlung. Zum Abgleich mit dem Kontoauszug." /></label>
-                    <input type="number" value={form.gesamtueberweisung}
+                    <ZahlFeld  value={form.gesamtueberweisung}
                       onChange={e => setForm({...form, gesamtueberweisung: parseFloat(e.target.value) || ''})}
-                      placeholder={(kaltmieteNum + (parseFloat(form.nkVorauszahlung) || 0)) > 0 ? String(kaltmieteNum + (parseFloat(form.nkVorauszahlung) || 0)) : '0'}
+                      placeholder={(kaltmieteNum + (parseFloat(nkAnzeige) || 0)) > 0 ? String(kaltmieteNum + (parseFloat(nkAnzeige) || 0)) : '0'}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" step="10" />
-                    {!form.gesamtueberweisung && (kaltmieteNum > 0 || parseFloat(form.nkVorauszahlung) > 0) && (
-                      <p className="text-[11px] text-gray-400 mt-1">Standard: Kaltmiete + NK-Vorauszahlung = {formatCurrency(kaltmieteNum + (parseFloat(form.nkVorauszahlung) || 0))}</p>
+                    {!form.gesamtueberweisung && (kaltmieteNum > 0 || parseFloat(nkAnzeige) > 0) && (
+                      <p className="text-[11px] text-gray-400 mt-1">Standard: Kaltmiete + NK-Vorauszahlung = {formatCurrency(kaltmieteNum + (parseFloat(nkAnzeige) || 0))}</p>
                     )}
                   </div>
                 </div>
@@ -501,7 +507,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Kautionshöhe (€)</label>
-                    <input type="number" value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
+                    <ZahlFeld  value={form.kautionBetrag} onChange={e => setForm({...form, kautionBetrag: parseFloat(e.target.value) || ''})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-base sm:text-sm" />
                   </div>
                   <div className="flex items-end pb-0.5">
@@ -637,7 +643,7 @@ const MieterFormular = ({ mieter, portfolio, onSave, onClose, immobilieDokumente
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Neue Kaltmiete (€)</label>
-                    <input type="number" value={newAnpassung.betrag} onChange={e => setNewAnpassung(a => ({ ...a, betrag: e.target.value }))}
+                    <ZahlFeld  value={newAnpassung.betrag} onChange={e => setNewAnpassung(a => ({ ...a, betrag: e.target.value }))}
                       placeholder="0" step="10"
                       className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-indigo-400 text-right" />
                   </div>

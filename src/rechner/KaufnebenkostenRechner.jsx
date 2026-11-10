@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from '../components/ZahlFeld';
 import { GRUNDERWERBSTEUER_SAETZE } from './grunderwerbsteuerSaetze';
 import FloatingCTA from '../components/FloatingCTA';
 import ResultCTA from '../components/ResultCTA';
@@ -11,8 +12,8 @@ const InputField = ({ label, value, onChange, prefix, suffix, hint }) => (
     <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
     <div className="relative flex items-center">
       {prefix && <span className="absolute left-3 text-slate-400 text-sm pointer-events-none">{prefix}</span>}
-      <input
-        type="number"
+      <ZahlFeld
+        
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Wallet, Home, TrendingUp, BarChart3, Target, ChevronDown, Check, CheckCircle2, Trophy } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { berechneMtlCashflow, berechneImmoVermoegenswerte } from '../utils/berechnung.js';
@@ -173,7 +174,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                     </button>
                   </div>
                   {editZiele[typ.id] != null && (
-                    <input type="number" value={editZiele[typ.id]} step={typ.step}
+                    <ZahlFeld  value={editZiele[typ.id]} step={typ.step}
                       onChange={e => setEditZiele({ ...editZiele, [typ.id]: parseFloat(e.target.value) || 0 })}
                       className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-right focus:ring-1 focus:ring-indigo-400"
                     />
@@ -273,7 +274,7 @@ const PortfolioZiele = ({ portfolio, inline = false }) => {
                   </div>
                   {editZiele[typ.id] != null && (
                     <div className="flex items-center gap-2 mt-2">
-                      <input type="number" value={editZiele[typ.id]} step={typ.step} onChange={e => setEditZiele({ ...editZiele, [typ.id]: parseFloat(e.target.value) || 0 })}
+                      <ZahlFeld  value={editZiele[typ.id]} step={typ.step} onChange={e => setEditZiele({ ...editZiele, [typ.id]: parseFloat(e.target.value) || 0 })}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm font-bold text-right focus:ring-2 focus:ring-indigo-400" />
                       <span className="text-sm text-gray-500 whitespace-nowrap">{typ.unit}</span>
                     </div>

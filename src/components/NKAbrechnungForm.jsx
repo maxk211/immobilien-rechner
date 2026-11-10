@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Wallet, TrendingDown, X, Check, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import { NK_KOSTENPOSITIONEN_DEFAULTS } from '../constants/index.js';
@@ -108,7 +109,7 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel, mieterListe = [], immo
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Abrechnungsjahr</label>
-                <input type="number" value={form.abrechnungsjahr || ''} onChange={e => update('abrechnungsjahr', parseInt(e.target.value) || form.abrechnungsjahr)}
+                <ZahlFeld  value={form.abrechnungsjahr || ''} onChange={e => update('abrechnungsjahr', parseInt(e.target.value) || form.abrechnungsjahr)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm text-right" />
                 <p className="text-[10px] text-gray-400 mt-1">Zeitraum: 01.01.–31.12.{form.abrechnungsjahr}</p>
               </div>
@@ -123,12 +124,12 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel, mieterListe = [], immo
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Mieterfläche (m²)</label>
-                <input type="number" value={form.wohnflaeche || ''} onChange={e => update('wohnflaeche', parseFloat(e.target.value) || 0)}
+                <ZahlFeld  value={form.wohnflaeche || ''} onChange={e => update('wohnflaeche', parseFloat(e.target.value) || 0)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm text-right" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Gesamtfläche (m²)</label>
-                <input type="number" value={form.gesamtflaeche || ''} onChange={e => update('gesamtflaeche', parseFloat(e.target.value) || 0)}
+                <ZahlFeld  value={form.gesamtflaeche || ''} onChange={e => update('gesamtflaeche', parseFloat(e.target.value) || 0)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base sm:text-sm text-right" />
               </div>
             </div>
@@ -140,7 +141,7 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel, mieterListe = [], immo
           <div className="space-y-4">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Vorauszahlungen gesamt (€)</label>
-              <input type="number" step="0.01" value={form.vorauszahlungen || ''} onChange={e => update('vorauszahlungen', parseFloat(e.target.value) || 0)}
+              <ZahlFeld  step="0.01" value={form.vorauszahlungen || ''} onChange={e => update('vorauszahlungen', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border-2 border-blue-300 rounded-lg text-base sm:text-sm font-bold text-right" />
             </div>
             <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Kostenpositionen</h4>
@@ -158,13 +159,13 @@ const NKAbrechnungForm = ({ abrechnung, onSave, onCancel, mieterListe = [], immo
                   </div>
                   <div className="flex gap-2">
                     <div className="flex items-center gap-1 flex-1">
-                      <input type="number" step="0.01" value={pos.gesamtkosten || ''} placeholder="0"
+                      <ZahlFeld  step="0.01" value={pos.gesamtkosten || ''} placeholder="0"
                         onChange={e => updatePos(pos.key, 'gesamtkosten', parseFloat(e.target.value) || 0)}
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-base sm:text-sm text-right" />
                       <span className="text-xs text-gray-400 flex-shrink-0">€ gesamt</span>
                     </div>
                     <div className="flex items-center gap-1 w-28">
-                      <input type="number" min={0} max={100} value={pos.mieteranteil}
+                      <ZahlFeld  min={0} max={100} value={pos.mieteranteil}
                         onChange={e => updatePos(pos.key, 'mieteranteil', parseFloat(e.target.value) || 0)}
                         className="w-full px-2 py-1.5 border border-gray-200 bg-gray-50 rounded text-base sm:text-sm text-right" />
                       <span className="text-xs text-gray-400 flex-shrink-0">%</span>

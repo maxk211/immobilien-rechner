@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Wallet, User } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 
@@ -18,7 +19,7 @@ const ZahlungErfassenForm = ({ monatKey, forderungBetrag, onSave, mieterListe = 
         <div>
           <label className="block text-[10px] text-gray-500 mb-1">Betrag eingegangen</label>
           <div className="flex items-center gap-1">
-            <input type="number" value={betrag} onChange={e => setBetrag(parseFloat(e.target.value)||0)}
+            <ZahlFeld  value={betrag} onChange={e => setBetrag(parseFloat(e.target.value)||0)}
               className="w-full px-2 py-1.5 border-2 border-blue-300 rounded text-sm text-right font-bold" />
             <span className="text-xs text-gray-400">€</span>
           </div>

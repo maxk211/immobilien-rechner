@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ZahlFeld from './ZahlFeld';
 import { Plus, Trash2, Pencil, Check, Info } from 'lucide-react';
 import { formatCurrency } from '../utils/format.js';
 import ZahlInput from './ZahlInput';
@@ -29,10 +30,10 @@ function VerwendungListe({ liste = [], onChange, hinweis }) {
       )}
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-xs text-gray-500">Jahr
-          <input type="number" min="1990" max="2100" value={jahr} onChange={e => setJahr(e.target.value)} className={`${inputCls} w-24 mt-0.5`} />
+          <ZahlFeld  min="1990" max="2100" value={jahr} onChange={e => setJahr(e.target.value)} className={`${inputCls} w-24 mt-0.5`} />
         </label>
         <label className="text-xs text-gray-500">Betrag €
-          <input type="number" min="0" step="1" value={betrag} onChange={e => setBetrag(e.target.value)} placeholder="z. B. 850" className={`${inputCls} w-32 mt-0.5`} />
+          <ZahlFeld  min="0" step="1" value={betrag} onChange={e => setBetrag(e.target.value)} placeholder="z. B. 850" className={`${inputCls} w-32 mt-0.5`} />
         </label>
         <button type="button" disabled={!(Number(betrag) > 0) || !(Number(jahr) > 1900)}
           onClick={() => { onChange([...liste, { jahr: Math.round(Number(jahr)), betrag: Number(betrag) }]); setBetrag(''); }}
@@ -77,13 +78,13 @@ function Formular({ start, onSpeichern, onAbbrechen }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <label className="block text-xs text-gray-500">Dein Anteil gesamt € <span className="text-indigo-600">*</span>
-          <input type="number" min="0" step="1" value={f.betrag ?? ''} onChange={e => set('betrag', e.target.value)} placeholder="laut Beschluss" className={`${inputCls} mt-0.5`} />
+          <ZahlFeld  min="0" step="1" value={f.betrag ?? ''} onChange={e => set('betrag', e.target.value)} placeholder="laut Beschluss" className={`${inputCls} mt-0.5`} />
         </label>
         <label className="block text-xs text-gray-500">Fällig ab <span className="text-indigo-600">*</span>
           <input type="date" value={f.faelligAm || ''} onChange={e => set('faelligAm', e.target.value)} className={`${inputCls} mt-0.5`} />
         </label>
         <label className="block text-xs text-gray-500">Monatsraten
-          <input type="number" min="1" max="60" step="1" value={f.raten ?? 1} onChange={e => set('raten', e.target.value)} className={`${inputCls} mt-0.5`} />
+          <ZahlFeld  min="1" max="60" step="1" value={f.raten ?? 1} onChange={e => set('raten', e.target.value)} className={`${inputCls} mt-0.5`} />
         </label>
       </div>
       {f.zweck !== 'modernisierung' && !(start.verwendung || []).length && (
