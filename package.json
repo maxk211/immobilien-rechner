@@ -13,7 +13,7 @@
     "verify:agentic": "node scripts/verify-agentic-readiness.mjs",
     "test:cashflow": "node tests/run.mjs tests/cashflow-gleichheit.jsx",
     "test:robust": "node tests/run.mjs tests/zahlen-robust.jsx",
-    "test": "npm run test:cashflow && npm run test:robust && npm run test:bericht && npm run test:sonderumlage && npm run test:belegung && npm run test:darlehen && npm run test:mfh && npm run test:kappung && npm run test:mfhkosten && npm run test:mietverlauf && npm run test:audit",
+    "test": "npm run test:cashflow && npm run test:robust && npm run test:bericht && npm run test:sonderumlage && npm run test:belegung && npm run test:darlehen && npm run test:mfh && npm run test:kappung && npm run test:mfhkosten && npm run test:mietverlauf && npm run test:audit && npm run test:speichern && npm run test:szenarien",
     "test:bericht": "node tests/run.mjs tests/pruefbericht.jsx",
     "test:sonderumlage": "node tests/run.mjs tests/sonderumlage.jsx",
     "test:belegung": "node tests/run.mjs tests/belegung.jsx",
@@ -22,7 +22,9 @@
     "test:kappung": "node tests/run.mjs tests/kappung.jsx",
     "test:mfhkosten": "node tests/run.mjs tests/mfh-kosten.jsx",
     "test:mietverlauf": "node tests/run.mjs tests/mietverlauf.jsx",
-    "test:audit": "node tests/run.mjs tests/audit.jsx"
+    "test:audit": "node tests/run.mjs tests/audit.jsx",
+    "test:speichern": "node tests/run.mjs tests/speichern.jsx",
+    "test:szenarien": "node tests/run.mjs tests/szenarien.jsx"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.0",

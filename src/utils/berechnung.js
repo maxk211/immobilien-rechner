@@ -563,6 +563,17 @@ export const MFH_KOSTEN_KEYS = ['hausverwaltung', 'instandhaltung', 'grundsteuer
 export const cashflowMonat = (immo, heute = new Date()) => {
   immo = normalisiereImmobilie(immo); // Text/leer → Zahl/null (utils/zahlen.js)
   const typ = immo?.immobilienTyp;
+  // Vor dem Kauf/Mietvertragsbeginn und nach Verkauf/Aufgabe gibt es in diesem Monat keinen Cashflow
+  // (vorher zählten z. B. ein erst im nächsten Monat gekauftes Objekt schon Miete und Rate mit).
+  const monatsAnfang = new Date(heute.getFullYear(), heute.getMonth(), 1);
+  const ab = typ === 'mietimmobilie' ? immo?.mietvertragStart : immo?.kaufdatum;
+  const abD = ab ? new Date(ab) : null;
+  const vorBeginn = abD && !Number.isNaN(abD.getTime()) && new Date(abD.getFullYear(), abD.getMonth(), 1) > monatsAnfang;
+  const aufgD = immo?.aktiv === false && immo?.aufgabedatum ? new Date(immo.aufgabedatum) : null;
+  const nachAufgabe = aufgD && !Number.isNaN(aufgD.getTime()) && aufgD < monatsAnfang;
+  if (vorBeginn || nachAufgabe) {
+    return { einnahmen: 0, betrieb: 0, rate: 0, zinsen: 0, tilgung: 0, bauspar: 0, sonderumlage: 0, vor: 0, nach: 0, hatKredit: false, stellplatz: 0, kaltmiete: 0, nkImCashflow: 0, ks: (typ !== 'mietimmobilie' && typ !== 'mehrfamilienhaus') ? kostenStruktur(immo) : null, restschuld: 0, schuldenfrei: false, vorKauf: !!vorBeginn, nachAufgabe: !!nachAufgabe };
+  }
   if (typ === 'mietimmobilie') {
     const vertragsEnde = immo.mietvertragEnde ? new Date(immo.mietvertragEnde) : null;
     const leer = { einnahmen: 0, betrieb: 0, rate: 0, zinsen: 0, tilgung: 0, bauspar: 0, vor: 0, nach: 0, hatKredit: false, stellplatz: 0, kaltmiete: 0, nkImCashflow: 0, ks: null };

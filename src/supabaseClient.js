@@ -14,10 +14,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Helper Funktionen für Immobilien
 
 // Alle Immobilien des eingeloggten Users laden
+// Zusätzliche Absicherung neben Row Level Security: jede Abfrage nur auf eigene Datensätze
+const eigeneId = async () => (await supabase.auth.getSession())?.data?.session?.user?.id || null;
+const nurEigene = (q, uid) => (uid ? q.eq('user_id', uid) : q);
+
 export async function loadImmobilien() {
-  const { data, error } = await supabase
+  const uid = await eigeneId();
+  const { data, error } = await nurEigene(supabase
     .from('immobilien')
-    .select('*')
+    .select('*'), uid)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -62,10 +67,10 @@ export async function saveImmobilie(immobilie) {
   const doSave = async (data) => {
     if (immobilie.id && typeof immobilie.id === 'string' && immobilie.id.includes('-')) {
       // Update existierende Immobilie (UUID)
-      const { data: result, error } = await supabase
+      const { data: result, error } = await nurEigene(supabase
         .from('immobilien')
         .update(data)
-        .eq('id', immobilie.id)
+        .eq('id', immobilie.id), await eigeneId())
         .select()
         .single();
       if (error) throw error;
@@ -128,10 +133,10 @@ function fehlendeSpaltenMelden(spalten) {
 
 // Immobilie löschen
 export async function deleteImmobilie(id) {
-  const { error } = await supabase
+  const { error } = await nurEigene(supabase
     .from('immobilien')
     .delete()
-    .eq('id', id);
+    .eq('id', id), await eigeneId());
 
   if (error) throw error;
 }
@@ -173,7 +178,9 @@ function dbToAppRoh(db) {
     zinssatz: db.zinssatz != null ? Number(db.zinssatz) : 4.0,
     tilgung: db.tilgung != null ? Number(db.tilgung) : 2.0,
     laufzeit: db.laufzeit || 25,
-    finanzierungsbetrag: db.finanzierungsbetrag ? Number(db.finanzierungsbetrag) : null,
+    // 0 = bewusst ohne Kredit — vorher wurde 0 beim Laden zu null und daraus ein errechneter Kredit
+    // (Ausnahme Altbestand: 0 bei vorhandenen Darlehensphasen = „nicht gesetzt“, wie bisher)
+    finanzierungsbetrag: db.finanzierungsbetrag == null || (Number(db.finanzierungsbetrag) === 0 && (db.finanzierungsphasen || []).length) ? null : Number(db.finanzierungsbetrag),
     kaufnebenkosten: db.kaufnebenkosten != null ? Number(db.kaufnebenkosten) : 10,
     kaufnebenkostenModus: db.kaufnebenkosten_modus,
     bundesland: db.bundesland,
@@ -414,9 +421,10 @@ export async function getDokumentUrl(path) {
 // ==================== MIETER ====================
 
 export async function loadMieter() {
-  const { data, error } = await supabase
+  const uid = await eigeneId();
+  const { data, error } = await nurEigene(supabase
     .from('mieter')
-    .select('*')
+    .select('*'), uid)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data || [];
@@ -470,7 +478,7 @@ export async function saveMieter(mieter) {
 
   const doMieterSave = async (data) => {
     if (mieter.id) {
-      const { data: result, error } = await supabase.from('mieter').update(data).eq('id', mieter.id).select().single();
+      const { data: result, error } = await nurEigene(supabase.from('mieter').update(data).eq('id', mieter.id), await eigeneId()).select().single();
       if (error) throw error;
       return result;
     } else {
@@ -498,16 +506,17 @@ export async function saveMieter(mieter) {
 }
 
 export async function deleteMieter(id) {
-  const { error } = await supabase.from('mieter').delete().eq('id', id);
+  const { error } = await nurEigene(supabase.from('mieter').delete().eq('id', id), await eigeneId());
   if (error) throw error;
 }
 
 // ==================== NEBENKOSTENABRECHNUNGEN ====================
 
 export async function loadNKAbrechnungen() {
-  const { data, error } = await supabase
+  const uid = await eigeneId();
+  const { data, error } = await nurEigene(supabase
     .from('nebenkostenabrechnungen')
-    .select('*')
+    .select('*'), uid)
     .order('abrechnungsjahr', { ascending: false });
   if (error) throw error;
   return data || [];
@@ -539,10 +548,10 @@ export async function saveNKAbrechnung(abrechnung) {
   };
 
   if (abrechnung.id) {
-    const { data, error } = await supabase
+    const { data, error } = await nurEigene(supabase
       .from('nebenkostenabrechnungen')
       .update(dbData)
-      .eq('id', abrechnung.id)
+      .eq('id', abrechnung.id), user.id)
       .select()
       .single();
     if (error) throw error;
@@ -559,16 +568,17 @@ export async function saveNKAbrechnung(abrechnung) {
 }
 
 export async function deleteNKAbrechnung(id) {
-  const { error } = await supabase.from('nebenkostenabrechnungen').delete().eq('id', id);
+  const { error } = await nurEigene(supabase.from('nebenkostenabrechnungen').delete().eq('id', id), await eigeneId());
   if (error) throw error;
 }
 
 // ==================== KALKULATIONEN ====================
 
 export async function loadKalkulationen() {
-  const { data, error } = await supabase
+  const uid = await eigeneId();
+  const { data, error } = await nurEigene(supabase
     .from('kalkulationen')
-    .select('*')
+    .select('*'), uid)
     .order('updated_at', { ascending: false });
   if (error) throw error;
   return (data || []).map(d => ({
@@ -593,10 +603,10 @@ export async function saveKalkulation(kalk) {
 
   const isUpdate = id && typeof id === 'string' && id.includes('-');
   if (isUpdate) {
-    const { data, error } = await supabase
+    const { data, error } = await nurEigene(supabase
       .from('kalkulationen')
       .update(dbData)
-      .eq('id', id)
+      .eq('id', id), user.id)
       .select()
       .single();
     if (error) throw error;
@@ -613,6 +623,9 @@ export async function saveKalkulation(kalk) {
 }
 
 export async function deleteKalkulation(id) {
-  const { error } = await supabase.from('kalkulationen').delete().eq('id', id);
+  const { error } = await nurEigene(supabase.from('kalkulationen').delete().eq('id', id), await eigeneId());
   if (error) throw error;
 }
+
+// Nur für Tests: Speicher-Rundlauf ohne Datenbank prüfen (tests/speichern.jsx)
+export const _testRundlauf = { appToDb: (a) => appToDb(a), dbToApp: (d) => dbToApp(d) };
